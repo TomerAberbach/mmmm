@@ -1,0 +1,24 @@
+import { defineConfig, devices } from '@playwright/test'
+
+const PORT = 3100
+const BASE_URL = `http://localhost:${PORT}`
+
+export default defineConfig({
+  testDir: `e2e`,
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 1 : 0,
+  use: {
+    baseURL: BASE_URL,
+    trace: `retain-on-failure`,
+  },
+  projects: [{ name: `chromium`, use: devices[`Desktop Chrome`] }],
+  webServer: {
+    command: `pnpm start`,
+    url: BASE_URL,
+    env: {
+      PORT: String(PORT),
+      BETTER_AUTH_SECRET: `e2e-secret-that-is-at-least-32-characters`,
+      BETTER_AUTH_URL: BASE_URL,
+    },
+  },
+})

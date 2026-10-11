@@ -1,0 +1,59 @@
+{
+  "name": "mmmm",
+  "private": true,
+  "description": "March Mammal Madness Manager",
+  "type": "module",
+  "engines": {
+    "node": ">= 24"
+  },
+  "scripts": {
+    "dev": "NODE_ENV=development node --env-file-if-exists=.env server.ts",
+    "build": "react-router build",
+    "start": "NODE_ENV=production node --env-file-if-exists=.env server.ts",
+    "format:base": "prettier --cache --write",
+    "format": "pnpm format:base .",
+    "lint:base": "eslint --cache --cache-location node_modules/.cache/eslint/ --fix",
+    "lint": "pnpm lint:base .",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "knip": "knip",
+    "test": "vitest",
+    "test:e2e": "pnpm build && playwright test",
+    "check": "npm-run-all -c -l -p typecheck \"lint --no-fix\" \"format --no-write --check\" knip \"test --run\" -s test:e2e"
+  },
+  "prettier": "@tomer/prettier-config",
+  "dependencies": {
+    "@react-router/express": "^8.4.0",
+    "@react-router/node": "^8.4.0",
+    "better-auth": "^1.7.7",
+    "compression": "^1.8.2",
+    "express": "^5.3.0",
+    "isbot": "^5.2.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@react-router/dev": "^8.4.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tomer/eslint-config": "^6.0.0",
+    "@tomer/prettier-config": "^5.0.0",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/browser-playwright": "^5.0.3",
+    "axe-core": "^4.14.0",
+    "eslint": "^10.12.0",
+    "knip": "^6.41.0",
+    "npm-run-all2": "^9.0.3",
+    "playwright": "^1.64.0",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3",
+    "vitest-browser-react": "^2.3.0"
+  }
+}
