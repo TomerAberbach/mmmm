@@ -13,7 +13,8 @@ export default defineConfig({
   },
   projects: [{ name: `chromium`, use: devices[`Desktop Chrome`] }],
   webServer: {
-    command: `pnpm start`,
+    command: `NODE_ENV=production node e2e/server.ts`,
+    gracefulShutdown: { signal: `SIGTERM`, timeout: 5000 },
     url: BASE_URL,
     env: {
       PORT: String(PORT),

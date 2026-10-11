@@ -28,9 +28,11 @@ for a **Player**'s **Draft** or **Submission**.
 | ---------------- | ---------------------------------------------------------------------- | ------------------------------- |
 | **Admin**        | An **Educator** whose confirmed email address is on the **Admin list** | Operator, superuser             |
 | **Admin list**   | The admin email addresses in the app's configuration                   | `ADMIN_EMAIL`                   |
-| **Educator**     | A person with an account who runs **Contests**                         | Teacher, user, account          |
+| **Educator**     | A person who signs up and runs **Contests**                            | Teacher, user, account          |
 | **Player**       | A person who fills out a bracket through a **Contest link**            | Student, participant, submitter |
 | **Organization** | The **Educators** who share a confirmed email domain                   | School, district                |
+| **Credential**   | One way an **Educator** signs in, such as an email and password        | Account, login                  |
+| **Session**      | One signed-in browser of an **Educator**                               | Login                           |
 
 ## Contests
 
@@ -74,4 +76,6 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Player** has exactly one **Personal link** per **Contest** they join
 - A **Draft** becomes exactly one **Submission** when submitted
 - An **Educator** belongs to at most one **Organization**
+- An **Educator** has one or more **Credentials**
+- A **Session** belongs to exactly one **Educator**
 - A **Contest** counts toward at most one **Organization**

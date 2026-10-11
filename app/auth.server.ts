@@ -1,15 +1,14 @@
 import { betterAuth } from 'better-auth'
-
-const requireEnv = (name: string): string => {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Set ${name} in .env, as in .env.example`)
-  }
-  return value
-}
+import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { prisma } from './db.server.ts'
+import { requireEnv } from './env.server.ts'
 
 export const auth = betterAuth({
   baseURL: requireEnv(`BETTER_AUTH_URL`),
   secret: requireEnv(`BETTER_AUTH_SECRET`),
+  database: prismaAdapter(prisma, { provider: `postgresql` }),
+  user: { modelName: `educator` },
+  session: { fields: { userId: `educatorId` } },
+  account: { modelName: `credential`, fields: { userId: `educatorId` } },
   emailAndPassword: { enabled: true },
 })

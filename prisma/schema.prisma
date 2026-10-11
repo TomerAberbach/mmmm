@@ -1,0 +1,69 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../app/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Better Auth's user, session, account, and verification tables. Its user is
+// an Educator, and its account is a Credential, one per sign-in method. Better
+// Auth rejects a schema that lacks any of its columns, including Educator.image,
+// which only social sign-in sets
+model Educator {
+  id            String       @id
+  name          String
+  email         String       @unique
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  credentials   Credential[]
+}
+
+model Session {
+  id         String   @id
+  expiresAt  DateTime
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  ipAddress  String?
+  userAgent  String?
+  educatorId String
+  educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+
+  @@index([educatorId])
+}
+
+model Credential {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  educatorId            String
+  educator              Educator  @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+
+  @@index([educatorId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
