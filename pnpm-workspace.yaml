@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@tomer/eslint-config@6.0.0'
+  - '@tomer/prettier-config@5.0.0'
+shellEmulator: true

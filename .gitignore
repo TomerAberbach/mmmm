@@ -1,0 +1,9 @@
+.DS_Store
+.env
+/node_modules/
+/coverage/
+/build/
+/.react-router/
+/test-results/
+/playwright-report/
+__screenshots__/

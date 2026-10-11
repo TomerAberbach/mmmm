@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    // Base options
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "esnext",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo",
+    // Strictness
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    // Using a bundler
+    "allowImportingTsExtensions": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    // Runtime
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node", "vite/client", "@vitest/browser-playwright"],
+    "jsx": "react-jsx",
+    // React Router
+    "rootDirs": [".", "./.react-router/types"],
+    "paths": {
+      "~/*": ["./app/*"]
+    }
+  },
+  "include": ["**/*", ".react-router/types/**/*"],
+  "exclude": ["node_modules", "build"]
+}
