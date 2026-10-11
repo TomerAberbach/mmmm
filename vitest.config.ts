@@ -14,6 +14,10 @@ export default defineConfig({
           include: [`{app,server,test}/**/*.test.ts`],
           globalSetup: [`test/global-setup.ts`],
           setupFiles: [`test/setup.ts`],
+          env: {
+            BETTER_AUTH_SECRET: `test-secret-that-is-at-least-32-characters`,
+            BETTER_AUTH_URL: `http://localhost:3000`,
+          },
         },
       },
       {

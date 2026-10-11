@@ -11,4 +11,16 @@ export const auth = betterAuth({
   session: { fields: { userId: `educatorId` } },
   account: { modelName: `credential`, fields: { userId: `educatorId` } },
   emailAndPassword: { enabled: true },
+  // Off because its limit of 3 sign-ins per 10 seconds per IP address would
+  // block a school that shares one address
+  rateLimit: { enabled: false },
+  // Nothing stores IP addresses
+  databaseHooks: {
+    session: {
+      create: {
+        before: session =>
+          Promise.resolve({ data: { ...session, ipAddress: null } }),
+      },
+    },
+  },
 })

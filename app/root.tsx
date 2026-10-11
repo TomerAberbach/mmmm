@@ -23,7 +23,10 @@ export const Layout = ({ children }: { children: ReactNode }) => (
       <meta charSet='utf-8' />
       <meta name='viewport' content='width=device-width, initial-scale=1' />
       <Meta />
-      <Links />
+      {/* Stylesheets need no nonce. An empty one stops Links from using the
+          router's, which only the server has, so hydration would mismatch. See
+          https://github.com/remix-run/react-router/issues/15603 */}
+      <Links nonce='' />
     </head>
     <body>
       {children}
