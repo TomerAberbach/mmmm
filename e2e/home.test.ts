@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { collectConsoleMessages } from './console.ts'
 
 test(`home page renders from the production build`, async ({ page }) => {
   await page.goto(`/`)
@@ -26,4 +27,16 @@ test(`unknown pages link to the home page`, async ({ page }) => {
   await expect(
     page.getByRole(`heading`, { name: `March Mammal Madness Manager` }),
   ).toBeVisible()
+})
+
+test(`the home page hydrates without console errors`, async ({ page }) => {
+  const errors = collectConsoleMessages(
+    page,
+    message => message.type() === `error`,
+  )
+
+  await page.goto(`/`)
+  await page.waitForLoadState(`networkidle`)
+
+  expect(errors).toStrictEqual([])
 })

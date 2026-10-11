@@ -18,10 +18,12 @@ Read these with the Claude Docs connector, not by fetching the URLs.
 
 ```
 mmmm
-├── server.ts           # Express entry point. Serves Vite in development and the build in production
-├── server/app.ts       # Express app that hands requests to React Router
+├── server.ts           # Express entry point: middleware order, then Vite in development or the build in production
+├── server/             # Express middleware: security headers, cross-origin checks, rate limits, request logs
+│   └── app.ts          # Hands requests to React Router with the request's CSP nonce
 ├── app/
 │   ├── root.tsx        # Document layout and error boundary
+│   ├── entry.server.tsx # Renders with the CSP nonce
 │   ├── *.server.ts     # Server-only modules
 │   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
 ├── prisma/             # Schema and seed
@@ -60,6 +62,16 @@ message naming the missing variable.
 - Prisma refuses `prisma db push --force-reset`, which `pnpm db:reset` runs,
   when an AI agent runs it. Ask the user before running `pnpm db:reset`, then
   pass their reply as `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`
+
+## Security
+
+- Never store or log client IP addresses. Rate limits keep them in memory only
+- Logs drop query strings. Add each path segment that holds a secret to
+  `SECRET_PATH` in `server/logging.ts`
+- The content security policy allows only scripts with the request's nonce. Read
+  it from `nonceContext` in `app/nonce.ts`
+- `pnpm dev` runs Node with `--conditions=development`, so Node and Vite load
+  the same copy of `react-router`. Without it, `getLoadContext` fails
 
 ## React Router
 
