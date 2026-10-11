@@ -23,6 +23,9 @@ mmmm
 │   └── app.ts          # Hands requests to React Router with the request's CSP nonce
 ├── app/
 │   ├── root.tsx        # Document layout and error boundary
+│   ├── app.css         # Fonts and theme colors
+│   ├── components/     # Shared UI built on React Aria Components
+│   ├── routes/dev.*    # Development-only pages, which return 404 in production
 │   ├── entry.server.tsx # Renders with the CSP nonce
 │   ├── *.server.ts     # Server-only modules
 │   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
@@ -51,9 +54,10 @@ pnpm test --run app/routes/home.test.tsx
 pnpm test:e2e e2e/home.test.ts  # Builds first
 ```
 
-Copy `.env.example` to `.env` before running the app. Read variables with
-`requireEnv` from `app/env.server.ts`, which loads `.env` and fails with a
-message naming the missing variable.
+Copy `.env.example` to `.env` before running the app, including `SUPPORT_EMAIL`,
+which the footer links. Read variables with `requireEnv` from
+`app/env.server.ts`, which loads `.env` and fails with a message naming the
+missing variable.
 
 ## Database
 
@@ -62,6 +66,20 @@ message naming the missing variable.
 - Prisma refuses `prisma db push --force-reset`, which `pnpm db:reset` runs,
   when an AI agent runs it. Ask the user before running `pnpm db:reset`, then
   pass their reply as `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`
+
+## UI
+
+- `app/app.css` removes Tailwind's default colors and fonts. Use the theme's:
+  `ink`, `muted`, `accent`, `accent-strong`, `muted-light` and `accent-light`
+  (only for large text), `accent-soft` (only for decoration), `danger`, and
+  `font-display`, `font-condensed`, `font-sans`
+- Build interactive controls on React Aria Components, as in
+  `app/components/button.tsx`
+- Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
+  returns a `ConfirmResult`, and the dialog shows any `error`
+- Mark controls and page chrome `print:hidden`, so data pages print cleanly
+- Delete a `routes/dev.*` page in the commit that first uses its component on a
+  real page
 
 ## Security
 
@@ -92,6 +110,6 @@ message naming the missing variable.
 - `*.test.ts` files under `app/`, `server/`, and `test/` run in Node, and
   `app/**/*.test.tsx` files run in Chromium through Vitest browser mode. Both
   are colocated with the code they test
-- Browser tests check accessibility with `expectNoAxeViolations` from
-  `test/axe.ts`
+- Browser tests load `app/app.css` and check accessibility, including contrast,
+  with `expectNoAxeViolations` from `test/axe.ts`
 - `e2e/*.test.ts` files run in Playwright against the production build
