@@ -9,4 +9,7 @@ cd "$CLAUDE_PROJECT_DIR" || exit 1
 STATUS=0
 node_modules/.bin/eslint --cache --cache-location node_modules/.cache/eslint/ --fix --no-warn-ignored "$FILE" >&2 || STATUS=2
 node_modules/.bin/prettier --cache --write --ignore-unknown "$FILE" >&2 || STATUS=2
+case "$FILE" in
+  *.prisma) node_modules/.bin/prisma format --schema "$FILE" >&2 || STATUS=2 ;;
+esac
 exit $STATUS

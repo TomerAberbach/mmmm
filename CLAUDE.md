@@ -22,7 +22,10 @@ mmmm
 ├── server/app.ts       # Express app that hands requests to React Router
 ├── app/
 │   ├── root.tsx        # Document layout and error boundary
-│   └── *.server.ts     # Server-only modules
+│   ├── *.server.ts     # Server-only modules
+│   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
+├── prisma/             # Schema and seed
+├── test/database.ts    # Creates a throwaway database for each Vitest and Playwright run
 └── e2e/                # Playwright tests against the production build
 ```
 
@@ -32,18 +35,31 @@ mmmm
 # Everything CI runs. Run before handing work back
 pnpm check
 
+docker compose up -d  # Start Postgres. The app and tests need it
+
 pnpm dev        # Start the app on http://localhost:3000
 pnpm start      # Serve the build
 pnpm typecheck  # Generate route types, then run tsc
 pnpm knip       # Find unused files, dependencies, and exports
+pnpm db:reset   # Push the schema to an empty database, regenerate the client, and reseed
+pnpm db:seed
 
 # Run one test file
 pnpm test --run app/routes/home.test.tsx
 pnpm test:e2e e2e/home.test.ts  # Builds first
 ```
 
-Copy `.env.example` to `.env` before running the app. Requests that load
-`app/auth.server.ts` fail without it.
+Copy `.env.example` to `.env` before running the app. Read variables with
+`requireEnv` from `app/env.server.ts`, which loads `.env` and fails with a
+message naming the missing variable.
+
+## Database
+
+- There are no migrations until cutover. Edit `prisma/schema.prisma` in place
+  and run `pnpm db:reset`
+- Prisma refuses `prisma db push --force-reset`, which `pnpm db:reset` runs,
+  when an AI agent runs it. Ask the user before running `pnpm db:reset`, then
+  pass their reply as `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`
 
 ## React Router
 
