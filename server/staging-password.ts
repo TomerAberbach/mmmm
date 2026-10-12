@@ -1,13 +1,12 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { Request, RequestHandler } from 'express'
-import { isHealthCheck } from './health-check.ts'
 
-// Asks for a shared password on every request but Fly.io's health checks, so
-// only testers can reach staging. Any username works
+// Asks for a shared password, so only testers can reach staging. Any username
+// works
 export const requireStagingPassword = (password: string): RequestHandler => {
   const expected = Buffer.from(password)
   return (req, res, next) => {
-    if (isHealthCheck(req) || hasPassword(req, expected)) {
+    if (hasPassword(req, expected)) {
       next()
       return
     }

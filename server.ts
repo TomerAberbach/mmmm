@@ -14,20 +14,20 @@ import { requireStagingPassword } from './server/staging-password.ts'
 const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
 const IS_PRODUCTION = process.env.NODE_ENV !== `development`
-const IS_STAGING = process.env.APP_ENV === `staging`
+// Staging fails to start without its password, so it's never public
+const STAGING_PASSWORD =
+  process.env.APP_ENV === `staging` ? requireEnv(`STAGING_PASSWORD`) : null
 
-// Each serves its assets, then the app behind `appMiddleware`, which assets
-// skip
+// Each serves its assets and returns the app's request handler
 const serveDevelopmentApp = async (
   server: Express,
-  appMiddleware: RequestHandler[],
-) => {
+): Promise<RequestHandler> => {
   const vite = await import(`vite`)
   const viteDevServer = await vite.createServer({
     server: { middlewareMode: true },
   })
   server.use(viteDevServer.middlewares)
-  server.use(...appMiddleware, async (req, res, next) => {
+  return async (req, res, next) => {
     try {
       const { app } = (await viteDevServer.ssrLoadModule(
         `./server/app.ts`,
@@ -39,20 +39,17 @@ const serveDevelopmentApp = async (
       }
       next(error)
     }
-  })
+  }
 }
 
-const serveProductionApp = async (
-  server: Express,
-  appMiddleware: RequestHandler[],
-) => {
+const serveProductionApp = async (server: Express): Promise<RequestHandler> => {
   server.use(
     `/assets`,
     express.static(`build/client/assets`, { immutable: true, maxAge: `1y` }),
   )
   server.use(express.static(`build/client`, { maxAge: `1h` }))
   const { app } = (await import(BUILD_PATH)) as { app: RequestHandler }
-  server.use(...appMiddleware, app)
+  return app
 }
 
 const server = express()
@@ -63,22 +60,21 @@ if (IS_PRODUCTION) {
 }
 server.use(compression())
 server.use(setSecurityHeaders(IS_PRODUCTION))
-const appMiddleware = [
+const app = IS_PRODUCTION
+  ? await serveProductionApp(server)
+  : await serveDevelopmentApp(server)
+// React Router needs every page's nonce, the health check's included
+server.use(setContentSecurityPolicy(IS_PRODUCTION))
+// Fly.io's health checks skip logging, rate limits, and the staging password
+server.get(`/healthz`, app)
+server.use(
   logRequests,
   rejectCrossOriginRequests,
-  ...setContentSecurityPolicy(IS_PRODUCTION),
   // Generous, because a whole school can share one IP address
   limitRequestsPerIp(1000),
-  // Staging fails to start without its password, so it's never public
-  ...(IS_STAGING
-    ? [requireStagingPassword(requireEnv(`STAGING_PASSWORD`))]
-    : []),
-]
-if (IS_PRODUCTION) {
-  await serveProductionApp(server, appMiddleware)
-} else {
-  await serveDevelopmentApp(server, appMiddleware)
-}
+  ...(STAGING_PASSWORD ? [requireStagingPassword(STAGING_PASSWORD)] : []),
+  app,
+)
 server.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`)
 })
