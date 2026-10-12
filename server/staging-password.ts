@@ -22,6 +22,10 @@ const hasPassword = (req: Request, expected: Buffer): boolean => {
     return false
   }
   const credentials = Buffer.from(encoded, `base64`).toString()
-  const given = Buffer.from(credentials.slice(credentials.indexOf(`:`) + 1))
+  const colon = credentials.indexOf(`:`)
+  if (colon === -1) {
+    return false
+  }
+  const given = Buffer.from(credentials.slice(colon + 1))
   return given.length === expected.length && timingSafeEqual(given, expected)
 }

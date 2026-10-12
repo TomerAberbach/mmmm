@@ -8,6 +8,7 @@ const basic = (credentials: string) =>
 test.each([
   { authorization: undefined, status: 401 },
   { authorization: basic(`tester:wrong`), status: 401 },
+  { authorization: basic(`secret`), status: 401 },
   { authorization: `Bearer secret`, status: 401 },
   { authorization: basic(`tester:secret`), status: 200 },
   { authorization: basic(`anyone:secret`), status: 200 },
