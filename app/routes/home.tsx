@@ -1,9 +1,11 @@
+import { PageTitle } from '~/components/page-title.tsx'
+
 export const meta = () => [{ title: `March Mammal Madness Manager` }]
 
 const Home = () => (
-  <main className='mx-auto max-w-prose p-4'>
-    <h1 className='text-3xl font-bold'>March Mammal Madness Manager</h1>
+  <div className='flex flex-col gap-4'>
+    <PageTitle>March Mammal Madness Manager</PageTitle>
     <p>Coming soon.</p>
-  </main>
+  </div>
 )
 export default Home

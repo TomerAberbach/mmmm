@@ -6,5 +6,6 @@
 /.react-router/
 /test-results/
 /playwright-report/
+/.vitest/
 __screenshots__/
 /app/generated/

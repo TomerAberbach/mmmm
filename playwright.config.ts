@@ -20,6 +20,7 @@ export default defineConfig({
       PORT: String(PORT),
       BETTER_AUTH_SECRET: `e2e-secret-that-is-at-least-32-characters`,
       BETTER_AUTH_URL: BASE_URL,
+      SUPPORT_EMAIL: `support@example.com`,
     },
   },
 })

@@ -1,6 +1,54 @@
+@import '@fontsource/alfa-slab-one/latin-400.css';
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-700.css';
+@import '@fontsource/barlow-condensed/latin-800.css';
 @import 'tailwindcss';
 
-html,
-body {
-  @apply bg-white text-gray-950;
+/* From the colors that recur in March Mammal Madness brackets. Text colors
+   pass WCAG AA on white, and accent-soft is only for decoration */
+@theme {
+  /* Only these fonts and colors exist, so Tailwind's defaults can't creep in */
+  --font-*: initial;
+  --color-*: initial;
+
+  --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  --font-condensed: 'Barlow Condensed', 'Barlow', ui-sans-serif, sans-serif;
+  --font-display: 'Alfa Slab One', Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-ink: #111111;
+  --color-muted: #4f6470;
+  /* Large text only, since it passes 3:1 but not 4.5:1 on white */
+  --color-muted-light: #6b7b85;
+  --color-accent: #1f7d86;
+  --color-accent-strong: #1b6e6a;
+  /* Large text only, since it passes 3:1 but not 4.5:1 on white */
+  --color-accent-light: #2a8a8f;
+  --color-accent-soft: #8fc9c3;
+  --color-danger: #c8202f;
+  --color-danger-strong: #9e1a26;
+}
+
+@layer base {
+  html {
+    @apply bg-white font-sans text-ink;
+  }
+
+  a {
+    @apply text-accent-strong underline-offset-2 hover:underline;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+
+  html,
+  a {
+    color: black;
+  }
 }

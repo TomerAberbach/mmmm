@@ -27,6 +27,9 @@ export const setContentSecurityPolicy = (
       scriptSrc: [`'self'`, (_req, res) => `'nonce-${readNonce(res)}'`],
       // Vite injects styles inline in development
       styleSrc: [`'self'`, ...(isProduction ? [] : [`'unsafe-inline'`])],
+      // React Aria positions and hides elements with style attributes. Those
+      // can't run scripts, and <style> elements stay blocked
+      styleSrcAttr: [`'unsafe-inline'`],
       upgradeInsecureRequests: isProduction ? [] : null,
     },
   }),
