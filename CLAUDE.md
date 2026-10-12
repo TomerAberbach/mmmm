@@ -75,6 +75,8 @@ missing variable.
   `ink`, `muted`, `accent`, `accent-strong`, `muted-light` and `accent-light`
   (only for large text), `accent-soft` (only for decoration), `danger`, and
   `font-display`, `font-condensed`, `font-sans`
+- Use Tailwind's scales, not arbitrary values such as `text-[13px]`. When a
+  scale lacks a value, add it to the theme in `app/app.css`
 - Build interactive controls on React Aria Components, as in
   `app/components/button.tsx`
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
@@ -84,6 +86,14 @@ missing variable.
   instead of a `meta` export
 - Delete a `routes/dev.*` page in the commit that first uses its component on a
   real page
+
+## Email
+
+- Send email with `sendEmail` from `app/email.server.ts`, with a body built on
+  `EmailLayout`, `EmailParagraph`, and `EmailAction` from
+  `app/emails/layout.server.tsx`. Name email modules `*.server.tsx`
+- With `EMAIL_TRANSPORT=mailbox`, as in development and tests, email stays in
+  memory. Read it at `/dev/mailbox`, or with `readMailbox` in a test
 
 ## Security
 

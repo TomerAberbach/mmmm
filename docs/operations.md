@@ -5,13 +5,15 @@ shape at cutover.
 
 ## Accounts
 
-| Service        | What it holds                                        | Where to manage it                                                                 |
-| -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Fly.io         | The `mmmm-staging` app, in region `iad`              | [fly.io/apps/mmmm-staging](https://fly.io/apps/mmmm-staging)                       |
-| Neon           | The `mmmm-staging` project, Postgres 18, `us-east-1` | [console.neon.tech](https://console.neon.tech/app/projects)                        |
-| Tigris         | The `mmmm-backups` bucket, billed through Fly        | `fly storage dashboard mmmm-backups`                                               |
-| GitHub Actions | CI and the nightly backup                            | [Actions settings](https://github.com/TomerAberbach/mmmm/settings/secrets/actions) |
-| Namecheap      | The `mmmm.onl` domain and its DNS                    | [Domain list](https://ap.www.namecheap.com/domains/list/)                          |
+| Service        | What it holds                                         | Where to manage it                                                                 |
+| -------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Fly.io         | The `mmmm-staging` app, in region `iad`               | [fly.io/apps/mmmm-staging](https://fly.io/apps/mmmm-staging)                       |
+| Neon           | The `mmmm-staging` project, Postgres 18, `us-east-1`  | [console.neon.tech](https://console.neon.tech/app/projects)                        |
+| Tigris         | The `mmmm-backups` bucket, billed through Fly         | `fly storage dashboard mmmm-backups`                                               |
+| GitHub Actions | CI and the nightly backup                             | [Actions settings](https://github.com/TomerAberbach/mmmm/settings/secrets/actions) |
+| Resend         | Sends email from `send.mmmm.onl`                      | [resend.com/domains](https://resend.com/domains)                                   |
+| Cloudflare     | DNS for `mmmm.onl`, and forwarding `support@mmmm.onl` | [dash.cloudflare.com](https://dash.cloudflare.com)                                 |
+| Namecheap      | Registers `mmmm.onl`                                  | [Domain list](https://ap.www.namecheap.com/domains/list/)                          |
 
 ## Secrets
 
@@ -27,11 +29,13 @@ value.
 | `DATABASE_URL`       | Neon's pooled connection string                                                  |
 | `BETTER_AUTH_SECRET` | Random. Set with `fly secrets set BETTER_AUTH_SECRET=$(openssl rand -base64 32)` |
 | `STAGING_PASSWORD`   | The password testers enter in the browser. Any username works                    |
-| `SUPPORT_EMAIL`      | `support@mmmm.onl`, which Namecheap forwards                                     |
+| `RESEND_API_KEY`     | A Resend API key with sending access                                             |
+| `SUPPORT_EMAIL`      | `support@mmmm.onl`, which Cloudflare forwards                                    |
 
-`fly.toml` sets `APP_ENV` and `BETTER_AUTH_URL`, which aren't secret. With
-`APP_ENV=staging`, the app refuses to start without `STAGING_PASSWORD`. Static
-assets load without the password, since production serves the same files.
+`fly.toml` sets `APP_ENV`, `BETTER_AUTH_URL`, `EMAIL_TRANSPORT`, and
+`EMAIL_FROM`, which aren't secret. With `APP_ENV=staging`, the app refuses to
+start without `STAGING_PASSWORD`. Static assets load without the password, since
+production serves the same files.
 
 ### GitHub (repository settings, Secrets and variables, Actions)
 
@@ -62,6 +66,13 @@ from fresh data. The seed creates `educator@example.com` with the password
 
 The machine stops when idle and starts on the next request. `/healthz` reports
 whether the database answers, and it skips the staging password.
+
+## Email
+
+`EMAIL_TRANSPORT` selects where email goes. Staging sets `resend`, so email goes
+out from `noreply@send.mmmm.onl`. Development and tests set `mailbox`, which
+keeps sent email in memory at `/dev/mailbox`. `/dev/email` sends a sample email
+in development and on staging.
 
 ## Backups
 
@@ -106,8 +117,18 @@ The steps that created staging, for redoing them or setting up production.
    objects after 30 days
 8. Set `STAGING_BACKUP_DATABASE_URL`, then run the Backup workflow from the
    Actions tab and the restore script, to check both
-9. In Namecheap, forward `support@mmmm.onl` to your inbox under Mail Settings,
-   Email Forwarding
+9. Add `mmmm.onl` to Cloudflare, check that the DNS records it imports match
+   Namecheap's, and set the domain's nameservers in Namecheap to the two
+   Cloudflare lists, under Nameservers, Custom DNS. Wait for Cloudflare to show
+   the domain as active
+10. In Resend, add the domain `send.mmmm.onl`, add the DNS records it lists in
+    Cloudflare under DNS, Records, and wait for Resend to verify them. Turn off
+    open and click tracking for the domain, so links in emails are the real
+    ones. Then create an API key with sending access and set it as
+    `RESEND_API_KEY` on Fly
+11. In Cloudflare, under Email, Email Routing, add your inbox as a destination
+    address and confirm it, then add a rule that forwards `support@mmmm.onl` to
+    it
 
 ## Rotating a secret
 

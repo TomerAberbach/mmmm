@@ -63,7 +63,7 @@ export const ConfirmDialog = ({
           <Dialog
             role='alertdialog'
             aria-describedby={descriptionId}
-            className='flex flex-col gap-3 border-2 border-ink bg-white p-6 shadow-[8px_8px_0] shadow-accent-soft outline-none'
+            className='flex flex-col gap-3 border-2 border-ink bg-white p-6 shadow-offset shadow-accent-soft outline-none'
           >
             <Heading
               slot='title'

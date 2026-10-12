@@ -1,6 +1,7 @@
 import compression from 'compression'
 import express from 'express'
 import type { Express, RequestHandler } from 'express'
+import { checkEmailSettings } from './app/email-settings.server.ts'
 import { requireEnv } from './app/env.server.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
@@ -14,6 +15,7 @@ import { requireStagingPassword } from './server/staging-password.ts'
 const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
 const IS_PRODUCTION = process.env.NODE_ENV !== `development`
+checkEmailSettings()
 // Staging fails to start without its password, so it's never public
 const STAGING_PASSWORD =
   process.env.APP_ENV === `staging` ? requireEnv(`STAGING_PASSWORD`) : null

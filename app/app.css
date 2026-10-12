@@ -30,6 +30,9 @@
   --color-accent-soft: #8fc9c3;
   --color-danger: #c8202f;
   --color-danger-strong: #9e1a26;
+
+  /* A solid shadow offset down and to the right, colored with `shadow-<color>` */
+  --shadow-offset: 8px 8px 0 var(--color-ink);
 }
 
 @layer base {

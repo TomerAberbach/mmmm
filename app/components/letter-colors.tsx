@@ -1,5 +1,5 @@
 // Each passes 3:1 on white, the WCAG minimum for large text
-const LETTER_COLORS = [
+export const LETTER_COLORS = [
   `text-accent-strong`,
   `text-muted`,
   `text-accent`,
