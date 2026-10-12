@@ -17,6 +17,7 @@ import { PageTitle } from './components/page-title.tsx'
 import { SiteFooter } from './components/site-footer.tsx'
 import { SiteHeader } from './components/site-header.tsx'
 import { requireEnv } from './env.server.ts'
+import { loadSignedInEducator, readSignedInEducator } from './session.server.ts'
 
 export const links: Route.LinksFunction = () => [
   { rel: `stylesheet`, href: stylesheet },
@@ -30,14 +31,16 @@ export const links: Route.LinksFunction = () => [
   })),
 ]
 
-export const loader = () => ({ supportEmail: requireEnv(`SUPPORT_EMAIL`) })
+export const middleware: Route.MiddlewareFunction[] = [loadSignedInEducator]
 
-// The support email never changes while the server runs
-export const shouldRevalidate = () => false
+export const loader = async ({ context }: Route.LoaderArgs) => ({
+  supportEmail: requireEnv(`SUPPORT_EMAIL`),
+  educator: await readSignedInEducator(context),
+})
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   // Missing when the root loader itself failed
-  const supportEmail = useRouteLoaderData<typeof loader>(`root`)?.supportEmail
+  const rootData = useRouteLoaderData<typeof loader>(`root`)
   return (
     // Browser extensions, such as Browserpass, add attributes to <html> before
     // hydration
@@ -52,11 +55,11 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         <Links nonce='' />
       </head>
       <body className='flex min-h-screen flex-col'>
-        <SiteHeader />
+        <SiteHeader educator={rootData?.educator} />
         <main className='mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6'>
           {children}
         </main>
-        <SiteFooter supportEmail={supportEmail} />
+        <SiteFooter supportEmail={rootData?.supportEmail} />
         <ScrollRestoration />
         <Scripts />
       </body>

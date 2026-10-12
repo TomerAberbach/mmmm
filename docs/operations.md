@@ -71,8 +71,8 @@ whether the database answers, and it skips the staging password.
 
 `EMAIL_TRANSPORT` selects where email goes. Staging sets `resend`, so email goes
 out from `noreply@send.mmmm.onl`. Development and tests set `mailbox`, which
-keeps sent email in memory at `/dev/mailbox`. `/dev/email` sends a sample email
-in development and on staging.
+keeps sent email in memory at `/dev/mailbox`. To check delivery on staging, sign
+up there with your own address.
 
 ## Backups
 

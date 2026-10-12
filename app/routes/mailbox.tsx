@@ -1,4 +1,4 @@
-import { data, Link } from 'react-router'
+import { data } from 'react-router'
 import type { Route } from './+types/mailbox.ts'
 import { MailboxEmails } from '~/components/mailbox-emails.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
@@ -17,10 +17,7 @@ const Mailbox = ({ loaderData }: Route.ComponentProps) => (
   <div className='flex flex-col gap-4'>
     <PageTitle>Mailbox</PageTitle>
     {loaderData.emails.length === 0 ? (
-      <p>
-        No emails yet. Send one from the{` `}
-        <Link to='/dev/email'>sample email page</Link>.
-      </p>
+      <p>No emails yet. Signing up sends one.</p>
     ) : (
       <MailboxEmails emails={loaderData.emails} />
     )}
