@@ -19,7 +19,7 @@ Read these with the Claude Docs connector, not by fetching the URLs.
 ```
 mmmm
 ├── server.ts           # Express entry point: middleware order, then Vite in development or the build in production
-├── server/             # Express middleware: security headers, cross-origin checks, rate limits, request logs
+├── server/             # Express middleware: security headers, cross-origin checks, rate limits, the client's IP address, request logs
 │   └── app.ts          # Hands requests to React Router with the request's CSP nonce
 ├── app/
 │   ├── root.tsx        # Document layout and error boundary
@@ -100,10 +100,11 @@ missing variable.
 - Set up a form with `useValidatedForm` from
   `app/components/use-validated-form.ts`, and answer a failed submission with
   `rejectSubmission` from `app/reject-submission.server.ts`, which never sends a
-  password back. Answer an address Better Auth refuses with `rejectRefusedEmail`
+  password back. Answer Better Auth's refusals, such as too many attempts, with
+  `rejectAuthError`
 - Put a field's error under its input, and a form's error below its submit
-  button as a `Notice` from `app/components/notice.tsx`, so nothing above them
-  moves when they appear. Forms validate only once first submitted
+  button as a `FormError` from `app/components/form-error.tsx`, so nothing above
+  them moves when they appear. Forms validate only once first submitted
 - Check every free-text field on the server with `serverFreeTextSchema` from
   `app/free-text.server.ts`, which adds the length limit and the offensive word
   filter. The browser bundle leaves the filter out
@@ -116,6 +117,8 @@ missing variable.
 - Nest routes that need a signed-in educator under a layout route with the
   `requireSignedInEducator` middleware, as `app/routes/settings.tsx` does, and
   read the educator there with `readRequiredEducator`
+- Pass `headers: request.headers` to every `auth.api` call. The auth limits read
+  the client's IP address from them, and throw without it
 - Force request fields that no client may choose in `FORCED_FIELDS` in
   `app/auth.server.ts`, because `/api/auth/*` is public and skips the app's
   routes
@@ -128,8 +131,10 @@ missing variable.
 - Send email with `sendEmail` from `app/email.server.ts`, with a body built on
   `EmailLayout`, `EmailParagraph`, and `EmailAction` from
   `app/emails/layout.server.tsx`. Name email modules `*.server.tsx`
-- Send an email that reports a change already made with `sendEmailOrLog`, so a
-  failed send can't fail the request
+- `sendEmail` skips an address's emails past 10 an hour without failing, so a
+  form can't flood an inbox. Send a security notice about a change already made
+  with `sendNoticeOrLog`, which skips the cap and logs a failure instead of
+  failing the request
 - With `EMAIL_TRANSPORT=mailbox`, email stays in memory. Read it at
   `/dev/mailbox`, or with `readMailbox` in a test. Only `APP_ENV=development`
   and `APP_ENV=test` may use the mailbox, so the end-to-end tests set
@@ -138,6 +143,9 @@ missing variable.
 ## Security
 
 - Never store or log client IP addresses. Rate limits keep them in memory only
+- Read the client's IP address from the `CLIENT_IP_HEADER` that
+  `server/client-ip.ts` sets, never from `X-Forwarded-For`, which clients can
+  forge. The auth limits in `app/auth-limits.server.ts` key on it
 - Add request middleware after the `/healthz` route in `server.ts`, so Fly.io's
   health checks skip it. Static assets skip it too
 - Staging (`APP_ENV=staging`) asks every request for `STAGING_PASSWORD`, and
@@ -178,3 +186,6 @@ missing variable.
   with `expectNoAxeViolations` from `test/axe.ts`
 - `e2e/*.test.ts` files run in Playwright against the production build. Read the
   email a test sent with `readEmails` and `readActionLink` from `e2e/mailbox.ts`
+- End-to-end tests all come from one IP address, so a run gets 100 failed
+  sign-ins every 15 minutes, and 100 sign-ups, reset requests, and resends an
+  hour, before the auth limits refuse it

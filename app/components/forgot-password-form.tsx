@@ -3,6 +3,7 @@ import type { SubmissionResult } from '@conform-to/react'
 import { Form, Link } from 'react-router'
 import { forgotPasswordSchema, RESET_EXPIRES_IN_HOURS } from '../auth-forms.ts'
 import { Button } from './button.tsx'
+import { FormError } from './form-error.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
@@ -51,6 +52,7 @@ export const ForgotPasswordForm = ({
             Send reset link
           </Button>
         </div>
+        <FormError form={form} />
       </Form>
       <p>
         Remembered it? <Link to='/sign-in'>Sign in</Link>

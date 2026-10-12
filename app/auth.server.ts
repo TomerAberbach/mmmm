@@ -9,8 +9,9 @@ import {
   MIN_PASSWORD_LENGTH,
   RESET_EXPIRES_IN_HOURS,
 } from './auth-forms.ts'
+import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
 import { prisma } from './db.server.ts'
-import { sendEmail, sendEmailOrLog } from './email.server.ts'
+import { sendEmail, sendEmailOrLog, sendNoticeOrLog } from './email.server.ts'
 import { alreadySignedUpEmail } from './emails/already-signed-up.server.tsx'
 import { confirmEmail } from './emails/confirm-email.server.tsx'
 import { passwordChangedEmail } from './emails/password-changed.server.tsx'
@@ -55,6 +56,11 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   if (!body) {
     return
   }
+  await limitAuthRequest({
+    path: ctx.path,
+    email: body.email,
+    headers: ctx.headers,
+  })
   // Checks the name before sign-up looks up the address, so a rejected name
   // answers the same whether or not the address has an educator
   if (PATHS_WITH_NAME.has(ctx.path) && body.name !== undefined) {
@@ -128,24 +134,29 @@ const deleteUnconfirmedEducator = async (
   }
 }
 
-// Notifies the owner however the password changed, so a stolen session can't
-// change it quietly
-const afterAuthRequest = createAuthMiddleware(ctx => {
-  const educator = ctx.context.session?.user
-  if (
-    ctx.path !== `/change-password` ||
-    ctx.context.returned instanceof APIError ||
-    !educator
-  ) {
-    return Promise.resolve()
+// Refunds the attempts of a request that made a session. Notifies the owner
+// however the password changed, so a stolen session can't change it quietly
+const afterAuthRequest = createAuthMiddleware(async ctx => {
+  if (ctx.context.returned instanceof APIError) {
+    return
   }
-  notifyPasswordChanged(educator.email)
-  return Promise.resolve()
+  // Only a request that made a session succeeded, whatever the response says
+  if (ctx.context.newSession) {
+    await refundAuthRequest({
+      path: ctx.path,
+      email: (ctx.body as Record<string, unknown> | undefined)?.email,
+      headers: ctx.headers,
+    })
+  }
+  const educator = ctx.context.session?.user
+  if (ctx.path === `/change-password` && educator) {
+    notifyPasswordChanged(educator.email)
+  }
 })
 
 // Doesn't wait for the email, which can't undo the change
 const notifyPasswordChanged = (to: string): void => {
-  void sendEmailOrLog(
+  void sendNoticeOrLog(
     passwordChangedEmail({ to, resetUrl: FORGOT_PASSWORD_URL.href }),
   )
 }
@@ -196,7 +207,10 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendOnSignUp: true,
-    sendOnSignIn: true,
+    // Signing in to an unconfirmed educator sends nothing, so whoever set its
+    // password can't flood the address. The educator resends from the page
+    // sign-in shows, which the resend limit counts
+    sendOnSignIn: false,
     // Off because whoever set the password may not own the address. A
     // confirmed educator still signs in with the password
     autoSignInAfterVerification: false,

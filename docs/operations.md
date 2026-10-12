@@ -59,10 +59,12 @@ production serves the same files.
 fly deploy --ha=false
 ```
 
-`--ha=false` keeps one machine, because rate limits are stored in memory. Each
-release empties the database, pushes the schema, and seeds it, so staging starts
-from fresh data. The seed creates `educator@example.com` with the password
-`password`.
+`--ha=false` keeps one machine, because rate limits are stored in memory. A
+stopped machine forgets every count, so the production app must also set
+`min_machines_running = 1`. Staging can stop when idle, since its password keeps
+strangers out. Each release empties the database, pushes the schema, and seeds
+it, so staging starts from fresh data. The seed creates `educator@example.com`
+with the password `password`.
 
 The machine stops when idle and starts on the next request. `/healthz` reports
 whether the database answers, and it skips the staging password.

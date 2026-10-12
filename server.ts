@@ -3,6 +3,7 @@ import express from 'express'
 import type { Express, RequestHandler } from 'express'
 import { checkEmailSettings } from './app/email-settings.server.ts'
 import { readAppEnv, requireEnv } from './app/env.server.ts'
+import { forwardClientIp } from './server/client-ip.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
 import {
@@ -74,6 +75,7 @@ server.use(
   rejectCrossOriginRequests,
   // Generous, because a whole school can share one IP address
   limitRequestsPerIp(1000),
+  forwardClientIp,
   ...(STAGING_PASSWORD ? [requireStagingPassword(STAGING_PASSWORD)] : []),
   app,
 )

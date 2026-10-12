@@ -3,6 +3,7 @@ import type { SubmissionResult } from '@conform-to/react'
 import { Form, Link } from 'react-router'
 import { signInSchema } from '../auth-forms.ts'
 import { Button } from './button.tsx'
+import { FormError } from './form-error.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { PlayerNote } from './player-note.tsx'
@@ -25,7 +26,6 @@ export const SignInForm = ({
     signInSchema,
     lastResult,
   )
-  const formError = form.errors?.[0]
   // A submission's result replaces where the link left the educator
   const shownNotice = lastResult ? undefined : notice
   return (
@@ -71,12 +71,7 @@ export const SignInForm = ({
           </Button>
           <Link to='/forgot-password'>Forgot password?</Link>
         </div>
-        {/* Below the button, so the fields above stay put when it appears */}
-        {formError ? (
-          <Notice kind='alert' id={form.errorId}>
-            {formError}
-          </Notice>
-        ) : null}
+        <FormError form={form} />
       </Form>
       <p>
         New to MMMM? <Link to='/sign-up'>Sign up</Link>

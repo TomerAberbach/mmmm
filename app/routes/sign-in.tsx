@@ -7,7 +7,10 @@ import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import {
+  rejectAuthError,
+  rejectSubmission,
+} from '~/reject-submission.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) =>
@@ -44,22 +47,23 @@ export const action = async ({ request }: Route.ActionArgs) => {
     })
     return redirect(`/`, { headers })
   } catch (error) {
-    if (!(error instanceof APIError)) {
-      throw error
+    if (error instanceof APIError) {
+      if (error.body?.code === `EMAIL_NOT_VERIFIED`) {
+        return { unconfirmed: email }
+      }
+      if (error.body?.code === `INVALID_EMAIL_OR_PASSWORD`) {
+        return rejectSubmission(submission, {
+          formErrors: [`Email address or password is incorrect`],
+        })
+      }
     }
-    // Signing in resends the confirmation link
-    if (error.body?.code === `EMAIL_NOT_VERIFIED`) {
-      return { sentTo: email }
-    }
-    return rejectSubmission(submission, {
-      formErrors: [`Email address or password is incorrect`],
-    })
+    return rejectAuthError(submission, error)
   }
 }
 
 const SignIn = ({ loaderData, actionData }: Route.ComponentProps) =>
-  actionData && `sentTo` in actionData ? (
-    <CheckEmail email={actionData.sentTo} />
+  actionData && `unconfirmed` in actionData ? (
+    <CheckEmail email={actionData.unconfirmed} reason='unconfirmed' />
   ) : (
     <SignInForm lastResult={actionData?.result} notice={loaderData.notice} />
   )

@@ -7,7 +7,7 @@ import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
 import {
-  rejectRefusedEmail,
+  rejectAuthError,
   rejectSubmission,
 } from '~/reject-submission.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
@@ -32,14 +32,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       headers: request.headers,
     })
   } catch (error) {
-    return rejectRefusedEmail(submission, error)
+    return rejectAuthError(submission, error)
   }
   return { sentTo: email }
 }
 
 const SignUp = ({ actionData }: Route.ComponentProps) =>
   actionData && `sentTo` in actionData ? (
-    <CheckEmail email={actionData.sentTo} />
+    <CheckEmail email={actionData.sentTo} reason='signed-up' />
   ) : (
     <SignUpForm lastResult={actionData?.result} />
   )

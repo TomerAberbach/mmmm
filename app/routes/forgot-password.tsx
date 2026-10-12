@@ -7,7 +7,10 @@ import {
   ForgotPasswordForm,
   ResetLinkSent,
 } from '~/components/forgot-password-form.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import {
+  rejectAuthError,
+  rejectSubmission,
+} from '~/reject-submission.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) =>
@@ -24,7 +27,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   const { email } = submission.value
-  await auth.api.requestPasswordReset({ body: { email } })
+  try {
+    await auth.api.requestPasswordReset({
+      body: { email },
+      headers: request.headers,
+    })
+  } catch (error) {
+    return rejectAuthError(submission, error)
+  }
   return { sentTo: email }
 }
 
