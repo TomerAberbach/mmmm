@@ -1,6 +1,7 @@
 import displayFont from '@fontsource/alfa-slab-one/files/alfa-slab-one-latin-400-normal.woff2?url'
 import bodyFont from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url'
 import type { ReactNode } from 'react'
+import { RouterProvider } from 'react-aria-components'
 import {
   isRouteErrorResponse,
   Link,
@@ -9,6 +10,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useHref,
+  useNavigate,
   useRouteLoaderData,
 } from 'react-router'
 import type { Route } from './+types/root.ts'
@@ -41,6 +44,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => ({
 export const Layout = ({ children }: { children: ReactNode }) => {
   // Missing when the root loader itself failed
   const rootData = useRouteLoaderData<typeof loader>(`root`)
+  const navigate = useNavigate()
   return (
     // Browser extensions, such as Browserpass, add attributes to <html> before
     // hydration
@@ -55,11 +59,17 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         <Links nonce='' />
       </head>
       <body className='flex min-h-screen flex-col'>
-        <SiteHeader educator={rootData?.educator} />
-        <main className='mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6'>
-          {children}
-        </main>
-        <SiteFooter supportEmail={rootData?.supportEmail} />
+        {/* React Aria links navigate through the router */}
+        <RouterProvider
+          navigate={(href, options) => void navigate(href, options)}
+          useHref={useHref}
+        >
+          <SiteHeader educator={rootData?.educator} />
+          <main className='mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6'>
+            {children}
+          </main>
+          <SiteFooter supportEmail={rootData?.supportEmail} />
+        </RouterProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

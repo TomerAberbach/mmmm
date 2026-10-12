@@ -52,7 +52,7 @@ pnpm db:seed
 fly deploy --ha=false   # Deploy staging. See docs/operations.md
 
 # Run one test file
-pnpm test --run app/routes/home.test.tsx
+pnpm test --run app/components/signed-out-home.test.tsx
 pnpm test:e2e e2e/home.test.ts  # Builds first
 ```
 
@@ -82,7 +82,7 @@ missing variable.
 - Use Tailwind's scales, not arbitrary values such as `text-[13px]`. When a
   scale lacks a value, add it to the theme in `app/app.css`
 - Build interactive controls on React Aria Components, as in
-  `app/components/button.tsx`
+  `app/components/button.tsx`. Style a link as a button with `ButtonLink`
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
   returns a `ConfirmResult`, and the dialog shows any `error`
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
@@ -141,6 +141,10 @@ missing variable.
   `SECRET_PATH` in `server/logging.ts`
 - The content security policy allows only scripts with the request's nonce. Read
   it from `nonceContext` in `app/nonce.ts`
+- The policy blocks `<style>` elements, except ones whose hash `styleSrc` in
+  `server/security.ts` lists, such as React Aria's pressable style. When a React
+  Aria upgrade fails `e2e/security.test.ts` with a blocked inline style, update
+  the hash from the error
 - `pnpm dev` runs Node with `--conditions=development`, so Node and Vite load
   the same copy of `react-router`. Without it, `getLoadContext` fails
 

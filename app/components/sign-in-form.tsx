@@ -34,7 +34,7 @@ export const SignInForm = ({
       <PlayerNote />
       {shownNotice === `confirmed` ? (
         <Notice kind='status'>
-          Your email address is confirmed. Sign in to start running contests.
+          Your email address is confirmed. Sign in to create your first contest.
         </Notice>
       ) : null}
       {shownNotice === `link-invalid` ? (

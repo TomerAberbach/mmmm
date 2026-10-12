@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { SIGNED_OUT_HOME_HEADING } from './home-page.ts'
 
 test(`the footer links the privacy policy`, async ({ page }) => {
   await page.goto(`/`)
@@ -32,6 +33,6 @@ test(`printing hides the header and footer`, async ({ page }) => {
   await expect(page.getByRole(`banner`)).toBeHidden()
   await expect(page.getByRole(`contentinfo`)).toBeHidden()
   await expect(
-    page.getByRole(`heading`, { name: `March Mammal Madness Manager` }),
+    page.getByRole(`heading`, { name: SIGNED_OUT_HOME_HEADING }),
   ).toBeVisible()
 })

@@ -42,7 +42,7 @@
   }
 
   /* Color alone doesn't mark a link inside text, per WCAG 1.4.1. Navigation
-     in the header and footer opts out */
+     in the header and footer, and links styled as buttons, opt out */
   a {
     @apply text-accent-strong underline underline-offset-2;
   }
