@@ -16,11 +16,10 @@ test.each([
   expect(redactPath(path)).toBe(redacted)
 })
 
-test(`requests are logged without query strings or health checks`, async () => {
+test(`requests are logged without query strings`, async () => {
   const log = vi.spyOn(console, `log`).mockImplementation(() => {})
   const url = await serve(logRequests)
 
-  await fetch(new URL(`/healthz`, url))
   await fetch(new URL(`/contests?token=secret`, url))
 
   await vi.waitFor(() => {

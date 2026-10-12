@@ -74,7 +74,6 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
       : `Something went wrong`
   return (
     <div className='flex flex-col gap-4'>
-      <title>{heading}</title>
       <PageTitle>{heading}</PageTitle>
       <Link to='/' className='font-semibold'>
         Go to the home page

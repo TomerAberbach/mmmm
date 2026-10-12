@@ -26,11 +26,9 @@ const handleRequest = async (
 
   const nonce = loadContext.get(nonceContext)
   const userAgent = request.headers.get(`user-agent`)
-  // Bots and SPA mode wait for all content so the response is complete
+  // Bots wait for all content so the response is complete
   const readyOption: keyof RenderToPipeableStreamOptions =
-    (userAgent && isbot(userAgent)) || routerContext.isSpaMode
-      ? `onAllReady`
-      : `onShellReady`
+    userAgent && isbot(userAgent) ? `onAllReady` : `onShellReady`
 
   return new Promise((resolve, reject) => {
     let shellRendered = false

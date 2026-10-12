@@ -14,6 +14,8 @@ jobs:
     permissions: {}
     # pg_dump must be at least the server's version, 18
     container: postgres:18
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install age and the AWS CLI
         run:

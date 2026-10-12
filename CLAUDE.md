@@ -80,12 +80,16 @@ missing variable.
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
   returns a `ConfirmResult`, and the dialog shows any `error`
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
+- Give each page a `PageTitle`, which sets both its heading and its tab title,
+  instead of a `meta` export
 - Delete a `routes/dev.*` page in the commit that first uses its component on a
   real page
 
 ## Security
 
 - Never store or log client IP addresses. Rate limits keep them in memory only
+- Add request middleware after the `/healthz` route in `server.ts`, so Fly.io's
+  health checks skip it. Static assets skip it too
 - Staging (`APP_ENV=staging`) asks every request for `STAGING_PASSWORD`, and
   refuses to start without it, so seeded accounts can use `password`
 - Never ask for or handle secret values. Give the user a command to set them

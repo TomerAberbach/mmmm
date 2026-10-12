@@ -24,5 +24,4 @@ COPY --from=build /app/server ./server
 COPY --from=build /app/prisma ./prisma
 # The seed imports the server-only modules and the generated client
 COPY --from=build /app/app ./app
-EXPOSE 3000
 CMD ["node", "server.ts"]
