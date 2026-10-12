@@ -31,6 +31,7 @@ mmmm
 │   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
 ├── prisma/             # Schema and seed
 ├── test/database.ts    # Creates a throwaway database for each Vitest and Playwright run
+├── docs/operations.md  # Accounts, secrets, deploys, and backups
 └── e2e/                # Playwright tests against the production build
 ```
 
@@ -48,6 +49,7 @@ pnpm typecheck  # Generate route types, then run tsc
 pnpm knip       # Find unused files, dependencies, and exports
 pnpm db:reset   # Push the schema to an empty database, regenerate the client, and reseed
 pnpm db:seed
+fly deploy --ha=false   # Deploy staging. See docs/operations.md
 
 # Run one test file
 pnpm test --run app/routes/home.test.tsx
@@ -84,6 +86,10 @@ missing variable.
 ## Security
 
 - Never store or log client IP addresses. Rate limits keep them in memory only
+- Staging (`APP_ENV=staging`) asks every request for `STAGING_PASSWORD`, and
+  refuses to start without it, so seeded accounts can use `password`
+- Never ask for or handle secret values. Give the user a command to set them
+  from their own terminal, as `docs/operations.md` does
 - Logs drop query strings. Add each path segment that holds a secret to
   `SECRET_PATH` in `server/logging.ts`
 - The content security policy allows only scripts with the request's nonce. Read

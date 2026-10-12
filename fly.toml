@@ -1,0 +1,30 @@
+app = 'mmmm-staging'
+primary_region = 'iad'
+
+[deploy]
+  # Staging has no migrations, so each release resets the schema and reseeds
+  # Calls Prisma directly, because pnpm would first try to install the dev
+  # dependencies the image leaves out
+  release_command = "sh -c 'node_modules/.bin/prisma db push --force-reset && node_modules/.bin/prisma db seed'"
+
+[env]
+  APP_ENV = 'staging'
+  BETTER_AUTH_URL = 'https://mmmm-staging.fly.dev'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = '10s'
+    interval = '30s'
+    method = 'GET'
+    path = '/healthz'
+    timeout = '5s'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
