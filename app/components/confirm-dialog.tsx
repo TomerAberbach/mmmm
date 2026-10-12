@@ -22,6 +22,9 @@ type ConfirmDialogProps = {
   // The route action that makes the change. It returns a ConfirmResult
   action: string
   fields?: Record<string, string>
+  // Lets the page read the result with `useFetcher({ key })` once the dialog
+  // closes
+  fetcherKey?: string
 }
 
 export type ConfirmResult = { ok: true } | { error: string }
@@ -38,9 +41,10 @@ export const ConfirmDialog = ({
   confirmLabel,
   action,
   fields = NO_FIELDS,
+  fetcherKey,
 }: ConfirmDialogProps) => {
   const [isOpen, setIsOpen] = useState(false)
-  const fetcher = useFetcher<ConfirmResult>()
+  const fetcher = useFetcher<ConfirmResult>({ key: fetcherKey })
   const result = fetcher.state === `idle` ? fetcher.data : undefined
   const descriptionId = useId()
 

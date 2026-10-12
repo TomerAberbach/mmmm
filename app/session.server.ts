@@ -1,5 +1,5 @@
 import { parseSetCookieHeader } from 'better-auth/cookies'
-import { createContext } from 'react-router'
+import { createContext, redirect } from 'react-router'
 import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
 import { auth } from './auth.server.ts'
 
@@ -44,6 +44,26 @@ export const loadSignedInEducator: MiddlewareFunction<Response> = async (
 export const readSignedInEducator = (
   context: Readonly<RouterContextProvider>,
 ): Promise<SignedInEducator | null> => context.get(signedInEducatorContext)()
+
+const requiredEducatorContext = createContext<SignedInEducator>()
+
+// Sends signed-out visitors to sign in. Routes below it read the educator with
+// `readRequiredEducator`
+export const requireSignedInEducator: MiddlewareFunction<Response> = async (
+  { context },
+  next,
+) => {
+  const educator = await readSignedInEducator(context)
+  if (!educator) {
+    return redirect(`/sign-in`)
+  }
+  context.set(requiredEducatorContext, educator)
+  return next()
+}
+
+export const readRequiredEducator = (
+  context: Readonly<RouterContextProvider>,
+): SignedInEducator => context.get(requiredEducatorContext)
 
 const appendCookiesNotSet = (target: Headers, source: Headers): void => {
   const namesSet = new Set(target.getSetCookie().map(cookieName))

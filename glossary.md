@@ -25,16 +25,17 @@ for a **Player**'s **Draft** or **Submission**.
 
 ## People
 
-| Term                  | Definition                                                             | Aliases to avoid                |
-| --------------------- | ---------------------------------------------------------------------- | ------------------------------- |
-| **Admin**             | An **Educator** whose confirmed email address is on the **Admin list** | Operator, superuser             |
-| **Admin list**        | The admin email addresses in the app's configuration                   | `ADMIN_EMAIL`                   |
-| **Educator**          | A person who signs up and runs **Contests**                            | Teacher, user, account          |
-| **Player**            | A person who fills out a bracket through a **Contest link**            | Student, participant, submitter |
-| **Organization**      | The **Educators** who share a confirmed email domain                   | School, district                |
-| **Credential**        | One way an **Educator** signs in, such as an email and password        | Account, login                  |
-| **Session**           | One signed-in browser of an **Educator**                               | Login                           |
-| **Confirmation link** | The emailed link that confirms an **Educator**'s email address         | Verification link, verify link  |
+| Term                  | Definition                                                             | Aliases to avoid                  |
+| --------------------- | ---------------------------------------------------------------------- | --------------------------------- |
+| **Admin**             | An **Educator** whose confirmed email address is on the **Admin list** | Operator, superuser               |
+| **Admin list**        | The admin email addresses in the app's configuration                   | `ADMIN_EMAIL`                     |
+| **Educator**          | A person who signs up and runs **Contests**                            | Teacher, user, account            |
+| **Player**            | A person who fills out a bracket through a **Contest link**            | Student, participant, submitter   |
+| **Organization**      | The **Educators** who share a confirmed email domain                   | School, district                  |
+| **Credential**        | One way an **Educator** signs in, such as an email and password        | Account, login                    |
+| **Session**           | One signed-in browser of an **Educator**                               | Login                             |
+| **Confirmation link** | The emailed link that confirms an **Educator**'s email address         | Verification link, verify link    |
+| **Reset link**        | The emailed link that sets a new password for an **Educator**          | Password reset token, reset token |
 
 ## Contests
 
@@ -81,4 +82,6 @@ for a **Player**'s **Draft** or **Submission**.
 - An **Educator** has one or more **Credentials**
 - A **Session** belongs to exactly one **Educator**
 - A **Confirmation link** confirms exactly one **Educator**'s email address
+- A **Reset link** sets exactly one **Educator**'s password and confirms their
+  email address
 - A **Contest** counts toward at most one **Organization**

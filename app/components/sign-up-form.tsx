@@ -23,6 +23,7 @@ export const SignUpForm = ({
       <PlayerNote />
       <Form
         method='post'
+        action='/sign-up'
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >

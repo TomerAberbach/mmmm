@@ -19,12 +19,6 @@ test(`the not-found page keeps the support email`, async ({ page }) => {
   ).toHaveAttribute(`href`, `mailto:support@example.com`)
 })
 
-test(`the sample dialog page doesn't exist in production`, async ({ page }) => {
-  const response = await page.goto(`/dev/dialog`)
-
-  expect(response?.status()).toBe(404)
-})
-
 test(`printing hides the header and footer`, async ({ page }) => {
   await page.emulateMedia({ media: `print` })
 

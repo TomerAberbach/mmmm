@@ -22,6 +22,13 @@ export const sendEmail = async (email: Email): Promise<void> => {
   await sendWithResend(rendered)
 }
 
+// Logs a failure instead of throwing it, for an email sent after the change it
+// reports has already happened
+export const sendEmailOrLog = (email: Email): Promise<void> =>
+  sendEmail(email).catch((error: unknown) => {
+    console.error(`Failed to send the email "${email.subject}"`, error)
+  })
+
 const renderEmail = async ({
   to,
   subject,

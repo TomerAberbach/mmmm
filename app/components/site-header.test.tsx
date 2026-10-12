@@ -15,3 +15,19 @@ test(`the wordmark links to the home page`, async () => {
     .toHaveAttribute(`href`, `/`)
   await expectNoAxeViolations()
 })
+
+test(`a signed-in educator's name links to their settings`, async () => {
+  const Stub = createRoutesStub([
+    {
+      path: `/`,
+      Component: () => <SiteHeader educator={{ name: `Ms. Frizzle` }} />,
+    },
+  ])
+
+  await render(<Stub />)
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Ms. Frizzle` }))
+    .toHaveAttribute(`href`, `/settings`)
+  await expectNoAxeViolations()
+})

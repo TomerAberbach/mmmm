@@ -150,3 +150,16 @@ export const EmailAction = ({
     </Section>
   </>
 )
+
+// A link inside a paragraph, for a secondary action beside EmailAction
+export const EmailLink = ({
+  href,
+  children,
+}: {
+  href: string
+  children: string
+}) => (
+  <Link href={href} className='text-accent-strong underline'>
+    {children}
+  </Link>
+)

@@ -10,8 +10,9 @@ export default [
     },
   },
   {
-    // React Router reads the route config at build time
-    files: [`app/routes.ts`],
+    // React Router reads the route config at build time, and e2e/ holds only
+    // Playwright tests and their helpers
+    files: [`app/routes.ts`, `e2e/**`],
     rules: {
       'import/no-extraneous-dependencies': [`error`, { devDependencies: true }],
     },

@@ -25,7 +25,12 @@ export const SiteHeader = ({
           action='/sign-out'
           className='flex items-center gap-4'
         >
-          <span className='font-semibold'>{educator.name}</span>
+          <Link
+            to='/settings'
+            className='font-semibold text-ink no-underline hover:underline'
+          >
+            {educator.name}
+          </Link>
           <Button type='submit' variant='secondary'>
             Sign out
           </Button>
