@@ -1,0 +1,41 @@
+name: Backup
+
+on:
+  schedule:
+    # 08:00 UTC is 3 or 4 AM in US Eastern time
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Dump staging
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions: {}
+    # pg_dump must be at least the server's version, 18
+    container: postgres:18
+    steps:
+      - name: Install age and the AWS CLI
+        run:
+          apt-get update && apt-get install -y --no-install-recommends age
+          awscli
+
+      - name: Dump, encrypt, and upload
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_BACKUP_DATABASE_URL }}
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BUCKET: ${{ vars.BACKUP_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: auto
+          AWS_ENDPOINT_URL: https://fly.storage.tigris.dev
+        # Encrypts to a public key, so only the private key, kept offline, can
+        # read a dump. The bucket deletes dumps after 30 days
+        run: |
+          set -euo pipefail
+          key="staging/$(date -u +%Y-%m-%dT%H%M%SZ).dump.age"
+          pg_dump --format=custom --no-owner "$DATABASE_URL" \
+            | age --recipient "$AGE_RECIPIENT" \
+            | aws s3 cp - "s3://$BUCKET/$key"
+          echo "Uploaded $key"

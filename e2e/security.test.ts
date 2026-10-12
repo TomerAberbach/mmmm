@@ -32,7 +32,7 @@ test(`every script on the page has the policy's nonce`, async ({ page }) => {
 test(`a form posted from another site is rejected`, async ({ request }) => {
   const response = await request.post(`/api/auth/sign-in/email`, {
     headers: { origin: `https://evil.example`, 'sec-fetch-site': `cross-site` },
-    data: { email: `educator@example.com`, password: `educator-password` },
+    data: { email: `educator@example.com`, password: `password` },
   })
 
   expect(response.status()).toBe(403)

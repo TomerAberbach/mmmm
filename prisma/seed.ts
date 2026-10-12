@@ -4,7 +4,9 @@ import { prisma } from '../app/db.server.ts'
 const EDUCATOR = {
   name: `Ada Lovelace`,
   email: `educator@example.com`,
-  password: `educator-password`,
+  // Staging asks for its own password first, so seeded accounts can share an
+  // easy one
+  password: `password`,
 }
 
 const seedEducator = async () => {

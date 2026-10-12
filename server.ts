@@ -1,6 +1,7 @@
 import compression from 'compression'
 import express from 'express'
 import type { Express, RequestHandler } from 'express'
+import { requireEnv } from './app/env.server.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
 import {
@@ -8,10 +9,12 @@ import {
   setContentSecurityPolicy,
   setSecurityHeaders,
 } from './server/security.ts'
+import { requireStagingPassword } from './server/staging-password.ts'
 
 const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
 const IS_PRODUCTION = process.env.NODE_ENV !== `development`
+const IS_STAGING = process.env.APP_ENV === `staging`
 
 // Each serves its assets, then the app behind `appMiddleware`, which assets
 // skip
@@ -66,6 +69,10 @@ const appMiddleware = [
   ...setContentSecurityPolicy(IS_PRODUCTION),
   // Generous, because a whole school can share one IP address
   limitRequestsPerIp(1000),
+  // Staging fails to start without its password, so it's never public
+  ...(IS_STAGING
+    ? [requireStagingPassword(requireEnv(`STAGING_PASSWORD`))]
+    : []),
 ]
 if (IS_PRODUCTION) {
   await serveProductionApp(server, appMiddleware)
