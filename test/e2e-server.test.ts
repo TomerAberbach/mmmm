@@ -15,7 +15,13 @@ test(`the e2e server drops its database when the app fails to start`, async () =
 
   // Staging without its password stops the server during startup
   const start = promisify(execFile)(`node`, [`e2e/server.ts`], {
-    env: { ...process.env, APP_ENV: `staging`, STAGING_PASSWORD: `` },
+    env: {
+      ...process.env,
+      APP_ENV: `staging`,
+      EMAIL_TRANSPORT: `resend`,
+      RESEND_API_KEY: `re_test`,
+      STAGING_PASSWORD: ``,
+    },
   })
 
   await expect(start).rejects.toThrow(`Set STAGING_PASSWORD`)

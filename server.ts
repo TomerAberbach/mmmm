@@ -2,7 +2,7 @@ import compression from 'compression'
 import express from 'express'
 import type { Express, RequestHandler } from 'express'
 import { checkEmailSettings } from './app/email-settings.server.ts'
-import { requireEnv } from './app/env.server.ts'
+import { readAppEnv, requireEnv } from './app/env.server.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
 import {
@@ -18,7 +18,7 @@ const IS_PRODUCTION = process.env.NODE_ENV !== `development`
 checkEmailSettings()
 // Staging fails to start without its password, so it's never public
 const STAGING_PASSWORD =
-  process.env.APP_ENV === `staging` ? requireEnv(`STAGING_PASSWORD`) : null
+  readAppEnv() === `staging` ? requireEnv(`STAGING_PASSWORD`) : null
 
 // Each serves its assets and returns the app's request handler
 const serveDevelopmentApp = async (

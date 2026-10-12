@@ -17,11 +17,18 @@ import appCss from '../app.css?raw'
 import { LETTER_COLORS } from '../components/letter-colors.tsx'
 import { requireEnv } from '../env.server.ts'
 
+// Email clients support only hex colors, so any other color is an error
 const readAppColors = (): Record<string, string> =>
   Object.fromEntries(
     Array.from(
-      appCss.matchAll(/--color-(?<name>[\w-]+):\s*(?<value>#[\da-f]+);/giu),
-      ({ groups: { name = ``, value = `` } = {} }) => [name, value],
+      appCss.matchAll(/--color-(?<name>[\w-]+):(?<value>[^;]+);/gu),
+      ({ groups: { name = ``, value: rawValue = `` } = {} }) => {
+        const value = rawValue.trim()
+        if (!/^#[\da-f]+$/iu.test(value)) {
+          throw new Error(`Set --color-${name} in app.css to a hex color`)
+        }
+        return [name, value]
+      },
     ),
   )
 
@@ -34,6 +41,7 @@ const EMAIL_THEME = {
     colors: readAppColors(),
     fontFamily: {
       sans: [
+        `Barlow`,
         `-apple-system`,
         `BlinkMacSystemFont`,
         `"Segoe UI"`,

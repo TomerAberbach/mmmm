@@ -1,6 +1,7 @@
 import { render, toPlainText } from '@react-email/render'
 import type { FormatCallback } from 'html-to-text'
 import type { ReactElement } from 'react'
+import { z } from 'zod'
 import { readEmailTransport } from './email-settings.server.ts'
 import { requireEnv } from './env.server.ts'
 import { saveToMailbox } from './mailbox.server.ts'
@@ -10,27 +11,22 @@ export type Email = {
   to: string
   subject: string
   body: ReactElement
-  // Resend sends an email once per key, so a retried request can't send twice
-  idempotencyKey?: string
 }
 
-export const sendEmail = async ({
-  idempotencyKey,
-  ...email
-}: Email): Promise<void> => {
+export const sendEmail = async (email: Email): Promise<void> => {
   const rendered = await renderEmail(email)
   if (readEmailTransport() === `mailbox`) {
     saveToMailbox(rendered)
     return
   }
-  await sendWithResend(rendered, idempotencyKey)
+  await sendWithResend(rendered)
 }
 
 const renderEmail = async ({
   to,
   subject,
   body,
-}: Omit<Email, `idempotencyKey`>): Promise<RenderedEmail> => {
+}: Email): Promise<RenderedEmail> => {
   const html = await render(body)
   return {
     from: requireEnv(`EMAIL_FROM`),
@@ -63,23 +59,27 @@ const PLAIN_TEXT_OPTIONS = {
 
 const RESEND_TIMEOUT_MS = 10_000
 
-const sendWithResend = async (
-  email: RenderedEmail,
-  idempotencyKey: string | undefined,
-): Promise<void> => {
+const sendWithResend = async (email: RenderedEmail): Promise<void> => {
   const response = await fetch(`https://api.resend.com/emails`, {
     method: `POST`,
     headers: {
       Authorization: `Bearer ${requireEnv(`RESEND_API_KEY`)}`,
       'Content-Type': `application/json`,
-      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },
     body: JSON.stringify(email),
     signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   })
   if (!response.ok) {
     throw new Error(
-      `Resend rejected the email with ${response.status}: ${await response.text()}`,
+      `Resend rejected the email with ${response.status}: ${await readErrorName(response)}`,
     )
   }
 }
+
+// Resend's error name, such as validation_error. Its message can quote the
+// recipient's address, which logs must not hold
+const readErrorName = async (response: Response): Promise<string> =>
+  RESEND_ERROR_SCHEMA.safeParse(await response.json().catch(() => null)).data
+    ?.name ?? `unknown_error`
+
+const RESEND_ERROR_SCHEMA = z.object({ name: z.string() })

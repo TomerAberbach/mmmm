@@ -23,22 +23,18 @@ test(`the mailbox keeps the email as HTML and plain text`, async () => {
   )
 })
 
-test(`Resend receives the email with its idempotency key`, async () => {
+test(`Resend receives the email with the API key`, async () => {
   vi.stubEnv(`EMAIL_TRANSPORT`, `resend`)
   vi.stubEnv(`RESEND_API_KEY`, `re_test`)
   const resend = vi.fn<typeof fetch>().mockResolvedValue(new Response(`{}`))
   vi.stubGlobal(`fetch`, resend)
 
-  await sendEmail({
-    ...anEmail(`ada@example.com`),
-    idempotencyKey: `confirm-1`,
-  })
+  await sendEmail(anEmail(`ada@example.com`))
 
   const [url, init] = resend.mock.calls[0] ?? []
   expect(url).toBe(`https://api.resend.com/emails`)
   expect(init?.headers).toMatchObject({
     Authorization: `Bearer re_test`,
-    'Idempotency-Key': `confirm-1`,
   })
   expect(JSON.parse(init?.body as string)).toMatchObject({
     to: `ada@example.com`,
@@ -46,20 +42,22 @@ test(`Resend receives the email with its idempotency key`, async () => {
   })
 })
 
-test(`an email Resend rejects throws with Resend's reason`, async () => {
+test(`an email Resend rejects throws with Resend's error name, not its message`, async () => {
   vi.stubEnv(`EMAIL_TRANSPORT`, `resend`)
   vi.stubEnv(`RESEND_API_KEY`, `re_test`)
-  vi.stubGlobal(
-    `fetch`,
-    vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response(`invalid from`, { status: 422 })),
+  const rejection = Response.json(
+    {
+      name: `validation_error`,
+      message: `Invalid \`to\` field: ada@example.com`,
+    },
+    { status: 422 },
   )
+  vi.stubGlobal(`fetch`, vi.fn<typeof fetch>().mockResolvedValue(rejection))
 
   const sending = sendEmail(anEmail(`ada@example.com`))
 
   await expect(sending).rejects.toThrow(
-    `Resend rejected the email with 422: invalid from`,
+    /^Resend rejected the email with 422: validation_error$/u,
   )
 })
 

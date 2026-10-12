@@ -123,8 +123,10 @@ missing variable.
 - Send email with `sendEmail` from `app/email.server.ts`, with a body built on
   `EmailLayout`, `EmailParagraph`, and `EmailAction` from
   `app/emails/layout.server.tsx`. Name email modules `*.server.tsx`
-- With `EMAIL_TRANSPORT=mailbox`, as in development and tests, email stays in
-  memory. Read it at `/dev/mailbox`, or with `readMailbox` in a test
+- With `EMAIL_TRANSPORT=mailbox`, email stays in memory. Read it at
+  `/dev/mailbox`, or with `readMailbox` in a test. Only `APP_ENV=development`
+  and `APP_ENV=test` may use the mailbox, so the end-to-end tests set
+  `APP_ENV=test` even though they run the production build
 
 ## Security
 
