@@ -1,8 +1,11 @@
+import tailwindcss from '@tailwindcss/vite'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
 
 export default defineConfig({
+  // React Router's plugin is left out, because Vitest renders components alone
+  plugins: [tailwindcss()],
   resolve: viteConfig.resolve,
   test: {
     restoreMocks: true,
