@@ -8,4 +8,9 @@ const dropAndExit = () => {
 process.once(`SIGTERM`, dropAndExit)
 process.once(`SIGINT`, dropAndExit)
 
-await import(`../server.ts`)
+try {
+  await import(`../server.ts`)
+} catch (error) {
+  await database.drop()
+  throw error
+}
