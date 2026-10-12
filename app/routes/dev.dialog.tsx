@@ -5,8 +5,6 @@ import { ConfirmDialog } from '~/components/confirm-dialog.tsx'
 import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 
-export const meta = () => [{ title: `Sample dialog` }]
-
 let confirmationCount = 0
 
 const requireDevelopment = () => {
