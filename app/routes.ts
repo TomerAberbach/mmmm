@@ -7,5 +7,7 @@ export default [
   route(`api/auth/*`, `routes/api.auth.ts`),
   route(`healthz`, `routes/healthz.ts`),
   route(`dev/dialog`, `routes/dev.dialog.tsx`),
+  route(`dev/email`, `routes/dev.email.tsx`),
+  route(`dev/mailbox`, `routes/mailbox.tsx`),
   route(`*`, `routes/not-found.tsx`),
 ] satisfies RouteConfig

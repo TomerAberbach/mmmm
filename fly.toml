@@ -9,6 +9,8 @@ primary_region = 'iad'
 
 [env]
   APP_ENV = 'staging'
+  EMAIL_TRANSPORT = 'resend'
+  EMAIL_FROM = 'MMMM <noreply@send.mmmm.onl>'
   BETTER_AUTH_URL = 'https://mmmm-staging.fly.dev'
 
 [http_service]

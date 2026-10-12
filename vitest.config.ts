@@ -6,17 +6,24 @@ export default defineConfig({
   resolve: viteConfig.resolve,
   test: {
     restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
     projects: [
       {
         extends: true,
         test: {
           name: `node`,
           include: [`{app,server,test}/**/*.test.ts`],
+          // Vitest stubs CSS imports by default, which empties `app.css?raw`
+          css: { include: [/app\.css/u] },
           globalSetup: [`test/global-setup.ts`],
           setupFiles: [`test/setup.ts`],
           env: {
             BETTER_AUTH_SECRET: `test-secret-that-is-at-least-32-characters`,
             BETTER_AUTH_URL: `http://localhost:3000`,
+            EMAIL_TRANSPORT: `mailbox`,
+            EMAIL_FROM: `MMMM <noreply@example.com>`,
+            SUPPORT_EMAIL: `support@example.com`,
           },
         },
       },
