@@ -1,21 +1,26 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, vi } from 'vitest'
 import { sendEmail } from './email.server.ts'
-import { sampleEmail } from './emails/sample.server.tsx'
+import { confirmEmail } from './emails/confirm-email.server.tsx'
 import { readMailbox } from './mailbox.server.ts'
+
+const anEmail = (to: string) =>
+  confirmEmail({ to, url: `http://localhost:3000/confirm` })
 
 test(`the mailbox keeps the email as HTML and plain text`, async () => {
   const to = `${randomUUID()}@example.com`
 
-  await sendEmail(sampleEmail(to))
+  await sendEmail(anEmail(to))
 
   const email = readMailbox().find(sent => sent.to === to)
   expect(email).toMatchObject({
     from: `MMMM <noreply@example.com>`,
-    subject: `Test email from MMMM`,
+    subject: `Confirm your email address for MMMM`,
   })
   expect(email?.html).toContain(`<html`)
-  expect(email?.text).toContain(`Open MMMM:\nhttp://localhost:3000`)
+  expect(email?.text).toContain(
+    `Confirm email address:\nhttp://localhost:3000/confirm`,
+  )
 })
 
 test(`Resend receives the email with its idempotency key`, async () => {
@@ -25,7 +30,7 @@ test(`Resend receives the email with its idempotency key`, async () => {
   vi.stubGlobal(`fetch`, resend)
 
   await sendEmail({
-    ...sampleEmail(`ada@example.com`),
+    ...anEmail(`ada@example.com`),
     idempotencyKey: `confirm-1`,
   })
 
@@ -37,7 +42,7 @@ test(`Resend receives the email with its idempotency key`, async () => {
   })
   expect(JSON.parse(init?.body as string)).toMatchObject({
     to: `ada@example.com`,
-    subject: `Test email from MMMM`,
+    subject: `Confirm your email address for MMMM`,
   })
 })
 
@@ -51,7 +56,7 @@ test(`an email Resend rejects throws with Resend's reason`, async () => {
       .mockResolvedValue(new Response(`invalid from`, { status: 422 })),
   )
 
-  const sending = sendEmail(sampleEmail(`ada@example.com`))
+  const sending = sendEmail(anEmail(`ada@example.com`))
 
   await expect(sending).rejects.toThrow(
     `Resend rejected the email with 422: invalid from`,
@@ -61,7 +66,7 @@ test(`an email Resend rejects throws with Resend's reason`, async () => {
 test(`every theme class in an email resolves to an inline style`, async () => {
   const to = `${randomUUID()}@example.com`
 
-  await sendEmail(sampleEmail(to))
+  await sendEmail(anEmail(to))
 
   const email = readMailbox().find(sent => sent.to === to)
   expect(email?.html).not.toMatch(/class="[^"]*\b(?:text|bg|border)-/u)

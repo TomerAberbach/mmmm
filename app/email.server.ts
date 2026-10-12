@@ -6,7 +6,7 @@ import { requireEnv } from './env.server.ts'
 import { saveToMailbox } from './mailbox.server.ts'
 import type { RenderedEmail } from './mailbox.server.ts'
 
-type Email = {
+export type Email = {
   to: string
   subject: string
   body: ReactElement

@@ -56,6 +56,10 @@ pnpm test --run app/routes/home.test.tsx
 pnpm test:e2e e2e/home.test.ts  # Builds first
 ```
 
+After a dependency changes, hard-reload the dev app (Cmd+Shift+R). The browser
+keeps Vite's old prebundled chunks, so the page loads two copies of React and
+never hydrates.
+
 Copy `.env.example` to `.env` before running the app, including `SUPPORT_EMAIL`,
 which the footer links. Read variables with `requireEnv` from
 `app/env.server.ts`, which loads `.env` and fails with a message naming the
@@ -87,6 +91,33 @@ missing variable.
 - Delete a `routes/dev.*` page in the commit that first uses its component on a
   real page
 
+## Forms
+
+- Validate forms with Conform and Zod 4. Import `parseWithZod` from
+  `@conform-to/zod/v4`, since the default entry is for Zod 3
+- Share a form's schema between the component and its action, and validate in
+  the action too. Build fields from `TextField` and `PasswordField` in
+  `app/components/text-field.tsx`, spreading `fieldProps(fields.<name>)`
+- Set up a form with `useValidatedForm` from
+  `app/components/use-validated-form.ts`, and answer a failed submission with
+  `rejectSubmission` from `app/reject-submission.server.ts`, which never sends a
+  password back
+- Put a field's error under its input, and a form's error below its submit
+  button as a `Notice` from `app/components/notice.tsx`, so nothing above them
+  moves when they appear. Forms validate only once first submitted
+- Check every free-text field on the server with `serverFreeTextSchema` from
+  `app/free-text.server.ts`, which adds the length limit and the offensive word
+  filter. The browser bundle leaves the filter out
+
+## Auth
+
+- Read the signed-in educator with `await readSignedInEducator(context)` from
+  `app/session.server.ts`. Root middleware looks up the session at most once per
+  request, and only when something reads it
+- Educators can't sign in until they confirm their address, and confirming
+  doesn't sign them in. Sign-up answers an existing address the same as a new
+  one, so never show a different page or error for it
+
 ## Email
 
 - Send email with `sendEmail` from `app/email.server.ts`, with a body built on
@@ -101,7 +132,7 @@ missing variable.
 - Add request middleware after the `/healthz` route in `server.ts`, so Fly.io's
   health checks skip it. Static assets skip it too
 - Staging (`APP_ENV=staging`) asks every request for `STAGING_PASSWORD`, and
-  refuses to start without it, so seeded accounts can use `password`
+  refuses to start without it, so seeded educators can use `password`
 - Never ask for or handle secret values. Give the user a command to set them
   from their own terminal, as `docs/operations.md` does
 - Logs drop query strings. Add each path segment that holds a secret to
@@ -132,4 +163,5 @@ missing variable.
   are colocated with the code they test
 - Browser tests load `app/app.css` and check accessibility, including contrast,
   with `expectNoAxeViolations` from `test/axe.ts`
-- `e2e/*.test.ts` files run in Playwright against the production build
+- `e2e/*.test.ts` files run in Playwright against the production build. Read the
+  email a test sent with `readEmails` and `readActionLink` from `e2e/mailbox.ts`

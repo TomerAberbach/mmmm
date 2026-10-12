@@ -41,8 +41,10 @@
     @apply bg-white font-sans text-ink;
   }
 
+  /* Color alone doesn't mark a link inside text, per WCAG 1.4.1. Navigation
+     in the header and footer opts out */
   a {
-    @apply text-accent-strong underline-offset-2 hover:underline;
+    @apply text-accent-strong underline underline-offset-2;
   }
 }
 
