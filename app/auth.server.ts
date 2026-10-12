@@ -59,7 +59,8 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
 })
 
 // A confirmation link contains only the address, so without this check a link
-// sent before sign-up started over would confirm the new educator's password
+// sent before sign-up started over would confirm the new educator's password.
+// Remove once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
 const isOlderThanEducator = async (
   context: AuthContext,
   token: unknown,
@@ -107,7 +108,8 @@ const parseName = async (name: unknown): Promise<string> => {
 
 // An unconfirmed educator belongs to no one yet, so a new sign-up starts over
 // with its own name and password. Otherwise the new link would confirm the
-// password of whoever signed up first, who may not own the address
+// password of whoever signed up first, who may not own the address. Remove
+// once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
 const deleteUnconfirmedEducator = async (
   internalAdapter: AuthContext[`internalAdapter`],
   email: string,
