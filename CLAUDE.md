@@ -25,7 +25,6 @@ mmmm
 │   ├── root.tsx        # Document layout and error boundary
 │   ├── app.css         # Fonts and theme colors
 │   ├── components/     # Shared UI built on React Aria Components
-│   ├── routes/dev.*    # Development-only pages, which return 404 in production
 │   ├── entry.server.tsx # Renders with the CSP nonce
 │   ├── *.server.ts     # Server-only modules
 │   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
@@ -101,7 +100,7 @@ missing variable.
 - Set up a form with `useValidatedForm` from
   `app/components/use-validated-form.ts`, and answer a failed submission with
   `rejectSubmission` from `app/reject-submission.server.ts`, which never sends a
-  password back
+  password back. Answer an address Better Auth refuses with `rejectRefusedEmail`
 - Put a field's error under its input, and a form's error below its submit
   button as a `Notice` from `app/components/notice.tsx`, so nothing above them
   moves when they appear. Forms validate only once first submitted
@@ -114,6 +113,12 @@ missing variable.
 - Read the signed-in educator with `await readSignedInEducator(context)` from
   `app/session.server.ts`. Root middleware looks up the session at most once per
   request, and only when something reads it
+- Nest routes that need a signed-in educator under a layout route with the
+  `requireSignedInEducator` middleware, as `app/routes/settings.tsx` does, and
+  read the educator there with `readRequiredEducator`
+- Force request fields that no client may choose in `FORCED_FIELDS` in
+  `app/auth.server.ts`, because `/api/auth/*` is public and skips the app's
+  routes
 - Educators can't sign in until they confirm their address, and confirming
   doesn't sign them in. Sign-up answers an existing address the same as a new
   one, so never show a different page or error for it
@@ -123,6 +128,8 @@ missing variable.
 - Send email with `sendEmail` from `app/email.server.ts`, with a body built on
   `EmailLayout`, `EmailParagraph`, and `EmailAction` from
   `app/emails/layout.server.tsx`. Name email modules `*.server.tsx`
+- Send an email that reports a change already made with `sendEmailOrLog`, so a
+  failed send can't fail the request
 - With `EMAIL_TRANSPORT=mailbox`, email stays in memory. Read it at
   `/dev/mailbox`, or with `readMailbox` in a test. Only `APP_ENV=development`
   and `APP_ENV=test` may use the mailbox, so the end-to-end tests set

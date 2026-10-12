@@ -10,20 +10,28 @@ const listTestDatabases = async (): Promise<string[]> => {
   return rows.map(row => row.datname).sort()
 }
 
-test(`the e2e server drops its database when the app fails to start`, async () => {
-  const databasesBefore = await listTestDatabases()
+// The server first creates its database and pushes the schema, which takes
+// several seconds on a busy CI runner
+const SERVER_START_TIMEOUT_MS = 30_000
 
-  // Staging without its password stops the server during startup
-  const start = promisify(execFile)(`node`, [`e2e/server.ts`], {
-    env: {
-      ...process.env,
-      APP_ENV: `staging`,
-      EMAIL_TRANSPORT: `resend`,
-      RESEND_API_KEY: `re_test`,
-      STAGING_PASSWORD: ``,
-    },
-  })
+test(
+  `the e2e server drops its database when the app fails to start`,
+  async () => {
+    const databasesBefore = await listTestDatabases()
 
-  await expect(start).rejects.toThrow(`Set STAGING_PASSWORD`)
-  await expect(listTestDatabases()).resolves.toStrictEqual(databasesBefore)
-})
+    // Staging without its password stops the server during startup
+    const start = promisify(execFile)(`node`, [`e2e/server.ts`], {
+      env: {
+        ...process.env,
+        APP_ENV: `staging`,
+        EMAIL_TRANSPORT: `resend`,
+        RESEND_API_KEY: `re_test`,
+        STAGING_PASSWORD: ``,
+      },
+    })
+
+    await expect(start).rejects.toThrow(`Set STAGING_PASSWORD`)
+    await expect(listTestDatabases()).resolves.toStrictEqual(databasesBefore)
+  },
+  SERVER_START_TIMEOUT_MS,
+)

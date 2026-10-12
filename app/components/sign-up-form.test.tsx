@@ -14,7 +14,7 @@ const renderSignUp = async (
   const counts = { submissions: 0 }
   const Stub = createRoutesStub([
     {
-      path: `/`,
+      path: `/sign-up`,
       Component: ({ actionData }: { actionData?: { result: never } }) => (
         <SignUpForm lastResult={actionData?.result} />
       ),
@@ -27,7 +27,7 @@ const renderSignUp = async (
       },
     },
   ])
-  await render(<Stub />)
+  await render(<Stub initialEntries={[`/sign-up`]} />)
   return counts
 }
 

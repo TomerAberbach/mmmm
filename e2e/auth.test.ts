@@ -1,47 +1,14 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import {
+  confirm,
+  newEmailAddress,
+  PASSWORD,
+  readSession,
+  signIn,
+  signOut,
+  signUp,
+} from './auth.ts'
 import { readActionLink, readEmails } from './mailbox.ts'
-
-const PASSWORD = `correct horse battery`
-
-const newEmailAddress = () => `educator-${crypto.randomUUID()}@example.com`
-
-const signUp = async (
-  page: Page,
-  email: string,
-  { name = `Ms. Frizzle`, password = PASSWORD } = {},
-) => {
-  await page.goto(`/sign-up`)
-  await page.getByLabel(`Full name`).fill(name)
-  await page.getByLabel(`Email address`).fill(email)
-  await page.getByLabel(`Create a password`).fill(password)
-  await page.getByRole(`button`, { name: `Sign up` }).click()
-  await expect(
-    page.getByRole(`heading`, { name: `Check your email` }),
-  ).toBeVisible()
-}
-
-const confirm = async (page: Page, email: string) => {
-  const [latest = ``] = await readEmails(page, email)
-  await page.goto(readActionLink(latest, `Confirm email address`))
-  await expect(page.getByRole(`status`)).toContainText(
-    `Your email address is confirmed`,
-  )
-}
-
-const signOut = async (page: Page) => {
-  await page.getByRole(`button`, { name: `Sign out` }).click()
-  await expect(
-    page.getByRole(`banner`).getByRole(`link`, { name: `Sign in` }),
-  ).toBeVisible()
-}
-
-const signIn = async (page: Page, email: string, password = PASSWORD) => {
-  await page.goto(`/sign-in`)
-  await page.getByLabel(`Email address`).fill(email)
-  await page.getByLabel(`Password`, { exact: true }).fill(password)
-  await page.getByRole(`button`, { name: `Sign in` }).click()
-}
 
 test(`an educator who confirms from the email can sign in`, async ({
   page,
@@ -78,8 +45,7 @@ test(`confirming doesn't sign in whoever opens the confirmation link`, async ({
 
   await confirm(page, email)
 
-  const session = await page.request.get(`/api/auth/get-session`)
-  expect(await session.json()).toBeNull()
+  expect(await readSession(page)).toBeNull()
 })
 
 test(`an unconfirmed educator can't sign in, and gets a new confirmation link`, async ({
@@ -107,6 +73,8 @@ test(`signing up with a confirmed address looks like a new sign-up and emails it
 
   const [latest = ``] = await readEmails(page, email)
   expect(latest).toContain(`You already have an account`)
+  expect(readActionLink(latest, `Sign in`)).toContain(`/sign-in`)
+  expect(latest).toContain(`/forgot-password`)
 })
 
 test(`a wrong password doesn't say which field was wrong`, async ({ page }) => {
@@ -129,8 +97,7 @@ test(`signing out ends the session`, async ({ page }) => {
 
   await signOut(page)
 
-  const session = await page.request.get(`/api/auth/get-session`)
-  expect(await session.json()).toBeNull()
+  expect(await readSession(page)).toBeNull()
 })
 
 test(`an altered confirmation link says to sign in for a new one`, async ({

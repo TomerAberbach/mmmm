@@ -11,7 +11,7 @@ import type { SignInNotice } from './sign-in-form.tsx'
 const renderSignIn = async (notice?: SignInNotice): Promise<void> => {
   const Stub = createRoutesStub([
     {
-      path: `/`,
+      path: `/sign-in`,
       Component: ({ actionData }: { actionData?: { result: never } }) => (
         <SignInForm lastResult={actionData?.result} notice={notice} />
       ),
@@ -22,7 +22,7 @@ const renderSignIn = async (notice?: SignInNotice): Promise<void> => {
       }),
     },
   ])
-  await render(<Stub />)
+  await render(<Stub initialEntries={[`/sign-in`]} />)
 }
 
 test(`a failed sign-in shows the server's message`, async () => {
@@ -55,4 +55,22 @@ test(`a confirmed educator is told to sign in`, async () => {
       `Your email address is confirmed. Sign in to create your first contest.`,
     )
   await expectNoAxeViolations()
+})
+
+test(`an educator who reset their password is told to sign in with it`, async () => {
+  await renderSignIn(`password-reset`)
+
+  await expect
+    .element(page.getByRole(`status`))
+    .toHaveTextContent(
+      `Your password is changed. Sign in with your new password.`,
+    )
+})
+
+test(`sign-in links to resetting a forgotten password`, async () => {
+  await renderSignIn()
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Forgot password?` }))
+    .toHaveAttribute(`href`, `/forgot-password`)
 })

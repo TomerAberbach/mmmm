@@ -9,9 +9,9 @@ import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 
-// Where a confirmation link left the educator: confirmed, or with a link that
-// expired or was altered
-export type SignInNotice = `confirmed` | `link-invalid`
+// Where a link left the educator: confirmed, with a confirmation link that
+// expired or was altered, or with a new password
+export type SignInNotice = `confirmed` | `link-invalid` | `password-reset`
 
 export const SignInForm = ({
   lastResult,
@@ -37,6 +37,11 @@ export const SignInForm = ({
           Your email address is confirmed. Sign in to create your first contest.
         </Notice>
       ) : null}
+      {shownNotice === `password-reset` ? (
+        <Notice kind='status'>
+          Your password is changed. Sign in with your new password.
+        </Notice>
+      ) : null}
       {shownNotice === `link-invalid` ? (
         <Notice kind='alert'>
           That confirmation link has expired or doesn&apos;t work. Sign in to
@@ -45,6 +50,7 @@ export const SignInForm = ({
       ) : null}
       <Form
         method='post'
+        action='/sign-in'
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -59,10 +65,11 @@ export const SignInForm = ({
           label='Password'
           autoComplete='current-password'
         />
-        <div>
+        <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
           <Button type='submit' isPending={isSubmitting}>
             Sign in
           </Button>
+          <Link to='/forgot-password'>Forgot password?</Link>
         </div>
         {/* Below the button, so the fields above stay put when it appears */}
         {formError ? (

@@ -1,10 +1,23 @@
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-// Returns the plain text of each email to the address, newest first
-export const readEmails = async (page: Page, to: string): Promise<string[]> => {
-  await page.goto(`/dev/mailbox`)
+// Returns the plain text of each email to the address, newest first. Reloads
+// until one arrives, or until the newest contains `newestContaining`, since
+// some emails send after the response
+export const readEmails = async (
+  page: Page,
+  to: string,
+  { newestContaining }: { newestContaining?: string } = {},
+): Promise<string[]> => {
   const emails = page.getByRole(`listitem`).filter({ hasText: ` to ${to},` })
-  await emails.first().waitFor({ state: `attached` })
+  await expect(async () => {
+    await page.goto(`/dev/mailbox`)
+    await (newestContaining === undefined
+      ? expect(emails.first()).toBeAttached({ timeout: 500 })
+      : expect(emails.first()).toContainText(newestContaining, {
+          timeout: 500,
+        }))
+  }).toPass()
   return emails.locator(`pre`).allTextContents()
 }
 

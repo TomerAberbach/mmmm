@@ -1,22 +1,21 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { APIError } from 'better-auth/api'
 import { redirect } from 'react-router'
 import type { Route } from './+types/sign-up.ts'
-import { INVALID_EMAIL_MESSAGE, signUpSchema } from '~/auth-forms.ts'
+import { serverNameSchema } from '~/auth-forms.server.ts'
+import { signUpSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
-import { serverFreeTextSchema } from '~/free-text.server.ts'
-import { EDUCATOR_NAME } from '~/free-text.ts'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import {
+  rejectRefusedEmail,
+  rejectSubmission,
+} from '~/reject-submission.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) =>
   (await readSignedInEducator(context)) ? redirect(`/`) : null
 
-const SERVER_SIGN_UP_SCHEMA = signUpSchema.extend({
-  name: serverFreeTextSchema(EDUCATOR_NAME),
-})
+const SERVER_SIGN_UP_SCHEMA = signUpSchema.extend(serverNameSchema.shape)
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const submission = parseWithZod(await request.formData(), {
@@ -33,13 +32,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       headers: request.headers,
     })
   } catch (error) {
-    // Better Auth checks the address more strictly than the schema
-    if (error instanceof APIError && error.body?.code === `INVALID_EMAIL`) {
-      return rejectSubmission(submission, {
-        fieldErrors: { email: [INVALID_EMAIL_MESSAGE] },
-      })
-    }
-    throw error
+    return rejectRefusedEmail(submission, error)
   }
   return { sentTo: email }
 }

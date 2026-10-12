@@ -7,11 +7,14 @@ import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
+  RESET_EXPIRES_IN_HOURS,
 } from './auth-forms.ts'
 import { prisma } from './db.server.ts'
-import { sendEmail } from './email.server.ts'
+import { sendEmail, sendEmailOrLog } from './email.server.ts'
 import { alreadySignedUpEmail } from './emails/already-signed-up.server.tsx'
 import { confirmEmail } from './emails/confirm-email.server.tsx'
+import { passwordChangedEmail } from './emails/password-changed.server.tsx'
+import { resetPasswordEmail } from './emails/reset-password.server.tsx'
 import { requireEnv } from './env.server.ts'
 import { serverFreeTextSchema } from './free-text.server.ts'
 import { EDUCATOR_NAME } from './free-text.ts'
@@ -21,14 +24,22 @@ const CONFIRMATION_EXPIRES_IN_SECONDS =
   CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60
 
 const SIGN_IN_URL = new URL(`/sign-in`, BASE_URL)
+const FORGOT_PASSWORD_URL = new URL(`/forgot-password`, BASE_URL)
 // Every confirmation link returns to sign-in, whatever the request asked for.
 // Sign-in shows whether the link worked
 const CONFIRMED_CALLBACK_URL = `${SIGN_IN_URL.pathname}?confirmed`
-const PATHS_SENDING_CONFIRMATION = new Set([
-  `/sign-up/email`,
-  `/sign-in/email`,
-  `/send-verification-email`,
-])
+
+// Clients can't choose where emailed links return, or keep their other
+// sessions through a password change
+const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
+  '/sign-up/email': { callbackURL: CONFIRMED_CALLBACK_URL },
+  '/sign-in/email': { callbackURL: CONFIRMED_CALLBACK_URL },
+  '/send-verification-email': { callbackURL: CONFIRMED_CALLBACK_URL },
+  // A reset link returns here with its token, or with `error` when it fails
+  '/request-password-reset': { redirectTo: `/reset-password` },
+  // Whoever knew the old password loses access, however it changed
+  '/change-password': { revokeOtherSessions: true },
+}
 
 const EDUCATOR_NAME_SCHEMA = serverFreeTextSchema(EDUCATOR_NAME)
 const PATHS_WITH_NAME = new Set([`/sign-up/email`, `/update-user`])
@@ -52,10 +63,7 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   if (ctx.path === `/sign-up/email` && typeof body.email === `string`) {
     await deleteUnconfirmedEducator(ctx.context.internalAdapter, body.email)
   }
-  if (PATHS_SENDING_CONFIRMATION.has(ctx.path)) {
-    body = { ...body, callbackURL: CONFIRMED_CALLBACK_URL }
-  }
-  return { context: { body } }
+  return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
 
 // A confirmation link contains only the address, so without this check a link
@@ -120,6 +128,28 @@ const deleteUnconfirmedEducator = async (
   }
 }
 
+// Notifies the owner however the password changed, so a stolen session can't
+// change it quietly
+const afterAuthRequest = createAuthMiddleware(ctx => {
+  const educator = ctx.context.session?.user
+  if (
+    ctx.path !== `/change-password` ||
+    ctx.context.returned instanceof APIError ||
+    !educator
+  ) {
+    return Promise.resolve()
+  }
+  notifyPasswordChanged(educator.email)
+  return Promise.resolve()
+})
+
+// Doesn't wait for the email, which can't undo the change
+const notifyPasswordChanged = (to: string): void => {
+  void sendEmailOrLog(
+    passwordChangedEmail({ to, resetUrl: FORGOT_PASSWORD_URL.href }),
+  )
+}
+
 export const auth = betterAuth({
   baseURL: BASE_URL,
   secret: requireEnv(`BETTER_AUTH_SECRET`),
@@ -127,7 +157,7 @@ export const auth = betterAuth({
   user: { modelName: `educator` },
   session: { fields: { userId: `educatorId` } },
   account: { modelName: `credential`, fields: { userId: `educatorId` } },
-  hooks: { before: beforeAuthRequest },
+  hooks: { before: beforeAuthRequest, after: afterAuthRequest },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
@@ -139,9 +169,30 @@ export const auth = betterAuth({
     // ones first
     onExistingUserSignUp: async ({ user }) => {
       await sendEmail(
-        alreadySignedUpEmail({ to: user.email, signInUrl: SIGN_IN_URL.href }),
+        alreadySignedUpEmail({
+          to: user.email,
+          signInUrl: SIGN_IN_URL.href,
+          resetUrl: FORGOT_PASSWORD_URL.href,
+        }),
       )
     },
+    resetPasswordTokenExpiresIn: RESET_EXPIRES_IN_HOURS * 60 * 60,
+    // Doesn't wait for the email, so a known address answers as fast as an
+    // unknown one, which gets no email
+    sendResetPassword: ({ user, url }) => {
+      void sendEmailOrLog(resetPasswordEmail({ to: user.email, url }))
+      return Promise.resolve()
+    },
+    // Only the address's owner receives a reset link, so using one confirms
+    // the address
+    onPasswordReset: async ({ user }) => {
+      await prisma.educator.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      })
+      notifyPasswordChanged(user.email)
+    },
+    revokeSessionsOnPasswordReset: true,
   },
   emailVerification: {
     sendOnSignUp: true,

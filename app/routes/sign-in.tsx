@@ -16,10 +16,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) =>
     : { notice: readNotice(new URL(request.url).searchParams) }
 
 // A confirmation link returns here with `confirmed`, plus an `error` when it
-// fails
+// fails. A password reset returns here with `password-reset`
 const readNotice = (params: URLSearchParams): SignInNotice | undefined => {
   if (params.has(`error`)) {
     return `link-invalid`
+  }
+  if (params.has(`password-reset`)) {
+    return `password-reset`
   }
   return params.has(`confirmed`) ? `confirmed` : undefined
 }
