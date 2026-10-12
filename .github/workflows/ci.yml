@@ -17,20 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: mmmm
-          POSTGRES_PASSWORD: mmmm
-          POSTGRES_DB: mmmm
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready --health-interval 2s --health-timeout 5s
-          --health-retries 15
-    env:
-      DATABASE_URL: postgresql://mmmm:mmmm@localhost:5432/mmmm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -65,6 +51,10 @@ jobs:
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
+
+      # The same Postgres and settings as local development
+      - name: Start Postgres
+        run: docker compose up -d --wait && cp .env.example .env
 
       - name: Check
         run: pnpm check
