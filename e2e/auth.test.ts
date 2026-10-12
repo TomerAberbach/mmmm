@@ -31,7 +31,9 @@ const confirm = async (page: Page, email: string) => {
 
 const signOut = async (page: Page) => {
   await page.getByRole(`button`, { name: `Sign out` }).click()
-  await expect(page.getByRole(`link`, { name: `Sign in` })).toBeVisible()
+  await expect(
+    page.getByRole(`banner`).getByRole(`link`, { name: `Sign in` }),
+  ).toBeVisible()
 }
 
 const signIn = async (page: Page, email: string, password = PASSWORD) => {
@@ -52,6 +54,20 @@ test(`an educator who confirms from the email can sign in`, async ({
 
   await expect(page).toHaveURL(`/`)
   await expect(page.getByRole(`banner`)).toContainText(`Ms. Frizzle`)
+})
+
+test(`a signed-in educator sees their contests on the home page`, async ({
+  page,
+}) => {
+  const email = newEmailAddress()
+  await signUp(page, email)
+  await confirm(page, email)
+
+  await signIn(page, email)
+
+  await expect(
+    page.getByRole(`heading`, { name: `Your contests` }),
+  ).toBeVisible()
 })
 
 test(`confirming doesn't sign in whoever opens the confirmation link`, async ({

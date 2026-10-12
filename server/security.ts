@@ -25,10 +25,18 @@ export const setContentSecurityPolicy = (
       imgSrc: [`'self'`, `data:`],
       objectSrc: [`'none'`],
       scriptSrc: [`'self'`, (_req, res) => `'nonce-${readNonce(res)}'`],
-      // Vite injects styles inline in development
-      styleSrc: [`'self'`, ...(isProduction ? [] : [`'unsafe-inline'`])],
+      // Vite injects styles inline in development. The hash allows the
+      // <style> React Aria adds for pressable elements, which sets
+      // `touch-action`. Browsers ignore 'unsafe-inline' beside a hash, so
+      // development omits the hash
+      styleSrc: [
+        `'self'`,
+        isProduction
+          ? `'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o='`
+          : `'unsafe-inline'`,
+      ],
       // React Aria positions and hides elements with style attributes. Those
-      // can't run scripts, and <style> elements stay blocked
+      // can't run scripts, and other <style> elements stay blocked
       styleSrcAttr: [`'unsafe-inline'`],
       upgradeInsecureRequests: isProduction ? [] : null,
     },

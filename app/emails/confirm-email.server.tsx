@@ -15,12 +15,12 @@ export const confirmEmail = ({
   subject: `Confirm your email address for MMMM`,
   body: (
     <EmailLayout
-      preview='Confirm your address to start running contests'
+      preview='Confirm your address to create your first contest'
       heading='Confirm your email address'
     >
       <EmailParagraph>
         Someone signed up for MMMM with this email address. If it was you,
-        confirm it, then sign in to start running contests.
+        confirm it, then sign in to create your first contest.
       </EmailParagraph>
       <EmailAction href={url}>Confirm email address</EmailAction>
       <EmailParagraph>
