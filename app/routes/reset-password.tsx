@@ -26,7 +26,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const { token, password } = submission.value
   try {
-    await auth.api.resetPassword({ body: { token, newPassword: password } })
+    await auth.api.resetPassword({
+      body: { token, newPassword: password },
+      headers: request.headers,
+    })
   } catch (error) {
     // The educator is gone when someone signed up again before the reset
     if (

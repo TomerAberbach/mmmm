@@ -1,9 +1,11 @@
 import { render, toPlainText } from '@react-email/render'
 import type { FormatCallback } from 'html-to-text'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 import type { ReactElement } from 'react'
 import { z } from 'zod'
 import { readEmailTransport } from './email-settings.server.ts'
 import { requireEnv } from './env.server.ts'
+import { normalizeEmail, tryConsume } from './limits.server.ts'
 import { saveToMailbox } from './mailbox.server.ts'
 import type { RenderedEmail } from './mailbox.server.ts'
 
@@ -13,7 +15,24 @@ export type Email = {
   body: ReactElement
 }
 
+// Skips the email once its address has received its share, so no one can
+// flood an inbox through any form that sends email. Skipping changes nothing
+// in the response, which reveals nothing about the address
 export const sendEmail = async (email: Email): Promise<void> => {
+  if (!(await allowEmailTo(email.to))) {
+    console.warn(`Skipped the email "${email.subject}" over the hourly limit`)
+    return
+  }
+  await deliver(email)
+}
+
+// Sends a security notice past the cap, so filling an inbox's share can't hide
+// it. Only the owner's own actions trigger notices. Logs a failure instead of
+// throwing it, since the change it reports has already happened
+export const sendNoticeOrLog = (email: Email): Promise<void> =>
+  logFailure(email, deliver(email))
+
+const deliver = async (email: Email): Promise<void> => {
   const rendered = await renderEmail(email)
   if (readEmailTransport() === `mailbox`) {
     saveToMailbox(rendered)
@@ -22,10 +41,21 @@ export const sendEmail = async (email: Email): Promise<void> => {
   await sendWithResend(rendered)
 }
 
-// Logs a failure instead of throwing it, for an email sent after the change it
-// reports has already happened
+const EMAILS_PER_ADDRESS = new RateLimiterMemory({
+  keyPrefix: `email-to`,
+  points: 10,
+  duration: 60 * 60,
+})
+
+const allowEmailTo = async (to: string): Promise<boolean> =>
+  (await tryConsume(EMAILS_PER_ADDRESS, normalizeEmail(to))) === undefined
+
+// Logs a failure instead of throwing it, for an email sent without waiting
 export const sendEmailOrLog = (email: Email): Promise<void> =>
-  sendEmail(email).catch((error: unknown) => {
+  logFailure(email, sendEmail(email))
+
+const logFailure = (email: Email, sending: Promise<void>): Promise<void> =>
+  sending.catch((error: unknown) => {
     console.error(`Failed to send the email "${email.subject}"`, error)
   })
 

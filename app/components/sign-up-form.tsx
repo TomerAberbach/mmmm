@@ -3,6 +3,7 @@ import type { SubmissionResult } from '@conform-to/react'
 import { Form, Link } from 'react-router'
 import { MIN_PASSWORD_LENGTH, signUpSchema } from '../auth-forms.ts'
 import { Button } from './button.tsx'
+import { FormError } from './form-error.tsx'
 import { PageTitle } from './page-title.tsx'
 import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
@@ -55,6 +56,7 @@ export const SignUpForm = ({
             your school consent for players under 13 to use MMMM.
           </p>
         </div>
+        <FormError form={form} />
       </Form>
       <p>
         Already have an account? <Link to='/sign-in'>Sign in</Link>

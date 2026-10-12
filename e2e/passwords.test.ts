@@ -4,6 +4,7 @@ import {
   newEmailAddress,
   PASSWORD,
   readSession,
+  requestReset,
   signIn,
   signInConfirmed,
   signUp,
@@ -31,15 +32,6 @@ const test = base.extend<{
 })
 
 const NEW_PASSWORD = `a brand new password`
-
-const requestReset = async (page: Page, email: string) => {
-  await page.goto(`/forgot-password`)
-  await page.getByLabel(`Email address`).fill(email)
-  await page.getByRole(`button`, { name: `Send reset link` }).click()
-  await expect(
-    page.getByRole(`heading`, { name: `Check your email` }),
-  ).toBeVisible()
-}
 
 const readResetLink = async (page: Page, email: string) => {
   const [latest = ``] = await readEmails(page, email, {

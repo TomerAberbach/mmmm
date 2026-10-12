@@ -67,3 +67,22 @@ export const signInConfirmed = async (
 
 export const readSession = async (page: Page): Promise<unknown> =>
   (await page.request.get(`/api/auth/get-session`)).json()
+
+export const submitResetRequest = async (
+  page: Page,
+  email: string,
+): Promise<void> => {
+  await page.goto(`/forgot-password`)
+  await page.getByLabel(`Email address`).fill(email)
+  await page.getByRole(`button`, { name: `Send reset link` }).click()
+}
+
+export const requestReset = async (
+  page: Page,
+  email: string,
+): Promise<void> => {
+  await submitResetRequest(page, email)
+  await expect(
+    page.getByRole(`heading`, { name: `Check your email` }),
+  ).toBeVisible()
+}

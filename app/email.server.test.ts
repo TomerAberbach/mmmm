@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, vi } from 'vitest'
-import { sendEmail } from './email.server.ts'
+import { sendEmail, sendNoticeOrLog } from './email.server.ts'
 import { confirmEmail } from './emails/confirm-email.server.tsx'
 import { readMailbox } from './mailbox.server.ts'
 
@@ -68,4 +68,29 @@ test(`every theme class in an email resolves to an inline style`, async () => {
 
   const email = readMailbox().find(sent => sent.to === to)
   expect(email?.html).not.toMatch(/class="[^"]*\b(?:text|bg|border)-/u)
+})
+
+test(`an address gets 10 emails an hour, and the rest are skipped`, async () => {
+  const to = `${randomUUID()}@example.com`
+  vi.spyOn(console, `warn`).mockReturnValue(undefined)
+
+  for (let sent = 0; sent < 11; sent++) {
+    await sendEmail(anEmail(sent === 10 ? to.toUpperCase() : to))
+  }
+
+  expect(
+    readMailbox().filter(email => email.to.toLowerCase() === to),
+  ).toHaveLength(10)
+})
+
+test(`a security notice arrives even once the address's share is used up`, async () => {
+  const to = `${randomUUID()}@example.com`
+  vi.spyOn(console, `warn`).mockReturnValue(undefined)
+  for (let sent = 0; sent < 10; sent++) {
+    await sendEmail(anEmail(to))
+  }
+
+  await sendNoticeOrLog(anEmail(to))
+
+  expect(readMailbox().filter(email => email.to === to)).toHaveLength(11)
 })

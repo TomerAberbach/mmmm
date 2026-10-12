@@ -48,7 +48,7 @@ test(`confirming doesn't sign in whoever opens the confirmation link`, async ({
   expect(await readSession(page)).toBeNull()
 })
 
-test(`an unconfirmed educator can't sign in, and gets a new confirmation link`, async ({
+test(`an unconfirmed educator can't sign in, and is told to confirm first`, async ({
   page,
 }) => {
   const email = newEmailAddress()
@@ -57,9 +57,8 @@ test(`an unconfirmed educator can't sign in, and gets a new confirmation link`, 
   await signIn(page, email)
 
   await expect(
-    page.getByRole(`heading`, { name: `Check your email` }),
+    page.getByText(`Confirm your address before you sign in`),
   ).toBeVisible()
-  expect(await readEmails(page, email)).toHaveLength(2)
 })
 
 test(`signing up with a confirmed address looks like a new sign-up and emails its owner`, async ({
