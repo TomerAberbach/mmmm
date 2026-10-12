@@ -71,8 +71,10 @@ whether the database answers, and it skips the staging password.
 
 `EMAIL_TRANSPORT` selects where email goes. Staging sets `resend`, so email goes
 out from `noreply@send.mmmm.onl`. Development and tests set `mailbox`, which
-keeps sent email in memory at `/dev/mailbox`. To check delivery on staging, sign
-up there with your own address.
+keeps sent email in memory at `/dev/mailbox`. The app refuses the mailbox unless
+`APP_ENV` is `development` or `test`, because the mailbox shows every email
+without signing in. Set `APP_ENV=production` on the production app. To check
+delivery on staging, sign up there with your own address.
 
 ## Backups
 

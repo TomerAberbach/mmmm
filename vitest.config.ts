@@ -22,6 +22,7 @@ export default defineConfig({
           globalSetup: [`test/global-setup.ts`],
           setupFiles: [`test/setup.ts`],
           env: {
+            APP_ENV: `test`,
             BETTER_AUTH_SECRET: `test-secret-that-is-at-least-32-characters`,
             BETTER_AUTH_URL: `http://localhost:3000`,
             EMAIL_TRANSPORT: `mailbox`,

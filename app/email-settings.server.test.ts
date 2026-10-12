@@ -12,11 +12,28 @@ test(`an unknown transport fails with the allowed ones`, () => {
   )
 })
 
-test(`production refuses the mailbox`, () => {
-  vi.stubEnv(`APP_ENV`, `production`)
+test.each([`staging`, `production`])(
+  `APP_ENV %s refuses the mailbox`,
+  appEnv => {
+    vi.stubEnv(`APP_ENV`, appEnv)
+
+    expect(readEmailTransport).toThrow(
+      `Set EMAIL_TRANSPORT to resend outside development and tests`,
+    )
+  },
+)
+
+test.each([`development`, `test`])(`APP_ENV %s allows the mailbox`, appEnv => {
+  vi.stubEnv(`APP_ENV`, appEnv)
+
+  expect(readEmailTransport()).toBe(`mailbox`)
+})
+
+test(`an unknown APP_ENV fails with the allowed ones`, () => {
+  vi.stubEnv(`APP_ENV`, `prod`)
 
   expect(readEmailTransport).toThrow(
-    `Set EMAIL_TRANSPORT to resend in production`,
+    `Set APP_ENV to one of: development, test, staging, production`,
   )
 })
 

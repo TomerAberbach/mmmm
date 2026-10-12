@@ -1,18 +1,25 @@
-import { requireEnv } from './env.server.ts'
+import { z } from 'zod'
+import { readAppEnv, requireEnv } from './env.server.ts'
+import type { AppEnv } from './env.server.ts'
 
 const TRANSPORTS = [`resend`, `mailbox`] as const
 type EmailTransport = (typeof TRANSPORTS)[number]
 
+// The mailbox shows every email, confirmation links included, without signing
+// in, so only development and tests may use it
+const MAILBOX_APP_ENVS: ReadonlySet<AppEnv> = new Set([`development`, `test`])
+
 export const readEmailTransport = (): EmailTransport => {
-  const transport = requireEnv(`EMAIL_TRANSPORT`)
-  if (!(TRANSPORTS as readonly string[]).includes(transport)) {
+  const transport = z.enum(TRANSPORTS).safeParse(requireEnv(`EMAIL_TRANSPORT`))
+  if (!transport.success) {
     throw new Error(`Set EMAIL_TRANSPORT to one of: ${TRANSPORTS.join(`, `)}`)
   }
-  // The mailbox shows every email, sign-in links included, without signing in
-  if (transport === `mailbox` && process.env.APP_ENV === `production`) {
-    throw new Error(`Set EMAIL_TRANSPORT to resend in production`)
+  if (transport.data === `mailbox` && !MAILBOX_APP_ENVS.has(readAppEnv())) {
+    throw new Error(
+      `Set EMAIL_TRANSPORT to resend outside development and tests`,
+    )
   }
-  return transport as EmailTransport
+  return transport.data
 }
 
 // Throws when a setting that sending email needs is missing

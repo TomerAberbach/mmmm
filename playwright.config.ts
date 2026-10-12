@@ -21,6 +21,7 @@ export default defineConfig({
       BETTER_AUTH_SECRET: `e2e-secret-that-is-at-least-32-characters`,
       BETTER_AUTH_URL: BASE_URL,
       SUPPORT_EMAIL: `support@example.com`,
+      APP_ENV: `test`,
       EMAIL_TRANSPORT: `mailbox`,
       EMAIL_FROM: `MMMM <noreply@example.com>`,
     },
