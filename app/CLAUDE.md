@@ -16,8 +16,8 @@ app
 
 - `app.css` removes Tailwind's default colors and fonts. Use the theme's: `ink`,
   `muted`, `accent`, `accent-strong`, `muted-light` and `accent-light` (only for
-  large text), `accent-soft` (only for decoration), `danger`, and
-  `font-display`, `font-condensed`, `font-sans`
+  large text), `accent-soft` and the bracket's round colors (only for
+  decoration), `danger`, and `font-display`, `font-condensed`, `font-sans`
 - Use Tailwind's scales, not arbitrary values such as `text-[13px]`. When a
   scale lacks a value, add it to the theme in `app.css`
 - Build interactive controls on React Aria Components, as in
@@ -25,6 +25,9 @@ app
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
   returns a `ConfirmResult`, and the dialog shows any `error`
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
+- Pages are `max-w-6xl` unless the route exports `handle = { fullWidth: true }`.
+  Print a wide page with `page-landscape` and scale it with `print:zoom` from
+  `app.css`, which reads the element's `--zoom`
 - Give each page a `PageTitle`, which sets both its heading and its tab title,
   instead of a `meta` export
 
@@ -97,6 +100,18 @@ app
 - Read which seed slots or earlier battles feed a battle, and where its winner
   goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
   index for results and picks to reference
+- A `BracketInput` skips the wild card's seed in its division's list, so read
+  each seed slot's combatant with `listSeedSlotNames` instead of indexing the
+  list by seed
+- Show a bracket from `buildBracketView` in `bracket-view.ts`, which fills each
+  side from the seed slots and results. `BattleBox` is hidden from screen
+  readers, so put `describeBattle`'s text beside it
+- The diagram's boxes fit the year's longest name using the glyph widths in
+  `name-width.ts`. Measure the glyphs again in Chromium after changing the font,
+  weight, or tracking of names in `battle-box.tsx`
+- The print zoom comes from `DIAGRAM_SIZE` in `bracket-diagram.tsx`. Measure the
+  diagram again after changing its spacing or sizes. The browser tests fail when
+  the diagram grows past the estimate, but not when it shrinks
 
 ## React Router
 
@@ -115,3 +130,7 @@ app
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching
   text. Pass the element's whole text
+- Set a browser test's screen size with `page.viewport` from `vitest/browser`.
+  Pages that switch layouts by breakpoint render every layout and hide the
+  others with CSS, so scope queries to the visible one, such as
+  `page.getByRole('tabpanel')`

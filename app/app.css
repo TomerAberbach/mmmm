@@ -32,6 +32,13 @@
   --color-danger: #c8202f;
   --color-danger-strong: #9e1a26;
 
+  /* The bracket's round markers, as on ASU's printed bracket. Only for
+     decoration */
+  --color-round-1: #d13a3a;
+  --color-round-2: #ef8a1f;
+  --color-sweet-16: #e7c51c;
+  --color-elite-trait: #4caa4b;
+
   /* A solid shadow offset down and to the right, colored with `shadow-<color>` */
   --shadow-offset: 8px 8px 0 var(--color-ink);
 }
@@ -78,6 +85,19 @@
     outline-offset: 2px;
     box-shadow: none;
   }
+}
+
+/* Scales an element and its layout by its `--zoom`, such as with `print:zoom` */
+@utility zoom {
+  zoom: var(--zoom);
+}
+
+@utility page-landscape {
+  page: landscape;
+}
+
+@page landscape {
+  size: letter landscape;
 }
 
 @media print {

@@ -1,11 +1,14 @@
 import { z } from 'zod'
 import {
+  DIVISION_POSITIONS,
   DivisionPosition,
+  isSameSeedSlot,
   MAX_WILD_CARD_ENTRANTS,
   MIN_WILD_CARD_ENTRANTS,
   SEEDS,
   SEEDS_PER_DIVISION,
 } from './bracket.ts'
+import type { SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME, freeTextSchema } from './free-text.ts'
 
 // Admins enter these names from ASU's published bracket, so they skip the
@@ -79,3 +82,19 @@ const hasDuplicate = (names: string[]): boolean =>
 
 const normalizeName = (name: string): string =>
   name.toLowerCase().replaceAll(/\s+/gu, ` `).replaceAll(`’`, `'`)
+
+// Every seed slot in seed order, with its combatant's name. The wild card's
+// seed slot has none, since the wild card's winner fills it
+export const listSeedSlotNames = ({
+  divisions,
+  wildCard,
+}: BracketInput): (SeedSlotRef & { name?: string })[] =>
+  DIVISION_POSITIONS.flatMap(position => {
+    const names = [...divisions[position].combatants]
+    return SEEDS.map(seed =>
+      isSameSeedSlot({ position, seed }, wildCard)
+        ? { position, seed }
+        : // The input schema checks each division's count
+          { position, seed, name: names.shift()! },
+    )
+  })

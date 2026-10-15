@@ -11,7 +11,9 @@ import {
   Scripts,
   ScrollRestoration,
   useHref,
+  useMatches,
   useNavigate,
+  useRouteError,
   useRouteLoaderData,
 } from 'react-router'
 import type { Route } from './+types/root.ts'
@@ -49,6 +51,10 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   // Missing when the root loader itself failed
   const rootData = useRouteLoaderData<typeof loader>(`root`)
   const navigate = useNavigate()
+  const matches = useMatches()
+  // An error page keeps the width limit, even under a full-width route
+  const error = useRouteError()
+  const fullWidth = !error && matches.some(({ handle }) => isFullWidth(handle))
   return (
     // Browser extensions, such as Browserpass, add attributes to <html> before
     // hydration
@@ -69,7 +75,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           useHref={useHref}
         >
           <SiteHeader educator={rootData?.educator} />
-          <main className='mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6'>
+          <main
+            className={`mx-auto w-full flex-1 px-4 py-10 sm:px-6 print:py-0 ${fullWidth ? `` : `max-w-6xl`}`}
+          >
             {children}
           </main>
           <SiteFooter supportEmail={rootData?.supportEmail} />
@@ -80,6 +88,13 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     </html>
   )
 }
+
+// A route's `handle` of `{ fullWidth: true }` lifts the page's width limit
+const isFullWidth = (handle: unknown): boolean =>
+  typeof handle === `object` &&
+  handle !== null &&
+  `fullWidth` in handle &&
+  handle.fullWidth === true
 
 const App = () => <Outlet />
 export default App

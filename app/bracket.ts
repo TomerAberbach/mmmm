@@ -6,6 +6,30 @@ export const DIVISION_POSITIONS = Object.values(DivisionPosition)
 
 export const ROUNDS = Object.values(Round)
 
+// The rounds whose battles each stay within one division
+export const DIVISION_ROUNDS = ROUNDS.slice(
+  ROUNDS.indexOf(`ROUND_1`),
+  ROUNDS.indexOf(`FINAL_ROAR`),
+) as DivisionRound[]
+
+export type DivisionRound = Exclude<
+  Round,
+  `WILD_CARD` | `FINAL_ROAR` | `CHAMPIONSHIP`
+>
+
+export const isDivisionRound = (round: Round): round is DivisionRound =>
+  (DIVISION_ROUNDS as Round[]).includes(round)
+
+export const ROUND_NAMES: Record<Round, string> = {
+  WILD_CARD: `Wild card`,
+  ROUND_1: `Round 1`,
+  ROUND_2: `Round 2`,
+  SWEET_16: `Sweet 16`,
+  ELITE_TRAIT: `Elite Trait`,
+  FINAL_ROAR: `Final Roar`,
+  CHAMPIONSHIP: `Championship`,
+}
+
 export const BATTLE_COUNTS: Record<Round, number> = {
   WILD_CARD: 1,
   ROUND_1: 32,
@@ -134,7 +158,9 @@ const assertBattleExists = ({ round, index }: BattleRef): void => {
   }
 }
 
-const isSameSeedSlot = (first: SeedSlotRef, second: SeedSlotRef): boolean =>
-  first.position === second.position && first.seed === second.seed
+export const isSameSeedSlot = (
+  first: SeedSlotRef,
+  second: SeedSlotRef,
+): boolean => first.position === second.position && first.seed === second.seed
 
 export { DivisionPosition, Round } from './generated/prisma/enums.ts'

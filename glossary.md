@@ -14,14 +14,16 @@ for a **Player**'s **Draft** or **Submission**.
 | **Phase**             | Where a **Year** stands: Setup, Open, In progress, Complete, or Archived                                      | Status, stage, bracket phase            |
 | **Bracket**           | A **Year**'s **Divisions**, **Combatants**, seeds, and **Wild card**, either unpublished or published         | Tournament, draft bracket               |
 | **Division**          | One of the 4 named groups of seeds 1 to 16 in a **Bracket**                                                   | Region, quadrant                        |
-| **Division position** | Where a **Division** sits on the diagram: top left, bottom left, top right, or bottom right                   | Corner, quadrant, side                  |
+| **Division position** | Where a **Division** sits on the diagram: top left, bottom left, top right, or bottom right                   | Corner, quadrant                        |
 | **Seed slot**         | A position from 1 to 16 within a **Division**                                                                 | Seed position, leaf                     |
 | **Combatant**         | An entrant in the **Bracket**, with a name and a seed                                                         | Animal, mammal, contestant, entry, team |
 | **Wild card**         | The play-in **Battle** of 2 to 4 entrants whose winner fills one **Seed slot**                                | Play-in, wild card competition          |
 | **Round**             | One stage of the **Bracket**: Wild card, Round 1, Round 2, Sweet 16, Elite Trait, Final Roar, or Championship | Elite 8, Final Four, finals             |
 | **Battle**            | One matchup in a **Round**                                                                                    | Game, match, matchup                    |
+| **Side**              | One of a **Battle**'s places, filled by a **Combatant** or by an earlier **Battle**'s winner                  | Slot, competitor                        |
+| **Champion**          | The winner of a **Year**'s Championship **Battle**                                                            | Winner of the year, title holder        |
 | **Result**            | The admin's record of who won a **Battle**                                                                    | Winner announcement, outcome            |
-| **Merge**             | A **Result** where both sides of a **Battle** advance together under a combined name                          | Tie, Tag Team                           |
+| **Merge**             | A **Result** where both **Sides** of a **Battle** advance together under a combined name                      | Tie, Tag Team                           |
 | **Lock**              | The state, set by the first saved **Result**, in which **Players** can't submit or edit                       | Deadline, close, freeze                 |
 
 ## People
@@ -84,6 +86,7 @@ for a **Player**'s **Draft** or **Submission**.
   the **Wild card**'s winner
 - A **Wild card** has 2 to 4 **Combatants**, and its **Seed slot** holds no
   **Combatant** of its own
+- A **Battle** after the **Wild card** has exactly 2 **Sides**
 - A **Battle** has exactly one **Result** once decided
 - A **Contest** belongs to exactly one **Educator** and exactly one **Year**
 - A **Contest** has exactly one active **Contest link**
