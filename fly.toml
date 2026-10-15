@@ -5,7 +5,7 @@ primary_region = 'iad'
   # Staging has no migrations, so each release resets the schema and reseeds
   # Calls Prisma directly, because pnpm would first try to install the dev
   # dependencies the image leaves out
-  release_command = "sh -c 'node_modules/.bin/prisma db push --force-reset && node_modules/.bin/prisma db seed'"
+  release_command = "sh -c 'node prisma/push-schema.ts --force-reset && node_modules/.bin/prisma db seed'"
 
 [env]
   APP_ENV = 'staging'

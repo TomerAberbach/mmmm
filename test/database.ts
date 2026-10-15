@@ -1,8 +1,7 @@
-import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { promisify } from 'node:util'
 import { createPrismaClient } from '../app/db.server.ts'
 import { requireEnv } from '../app/env.server.ts'
+import { pushSchema } from '../prisma/push-schema.ts'
 
 type TestDatabase = {
   url: string
@@ -22,7 +21,7 @@ export const createTestDatabase = async (): Promise<TestDatabase> => {
 
   await runOnServer(serverUrl, `CREATE DATABASE "${name}"`)
   try {
-    await pushSchema(url)
+    await pushSchema({ env: { ...process.env, DATABASE_URL: url.href } })
   } catch (error) {
     await drop()
     throw error
@@ -38,10 +37,4 @@ const runOnServer = async (serverUrl: URL, sql: string): Promise<void> => {
   } finally {
     await prisma.$disconnect()
   }
-}
-
-const pushSchema = async (url: URL): Promise<void> => {
-  await promisify(execFile)(`node_modules/.bin/prisma`, [`db`, `push`], {
-    env: { ...process.env, DATABASE_URL: url.href },
-  })
 }
