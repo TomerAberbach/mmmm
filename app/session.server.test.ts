@@ -3,6 +3,13 @@ import { expect, test, vi } from 'vitest'
 import { auth } from './auth.server.ts'
 import { loadSignedInEducator, readSignedInEducator } from './session.server.ts'
 
+const EDUCATOR = {
+  id: `educator-1`,
+  name: `Ms. Frizzle`,
+  email: `frizzle@example.com`,
+  emailVerified: true,
+}
+
 const stubSession = (setCookies: string[] = []) => {
   const headers = new Headers()
   for (const setCookie of setCookies) {
@@ -10,7 +17,10 @@ const stubSession = (setCookies: string[] = []) => {
   }
   return vi.spyOn(auth.api, `getSession`).mockResolvedValue({
     headers,
-    response: { user: { name: `Ms. Frizzle` } },
+    response: {
+      user: EDUCATOR,
+      session: { id: `session-1`, assurance: `PASSWORD` },
+    },
   } as never)
 }
 
@@ -46,10 +56,7 @@ test(`loaders that ask for the educator share one lookup`, async () => {
       readSignedInEducator(context),
       readSignedInEducator(context),
     ])
-    expect(educators).toStrictEqual([
-      { name: `Ms. Frizzle` },
-      { name: `Ms. Frizzle` },
-    ])
+    expect(educators).toStrictEqual([EDUCATOR, EDUCATOR])
     return new Response()
   })
 

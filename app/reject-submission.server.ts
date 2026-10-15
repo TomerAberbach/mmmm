@@ -3,6 +3,7 @@ import { APIError } from 'better-auth/api'
 import { data } from 'react-router'
 import { INVALID_EMAIL_MESSAGE } from './auth-forms.ts'
 import { isTooManyAttempts } from './auth-limits.server.ts'
+import { isSecondFactorRefusal } from './second-factor.ts'
 
 const BAD_REQUEST: ResponseInit = { status: 400 }
 
@@ -27,10 +28,13 @@ export const rejectSubmission = (
   )
 
 // Answers each refusal Better Auth gives a form, and rethrows any other error:
-// too many attempts, or an address it checks more strictly than `emailSchema`
+// too many attempts, an address it checks more strictly than `emailSchema`, a
+// second-factor change the app refuses, or a wrong password in
+// `passwordField`
 export const rejectAuthError = (
   submission: Submission<unknown>,
   error: unknown,
+  { passwordField }: { passwordField?: string } = {},
 ): ReturnType<typeof rejectSubmission> => {
   if (isTooManyAttempts(error)) {
     return rejectSubmission(
@@ -43,6 +47,22 @@ export const rejectAuthError = (
     return rejectSubmission(submission, {
       fieldErrors: { email: [INVALID_EMAIL_MESSAGE] },
     })
+  }
+  if (
+    passwordField &&
+    error instanceof APIError &&
+    error.body?.code === `INVALID_PASSWORD`
+  ) {
+    return rejectSubmission(submission, {
+      fieldErrors: { [passwordField]: [`Your password is incorrect`] },
+    })
+  }
+  if (error instanceof APIError && isSecondFactorRefusal(error.body?.code)) {
+    return rejectSubmission(
+      submission,
+      { formErrors: [error.body?.message ?? error.message] },
+      { status: error.statusCode },
+    )
   }
   throw error
 }

@@ -166,6 +166,9 @@ importers:
 
   .:
     dependencies:
+      '@better-auth/passkey':
+        specifier: 1.7.7
+        version: 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.23.1)(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.5)
       '@conform-to/react':
         specifier: ^1.21.1
         version: 1.21.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -199,6 +202,9 @@ importers:
       '@react-router/node':
         specifier: ^8.4.0
         version: 8.4.0(react-router@8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@6.0.3)
+      '@simplewebauthn/browser':
+        specifier: 13.3.0
+        version: 13.3.0
       better-auth:
         specifier: ^1.7.7
         version: 1.7.7(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.23.1)(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)
@@ -238,6 +244,9 @@ importers:
       react-router:
         specifier: ^8.4.0
         version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      uqr:
+        specifier: 0.1.3
+        version: 0.1.3
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -433,6 +442,16 @@ packages:
     peerDependenciesMeta:
       mongodb:
         optional: true
+
+  '@better-auth/passkey@1.7.7':
+    resolution: {integrity: sha512-FMhL3bspBxne8EcyPWx9LdWUCnmrNRoSxCnH9Q2FIWsSWXMYuPPcHOs07v4g0zUXmTlBSr4vwW3J6t2vdUIOlg==}
+    peerDependencies:
+      '@better-auth/core': ^1.7.7
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.2
+      better-auth: ^1.7.7
+      better-call: 1.4.0
+      nanostores: ^1.0.1
 
   '@better-auth/prisma-adapter@1.7.7':
     resolution: {integrity: sha512-4YcnrcVdvWiAZw0sZl63tWUClPXg5r3QsLn7C2sG7kKEBY06zOng0ibecyxRBixKq1zE1ceHuEUqez5Rhi+nQA==}
@@ -654,6 +673,9 @@ packages:
   '@fontsource/barlow@5.3.0':
     resolution: {integrity: sha512-tGR0y6QObRtKv71MOth44222+mdNFM/ZWFWDV1VLzNbG4oK9PNRlyJzmkck4vHAi9ibHBXgt4SlY51amFP55CA==}
 
+  '@hexagon/base64@1.1.28':
+    resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
+
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
     engines: {node: '>=18.18.0'}
@@ -707,6 +729,9 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@levischuck/tiny-cbor@0.2.11':
+    resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
 
   '@microsoft/tsdoc-config@0.18.3':
     resolution: {integrity: sha512-0I0rGXo1eJziw3EEErkDS9p/0RzBcyOiV+zbSDqOZTeURmhtut+WIvpih0LM5g+ZpZ9SyFxDfkhAcl/r8e2zGw==}
@@ -960,6 +985,57 @@ packages:
     resolution: {integrity: sha512-UqGPmo56KDfLlfXFAFIrNflHT8tFxWGEivWg3Zeyp4Uy2NlKN1FGPr6/BxcLGG3+kZ6Wp14g5Uj+n71boqZfiw==}
     cpu: [x64]
     os: [win32]
+
+  '@peculiar/asn1-android@2.11.0':
+    resolution: {integrity: sha512-llW/qjavL+tOxt5i9whUv4wsbsLpUwI6k/DrvKsdA/H7A/TB/6CosMFgvei28fcJ8ncD0c5lig1oBBlo4KGMCw==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-cms@2.11.0':
+    resolution: {integrity: sha512-SlAiDoT/Cd8qaNmbTt78gqyaEvu2fQd6ML6KWJkdjXGrgDKnHHrusVkfQUelkfinL2p665IIADb0JBixtT8W1g==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-csr@2.11.0':
+    resolution: {integrity: sha512-M/ED0yJ05qMK+UADPKnIa8vhAeewOJALSxTAZB7RQ/batRHhIJZkwznCcWAbFO5saHJ1yEQ+m4lncEcG9RnQSg==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-ecc@2.11.0':
+    resolution: {integrity: sha512-jj1alGEKev7/un+cI+exyVK9m31lmP7cCBMCZuCb0wkFQH2zmKmJzNiG4wqXFNzlcP8timHLnzf3lV3OxBpb/Q==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-pfx@2.11.0':
+    resolution: {integrity: sha512-ykSAWRu8KkmzU8LRpk9ZQC3zuLmBEtoSMjIv9XHVamD5W7amqreV5wttKqnvtjWOzzSJQxA/HVT8/tHwpEEGSQ==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-pkcs8@2.11.0':
+    resolution: {integrity: sha512-lragjkjQGnQ5luxC+sxoAfAO/jBiQ7hOEGlDKJUk7MC5zY3AzjB2DU0GyPUH1Sswdv10t7DurY0zylOYMLb88w==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-pkcs9@2.11.0':
+    resolution: {integrity: sha512-gDdFjpqV0weJjgNUvueUVf4D8uVbpq+VbG0TsxLAY2QGljAkJyL9qwQ7avol9j0jaYSJ7Ey7v7RZp0M3GTcQSA==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-rsa@2.11.0':
+    resolution: {integrity: sha512-S2sBJmbfI09Kzdt9cEhE6pDNjHpVTkURs+811+PxS8AvsTLxC4woMNRhxHYaIbClkkNfAVt0tZxJdINVfUmzuA==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-schema@2.11.0':
+    resolution: {integrity: sha512-8xh4avo53/vXO6UEv9yaoJ83hY581geaLTygf61NPIXP5AeIZCPjJhpTaYU23IZkG+NpLN/C9FYzWp7hphIT9A==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509-attr@2.11.0':
+    resolution: {integrity: sha512-Fgvnd9REmLxEj/4cbDP54dNUNUXkzUksXLqEHqs1mHBuSRjSTCUSPM/WQIZYSvrdG7ND9CX1AQtPoIBekhgQSA==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509@2.11.0':
+    resolution: {integrity: sha512-J1sHAwGNlk+8J+FeR1eLVc6Gq0T9f9ITc3HWyPYgJraoW6U8AJuQiWVJ3SCEpltfTdpOY7fHdHT5oKAsbK/jww==}
+    engines: {node: '>=14'}
+
+  '@peculiar/utils@2.0.3':
+    resolution: {integrity: sha512-+oL3HPFRIZ1St2K50lWCXiioIgSoxzz7R1J3uF6neO2yl1sgmpgY6XXJH4BdpoDkMWznQTeYF6oWNDZLCdQ4eQ==}
+
+  '@peculiar/x509@1.14.3':
+    resolution: {integrity: sha512-C2Xj8FZ0uHWeCXXqX5B4/gVFQmtSkiuOolzAgutjTfseNOHT3pUjljDZsTSxXFGgio54bCzVFqmEOUrIVk8RDA==}
+    engines: {node: '>=20.0.0'}
 
   '@playwright/test@1.64.0':
     resolution: {integrity: sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g==}
@@ -1449,6 +1525,13 @@ packages:
 
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
+
+  '@simplewebauthn/browser@13.3.0':
+    resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
+
+  '@simplewebauthn/server@13.3.3':
+    resolution: {integrity: sha512-LelX/lcy5cjc15A86i/aNxHhB5eU7dd20QsbP0VLAf9e38+SLlsnqCCyecx3xqfGofhmX05h1J9fKRYWxw+luA==}
+    engines: {node: '>=20.0.0'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -2056,6 +2139,10 @@ packages:
   arraybuffer.prototype.slice@1.0.4:
     resolution: {integrity: sha512-BNoCY6SXXPQ7gF2opIP4GBE+Xw7U+pHMYKuzjgCN3GwiaIR09UUeKfheyIry77QtrCBlC0KK0q5/TER/tYh3PQ==}
     engines: {node: '>= 0.4'}
+
+  asn1js@3.0.10:
+    resolution: {integrity: sha512-S2s3aOytiKdFRdulw2qPE51MzjzVOisppcVv7jVFR+Kw0kxwvFrDcYA0h7Ndqbmj0HkMIXYWaoj7fli8kgx1eg==}
+    engines: {node: '>=12.0.0'}
 
   assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
@@ -4016,6 +4103,13 @@ packages:
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
+  pvtsutils@1.3.6:
+    resolution: {integrity: sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg==}
+
+  pvutils@1.2.0:
+    resolution: {integrity: sha512-BbubeCEyTuQjVMakvJQ/Sxbc93F2pwmbsxONT/ZRrwU7Ua38d8unYTwXpTVLAKJ4BDuH9IGztCjQcd/N/39Dvg==}
+    engines: {node: '>=16.0.0'}
+
   qified@0.10.1:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
@@ -4093,6 +4187,9 @@ packages:
   refa@0.12.1:
     resolution: {integrity: sha512-J8rn6v4DBb2nnFqkqwy6/NnTYMcgLA+sLr0iIO41qpv0n+ngb7ksag2tMRl0inb1bbO/esUwzW1vbJi7K0sI0g==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
+
+  reflect-metadata@0.2.2:
+    resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
 
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
@@ -4373,8 +4470,15 @@ packages:
   ts-pattern@5.9.0:
     resolution: {integrity: sha512-6s5V71mX8qBUmlgbrfL33xDUwO0fq48rxAu2LBE11WBeGdpCPOsXksQbZJHvHwhrd3QjUusd3mAOM5Gg0mFBLg==}
 
+  tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
+
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+
+  tsyringe@4.10.0:
+    resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
+    engines: {node: '>= 6.0.0'}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -4453,6 +4557,9 @@ packages:
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
+
+  uqr@0.1.3:
+    resolution: {integrity: sha512-0rjE8iEJe4YmT9TOhwsZtqCMRLc5DXZUI2UEYUUg63ikBkqqE5EYWaI0etFe/5KUcmcYwLih2RND1kq+hrUJXA==}
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
@@ -4801,6 +4908,18 @@ snapshots:
       '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
 
+  '@better-auth/passkey@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.23.1)(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.5)':
+    dependencies:
+      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
+      '@better-auth/utils': 0.4.2
+      '@better-fetch/fetch': 1.3.2
+      '@simplewebauthn/browser': 13.3.0
+      '@simplewebauthn/server': 13.3.3
+      better-auth: 1.7.7(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.23.1)(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3)
+      better-call: 1.4.0(zod@4.6.5)
+      nanostores: 1.5.5
+      zod: 4.6.5
+
   '@better-auth/prisma-adapter@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3))(prisma@7.10.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))':
     dependencies:
       '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5)
@@ -5062,6 +5181,8 @@ snapshots:
 
   '@fontsource/barlow@5.3.0': {}
 
+  '@hexagon/base64@1.1.28': {}
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -5116,6 +5237,8 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@levischuck/tiny-cbor@0.2.11': {}
 
   '@microsoft/tsdoc-config@0.18.3':
     dependencies:
@@ -5265,6 +5388,106 @@ snapshots:
 
   '@oxc-resolver/binding-win32-x64-msvc@11.24.2':
     optional: true
+
+  '@peculiar/asn1-android@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-cms@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-x509-attr': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-csr@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-ecc@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-pfx@2.11.0':
+    dependencies:
+      '@peculiar/asn1-cms': 2.11.0
+      '@peculiar/asn1-pkcs8': 2.11.0
+      '@peculiar/asn1-rsa': 2.11.0
+      '@peculiar/asn1-schema': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-pkcs8@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-pkcs9@2.11.0':
+    dependencies:
+      '@peculiar/asn1-cms': 2.11.0
+      '@peculiar/asn1-pfx': 2.11.0
+      '@peculiar/asn1-pkcs8': 2.11.0
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-x509-attr': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-rsa@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-schema@2.11.0':
+    dependencies:
+      '@peculiar/utils': 2.0.3
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509-attr@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509@2.11.0':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/utils': 2.0.3
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/utils@2.0.3':
+    dependencies:
+      tslib: 2.8.1
+
+  '@peculiar/x509@1.14.3':
+    dependencies:
+      '@peculiar/asn1-cms': 2.11.0
+      '@peculiar/asn1-csr': 2.11.0
+      '@peculiar/asn1-ecc': 2.11.0
+      '@peculiar/asn1-pkcs9': 2.11.0
+      '@peculiar/asn1-rsa': 2.11.0
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      pvtsutils: 1.3.6
+      reflect-metadata: 0.2.2
+      tslib: 2.8.1
+      tsyringe: 4.10.0
 
   '@playwright/test@1.64.0':
     dependencies:
@@ -5674,6 +5897,19 @@ snapshots:
     dependencies:
       domhandler: 5.0.3
       selderee: 0.11.0
+
+  '@simplewebauthn/browser@13.3.0': {}
+
+  '@simplewebauthn/server@13.3.3':
+    dependencies:
+      '@hexagon/base64': 1.1.28
+      '@levischuck/tiny-cbor': 0.2.11
+      '@peculiar/asn1-android': 2.11.0
+      '@peculiar/asn1-ecc': 2.11.0
+      '@peculiar/asn1-rsa': 2.11.0
+      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/x509': 1.14.3
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -6392,6 +6628,12 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       is-array-buffer: 3.0.5
+
+  asn1js@3.0.10:
+    dependencies:
+      pvtsutils: 1.3.6
+      pvutils: 1.2.0
+      tslib: 2.8.1
 
   assertion-error@2.0.1: {}
 
@@ -8563,6 +8805,12 @@ snapshots:
 
   pure-rand@6.1.0: {}
 
+  pvtsutils@1.3.6:
+    dependencies:
+      tslib: 2.8.1
+
+  pvutils@1.2.0: {}
+
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
@@ -8654,6 +8902,8 @@ snapshots:
   refa@0.12.1:
     dependencies:
       '@eslint-community/regexpp': 4.12.2
+
+  reflect-metadata@0.2.2: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:
@@ -8970,7 +9220,13 @@ snapshots:
 
   ts-pattern@5.9.0: {}
 
+  tslib@1.14.1: {}
+
   tslib@2.8.1: {}
+
+  tsyringe@4.10.0:
+    dependencies:
+      tslib: 1.14.1
 
   type-check@0.4.0:
     dependencies:
@@ -9098,6 +9354,8 @@ snapshots:
       browserslist: 4.29.3
       escalade: 3.2.0
       picocolors: 1.1.1
+
+  uqr@0.1.3: {}
 
   uri-js@4.4.1:
     dependencies:

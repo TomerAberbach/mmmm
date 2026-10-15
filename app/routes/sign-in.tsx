@@ -19,13 +19,17 @@ export const loader = async ({ request, context }: Route.LoaderArgs) =>
     : { notice: readNotice(new URL(request.url).searchParams) }
 
 // A confirmation link returns here with `confirmed`, plus an `error` when it
-// fails. A password reset returns here with `password-reset`
+// fails. A password reset returns here with `password-reset`, and a sign-in
+// whose code page ran out with `challenge-expired`
 const readNotice = (params: URLSearchParams): SignInNotice | undefined => {
   if (params.has(`error`)) {
     return `link-invalid`
   }
   if (params.has(`password-reset`)) {
     return `password-reset`
+  }
+  if (params.has(`challenge-expired`)) {
+    return `challenge-expired`
   }
   return params.has(`confirmed`) ? `confirmed` : undefined
 }
@@ -40,12 +44,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const { email, password } = submission.value
   try {
-    const { headers } = await auth.api.signInEmail({
+    const { headers, response } = await auth.api.signInEmail({
       body: { email, password },
       headers: request.headers,
       returnHeaders: true,
     })
-    return redirect(`/`, { headers })
+    // An educator with an authenticator app enters its code next, and
+    // Better Auth makes the session only then
+    return redirect(`twoFactorRedirect` in response ? `/sign-in/code` : `/`, {
+      headers,
+    })
   } catch (error) {
     if (error instanceof APIError) {
       if (error.body?.code === `EMAIL_NOT_VERIFIED`) {

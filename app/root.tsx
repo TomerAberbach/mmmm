@@ -36,10 +36,14 @@ export const links: Route.LinksFunction = () => [
 
 export const middleware: Route.MiddlewareFunction[] = [loadSignedInEducator]
 
-export const loader = async ({ context }: Route.LoaderArgs) => ({
-  supportEmail: requireEnv(`SUPPORT_EMAIL`),
-  educator: await readSignedInEducator(context),
-})
+export const loader = async ({ context }: Route.LoaderArgs) => {
+  const educator = await readSignedInEducator(context)
+  return {
+    supportEmail: requireEnv(`SUPPORT_EMAIL`),
+    // Every page receives this, so it holds only what the header shows
+    educator: educator && { name: educator.name },
+  }
+}
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   // Missing when the root loader itself failed

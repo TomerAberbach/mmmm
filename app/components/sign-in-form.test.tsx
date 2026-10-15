@@ -30,7 +30,7 @@ test(`a failed sign-in shows the server's message`, async () => {
 
   await userEvent.fill(page.getByLabelText(`Email address`), `ada@school.org`)
   await userEvent.fill(page.getByLabelText(`Password`), `wrong password`)
-  await page.getByRole(`button`, { name: `Sign in` }).click()
+  await page.getByRole(`button`, { name: `Sign in`, exact: true }).click()
 
   await expect
     .element(page.getByRole(`alert`))

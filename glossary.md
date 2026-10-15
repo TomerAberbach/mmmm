@@ -25,17 +25,24 @@ for a **Player**'s **Draft** or **Submission**.
 
 ## People
 
-| Term                  | Definition                                                             | Aliases to avoid                  |
-| --------------------- | ---------------------------------------------------------------------- | --------------------------------- |
-| **Admin**             | An **Educator** whose confirmed email address is on the **Admin list** | Operator, superuser               |
-| **Admin list**        | The admin email addresses in the app's configuration                   | `ADMIN_EMAIL`                     |
-| **Educator**          | A person who signs up and runs **Contests**                            | Teacher, user, account            |
-| **Player**            | A person who fills out a bracket through a **Contest link**            | Student, participant, submitter   |
-| **Organization**      | The **Educators** who share a confirmed email domain                   | School, district                  |
-| **Credential**        | One way an **Educator** signs in, such as an email and password        | Account, login                    |
-| **Session**           | One signed-in browser of an **Educator**                               | Login                             |
-| **Confirmation link** | The emailed link that confirms an **Educator**'s email address         | Verification link, verify link    |
-| **Reset link**        | The emailed link that sets a new password for an **Educator**          | Password reset token, reset token |
+| Term                  | Definition                                                                                                      | Aliases to avoid                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Admin**             | An **Educator** whose confirmed email address is on the **Admin list**                                          | Operator, superuser               |
+| **Admin list**        | The admin email addresses in the app's configuration                                                            | `ADMIN_EMAIL`                     |
+| **Educator**          | A person who signs up and runs **Contests**                                                                     | Teacher, user, account            |
+| **Player**            | A person who fills out a bracket through a **Contest link**                                                     | Student, participant, submitter   |
+| **Organization**      | The **Educators** who share a confirmed email domain                                                            | School, district                  |
+| **Credential**        | An **Educator**'s email address and password                                                                    | Account, login                    |
+| **Session**           | One signed-in browser of an **Educator**                                                                        | Login                             |
+| **Confirmation link** | The emailed link that confirms an **Educator**'s email address                                                  | Verification link, verify link    |
+| **Reset link**        | The emailed link that sets a new password for an **Educator**                                                   | Password reset token, reset token |
+| **Second factor**     | A **Passkey** or **Authenticator app** that proves an **Educator** is who they say, beyond a password           | 2FA, two-factor, MFA, factor      |
+| **Passkey**           | A key on an **Educator**'s device that signs them in after checking a fingerprint, face, or PIN                 | Security key, WebAuthn credential |
+| **Authenticator app** | An app that shows an **Educator** a new **Security code** every 30 seconds                                      | TOTP, OTP app, authenticator      |
+| **Security code**     | The 6-digit code an **Authenticator app** shows                                                                 | TOTP code, OTP, verification code |
+| **Recovery code**     | A single-use code that signs an **Educator** in in place of their **Authenticator app**                         | Backup code                       |
+| **Setup link**        | The emailed link that lets a **Session** add an **Admin**'s first **Second factor**                             | Enrollment link                   |
+| **Assurance**         | How a **Session**'s **Educator** proved who they are: with a password, a **Setup link**, or a **Second factor** | Session strength, auth level      |
 
 ## Contests
 
@@ -62,10 +69,11 @@ for a **Player**'s **Draft** or **Submission**.
 
 ## Views
 
-| Term                   | Definition                                                            | Aliases to avoid              |
-| ---------------------- | --------------------------------------------------------------------- | ----------------------------- |
-| **Educator dashboard** | An **Educator**'s list of their **Contests** in the **Current year**  | Home, dashboard, classes page |
-| **Past years view**    | The view where **Educators** and **Admins** browse archived **Years** | Archive, history              |
+| Term                   | Definition                                                                        | Aliases to avoid              |
+| ---------------------- | --------------------------------------------------------------------------------- | ----------------------------- |
+| **Educator dashboard** | An **Educator**'s list of their **Contests** in the **Current year**              | Home, dashboard, classes page |
+| **Past years view**    | The view where **Educators** and **Admins** browse archived **Years**             | Archive, history              |
+| **Admin area**         | The pages only **Admins** reach, from a **Session** that used a **Second factor** | Admin panel, dashboard        |
 
 ## Relationships
 
@@ -78,6 +86,11 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Contest** has exactly one active **Contest link**
 - A **Player** has exactly one **Personal link** per **Contest** they join
 - A **Draft** becomes exactly one **Submission** when submitted
+- An **Admin** has at least one **Second factor**
+- An **Educator** has zero or more **Passkeys** and at most one **Authenticator
+  app**
+- An **Authenticator app** has 10 **Recovery codes** when set up, and each works
+  once
 - An **Educator** belongs to at most one **Organization**
 - An **Educator** has one or more **Credentials**
 - A **Session** belongs to exactly one **Educator**
