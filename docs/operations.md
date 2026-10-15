@@ -65,7 +65,8 @@ stopped machine forgets every count, so the production app must also set
 `min_machines_running = 1`. Staging can stop when idle, since its password keeps
 strangers out. Each release empties the database, pushes the schema, and seeds
 it, so staging starts from fresh data. The seed creates `educator@example.com`
-and `admin@example.com`, both with the password `password`.
+and `admin@example.com`, both with the password `password`, and the 2026
+bracket, unpublished.
 
 ## Admins
 

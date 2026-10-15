@@ -42,9 +42,10 @@ app
 - Put a field's error under its input, and a form's error below its submit
   button as a `FormError` from `components/form-error.tsx`, so nothing above
   them moves when they appear. Forms validate only once first submitted
-- Check every free-text field on the server with `serverFreeTextSchema` from
-  `free-text.server.ts`, which adds the length limit and the offensive word
-  filter. The browser bundle leaves the filter out
+- Check every free-text field that educators and players fill on the server with
+  `serverFreeTextSchema` from `free-text.server.ts`, which adds the length limit
+  and the offensive word filter. The browser bundle leaves the filter out.
+  Admins' fields skip the filter, which flags some real combatants' names
 
 ## Auth
 
@@ -88,6 +89,14 @@ app
 - With `EMAIL_TRANSPORT=mailbox`, email stays in memory. Read it at
   `/dev/mailbox`, or with `readMailbox` in a test. Only `APP_ENV=development`
   and `APP_ENV=test` may use the mailbox
+
+## Brackets
+
+- Store a bracket with `createBracket` from `brackets.server.ts`, which writes
+  every seed slot, battle, and the wild card in one transaction
+- Read which seed slots or earlier battles feed a battle, and where its winner
+  goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
+  index for results and picks to reference
 
 ## React Router
 

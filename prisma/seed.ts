@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { hashPassword } from 'better-auth/crypto'
+import { createBracket } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
+import { BRACKET_2026 } from './brackets.ts'
 
 // Staging asks for its own password first, so seeded educators can share an
 // easy one. The seed skips sign-up, so sign-up's minimum length doesn't apply
@@ -45,5 +47,10 @@ const seedEducator = async ({
 
 for (const educator of EDUCATORS) {
   await seedEducator(educator)
+}
+
+// Unpublished, as a new bracket starts
+if (!(await prisma.bracket.findUnique({ where: { yearId: 2026 } }))) {
+  await createBracket(2026, BRACKET_2026)
 }
 await prisma.$disconnect()

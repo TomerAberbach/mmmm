@@ -11,6 +11,16 @@ export const EDUCATOR_NAME: FreeTextField = {
   maxLength: 80,
 }
 
+export const DIVISION_NAME: FreeTextField = {
+  label: `each division's name`,
+  maxLength: 80,
+}
+
+export const COMBATANT_NAME: FreeTextField = {
+  label: `each combatant's name`,
+  maxLength: 80,
+}
+
 // The checks the browser can run too. The server adds the offensive word
 // filter
 export const freeTextSchema = ({

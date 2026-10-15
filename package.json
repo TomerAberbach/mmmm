@@ -11,7 +11,7 @@
     "build": "react-router build",
     "start": "NODE_ENV=production node server.ts",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma db push --force-reset && prisma generate && prisma db seed",
+    "db:reset": "node prisma/push-schema.ts --force-reset && prisma generate && prisma db seed",
     "format:base": "prettier --cache --write",
     "format": "pnpm format:base . && prisma format",
     "format:check": "prettier --cache --check . && prisma format --check",

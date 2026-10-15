@@ -115,3 +115,110 @@ model AuthenticatorApp {
   @@index([educatorId])
   @@index([secret])
 }
+
+// One March Mammal Madness tournament. The ID is its calendar year
+model Year {
+  id      Int      @id
+  bracket Bracket?
+}
+
+// Unpublished while `publishedAt` is null, when only the admin sees it
+model Bracket {
+  id          String      @id
+  yearId      Int         @unique
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  year        Year        @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  divisions   Division[]
+  combatants  Combatant[]
+  battles     Battle[]
+  wildCard    WildCard?
+}
+
+// Where a division sits on the diagram. The two left divisions meet in one
+// Final Roar battle and the two right divisions in the other
+enum DivisionPosition {
+  TOP_LEFT
+  BOTTOM_LEFT
+  TOP_RIGHT
+  BOTTOM_RIGHT
+}
+
+model Division {
+  id        String           @id
+  bracketId String
+  position  DivisionPosition
+  name      String
+  bracket   Bracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  seedSlots SeedSlot[]
+
+  @@unique([bracketId, position])
+  @@unique([bracketId, name])
+}
+
+// Empty only when the wild card's winner fills it
+model SeedSlot {
+  id          String     @id
+  divisionId  String
+  seed        Int
+  combatantId String?    @unique
+  division    Division   @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  combatant   Combatant? @relation(fields: [combatantId], references: [id])
+  wildCard    WildCard?
+
+  @@unique([divisionId, seed])
+}
+
+model Combatant {
+  id              String           @id
+  bracketId       String
+  name            String
+  bracket         Bracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  seedSlot        SeedSlot?
+  wildCardEntrant WildCardEntrant?
+
+  @@unique([bracketId, name])
+}
+
+// The battle of 2 to 4 entrants whose winner fills `seedSlot`
+model WildCard {
+  id         String            @id
+  bracketId  String            @unique
+  seedSlotId String            @unique
+  bracket    Bracket           @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  seedSlot   SeedSlot          @relation(fields: [seedSlotId], references: [id], onDelete: Cascade)
+  entrants   WildCardEntrant[]
+}
+
+model WildCardEntrant {
+  wildCardId  String
+  index       Int
+  combatantId String    @unique
+  wildCard    WildCard  @relation(fields: [wildCardId], references: [id], onDelete: Cascade)
+  combatant   Combatant @relation(fields: [combatantId], references: [id], onDelete: Cascade)
+
+  @@id([wildCardId, index])
+}
+
+enum Round {
+  WILD_CARD
+  ROUND_1
+  ROUND_2
+  SWEET_16
+  ELITE_TRAIT
+  FINAL_ROAR
+  CHAMPIONSHIP
+}
+
+// `index` orders a round's battles top to bottom, left divisions first, as
+// `app/bracket.ts` lays them out
+model Battle {
+  id        String  @id
+  bracketId String
+  round     Round
+  index     Int
+  bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+
+  @@unique([bracketId, round, index])
+}
