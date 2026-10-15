@@ -13,27 +13,40 @@ datasource db {
 // Auth rejects a schema that lacks any of its columns, including Educator.image,
 // which only social sign-in sets
 model Educator {
-  id            String       @id
-  name          String
-  email         String       @unique
-  emailVerified Boolean      @default(false)
-  image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  sessions      Session[]
-  credentials   Credential[]
+  id                String             @id
+  name              String
+  email             String             @unique
+  emailVerified     Boolean            @default(false)
+  image             String?
+  // Set while an authenticator app is on, so sign-in asks for its code
+  twoFactorEnabled  Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sessions          Session[]
+  credentials       Credential[]
+  passkeys          Passkey[]
+  authenticatorApps AuthenticatorApp[]
+}
+
+// How a session's educator proved who they are. A setup link lets a session
+// add an admin's first second factor
+enum SessionAssurance {
+  PASSWORD
+  SETUP_LINK
+  SECOND_FACTOR
 }
 
 model Session {
-  id         String   @id
+  id         String           @id
   expiresAt  DateTime
-  token      String   @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  token      String           @unique
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   ipAddress  String?
   userAgent  String?
+  assurance  SessionAssurance @default(PASSWORD)
   educatorId String
-  educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+  educator   Educator         @relation(fields: [educatorId], references: [id], onDelete: Cascade)
 
   @@index([educatorId])
 }
@@ -66,4 +79,39 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@index([identifier])
+}
+
+// Better Auth's passkey plugin table
+model Passkey {
+  id           String   @id
+  name         String?
+  publicKey    String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  aaguid       String?
+  createdAt    DateTime @default(now())
+  educatorId   String
+  educator     Educator @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+
+  @@index([educatorId])
+  @@index([credentialID])
+}
+
+// Better Auth's two-factor plugin table. `verified` stays false until the
+// educator enters a first code from the app
+model AuthenticatorApp {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  educatorId              String
+  educator                Educator  @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+
+  @@index([educatorId])
+  @@index([secret])
 }

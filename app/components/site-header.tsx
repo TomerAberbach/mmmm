@@ -1,5 +1,4 @@
 import { Form, Link } from 'react-router'
-import type { SignedInEducator } from '../session.server.ts'
 import { Button } from './button.tsx'
 import { LetterColors } from './letter-colors.tsx'
 
@@ -8,7 +7,7 @@ export const SiteHeader = ({
 }: {
   // Null when signed out. Undefined when it couldn't be read, so the header
   // shows neither
-  educator?: SignedInEducator | null
+  educator?: { name: string } | null
 }) => (
   <header className='border-b-2 border-ink print:hidden'>
     <div className='h-2 bg-linear-to-r from-accent-strong via-muted to-accent-soft' />

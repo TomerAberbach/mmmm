@@ -1,6 +1,5 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { useId } from 'react'
 import type { ReactNode } from 'react'
 import { useFetcher } from 'react-router'
 import {
@@ -13,18 +12,29 @@ import { ConfirmDialog } from './confirm-dialog.tsx'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
+import { SecondFactorSettings } from './second-factor-settings.tsx'
+import type { SecondFactorSettingsData } from './second-factor-settings.tsx'
+import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 
 export type SettingsResult = { result: SubmissionResult; saved?: true }
 
-export const EducatorSettings = ({ name }: { name: string }) => (
+export const EducatorSettings = ({
+  name,
+  secondFactors,
+}: {
+  name: string
+  // Only for admins and educators who have a second factor
+  secondFactors?: SecondFactorSettingsData
+}) => (
   <div className='flex max-w-md flex-col gap-8'>
     <PageTitle>Account settings</PageTitle>
     <div className='flex flex-col divide-y-2 divide-ink'>
       <NameSettings name={name} />
       <PasswordSettings />
       <SessionSettings />
+      {secondFactors ? <SecondFactorSettings {...secondFactors} /> : null}
     </div>
   </div>
 )
@@ -133,30 +143,6 @@ const SessionSettings = () => {
         <Notice kind='status'>Every other session is signed out.</Notice>
       ) : null}
     </SettingsSection>
-  )
-}
-
-const SettingsSection = ({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) => {
-  const headingId = useId()
-  return (
-    <section
-      aria-labelledby={headingId}
-      className='flex flex-col gap-4 py-8 first:pt-0'
-    >
-      <h2
-        id={headingId}
-        className='font-condensed text-2xl leading-tight font-extrabold uppercase'
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
   )
 }
 

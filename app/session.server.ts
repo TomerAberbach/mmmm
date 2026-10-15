@@ -1,30 +1,40 @@
 import { parseSetCookieHeader } from 'better-auth/cookies'
-import { createContext, redirect } from 'react-router'
+import { createContext, data, redirect } from 'react-router'
 import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
+import { isAdmin } from './admins.server.ts'
 import { auth } from './auth.server.ts'
+import type { SessionAssurance } from './generated/prisma/enums.ts'
 
-export type SignedInEducator = { name: string }
+export type SignedInEducator = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+}
 
-type SessionLookup = { educator: SignedInEducator | null; headers: Headers }
+export type SignedInSession = { id: string; assurance: SessionAssurance }
 
-const signedInEducatorContext =
-  createContext<() => Promise<SignedInEducator | null>>()
+type SignedIn = { educator: SignedInEducator; session: SignedInSession }
+
+type SessionLookup = { signedIn: SignedIn | null; headers: Headers }
+
+const signedInContext = createContext<() => Promise<SignedIn | null>>()
 
 // Looks up the session at most once per request, and only when
-// `readSignedInEducator` runs
+// `readSignedInEducator` runs or `requireSignedInEducator` needs it
 export const loadSignedInEducator: MiddlewareFunction<Response> = async (
   { request, context },
   next,
 ) => {
   let lookup: Promise<SessionLookup> | undefined
-  context.set(signedInEducatorContext, async () => {
+  context.set(signedInContext, async () => {
     lookup ??= auth.api
       .getSession({ headers: request.headers, returnHeaders: true })
-      .then(({ headers, response: session }) => ({
+      .then(({ headers, response }) => ({
         headers,
-        educator: session ? { name: session.user.name } : null,
+        signedIn: response && toSignedIn(response),
       }))
-    return (await lookup).educator
+    return (await lookup).signedIn
   })
 
   const response = await next()
@@ -41,29 +51,62 @@ export const loadSignedInEducator: MiddlewareFunction<Response> = async (
   return response
 }
 
-export const readSignedInEducator = (
-  context: Readonly<RouterContextProvider>,
-): Promise<SignedInEducator | null> => context.get(signedInEducatorContext)()
+type BetterAuthSession = NonNullable<
+  Awaited<ReturnType<typeof auth.api.getSession>>
+>
 
-const requiredEducatorContext = createContext<SignedInEducator>()
+const toSignedIn = ({ user, session }: BetterAuthSession): SignedIn => ({
+  educator: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    emailVerified: user.emailVerified,
+  },
+  session: { id: session.id, assurance: session.assurance ?? `PASSWORD` },
+})
+
+export const readSignedInEducator = async (
+  context: Readonly<RouterContextProvider>,
+): Promise<SignedInEducator | null> =>
+  (await context.get(signedInContext)())?.educator ?? null
+
+const requiredContext = createContext<SignedIn>()
 
 // Sends signed-out visitors to sign in. Routes below it read the educator with
-// `readRequiredEducator`
+// `readRequiredEducator`, and the session with `readRequiredSession`
 export const requireSignedInEducator: MiddlewareFunction<Response> = async (
   { context },
   next,
 ) => {
-  const educator = await readSignedInEducator(context)
-  if (!educator) {
+  const signedIn = await context.get(signedInContext)()
+  if (!signedIn) {
     return redirect(`/sign-in`)
   }
-  context.set(requiredEducatorContext, educator)
+  context.set(requiredContext, signedIn)
   return next()
 }
 
 export const readRequiredEducator = (
   context: Readonly<RouterContextProvider>,
-): SignedInEducator => context.get(requiredEducatorContext)
+): SignedInEducator => context.get(requiredContext).educator
+
+export const readRequiredSession = (
+  context: Readonly<RouterContextProvider>,
+): SignedInSession => context.get(requiredContext).session
+
+// Answers anyone but an admin with the not-found page, so the admin area looks
+// like any missing page. Nest it after `requireSignedInEducator`
+export const requireAdmin: MiddlewareFunction<Response> = async (
+  { context },
+  next,
+) => {
+  if (!isAdmin(readRequiredEducator(context))) {
+    // React Router renders a thrown response with the error page
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw data(null, { status: 404 })
+  }
+  return next()
+}
 
 const appendCookiesNotSet = (target: Headers, source: Headers): void => {
   const namesSet = new Set(target.getSetCookie().map(cookieName))

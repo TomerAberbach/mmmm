@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { ADMIN_LIST } from './e2e/admins.ts'
 
 const PORT = 3100
 const BASE_URL = `http://localhost:${PORT}`
@@ -22,6 +23,7 @@ export default defineConfig({
       BETTER_AUTH_URL: BASE_URL,
       SUPPORT_EMAIL: `support@example.com`,
       APP_ENV: `test`,
+      ADMIN_LIST: ADMIN_LIST.join(`,`),
       EMAIL_TRANSPORT: `mailbox`,
       EMAIL_FROM: `MMMM <noreply@example.com>`,
     },

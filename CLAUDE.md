@@ -30,7 +30,7 @@ mmmm
 │   └── generated/      # Prisma client, generated on install and by `pnpm db:reset`. Gitignored
 ├── prisma/             # Schema and seed
 ├── test/database.ts    # Creates a throwaway database for each Vitest and Playwright run
-├── docs/operations.md  # Accounts, secrets, deploys, and backups
+├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins
 └── e2e/                # Playwright tests against the production build
 ```
 
@@ -116,7 +116,21 @@ missing variable.
   request, and only when something reads it
 - Nest routes that need a signed-in educator under a layout route with the
   `requireSignedInEducator` middleware, as `app/routes/settings.tsx` does, and
-  read the educator there with `readRequiredEducator`
+  read the educator there with `readRequiredEducator` and the session with
+  `readRequiredSession`
+- Root's loader data reaches every page, so it passes only what the header
+  shows. Load an educator's address or ID in the route that needs it
+- Add admin pages under the `routes/admin.second-factor.tsx` layout in
+  `app/routes.ts`, which opens them only for a session whose `assurance` is
+  `SECOND_FACTOR`. `requireAdmin` answers everyone but an admin with the
+  not-found page
+- `guardSecondFactorChange` in `app/second-factor.server.ts` checks every
+  `/two-factor/*` and `/passkey/*` request. When adding a Better Auth endpoint
+  that adds or removes a second factor, list it in `ADDING_PATHS` or
+  `REMOVING_PATHS` there
+- Better Auth copies a session's fields when it replaces the session, such as
+  when an authenticator app turns on. Leave `assurance` without a Better Auth
+  `defaultValue`, which would reset the copy to `PASSWORD`
 - Pass `headers: request.headers` to every `auth.api` call. The auth limits read
   the client's IP address from them, and throw without it
 - Force request fields that no client may choose in `FORCED_FIELDS` in
@@ -186,6 +200,14 @@ missing variable.
   with `expectNoAxeViolations` from `test/axe.ts`
 - `e2e/*.test.ts` files run in Playwright against the production build. Read the
   email a test sent with `readEmails` and `readActionLink` from `e2e/mailbox.ts`
+- The end-to-end server's `ADMIN_LIST` comes from `e2e/admins.ts`, since a test
+  can't change it once the server starts. Give each admin test its own address
+  from that list
+- Test passkeys with Chromium's virtual authenticator, as
+  `addVirtualAuthenticator` in `e2e/admins.test.ts` does, and authenticator apps
+  with `readTotpCode` from `test/totp.ts`
+- In browser tests, `toHaveTextContent` with a regex fails even on matching
+  text. Pass the element's whole text
 - End-to-end tests all come from one IP address, so a run gets 100 failed
   sign-ins every 15 minutes, and 100 sign-ups, reset requests, and resends an
   hour, before the auth limits refuse it

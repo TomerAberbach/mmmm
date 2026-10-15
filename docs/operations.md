@@ -31,6 +31,7 @@ value.
 | `STAGING_PASSWORD`   | The password testers enter in the browser. Any username works                    |
 | `RESEND_API_KEY`     | A Resend API key with sending access                                             |
 | `SUPPORT_EMAIL`      | `support@mmmm.onl`, which Cloudflare forwards                                    |
+| `ADMIN_LIST`         | The admins' addresses, separated by commas. A secret only to keep them private   |
 
 `fly.toml` sets `APP_ENV`, `BETTER_AUTH_URL`, `EMAIL_TRANSPORT`, and
 `EMAIL_FROM`, which aren't secret. With `APP_ENV=staging`, the app refuses to
@@ -64,7 +65,27 @@ stopped machine forgets every count, so the production app must also set
 `min_machines_running = 1`. Staging can stop when idle, since its password keeps
 strangers out. Each release empties the database, pushes the schema, and seeds
 it, so staging starts from fresh data. The seed creates `educator@example.com`
-with the password `password`.
+and `admin@example.com`, both with the password `password`.
+
+## Admins
+
+An educator is an admin while `ADMIN_LIST` contains their confirmed address. The
+admin area asks for a second factor. To set up the first one, the app emails a
+setup link, so on staging, put your own address in `ADMIN_LIST` and sign up with
+it. `admin@example.com` can't receive the link there.
+
+An admin who loses every second factor and recovery code emails support. After
+confirming it's them, delete their second factors:
+
+```sh
+psql "$DATABASE_URL" -c "
+  DELETE FROM \"Passkey\" WHERE \"educatorId\" = (SELECT id FROM \"Educator\" WHERE email = 'name@school.org');
+  DELETE FROM \"AuthenticatorApp\" WHERE \"educatorId\" = (SELECT id FROM \"Educator\" WHERE email = 'name@school.org');
+  UPDATE \"Educator\" SET \"twoFactorEnabled\" = false WHERE email = 'name@school.org';
+  DELETE FROM \"Session\" WHERE \"educatorId\" = (SELECT id FROM \"Educator\" WHERE email = 'name@school.org');"
+```
+
+Their next visit to the admin area offers to email them a new setup link.
 
 The machine stops when idle and starts on the next request. `/healthz` reports
 whether the database answers, and it skips the staging password.

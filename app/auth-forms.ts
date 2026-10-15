@@ -47,3 +47,25 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string({ error: `Enter your current password` }),
   newPassword: newPasswordSchema,
 })
+
+const SECURITY_CODE_MESSAGE = `Enter the 6-digit code from your authenticator app`
+export const INCORRECT_CODE_MESSAGE = `That code is incorrect or expired. Enter the code your app shows now`
+
+// Accepts the spaces and hyphens some apps show inside the code
+const securityCodeSchema = z
+  .string({ error: SECURITY_CODE_MESSAGE })
+  .transform(code => code.replaceAll(/[\s-]/gu, ``))
+  .pipe(z.string().regex(/^\d{6}$/u, SECURITY_CODE_MESSAGE))
+
+export const securityCodeFormSchema = z.object({ code: securityCodeSchema })
+
+export const recoveryCodeSchema = z.object({
+  code: z
+    .string({ error: `Enter one of your recovery codes` })
+    .trim()
+    .min(1, `Enter one of your recovery codes`),
+})
+
+export const confirmPasswordSchema = z.object({
+  password: z.string({ error: `Enter your password` }),
+})

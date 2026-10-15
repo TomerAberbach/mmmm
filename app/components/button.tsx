@@ -12,7 +12,7 @@ const VARIANT_CLASSES = {
 
 type Variant = keyof typeof VARIANT_CLASSES
 
-const BASE_CLASSES = `inline-flex min-h-11 cursor-pointer items-center justify-center px-5 font-condensed text-lg font-bold tracking-wide uppercase outline-offset-2 data-focus-visible:outline-3 data-focus-visible:outline-accent-strong print:hidden`
+const BASE_CLASSES = `inline-flex min-h-11 cursor-pointer items-center justify-center px-5 font-condensed text-lg font-bold tracking-wide uppercase outline-offset-2 data-focus-visible:outline-3 data-focus-visible:outline-accent-strong data-disabled:cursor-not-allowed data-disabled:opacity-50 print:hidden`
 
 type ButtonProps = Omit<AriaButtonProps, `className`> & { variant?: Variant }
 
