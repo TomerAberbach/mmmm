@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
 import type { BracketInput } from './bracket-input.ts'
-import { createBracket } from './brackets.server.ts'
+import { createBracket, readCurrentBracket } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 
 // The test database is shared across this run, and each year holds one
@@ -142,4 +142,27 @@ test.each([
   await expect(
     prisma.year.findUnique({ where: { id: year } }),
   ).resolves.toBeNull()
+})
+
+const publishInNewYear = async (input: BracketInput): Promise<number> => {
+  const year = nextYear++
+  await createBracket(year, input)
+  await prisma.bracket.update({
+    where: { yearId: year },
+    data: { publishedAt: new Date() },
+  })
+  return year
+}
+
+test(`the current bracket is the newest published one, read back as entered`, async () => {
+  await publishInNewYear(BRACKET_2026)
+  const newestPublishedYear = await publishInNewYear(BRACKET_2025)
+  await createInNewYear(BRACKET_2017)
+
+  const current = await readCurrentBracket()
+
+  expect(current).toStrictEqual({
+    year: newestPublishedYear,
+    input: BRACKET_2025,
+  })
 })

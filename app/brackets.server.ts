@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { bracketInputSchema } from './bracket-input.ts'
+import { bracketInputSchema, listSeedSlotNames } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
-import { DIVISION_POSITIONS, listBattles, SEEDS } from './bracket.ts'
-import type { Seed } from './bracket.ts'
+import { DIVISION_POSITIONS, listBattles } from './bracket.ts'
+import type { DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
 // Stores an unpublished bracket for the year, with every seed slot and battle.
 // Throws on input `bracketInputSchema` rejects, or when the year already has a
@@ -36,10 +36,7 @@ export const createBracket = async (
 
 // Every row of the bracket, linked by IDs made here, so each table takes one
 // insert
-const buildBracketRows = (
-  bracketId: string,
-  { divisions, wildCard }: BracketInput,
-) => {
+const buildBracketRows = (bracketId: string, input: BracketInput) => {
   const combatants: { id: string; bracketId: string; name: string }[] = []
   const addCombatant = (name: string): string => {
     const id = randomUUID()
@@ -52,17 +49,25 @@ const buildBracketRows = (
     id: randomUUID(),
     bracketId,
     position,
-    name: divisions[position].name,
+    name: input.divisions[position].name,
   }))
-  const seedSlots = divisionRows.flatMap(({ id: divisionId, position }) =>
-    buildSeedSlots(
-      divisionId,
-      divisions[position].combatants,
-      position === wildCard.position
-        ? { seed: wildCard.seed, slotId: wildCardSlotId }
-        : undefined,
-      addCombatant,
-    ),
+  const divisionIds = Object.fromEntries(
+    divisionRows.map(({ id, position }) => [position, id]),
+  ) as Record<DivisionPosition, string>
+  const seedSlots = listSeedSlotNames(input).map(({ position, seed, name }) =>
+    name === undefined
+      ? {
+          id: wildCardSlotId,
+          divisionId: divisionIds[position],
+          seed,
+          combatantId: null,
+        }
+      : {
+          id: randomUUID(),
+          divisionId: divisionIds[position],
+          seed,
+          combatantId: addCombatant(name),
+        },
   )
 
   const wildCardId = randomUUID()
@@ -72,7 +77,7 @@ const buildBracketRows = (
     divisions: divisionRows,
     seedSlots,
     wildCard: { id: wildCardId, bracketId, seedSlotId: wildCardSlotId },
-    wildCardEntrants: wildCard.entrants.map((name, index) => ({
+    wildCardEntrants: input.wildCard.entrants.map((name, index) => ({
       wildCardId,
       index,
       combatantId: addCombatant(name),
@@ -81,24 +86,64 @@ const buildBracketRows = (
   }
 }
 
-// A division's seed slots in seed order. The wild card's seed takes its
-// combatant from the wild card, so the slot holds none
-const buildSeedSlots = (
-  divisionId: string,
-  combatants: string[],
-  wildCard: { seed: Seed; slotId: string } | undefined,
-  addCombatant: (name: string) => string,
-) => {
-  const remaining = [...combatants]
-  return SEEDS.map(seed =>
-    seed === wildCard?.seed
-      ? { id: wildCard.slotId, divisionId, seed, combatantId: null }
-      : {
-          id: randomUUID(),
-          divisionId,
-          seed,
-          // The input schema checks each division's count
-          combatantId: addCombatant(remaining.shift()!),
+// The current year's bracket: the newest published one, or null before any is
+// published
+export const readCurrentBracket = async (): Promise<{
+  year: number
+  input: BracketInput
+} | null> => {
+  const bracket = await prisma.bracket.findFirst({
+    where: { publishedAt: { not: null } },
+    orderBy: { yearId: `desc` },
+    select: {
+      yearId: true,
+      divisions: {
+        select: {
+          position: true,
+          name: true,
+          seedSlots: {
+            orderBy: { seed: `asc` },
+            select: { combatant: { select: { name: true } } },
+          },
         },
-  )
+      },
+      wildCard: {
+        select: {
+          seedSlot: {
+            select: { seed: true, division: { select: { position: true } } },
+          },
+          entrants: {
+            orderBy: { index: `asc` },
+            select: { combatant: { select: { name: true } } },
+          },
+        },
+      },
+    },
+  })
+  if (!bracket) {
+    return null
+  }
+  // Parsing checks the stored rows form a whole bracket, and narrows seeds
+  const input = bracketInputSchema.parse({
+    divisions: Object.fromEntries(
+      bracket.divisions.map(({ position, name, seedSlots }) => [
+        position,
+        {
+          name,
+          // The wild card's slot holds no combatant, as the input skips it
+          combatants: seedSlots
+            .map(({ combatant }) => combatant?.name)
+            .filter(combatantName => combatantName !== undefined),
+        },
+      ]),
+    ),
+    wildCard: bracket.wildCard && {
+      position: bracket.wildCard.seedSlot.division.position,
+      seed: bracket.wildCard.seedSlot.seed,
+      entrants: bracket.wildCard.entrants.map(
+        ({ combatant }) => combatant.name,
+      ),
+    },
+  })
+  return { year: bracket.yearId, input }
 }
