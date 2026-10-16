@@ -164,7 +164,9 @@ model SeedSlot {
   seed        Int
   combatantId String?    @unique
   division    Division   @relation(fields: [divisionId], references: [id], onDelete: Cascade)
-  combatant   Combatant? @relation(fields: [combatantId], references: [id])
+  // A seed slot never loses its combatant, so deleting one fails while a slot
+  // holds it. Deleting the bracket deletes both
+  combatant   Combatant? @relation(fields: [combatantId], references: [id], onDelete: NoAction)
   wildCard    WildCard?
 
   @@unique([divisionId, seed])

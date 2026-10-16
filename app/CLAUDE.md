@@ -44,7 +44,9 @@ app
   Better Auth's refusals, such as too many attempts, with `rejectAuthError`
 - Put a field's error under its input, and a form's error below its submit
   button as a `FormError` from `components/form-error.tsx`, so nothing above
-  them moves when they appear. Forms validate only once first submitted
+  them moves when they appear. Forms validate only once first submitted. A form
+  too long to see at once also lists its field errors above it with
+  `ErrorSummary` from `components/error-summary.tsx`
 - Check every free-text field that educators and players fill on the server with
   `serverFreeTextSchema` from `free-text.server.ts`, which adds the length limit
   and the offensive word filter. The browser bundle leaves the filter out.
@@ -95,14 +97,17 @@ app
 
 ## Brackets
 
-- Store a bracket with `createBracket` from `brackets.server.ts`, which writes
-  every seed slot, battle, and the wild card in one transaction
+- Store a bracket with `createBracket` from `brackets.server.ts`, or replace an
+  unpublished one with `saveUnpublishedBracket`. Both write every seed slot,
+  battle, and the wild card in one transaction
 - Read which seed slots or earlier battles feed a battle, and where its winner
   goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
   index for results and picks to reference
 - A `BracketInput` skips the wild card's seed in its division's list, so read
   each seed slot's combatant with `listSeedSlotNames` instead of indexing the
-  list by seed
+  list by seed. The setup form keeps one field per seed instead, so a name stays
+  at its seed when the wild card moves. `bracket-form.ts` converts between the
+  two
 - Show a bracket from `buildBracketView` in `bracket-view.ts`, which fills each
   side from the seed slots and results. `BattleBox` is hidden from screen
   readers, so put `describeBattle`'s text beside it

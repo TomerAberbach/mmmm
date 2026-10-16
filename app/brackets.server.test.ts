@@ -2,7 +2,13 @@ import { expect, test } from 'vitest'
 import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
 import type { BracketInput } from './bracket-input.ts'
-import { createBracket, readCurrentBracket } from './brackets.server.ts'
+import {
+  createBracket,
+  deleteUnpublishedBracket,
+  readBracket,
+  readCurrentBracket,
+  saveUnpublishedBracket,
+} from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 
 // The test database is shared across this run, and each year holds one
@@ -165,4 +171,59 @@ test(`the current bracket is the newest published one, read back as entered`, as
     year: newestPublishedYear,
     input: BRACKET_2025,
   })
+})
+
+test(`saving an unpublished bracket replaces it`, async () => {
+  const year = nextYear++
+  await createBracket(year, BRACKET_2026)
+
+  await saveUnpublishedBracket(year, BRACKET_2025)
+
+  await expect(readBracket(year)).resolves.toStrictEqual({
+    input: BRACKET_2025,
+    isPublished: false,
+  })
+})
+
+test(`saving over a published bracket changes nothing`, async () => {
+  const year = await publishInNewYear(BRACKET_2026)
+
+  const saved = await saveUnpublishedBracket(year, BRACKET_2025)
+
+  expect(saved).toBe(false)
+  await expect(readBracket(year)).resolves.toStrictEqual({
+    input: BRACKET_2026,
+    isPublished: true,
+  })
+})
+
+test(`deleting an unpublished bracket removes it`, async () => {
+  const year = nextYear++
+  await createBracket(year, BRACKET_2026)
+
+  const deleted = await deleteUnpublishedBracket(year)
+
+  expect(deleted).toBe(true)
+  await expect(readBracket(year)).resolves.toBeNull()
+})
+
+test(`deleting a published bracket leaves it`, async () => {
+  const year = await publishInNewYear(BRACKET_2026)
+
+  const deleted = await deleteUnpublishedBracket(year)
+
+  expect(deleted).toBe(false)
+  await expect(readBracket(year)).resolves.not.toBeNull()
+})
+
+test(`a combatant in a seed slot can't be deleted on its own`, async () => {
+  const bracketId = await createInNewYear(BRACKET_2026)
+  const { combatantId } = await prisma.seedSlot.findFirstOrThrow({
+    where: { division: { bracketId }, combatantId: { not: null } },
+    select: { combatantId: true },
+  })
+
+  await expect(
+    prisma.combatant.delete({ where: { id: combatantId! } }),
+  ).rejects.toMatchObject({ code: `P2003` })
 })

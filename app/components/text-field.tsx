@@ -18,6 +18,9 @@ type TextFieldProps = Omit<
   label: string
   description?: string
   error?: string
+  // For a field the layout already labels visually. Screen readers still read
+  // the label
+  hideLabel?: boolean
   // Shown beside the input
   children?: ReactNode
 }
@@ -28,6 +31,7 @@ export const TextField = ({
   label,
   description,
   error,
+  hideLabel = false,
   children,
   ...props
 }: TextFieldProps) => (
@@ -37,7 +41,9 @@ export const TextField = ({
     validationBehavior='aria'
     className='flex flex-col gap-1'
   >
-    <Label className='font-semibold'>{label}</Label>
+    <Label className={`font-semibold ${hideLabel ? `sr-only` : ``}`}>
+      {label}
+    </Label>
     {description ? (
       <Text slot='description' className='text-muted'>
         {description}
@@ -80,11 +86,14 @@ export const PasswordField = (
   )
 }
 
-// TextField shows one error, so this passes the field's first
+// TextField shows one error, so this passes the field's first. A field that
+// remounts starts from the value last typed in it, and its id lets an error
+// summary link to it
 export const fieldProps = (
   field: FieldMetadata<string>,
-): Pick<TextFieldProps, `name` | `defaultValue` | `error`> => ({
+): Pick<TextFieldProps, `id` | `name` | `defaultValue` | `error`> => ({
+  id: field.id,
   name: field.name,
-  defaultValue: field.initialValue,
+  defaultValue: field.value ?? field.initialValue,
   error: field.errors?.[0],
 })
