@@ -1,5 +1,5 @@
 import { useForm } from '@conform-to/react'
-import type { SubmissionResult } from '@conform-to/react'
+import type { DefaultValue, SubmissionResult } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
 import { useNavigation } from 'react-router'
 import type { z } from 'zod'
@@ -12,6 +12,7 @@ type Form<Schema extends z.ZodObject> = ReturnType<
 export const useValidatedForm = <Schema extends z.ZodObject>(
   schema: Schema,
   lastResult: SubmissionResult | undefined,
+  defaultValue?: DefaultValue<z.input<Schema>>,
 ): {
   form: Form<Schema>[0]
   fields: Form<Schema>[1]
@@ -19,6 +20,7 @@ export const useValidatedForm = <Schema extends z.ZodObject>(
 } => {
   const [form, fields] = useForm<z.input<Schema>, z.output<Schema>>({
     lastResult,
+    defaultValue,
     onValidate: ({ formData }) => parseWithZod(formData, { schema }),
     shouldValidate: `onSubmit`,
     shouldRevalidate: `onInput`,

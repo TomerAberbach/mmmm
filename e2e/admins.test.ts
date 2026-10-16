@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readTotpCode } from '../test/totp.ts'
-import { ADMIN_LIST } from './admins.ts'
+import { ADMIN_LIST, openSetupLink, signInAsAdmin } from './admins.ts'
 import {
   newEmailAddress,
   PASSWORD,
@@ -16,37 +16,6 @@ const [
   PASSKEY_ADMIN = ``,
   OTHER_BROWSER_ADMIN = ``,
 ] = ADMIN_LIST
-
-// Chromium's virtual authenticator stands in for a device that checks a
-// fingerprint, face, or PIN
-const addVirtualAuthenticator = async (page: Page): Promise<void> => {
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send(`WebAuthn.enable`)
-  await cdp.send(`WebAuthn.addVirtualAuthenticator`, {
-    options: {
-      protocol: `ctap2`,
-      transport: `internal`,
-      hasResidentKey: true,
-      hasUserVerification: true,
-      isUserVerified: true,
-      automaticPresenceSimulation: true,
-    },
-  })
-}
-
-const openSetupLink = async (page: Page, email: string): Promise<void> => {
-  await page.goto(`/admin`)
-  await expect(page).toHaveURL(`/admin/setup`)
-  await page.getByRole(`button`, { name: `Email me a setup link` }).click()
-  await expect(page.getByRole(`status`)).toContainText(`We emailed you`)
-  const [latest = ``] = await readEmails(page, email, {
-    newestContaining: `Set up a second factor`,
-  })
-  await page.goto(readActionLink(latest, `Set up a second factor`))
-  await expect(
-    page.getByRole(`heading`, { name: `Authenticator app` }),
-  ).toBeVisible()
-}
 
 // Reads the key under "Can't scan it?", as an educator would type it
 const readTotpUri = async (page: Page): Promise<string> => {
@@ -99,11 +68,7 @@ test(`an admin sets up an authenticator app and enters its code at sign-in`, asy
 })
 
 test(`an admin adds a passkey and signs in with it`, async ({ page }) => {
-  await addVirtualAuthenticator(page)
-  await signInConfirmed(page, PASSKEY_ADMIN)
-  await openSetupLink(page, PASSKEY_ADMIN)
-  await page.getByRole(`button`, { name: `Add a passkey` }).click()
-  await expect(page.getByRole(`heading`, { name: `Admin` })).toBeVisible()
+  await signInAsAdmin(page, PASSKEY_ADMIN)
   await signOut(page)
 
   await page.goto(`/sign-in`)

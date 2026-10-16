@@ -23,6 +23,7 @@ export default [
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
+      route(`bracket`, `routes/admin.bracket.tsx`),
     ]),
     route(`setup`, `routes/admin.setup.tsx`),
     route(
