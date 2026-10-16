@@ -8,6 +8,9 @@ const VARIANT_CLASSES = {
   primary: `bg-accent text-white hover:bg-accent-strong`,
   secondary: `border-2 border-ink bg-white text-ink hover:bg-ink/5`,
   danger: `bg-danger text-white hover:bg-danger-strong`,
+  // For an action repeated down a list, where a full button on every row
+  // would crowd it
+  quiet: `text-accent-strong underline underline-offset-2 hover:bg-ink/5`,
 }
 
 type Variant = keyof typeof VARIANT_CLASSES

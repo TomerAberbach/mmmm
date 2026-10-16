@@ -24,7 +24,6 @@ import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { ErrorSummary } from './error-summary.tsx'
 import { FormError } from './form-error.tsx'
-import { PageTitle } from './page-title.tsx'
 import { SelectField } from './select-field.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
@@ -91,14 +90,6 @@ export const BracketSetupForm = ({
   return (
     <FormProvider context={form.context}>
       <div className='flex flex-col gap-8'>
-        <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
-          <PageTitle>{`${year} bracket`}</PageTitle>
-          {isEdit ? (
-            <span className='border-2 border-accent-strong px-1.5 font-condensed text-sm font-bold tracking-wider text-accent-strong uppercase'>
-              Unpublished
-            </span>
-          ) : null}
-        </div>
         <FormErrorSummary />
         <p className='max-w-prose'>
           Enter the combatants from ASU’s bracket. Only admins see it until you

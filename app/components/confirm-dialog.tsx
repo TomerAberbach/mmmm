@@ -19,6 +19,8 @@ type ConfirmDialogProps = {
   children: ReactNode
   // The action itself, such as "Delete contest". Never "OK"
   confirmLabel: string
+  // `primary` for an action that adds rather than removes, such as publishing
+  confirmVariant?: `danger` | `primary`
   // The route action that makes the change. It returns a ConfirmResult
   action: string
   fields?: Record<string, string>
@@ -39,6 +41,7 @@ export const ConfirmDialog = ({
   title,
   children,
   confirmLabel,
+  confirmVariant = `danger`,
   action,
   fields = NO_FIELDS,
   fetcherKey,
@@ -97,7 +100,7 @@ export const ConfirmDialog = ({
               </Button>
               <Button
                 type='submit'
-                variant='danger'
+                variant={confirmVariant}
                 isPending={fetcher.state !== `idle`}
               >
                 {confirmLabel}

@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { bracketInputSchema, listSeedSlotNames } from './bracket-input.ts'
+import {
+  bracketInputSchema,
+  findDuplicateNames,
+  listSeedSlotNames,
+} from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
 import { DIVISION_POSITIONS, listBattles } from './bracket.ts'
 import type { DivisionPosition } from './bracket.ts'
@@ -17,13 +21,22 @@ export const createBracket = async (
   return bracketId
 }
 
-// Replaces the year's unpublished bracket, or stores a new one. Returns false
-// and changes nothing when the year's bracket is published
+// Replaces the year's unpublished bracket, keeping its expected lock date, or
+// stores a new one. Returns false and changes nothing when the year's bracket
+// is published
 export const saveUnpublishedBracket = async (
   yearId: number,
   input: BracketInput,
 ): Promise<boolean> => {
-  const { operations } = buildCreateOperations(yearId, input)
+  const existing = await prisma.bracket.findUnique({
+    where: { yearId },
+    select: { expectedLockDate: true },
+  })
+  const { operations } = buildCreateOperations(
+    yearId,
+    input,
+    existing?.expectedLockDate,
+  )
   try {
     await prisma.$transaction([
       prisma.bracket.deleteMany({ where: { yearId, publishedAt: null } }),
@@ -53,7 +66,11 @@ export const deleteUnpublishedBracket = async (
   return count > 0
 }
 
-const buildCreateOperations = (yearId: number, input: BracketInput) => {
+const buildCreateOperations = (
+  yearId: number,
+  input: BracketInput,
+  expectedLockDate?: Date | null,
+) => {
   const rows = buildBracketRows(randomUUID(), bracketInputSchema.parse(input))
   return {
     bracketId: rows.bracketId,
@@ -67,6 +84,7 @@ const buildCreateOperations = (yearId: number, input: BracketInput) => {
         data: {
           id: rows.bracketId,
           yearId,
+          expectedLockDate,
           battles: { createMany: { data: rows.battles } },
         },
       }),
@@ -136,19 +154,30 @@ const buildBracketRows = (bracketId: string, input: BracketInput) => {
 export const readCurrentBracket = async (): Promise<{
   year: number
   input: BracketInput
+  expectedLockDate: Date | null
 } | null> => {
   const bracket = await prisma.bracket.findFirst({
     where: { publishedAt: { not: null } },
     orderBy: { yearId: `desc` },
     select: BRACKET_SELECT,
   })
-  return bracket && { year: bracket.yearId, input: readStoredInput(bracket) }
+  return (
+    bracket && {
+      year: bracket.yearId,
+      input: readStoredInput(bracket),
+      expectedLockDate: bracket.expectedLockDate,
+    }
+  )
 }
 
 // The year's bracket, published or not, or null when it has none
 export const readBracket = async (
   yearId: number,
-): Promise<{ input: BracketInput; isPublished: boolean } | null> => {
+): Promise<{
+  input: BracketInput
+  publishedAt: Date | null
+  expectedLockDate: Date | null
+} | null> => {
   const bracket = await prisma.bracket.findUnique({
     where: { yearId },
     select: BRACKET_SELECT,
@@ -156,29 +185,165 @@ export const readBracket = async (
   return (
     bracket && {
       input: readStoredInput(bracket),
-      isPublished: bracket.publishedAt !== null,
+      publishedAt: bracket.publishedAt,
+      expectedLockDate: bracket.expectedLockDate,
     }
   )
 }
 
-export type BracketPublication = `missing` | `unpublished` | `published`
+export type Phase = `SETUP` | `OPEN`
 
-export const readBracketPublication = async (
+export type BracketSummary = { expectedLockDate: Date | null } & (
+  { phase: `SETUP` } | { phase: `OPEN`; publishedAt: Date }
+)
+
+// Null when the year has no bracket
+export const readBracketSummary = async (
   yearId: number,
-): Promise<BracketPublication> => {
+): Promise<BracketSummary | null> => {
   const bracket = await prisma.bracket.findUnique({
     where: { yearId },
-    select: { publishedAt: true },
+    select: { publishedAt: true, expectedLockDate: true },
   })
   if (!bracket) {
-    return `missing`
+    return null
   }
-  return bracket.publishedAt ? `published` : `unpublished`
+  const { publishedAt, expectedLockDate } = bracket
+  return publishedAt
+    ? { phase: `OPEN`, publishedAt, expectedLockDate }
+    : { phase: `SETUP`, expectedLockDate }
+}
+
+// Publishing moves the year from Setup to Open, and unpublishing moves it back.
+// Returns whether the year had a bracket to change
+export const setBracketPublished = async (
+  yearId: number,
+  published: boolean,
+): Promise<boolean> => {
+  const { count } = await prisma.bracket.updateMany({
+    where: { yearId, publishedAt: published ? null : { not: null } },
+    data: { publishedAt: published ? new Date() : null },
+  })
+  return count > 0
+}
+
+// Returns whether the year has a bracket. Null clears the date
+export const setExpectedLockDate = async (
+  yearId: number,
+  expectedLockDate: Date | null,
+): Promise<boolean> => {
+  const { count } = await prisma.bracket.updateMany({
+    where: { yearId },
+    data: { expectedLockDate },
+  })
+  return count > 0
+}
+
+export type CombatantRow = {
+  id: string
+  name: string
+  seed: number
+  isWildCardEntrant: boolean
+}
+
+// Each division's combatants in seed order, with the wild card's entrants at
+// its seed
+export const readBracketCombatants = async (
+  yearId: number,
+): Promise<
+  { position: DivisionPosition; name: string; combatants: CombatantRow[] }[]
+> => {
+  const divisions = await prisma.division.findMany({
+    where: { bracket: { yearId } },
+    select: {
+      position: true,
+      name: true,
+      seedSlots: {
+        orderBy: { seed: `asc` },
+        select: {
+          seed: true,
+          combatant: { select: { id: true, name: true } },
+          wildCard: {
+            select: {
+              entrants: {
+                orderBy: { index: `asc` },
+                select: { combatant: { select: { id: true, name: true } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  return DIVISION_POSITIONS.flatMap(position =>
+    divisions
+      .filter(division => division.position === position)
+      .map(({ name, seedSlots }) => ({
+        position,
+        name,
+        combatants: seedSlots.flatMap(
+          ({ seed, combatant, wildCard }): CombatantRow[] =>
+            combatant
+              ? [{ ...combatant, seed, isWildCardEntrant: false }]
+              : (wildCard?.entrants ?? []).map(entrant => ({
+                  ...entrant.combatant,
+                  seed,
+                  isWildCardEntrant: true,
+                })),
+        ),
+      })),
+  )
+}
+
+// Names the combatant `name`, which the route has checked, unless another
+// combatant in the year's bracket has the same name
+export const renameCombatant = async (
+  yearId: number,
+  combatantId: string,
+  name: string,
+): Promise<{ ok: true } | { error: string }> => {
+  const combatants = await prisma.combatant.findMany({
+    where: { bracket: { yearId } },
+    select: { id: true, name: true },
+  })
+  if (!combatants.some(({ id }) => id === combatantId)) {
+    return { error: `That combatant isn't in the ${yearId} bracket` }
+  }
+  const others = combatants.filter(({ id }) => id !== combatantId)
+  const duplicate = findDuplicateNames([
+    ...others.map(combatant => ({ place: combatant.id, name: combatant.name })),
+    { place: combatantId, name },
+  ]).find(({ place }) => place === combatantId)
+  if (duplicate) {
+    const other = others.find(({ id }) => id === duplicate.other)!
+    return {
+      error: describeTakenName(other.name),
+    }
+  }
+  try {
+    await prisma.combatant.update({
+      where: { id: combatantId },
+      data: { name },
+    })
+  } catch (error) {
+    // A concurrent rename took the name after the check
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === `P2002`
+    ) {
+      return {
+        error: describeTakenName(name),
+      }
+    }
+    throw error
+  }
+  return { ok: true }
 }
 
 const BRACKET_SELECT = {
   yearId: true,
   publishedAt: true,
+  expectedLockDate: true,
   divisions: {
     select: {
       position: true,
@@ -226,3 +391,6 @@ const readStoredInput = ({
       entrants: wildCard.entrants.map(({ combatant }) => combatant.name),
     },
   })
+
+const describeTakenName = (name: string): string =>
+  `${name} is already a combatant. Give each combatant its own name`

@@ -4,7 +4,7 @@ import { data, redirect } from 'react-router'
 import type { Route } from './+types/settings.password.ts'
 import { changePasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
-import type { SettingsResult } from '~/components/educator-settings.tsx'
+import type { SavedResult } from '~/components/saved-notice.tsx'
 import { rejectSubmission } from '~/reject-submission.server.ts'
 
 export const loader = (): Response => redirect(`/settings`)
@@ -12,7 +12,7 @@ export const loader = (): Response => redirect(`/settings`)
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<
-  ReturnType<typeof data<SettingsResult>> | ReturnType<typeof rejectSubmission>
+  ReturnType<typeof data<SavedResult>> | ReturnType<typeof rejectSubmission>
 > => {
   const submission = parseWithZod(await request.formData(), {
     schema: changePasswordSchema,

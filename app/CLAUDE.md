@@ -47,6 +47,11 @@ app
   them moves when they appear. Forms validate only once first submitted. A form
   too long to see at once also lists its field errors above it with
   `ErrorSummary` from `components/error-summary.tsx`
+- Answer a form submitted through a fetcher with a `SavedResult` once it saves,
+  and show `SavedNotice` from `components/saved-notice.tsx`
+- Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
+  UTC, so read it in UTC. Show an instant as its day in Arizona with
+  `formatArizonaDate`
 - Check every free-text field that educators and players fill on the server with
   `serverFreeTextSchema` from `free-text.server.ts`, which adds the length limit
   and the offensive word filter. The browser bundle leaves the filter out.
@@ -100,6 +105,8 @@ app
 - Store a bracket with `createBracket` from `brackets.server.ts`, or replace an
   unpublished one with `saveUnpublishedBracket`. Both write every seed slot,
   battle, and the wild card in one transaction
+- Read a year's phase with `readBracketSummary`, instead of checking
+  `publishedAt`
 - Read which seed slots or earlier battles feed a battle, and where its winner
   goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
   index for results and picks to reference

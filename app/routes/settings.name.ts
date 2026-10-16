@@ -3,7 +3,7 @@ import { redirect } from 'react-router'
 import type { Route } from './+types/settings.name.ts'
 import { serverNameSchema } from '~/auth-forms.server.ts'
 import { auth } from '~/auth.server.ts'
-import type { SettingsResult } from '~/components/educator-settings.tsx'
+import type { SavedResult } from '~/components/saved-notice.tsx'
 import { rejectSubmission } from '~/reject-submission.server.ts'
 
 export const loader = (): Response => redirect(`/settings`)
@@ -11,7 +11,7 @@ export const loader = (): Response => redirect(`/settings`)
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<
-  SettingsResult | ReturnType<typeof rejectSubmission>
+  SavedResult | ReturnType<typeof rejectSubmission>
 > => {
   const submission = parseWithZod(await request.formData(), {
     schema: serverNameSchema,
