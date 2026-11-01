@@ -1,18 +1,21 @@
 import { expect, test } from 'vitest'
 import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
+import { createEducator } from '../test/educators.ts'
 import type { BracketInput } from './bracket-input.ts'
 import {
   createBracket,
   deleteUnpublishedBracket,
   readBracket,
   readBracketCombatants,
+  readBracketSummary,
   readCurrentBracket,
   renameCombatant,
   saveUnpublishedBracket,
   setBracketPublished,
   setExpectedLockDate,
 } from './brackets.server.ts'
+import { createContest } from './contests.server.ts'
 import { prisma } from './db.server.ts'
 
 // The test database is shared across this run, and each year holds one
@@ -253,32 +256,45 @@ test.each([
     scenario: `publishing an unpublished bracket`,
     from: false,
     to: true,
-    changed: true,
+    change: `CHANGED`,
   },
   {
     scenario: `publishing a published bracket`,
     from: true,
     to: true,
-    changed: false,
+    change: `UNCHANGED`,
   },
   {
     scenario: `unpublishing a published bracket`,
     from: true,
     to: false,
-    changed: true,
+    change: `CHANGED`,
   },
   {
     scenario: `unpublishing an unpublished bracket`,
     from: false,
     to: false,
-    changed: false,
+    change: `UNCHANGED`,
   },
-])(`$scenario reports whether it changed it`, async ({ from, to, changed }) => {
+])(`$scenario reports whether it changed it`, async ({ from, to, change }) => {
   const year = await addInNewYear(BRACKET_2026, { published: from })
 
   const result = await setBracketPublished(year, to)
 
-  expect(result).toBe(changed)
+  expect(result).toBe(change)
+})
+
+test(`a bracket with a contest stays published`, async () => {
+  const year = await publishInNewYear(BRACKET_2026)
+  const educatorId = await createEducator()
+  await createContest(educatorId, year, `Period 2 Biology`)
+
+  const result = await setBracketPublished(year, false)
+
+  expect(result).toBe(`HAS_CONTESTS`)
+  await expect(readBracketSummary(year)).resolves.toMatchObject({
+    phase: `OPEN`,
+  })
 })
 
 test(`an unpublished bracket is no longer current`, async () => {

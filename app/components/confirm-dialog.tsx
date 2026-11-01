@@ -1,14 +1,9 @@
 import { useId, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import {
-  Dialog,
-  DialogTrigger,
-  Heading,
-  Modal,
-  ModalOverlay,
-} from 'react-aria-components'
+import { DialogTrigger } from 'react-aria-components'
 import { useFetcher } from 'react-router'
 import { Button } from './button.tsx'
+import { ModalFrame } from './modal-frame.tsx'
 
 type ConfirmDialogProps = {
   // The button that opens the dialog
@@ -65,50 +60,40 @@ export const ConfirmDialog = ({
       onOpenChange={changeOpen}
     >
       {trigger}
-      <ModalOverlay className='fixed inset-0 z-10 flex items-center justify-center bg-ink/40 p-4'>
-        <Modal className='w-full max-w-lg'>
-          <Dialog
-            role='alertdialog'
-            aria-describedby={descriptionId}
-            className='flex flex-col gap-3 border-2 border-ink bg-white p-6 shadow-offset shadow-accent-soft outline-none'
+      <ModalFrame
+        role='alertdialog'
+        aria-describedby={descriptionId}
+        title={title}
+      >
+        <div id={descriptionId}>{children}</div>
+        {result && `error` in result ? (
+          <p role='alert' className='font-semibold text-danger'>
+            {result.error}
+          </p>
+        ) : null}
+        <fetcher.Form
+          method='post'
+          action={action}
+          className='mt-2 flex flex-wrap justify-end gap-3'
+        >
+          {Object.entries(fields).map(([name, value]) => (
+            <input key={name} type='hidden' name={name} value={value} />
+          ))}
+          {/* The least destructive choice gets focus, as the WAI-ARIA alert dialog
+            pattern advises */}
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
+          <Button slot='close' variant='secondary' autoFocus>
+            Cancel
+          </Button>
+          <Button
+            type='submit'
+            variant={confirmVariant}
+            isPending={fetcher.state !== `idle`}
           >
-            <Heading
-              slot='title'
-              className='font-condensed text-3xl leading-tight font-extrabold uppercase'
-            >
-              {title}
-            </Heading>
-            <div id={descriptionId}>{children}</div>
-            {result && `error` in result ? (
-              <p role='alert' className='font-semibold text-danger'>
-                {result.error}
-              </p>
-            ) : null}
-            <fetcher.Form
-              method='post'
-              action={action}
-              className='mt-2 flex flex-wrap justify-end gap-3'
-            >
-              {Object.entries(fields).map(([name, value]) => (
-                <input key={name} type='hidden' name={name} value={value} />
-              ))}
-              {/* The least destructive choice gets focus, as the WAI-ARIA alert dialog
-                  pattern advises */}
-              {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-              <Button slot='close' variant='secondary' autoFocus>
-                Cancel
-              </Button>
-              <Button
-                type='submit'
-                variant={confirmVariant}
-                isPending={fetcher.state !== `idle`}
-              >
-                {confirmLabel}
-              </Button>
-            </fetcher.Form>
-          </Dialog>
-        </Modal>
-      </ModalOverlay>
+            {confirmLabel}
+          </Button>
+        </fetcher.Form>
+      </ModalFrame>
     </DialogTrigger>
   )
 }

@@ -7,6 +7,7 @@ import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
+import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 import {
   rejectAuthError,
   rejectSubmission,
@@ -15,7 +16,7 @@ import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) =>
   (await readSignedInEducator(context))
-    ? redirect(`/`)
+    ? redirect(EDUCATOR_DASHBOARD_PATH)
     : { notice: readNotice(new URL(request.url).searchParams) }
 
 // A confirmation link returns here with `confirmed`, plus an `error` when it
@@ -51,9 +52,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
     })
     // An educator with an authenticator app enters its code next, and
     // Better Auth makes the session only then
-    return redirect(`twoFactorRedirect` in response ? `/sign-in/code` : `/`, {
-      headers,
-    })
+    return redirect(
+      `twoFactorRedirect` in response
+        ? `/sign-in/code`
+        : EDUCATOR_DASHBOARD_PATH,
+      {
+        headers,
+      },
+    )
   } catch (error) {
     if (error instanceof APIError) {
       if (error.body?.code === `EMAIL_NOT_VERIFIED`) {

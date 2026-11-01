@@ -23,7 +23,8 @@ app
 - Build interactive controls on React Aria Components, as in
   `components/button.tsx`. Style a link as a button with `ButtonLink`
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
-  returns a `ConfirmResult`, and the dialog shows any `error`
+  returns a `ConfirmResult`, and the dialog shows any `error`. Build any other
+  modal dialog on `ModalFrame` from `components/modal-frame.tsx`
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
 - Pages are `max-w-6xl` unless the route exports `handle = { fullWidth: true }`.
   Print a wide page with `page-landscape` and scale it with `print:zoom` from
@@ -79,6 +80,9 @@ app
 - Better Auth copies a session's fields when it replaces the session, such as
   when an authenticator app turns on. Leave `assurance` without a Better Auth
   `defaultValue`, which would reset the copy to `PASSWORD`
+- Send a signed-in educator to `EDUCATOR_DASHBOARD_PATH` from `paths.ts`, and
+  build absolute URLs, such as for emails and contest links, with `toAppUrl`
+  from `env.server.ts`
 - Pass `headers: request.headers` to every `auth.api` call. The auth limits read
   the client's IP address from them, and throw without it
 - Force request fields that no client may choose in `FORCED_FIELDS` in
@@ -107,6 +111,10 @@ app
   battle, and the wild card in one transaction
 - Read a year's phase with `readBracketSummary`, instead of checking
   `publishedAt`
+- A year has contests only while its bracket is published. Take `lockBracketRow`
+  from `brackets.server.ts` in the transaction of any write that depends on
+  whether a year is published, as `createContest` and `setBracketPublished` do,
+  so the two can't interleave
 - Read which seed slots or earlier battles feed a battle, and where its winner
   goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
   index for results and picks to reference
@@ -138,6 +146,10 @@ app
 
 - `*.test.ts` files run in Node, and `*.test.tsx` files run in Chromium through
   Vitest browser mode. Both are colocated with the code they test
+- Node test files run in parallel against one database, and the current year is
+  the newest published bracket's. Store each test's bracket under a year of its
+  own, below 3000 except in `brackets.server.test.ts`, which tests the current
+  year. Create educators with `createEducator` from `test/educators.ts`
 - Browser tests load `app.css` and check accessibility, including contrast, with
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching

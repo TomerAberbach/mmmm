@@ -54,7 +54,7 @@ for a **Player**'s **Draft** or **Submission**.
 | Term               | Definition                                                                                                          | Aliases to avoid                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | **Contest**        | An **Educator**'s group of **Players** for one **Year**                                                             | Class, group, league, pool                |
-| **Contest link**   | The shareable link **Players** use to join a **Contest**                                                            | Class link, invite link, join link        |
+| **Contest link**   | The shareable link that opens a **Contest** to its **Players**                                                      | Class link, invite link, join link        |
 | **Display name**   | The name a **Player** enters, such as a first name and last initial                                                 | Username, student name, nickname          |
 | **Personal link**  | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                              | Recovery link, magic link, sign-in token  |
 | **Pick**           | A **Player**'s chosen winner of one **Battle**                                                                      | Choice, guess, prediction                 |
@@ -93,7 +93,7 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Battle** has exactly one **Result** once decided
 - A **Contest** belongs to exactly one **Educator** and exactly one **Year**
 - A **Contest** has exactly one active **Contest link**
-- A **Player** has exactly one **Personal link** per **Contest** they join
+- A **Player** has exactly one **Personal link** per **Contest** they play in
 - A **Draft** becomes exactly one **Submission** when submitted
 - An **Admin** has at least one **Second factor**
 - An **Educator** has zero or more **Passkeys** and at most one **Authenticator

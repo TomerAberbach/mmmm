@@ -3,6 +3,9 @@
 - Tests run in Playwright against the production build. They set `APP_ENV=test`
   anyway, because only development and tests may use the mailbox. Read the email
   a test sent with `readEmails` and `readActionLink` from `mailbox.ts`
+- Test files run in parallel against one server and database. Publish brackets
+  and create contests only in `bracket.test.ts`, whose tests run in order,
+  because a published bracket changes the current year for every other file
 - The server's `ADMIN_LIST` comes from `admins.ts`, since a test can't change it
   once the server starts. Give each admin test its own address from that list
 - Sign in as an admin with `signInAsAdmin` from `admins.ts`, which adds a

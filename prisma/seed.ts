@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { hashPassword } from 'better-auth/crypto'
 import { createBracket, setBracketPublished } from '../app/brackets.server.ts'
+import { createContest } from '../app/contests.server.ts'
 import { prisma } from '../app/db.server.ts'
 import { readUpcomingYear } from '../app/year.ts'
 import { BRACKET_2025, BRACKET_2026 } from './brackets.ts'
@@ -60,5 +61,16 @@ await setBracketPublished(2025, true)
 const upcomingYear = readUpcomingYear(new Date())
 if (!(await prisma.bracket.findUnique({ where: { yearId: upcomingYear } }))) {
   await createBracket(upcomingYear, BRACKET_2026)
+}
+
+// The educator's contests in the current year, so the educator dashboard has some
+const educator = await prisma.educator.findUniqueOrThrow({
+  where: { email: EDUCATORS[0]!.email },
+  select: { id: true, _count: { select: { contests: true } } },
+})
+if (educator._count.contests === 0) {
+  for (const name of [`Period 2 Biology`, `Period 5 Biology`]) {
+    await createContest(educator.id, 2025, name)
+  }
 }
 await prisma.$disconnect()

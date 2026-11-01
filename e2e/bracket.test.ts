@@ -2,11 +2,14 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readUpcomingYear } from '../app/year.ts'
 import { ADMIN_LIST, signInAsAdmin } from './admins.ts'
+import { newEmailAddress, signInConfirmed } from './auth.ts'
 
 const SETUP_ADMIN = ADMIN_LIST[3] ?? ``
 const PUBLISH_ADMIN = ADMIN_LIST[4] ?? ``
 const UNPUBLISH_ADMIN = ADMIN_LIST[5] ?? ``
 const CHECK_ADMIN = ADMIN_LIST[6] ?? ``
+const CONTEST_ADMIN = ADMIN_LIST[7] ?? ``
+const STAYS_PUBLISHED_ADMIN = ADMIN_LIST[8] ?? ``
 const YEAR = readUpcomingYear(new Date())
 
 const DIVISION_NAMES = [`Bad Bunch`, `Fur Real`, `Nighty Night`, `Flight Club`]
@@ -31,6 +34,23 @@ const fillDivisionNames = async (page: Page): Promise<void> => {
   }
 }
 
+const setUpAndPublishBracket = async (page: Page): Promise<void> => {
+  await page.goto(`/admin/bracket`)
+  await fillDivisionNames(page)
+  await pasteNames(page, PASTED_NAMES)
+  await page.getByRole(`button`, { name: `Save bracket` }).click()
+  await page.getByRole(`link`, { name: `Manage the ${YEAR} bracket` }).click()
+  await confirm(page, `Publish ${YEAR} bracket`)
+}
+
+const createContest = async (page: Page, name: string): Promise<void> => {
+  await page.getByRole(`button`, { name: `Create contest` }).click()
+  const dialog = page.getByRole(`dialog`)
+  await dialog.getByLabel(`Contest name`).fill(name)
+  await dialog.getByRole(`button`, { name: `Create contest` }).click()
+  await expect(page.getByRole(`heading`, { name })).toBeVisible()
+}
+
 // Presses `trigger`, then the dialog's `action`, which defaults to the same
 // label
 const confirm = async (
@@ -45,7 +65,8 @@ const confirm = async (
     .click()
 }
 
-// Every test shares the upcoming year's one bracket, so they run in order
+// Every test shares the upcoming year's one bracket, and educators create
+// contests only once it's published, so they run in order
 test.describe.configure({ mode: `serial` })
 
 test(`the bracket page returns 404 before any bracket is published`, async ({
@@ -57,6 +78,19 @@ test(`the bracket page returns 404 before any bracket is published`, async ({
   await expect(
     page.getByRole(`heading`, { name: `Page not found` }),
   ).toBeVisible()
+})
+
+test(`before any bracket is published, the educator dashboard says why contests can't start`, async ({
+  page,
+}) => {
+  await signInConfirmed(page, newEmailAddress())
+
+  await expect(
+    page.getByRole(`heading`, { name: `The ${YEAR} bracket isn’t ready yet` }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole(`button`, { name: `Create contest` }),
+  ).not.toBeAttached()
 })
 
 test(`an admin sets up the upcoming year's bracket from a pasted list`, async ({
@@ -142,4 +176,55 @@ test(`saving a bracket with a name used twice lists the problem at the top`, asy
   ).toContainText(
     `Combatant 1 is also seed 2 in Bad Bunch. Give each combatant its own name`,
   )
+})
+
+test(`an educator creates a contest whose link shows it to players`, async ({
+  page,
+  browser,
+}) => {
+  await signInAsAdmin(page, CONTEST_ADMIN)
+  await setUpAndPublishBracket(page)
+  const educator = await (await browser.newContext()).newPage()
+  await signInConfirmed(educator, newEmailAddress())
+  await createContest(educator, `Period 2 Biology`)
+  const link = await educator
+    .getByRole(`textbox`, { name: `Contest link` })
+    .inputValue()
+
+  const player = await (await browser.newContext()).newPage()
+  await player.goto(link)
+
+  await expect(
+    player.getByRole(`heading`, { name: `Period 2 Biology` }),
+  ).toBeVisible()
+  await expect(player.getByText(`Ms. Frizzle’s contest`)).toBeVisible()
+})
+
+test(`another educator's contest page is not found`, async ({
+  page,
+  browser,
+}) => {
+  await signInConfirmed(page, newEmailAddress())
+  const other = await (await browser.newContext()).newPage()
+  await signInConfirmed(other, newEmailAddress())
+  await createContest(other, `Science Club`)
+
+  const response = await page.goto(new URL(other.url()).pathname)
+
+  expect(response?.status()).toBe(404)
+})
+
+test(`a bracket with a contest stays published`, async ({ page }) => {
+  await signInAsAdmin(page, STAYS_PUBLISHED_ADMIN)
+
+  await page.goto(`/admin/bracket`)
+
+  await expect(
+    page.getByText(
+      `Educators have created contests, so the bracket stays published.`,
+    ),
+  ).toBeVisible()
+  await expect(
+    page.getByRole(`button`, { name: `Unpublish`, exact: true }),
+  ).not.toBeAttached()
 })

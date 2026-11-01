@@ -22,9 +22,16 @@ export const action = async ({
   }
   const { published } = parsed.data
   const year = readUpcomingYear(new Date())
-  return (await setBracketPublished(year, published))
-    ? { ok: true }
-    : {
+  switch (await setBracketPublished(year, published)) {
+    case `CHANGED`:
+      return { ok: true }
+    case `UNCHANGED`:
+      return {
         error: `The ${year} bracket is already ${published ? `published` : `unpublished`} or deleted`,
       }
+    case `HAS_CONTESTS`:
+      return {
+        error: `Educators have created ${year} contests, so the bracket stays published`,
+      }
+  }
 }

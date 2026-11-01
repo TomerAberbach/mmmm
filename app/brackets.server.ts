@@ -149,16 +149,20 @@ const buildBracketRows = (bracketId: string, input: BracketInput) => {
   }
 }
 
-// The current year's bracket: the newest published one, or null before any is
-// published
+// The current year's bracket is the newest published one
+const CURRENT_BRACKET = {
+  where: { publishedAt: { not: null } },
+  orderBy: { yearId: `desc` },
+} satisfies Prisma.BracketFindFirstArgs
+
+// Null before any bracket is published
 export const readCurrentBracket = async (): Promise<{
   year: number
   input: BracketInput
   expectedLockDate: Date | null
 } | null> => {
   const bracket = await prisma.bracket.findFirst({
-    where: { publishedAt: { not: null } },
-    orderBy: { yearId: `desc` },
+    ...CURRENT_BRACKET,
     select: BRACKET_SELECT,
   })
   return (
@@ -168,6 +172,15 @@ export const readCurrentBracket = async (): Promise<{
       expectedLockDate: bracket.expectedLockDate,
     }
   )
+}
+
+// Null before any bracket is published
+export const readCurrentYear = async (): Promise<number | null> => {
+  const bracket = await prisma.bracket.findFirst({
+    ...CURRENT_BRACKET,
+    select: { yearId: true },
+  })
+  return bracket?.yearId ?? null
 }
 
 // The year's bracket, published or not, or null when it has none
@@ -194,7 +207,9 @@ export const readBracket = async (
 export type Phase = `SETUP` | `OPEN`
 
 export type BracketSummary = { expectedLockDate: Date | null } & (
-  { phase: `SETUP` } | { phase: `OPEN`; publishedAt: Date }
+  | { phase: `SETUP` }
+  // Unpublishing stops once the year has a contest
+  | { phase: `OPEN`; publishedAt: Date; hasContests: boolean }
 )
 
 // Null when the year has no bracket
@@ -203,28 +218,64 @@ export const readBracketSummary = async (
 ): Promise<BracketSummary | null> => {
   const bracket = await prisma.bracket.findUnique({
     where: { yearId },
-    select: { publishedAt: true, expectedLockDate: true },
+    select: {
+      publishedAt: true,
+      expectedLockDate: true,
+      year: { select: { _count: { select: { contests: true } } } },
+    },
   })
   if (!bracket) {
     return null
   }
-  const { publishedAt, expectedLockDate } = bracket
+  const { publishedAt, expectedLockDate, year } = bracket
   return publishedAt
-    ? { phase: `OPEN`, publishedAt, expectedLockDate }
+    ? {
+        phase: `OPEN`,
+        publishedAt,
+        expectedLockDate,
+        hasContests: year._count.contests > 0,
+      }
     : { phase: `SETUP`, expectedLockDate }
 }
 
-// Publishing moves the year from Setup to Open, and unpublishing moves it back.
-// Returns whether the year had a bracket to change
-export const setBracketPublished = async (
+export type PublicationChange = `CHANGED` | `UNCHANGED` | `HAS_CONTESTS`
+
+// Publishing moves the year from Setup to Open, and unpublishing moves it back
+// until the year has a contest. `UNCHANGED` means the year has no bracket, or
+// its bracket is already in that state
+export const setBracketPublished = (
   yearId: number,
   published: boolean,
-): Promise<boolean> => {
-  const { count } = await prisma.bracket.updateMany({
-    where: { yearId, publishedAt: published ? null : { not: null } },
-    data: { publishedAt: published ? new Date() : null },
+): Promise<PublicationChange> =>
+  prisma.$transaction(async tx => {
+    const bracket = await lockBracketRow(tx, yearId)
+    if (!bracket || bracket.isPublished === published) {
+      return `UNCHANGED`
+    }
+    if (
+      !published &&
+      (await tx.contest.findFirst({ where: { yearId }, select: { id: true } }))
+    ) {
+      return `HAS_CONTESTS`
+    }
+    await tx.bracket.update({
+      where: { yearId },
+      data: { publishedAt: published ? new Date() : null },
+    })
+    return `CHANGED`
   })
-  return count > 0
+
+// Locks the year's bracket row until the transaction ends, so publishing and
+// creating a contest wait for each other. Undefined when the year has no
+// bracket
+export const lockBracketRow = async (
+  tx: Prisma.TransactionClient,
+  yearId: number,
+): Promise<{ isPublished: boolean } | undefined> => {
+  const [bracket] = await tx.$queryRaw<{ isPublished: boolean }[]>`
+    SELECT "publishedAt" IS NOT NULL AS "isPublished" FROM "Bracket"
+    WHERE "yearId" = ${yearId} FOR UPDATE`
+  return bracket
 }
 
 // Returns whether the year has a bracket. Null clears the date

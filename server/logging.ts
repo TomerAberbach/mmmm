@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express'
 
-const SECRET_PATH = /(?<prefix>\/api\/auth\/reset-password\/)[^/]+/u
+// Reset links and contest links
+const SECRET_PATH = /(?<prefix>\/(?:api\/auth\/reset-password|play)\/)[^/]+/u
 
 // Logs each request without its query string, its secrets, or the client's IP
 // address
