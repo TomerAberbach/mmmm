@@ -21,7 +21,9 @@
     "knip": "knip",
     "test": "vitest",
     "test:e2e": "pnpm build && playwright test",
-    "check": "npm-run-all -c -l -p typecheck \"lint --no-fix\" format:check knip \"test --run\" -s test:e2e",
+    "check": "npm-run-all -c -l -p check:static check:test -s test:e2e",
+    "check:static": "npm-run-all -c -l -p typecheck \"lint --no-fix\" format:check knip",
+    "check:test": "vitest --run",
     "postinstall": "prisma generate"
   },
   "dependencies": {
