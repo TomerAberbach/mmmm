@@ -124,16 +124,19 @@ model Year {
 
 // Unpublished while `publishedAt` is null, when only the admin sees it
 model Bracket {
-  id          String      @id
-  yearId      Int         @unique
-  publishedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  year        Year        @relation(fields: [yearId], references: [id], onDelete: Cascade)
-  divisions   Division[]
-  combatants  Combatant[]
-  battles     Battle[]
-  wildCard    WildCard?
+  id               String      @id
+  yearId           Int         @unique
+  publishedAt      DateTime?
+  // A heads-up for educators and players. Only the first result locks
+  // submissions
+  expectedLockDate DateTime?   @db.Date
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  year             Year        @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  divisions        Division[]
+  combatants       Combatant[]
+  battles          Battle[]
+  wildCard         WildCard?
 }
 
 // Where a division sits on the diagram. The two left divisions meet in one

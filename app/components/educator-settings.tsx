@@ -1,6 +1,4 @@
 import { getFormProps } from '@conform-to/react'
-import type { SubmissionResult } from '@conform-to/react'
-import type { ReactNode } from 'react'
 import { useFetcher } from 'react-router'
 import {
   changePasswordSchema,
@@ -12,13 +10,13 @@ import { ConfirmDialog } from './confirm-dialog.tsx'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
+import { SavedNotice } from './saved-notice.tsx'
+import type { SavedResult } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
 import type { SecondFactorSettingsData } from './second-factor-settings.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
-
-export type SettingsResult = { result: SubmissionResult; saved?: true }
 
 export const EducatorSettings = ({
   name,
@@ -40,7 +38,7 @@ export const EducatorSettings = ({
 )
 
 const NameSettings = ({ name }: { name: string }) => {
-  const fetcher = useFetcher<SettingsResult>()
+  const fetcher = useFetcher<SavedResult>()
   const { form, fields } = useValidatedForm(nameSchema, fetcher.data?.result)
   return (
     <SettingsSection title='Name'>
@@ -71,7 +69,7 @@ const NameSettings = ({ name }: { name: string }) => {
 }
 
 const PasswordSettings = () => {
-  const fetcher = useFetcher<SettingsResult>()
+  const fetcher = useFetcher<SavedResult>()
   const { form, fields } = useValidatedForm(
     changePasswordSchema,
     fetcher.data?.result,
@@ -145,18 +143,3 @@ const SessionSettings = () => {
     </SettingsSection>
   )
 }
-
-// Below the button, so the fields above stay put when it appears. Hidden once a
-// later submission fails validation
-const SavedNotice = ({
-  fetcher,
-  isFormValid,
-  children,
-}: {
-  fetcher: ReturnType<typeof useFetcher<SettingsResult>>
-  isFormValid: boolean
-  children: ReactNode
-}) =>
-  fetcher.state === `idle` && fetcher.data?.saved && isFormValid ? (
-    <Notice kind='status'>{children}</Notice>
-  ) : null

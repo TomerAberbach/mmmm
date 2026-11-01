@@ -2,14 +2,31 @@ import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
+import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { buildBracketView } from '../bracket-view.ts'
 import { SignedOutHome } from './signed-out-home.tsx'
 
-const renderHome = async (upcomingYear = 2027) => {
+const renderHome = async (
+  upcomingYear = 2027,
+  current?: { year: number; expectedLockDate: string | null },
+) => {
   const Stub = createRoutesStub([
     {
       path: `/`,
-      Component: () => <SignedOutHome upcomingYear={upcomingYear} />,
+      Component: () => (
+        <SignedOutHome
+          upcomingYear={upcomingYear}
+          current={
+            current
+              ? {
+                  view: buildBracketView(current.year, BRACKET_2025, []),
+                  expectedLockDate: current.expectedLockDate,
+                }
+              : null
+          }
+        />
+      ),
     },
   ])
   await render(<Stub />)
@@ -65,4 +82,31 @@ test(`the home page tells players they don't need to sign up`, async () => {
   await expect
     .element(page.getByText(`Players don't need an account`, { exact: false }))
     .toBeVisible()
+})
+
+test(`the home page shows the current bracket below its intro`, async () => {
+  await renderHome(2027, { year: 2026, expectedLockDate: null })
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `2026 bracket` }))
+    .toBeVisible()
+  await expectNoAxeViolations()
+})
+
+test(`the current bracket's expected lock date shows as a heads-up`, async () => {
+  await renderHome(2027, { year: 2027, expectedLockDate: `March 19, 2027` })
+
+  await expect
+    .element(
+      page.getByText(`Expected to lock March 19, 2027`, { exact: false }),
+    )
+    .toBeVisible()
+})
+
+test(`the home page stops promising the upcoming year's bracket once it's current`, async () => {
+  await renderHome(2027, { year: 2027, expectedLockDate: null })
+
+  await expect
+    .element(page.getByText(`once ASU publishes it`, { exact: false }))
+    .not.toBeInTheDocument()
 })

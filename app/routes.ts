@@ -24,6 +24,12 @@ export default [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
       route(`bracket`, `routes/admin.bracket.tsx`),
+      route(`bracket/publication`, `routes/admin.bracket.publication.ts`),
+      route(`bracket/rename`, `routes/admin.bracket.rename.ts`),
+      route(
+        `bracket/expected-lock-date`,
+        `routes/admin.bracket.expected-lock-date.ts`,
+      ),
     ]),
     route(`setup`, `routes/admin.setup.tsx`),
     route(
