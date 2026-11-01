@@ -48,6 +48,10 @@ pnpm test --run app/components/signed-out-home.test.tsx
 pnpm test:e2e e2e/home.test.ts  # Builds first
 ```
 
+CI runs each script that `pnpm check` runs, `check:static`, `check:test`, and
+`test:e2e`, as its own parallel job. Add a new check to one of them, or add its
+script to both `check` and the matrix in `.github/workflows/ci.yml`.
+
 After a dependency changes, hard-reload the dev app (Cmd+Shift+R). The browser
 keeps Vite's old prebundled chunks, so the page loads two copies of React and
 never hydrates.

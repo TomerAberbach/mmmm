@@ -10,51 +10,32 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  # Each script runs on its own runner, so the slowest one, not the sum, sets
+  # the wall time. `pnpm check` runs the same scripts
   check:
-    name: Check
+    name: ${{ matrix.name }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    strategy:
+      # Like `npm-run-all -c`, so one failure doesn't hide the others
+      fail-fast: false
+      matrix:
+        include:
+          - name: Typecheck, lint, format, and knip
+            script: check:static
+          - name: Unit and browser tests
+            script: check:test
+            browser-and-database: true
+          - name: End-to-end tests
+            script: test:e2e
+            browser-and-database: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          version: 12
-          cache: true
-          run_install: true
-
-      - name: Get Playwright version
-        id: playwright
-        run:
-          echo "version=$(pnpm exec playwright --version)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
-
-      # The same Postgres and settings as local development
-      - name: Start Postgres
-        run: docker compose up -d --wait && cp .env.example .env
-
-      - name: Check
-        run: pnpm check
+      - uses: ./.github/actions/setup
+      - if: matrix.browser-and-database
+        uses: ./.github/actions/setup-browser-and-database
+      - run: pnpm ${{ matrix.script }}

@@ -1,0 +1,38 @@
+name: Set up the browser and database
+description:
+  Starts Postgres and installs Chromium for Playwright. Run it after `setup`
+
+runs:
+  using: composite
+  steps:
+    # The same Postgres and settings as local development. The container starts
+    # while Chromium installs
+    - name: Start Postgres
+      shell: bash
+      run: docker compose up -d
+
+    - name: Copy the environment
+      shell: bash
+      run: cp .env.example .env
+
+    - name: Get Playwright version
+      id: playwright
+      shell: bash
+      run: echo "version=$(pnpm exec playwright --version)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+    # Headless runs launch only the headless shell. Playwright skips the
+    # download when the cache restored it, and still installs the system
+    # libraries
+    - name: Install Chromium
+      shell: bash
+      run: pnpm exec playwright install --with-deps --only-shell chromium
+
+    - name: Wait for Postgres
+      shell: bash
+      run: docker compose up -d --wait
