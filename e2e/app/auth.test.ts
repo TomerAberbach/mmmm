@@ -8,8 +8,8 @@ import {
   signInConfirmed,
   signOut,
   signUp,
-} from './auth.ts'
-import { readActionLink, readEmails } from './mailbox.ts'
+} from '../auth.ts'
+import { readActionLink, readEmails } from '../mailbox.ts'
 
 test(`an educator who confirms from the email can sign in`, async ({
   page,

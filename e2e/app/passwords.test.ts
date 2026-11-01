@@ -9,8 +9,8 @@ import {
   signInConfirmed,
   signUp,
   signUpConfirmed,
-} from './auth.ts'
-import { readActionLink, readEmails } from './mailbox.ts'
+} from '../auth.ts'
+import { readActionLink, readEmails } from '../mailbox.ts'
 
 // Adds signing the educator in from a second browser, with its own cookies,
 // which closes after the test
