@@ -11,6 +11,7 @@ import { PasskeyButton } from './passkey-button.tsx'
 import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
+import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 
 // Where a link left the educator: confirmed, with a confirmation link that
 // expired or was altered, or with a new password. Or the code page ran out of
@@ -86,7 +87,7 @@ export const SignInForm = ({
         <p>Have a passkey?</p>
         <PasskeyButton
           ceremony={signInWithPasskey}
-          successTo='/'
+          successTo={EDUCATOR_DASHBOARD_PATH}
           variant='secondary'
         >
           Sign in with a passkey

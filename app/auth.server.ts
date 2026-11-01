@@ -20,7 +20,7 @@ import { passwordChangedEmail } from './emails/password-changed.server.tsx'
 import { resetPasswordEmail } from './emails/reset-password.server.tsx'
 import { secondFactorChangedEmail } from './emails/second-factor-changed.server.tsx'
 import type { SecondFactorChange } from './emails/second-factor-changed.server.tsx'
-import { requireEnv } from './env.server.ts'
+import { requireEnv, toAppUrl } from './env.server.ts'
 import { serverFreeTextSchema } from './free-text.server.ts'
 import { EDUCATOR_NAME } from './free-text.ts'
 import { SessionAssurance } from './generated/prisma/enums.ts'
@@ -34,9 +34,9 @@ const BASE_URL = requireEnv(`BETTER_AUTH_URL`)
 const CONFIRMATION_EXPIRES_IN_SECONDS =
   CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60
 
-const SIGN_IN_URL = new URL(`/sign-in`, BASE_URL)
-const SETTINGS_URL = new URL(`/settings`, BASE_URL)
-const FORGOT_PASSWORD_URL = new URL(`/forgot-password`, BASE_URL)
+const SIGN_IN_URL = toAppUrl(`/sign-in`)
+const SETTINGS_URL = toAppUrl(`/settings`)
+const FORGOT_PASSWORD_URL = toAppUrl(`/forgot-password`)
 // Every confirmation link returns to sign-in, whatever the request asked for.
 // Sign-in shows whether the link worked
 const CONFIRMED_CALLBACK_URL = `${SIGN_IN_URL.pathname}?confirmed`

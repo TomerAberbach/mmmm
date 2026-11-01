@@ -26,6 +26,7 @@ model Educator {
   credentials       Credential[]
   passkeys          Passkey[]
   authenticatorApps AuthenticatorApp[]
+  contests          Contest[]
 }
 
 // How a session's educator proved who they are. A setup link lets a session
@@ -118,8 +119,9 @@ model AuthenticatorApp {
 
 // One March Mammal Madness tournament. The ID is its calendar year
 model Year {
-  id      Int      @id
-  bracket Bracket?
+  id       Int       @id
+  bracket  Bracket?
+  contests Contest[]
 }
 
 // Unpublished while `publishedAt` is null, when only the admin sees it
@@ -226,4 +228,22 @@ model Battle {
   bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
 
   @@unique([bracketId, round, index])
+}
+
+// A year's contests exist only while its bracket is published. Deleting the
+// educator or the year fails while either has a contest
+model Contest {
+  id         String   @id
+  yearId     Int
+  educatorId String
+  name       String
+  // The contest link's secret. Stored as is, since the educator copies it
+  linkSecret String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  year       Year     @relation(fields: [yearId], references: [id], onDelete: Restrict)
+  educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Restrict)
+
+  @@index([educatorId, yearId])
+  @@index([yearId])
 }

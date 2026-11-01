@@ -21,6 +21,11 @@ export const COMBATANT_NAME: FreeTextField = {
   maxLength: 80,
 }
 
+export const CONTEST_NAME: FreeTextField = {
+  label: `the contest's name`,
+  maxLength: 80,
+}
+
 // The checks the browser can run too. The server adds the offensive word
 // filter
 export const freeTextSchema = ({

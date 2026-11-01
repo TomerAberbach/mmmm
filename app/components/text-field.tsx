@@ -10,6 +10,7 @@ import {
 } from 'react-aria-components'
 import type { TextFieldProps as AriaTextFieldProps } from 'react-aria-components'
 import { Button } from './button.tsx'
+import { StableLabel } from './stable-label.tsx'
 
 type TextFieldProps = Omit<
   AriaTextFieldProps,
@@ -69,18 +70,7 @@ export const PasswordField = (
         aria-label={`${shownLabel} password`}
         onPress={() => setIsShown(shown => !shown)}
       >
-        {/* Both labels share one grid cell, so the button keeps the wider
-            one's width as it toggles */}
-        <span className='inline-grid'>
-          {[`Show`, `Hide`].map(label => (
-            <span
-              key={label}
-              className={`col-start-1 row-start-1 ${label === shownLabel ? `` : `invisible`}`}
-            >
-              {label}
-            </span>
-          ))}
-        </span>
+        <StableLabel labels={[`Show`, `Hide`]} shown={shownLabel} />
       </Button>
     </TextField>
   )

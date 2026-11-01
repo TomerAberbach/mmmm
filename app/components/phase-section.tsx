@@ -14,7 +14,10 @@ import type { Phase } from '~/brackets.server.ts'
 export type PhaseView = {
   // YYYY-MM-DD
   expectedLockDate: string | null
-} & ({ phase: `SETUP` } | { phase: `OPEN`; publishedOn: string })
+} & (
+  | { phase: `SETUP` }
+  | { phase: `OPEN`; publishedOn: string; hasContests: boolean }
+)
 
 const PHASE_LABELS: Record<Phase, string> = { SETUP: `Setup`, OPEN: `Open` }
 
@@ -43,24 +46,7 @@ export const PhaseSection = ({
     <ExpectedLockDateForm expectedLockDate={view.expectedLockDate} />
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
       {view.phase === `OPEN` ? (
-        <>
-          <ConfirmDialog
-            trigger={<Button variant='secondary'>Unpublish</Button>}
-            title={`Unpublish the ${year} bracket?`}
-            confirmLabel={`Unpublish ${year} bracket`}
-            action='/admin/bracket/publication'
-            fields={{ published: `false` }}
-          >
-            <p>
-              Educators can’t create contests with it until you publish it
-              again, and the previous bracket becomes the current one on the
-              home page.
-            </p>
-          </ConfirmDialog>
-          <span className='text-muted'>
-            Possible until an educator creates a contest
-          </span>
-        </>
+        <UnpublishControls year={year} hasContests={view.hasContests} />
       ) : (
         <ConfirmDialog
           trigger={<Button>{`Publish ${year} bracket`}</Button>}
@@ -85,6 +71,37 @@ export const PhaseSection = ({
     </div>
   </section>
 )
+
+const UnpublishControls = ({
+  year,
+  hasContests,
+}: {
+  year: number
+  hasContests: boolean
+}) =>
+  hasContests ? (
+    <p className='text-muted'>
+      Educators have created contests, so the bracket stays published.
+    </p>
+  ) : (
+    <>
+      <ConfirmDialog
+        trigger={<Button variant='secondary'>Unpublish</Button>}
+        title={`Unpublish the ${year} bracket?`}
+        confirmLabel={`Unpublish ${year} bracket`}
+        action='/admin/bracket/publication'
+        fields={{ published: `false` }}
+      >
+        <p>
+          Educators can’t create contests with it until you publish it again,
+          and the previous bracket becomes the current one on the home page.
+        </p>
+      </ConfirmDialog>
+      <span className='text-muted'>
+        Possible until an educator creates a contest
+      </span>
+    </>
+  )
 
 export const PhaseTag = ({ phase }: { phase: Phase }) => (
   <span

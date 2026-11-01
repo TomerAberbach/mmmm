@@ -6,6 +6,7 @@ import { signUpSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
+import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 import {
   rejectAuthError,
   rejectSubmission,
@@ -13,7 +14,9 @@ import {
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) =>
-  (await readSignedInEducator(context)) ? redirect(`/`) : null
+  (await readSignedInEducator(context))
+    ? redirect(EDUCATOR_DASHBOARD_PATH)
+    : null
 
 const SERVER_SIGN_UP_SCHEMA = signUpSchema.extend(serverNameSchema.shape)
 

@@ -29,12 +29,11 @@ import { readUpcomingYear } from '~/year.ts'
 export const loader = async () => {
   const year = readUpcomingYear(new Date())
   const summary = await readBracketSummary(year)
-  const phaseView = summary && toPhaseView(summary)
   if (summary?.phase === `OPEN`) {
     return {
       editor: `renames` as const,
       year,
-      phaseView,
+      phaseView: toPhaseView(summary),
       divisions: await readBracketCombatants(year),
     }
   }
@@ -42,7 +41,7 @@ export const loader = async () => {
   return {
     editor: `setup` as const,
     year,
-    phaseView,
+    phaseView: summary && toPhaseView(summary),
     defaultValue: bracket ? toBracketForm(bracket.input) : undefined,
   }
 }
@@ -55,6 +54,7 @@ const toPhaseView = (summary: BracketSummary): PhaseView => {
         phase: summary.phase,
         publishedOn: formatArizonaDate(summary.publishedAt),
         expectedLockDate,
+        hasContests: summary.hasContests,
       }
     : { phase: summary.phase, expectedLockDate }
 }

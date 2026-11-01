@@ -20,6 +20,13 @@ export default [
     route(`remove-passkey`, `routes/settings.remove-passkey.ts`),
     route(`authenticator-app`, `routes/settings.authenticator-app.ts`),
   ]),
+  route(`contests`, `routes/contests.tsx`, [
+    index(`routes/contests._index.tsx`),
+    route(`new`, `routes/contests.new.ts`),
+    route(`:contestId`, `routes/contests.$contestId.tsx`),
+    route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
+  ]),
+  route(`play/:linkSecret`, `routes/play.tsx`),
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),

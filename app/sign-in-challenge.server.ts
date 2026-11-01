@@ -1,6 +1,7 @@
 import type { Submission } from '@conform-to/react'
 import { APIError } from 'better-auth/api'
 import { redirect } from 'react-router'
+import { EDUCATOR_DASHBOARD_PATH } from './paths.ts'
 import {
   rejectAuthError,
   rejectSubmission,
@@ -21,7 +22,7 @@ export const answerSignInChallenge = async (
   }
   try {
     const { headers } = await verify(submission.value.code)
-    return redirect(`/`, { headers })
+    return redirect(EDUCATOR_DASHBOARD_PATH, { headers })
   } catch (error) {
     return rejectChallenge(submission, error, invalidMessage)
   }

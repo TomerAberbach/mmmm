@@ -5,7 +5,11 @@ import {
   ROUNDS,
   SEEDS_PER_DIVISION,
 } from '../app/bracket.ts'
-import { COMBATANT_NAME, DIVISION_NAME } from '../app/free-text.ts'
+import {
+  COMBATANT_NAME,
+  CONTEST_NAME,
+  DIVISION_NAME,
+} from '../app/free-text.ts'
 
 // Pushes schema.prisma, then adds the CHECK constraints it can't declare. Run
 // it with `node prisma/push-schema.ts`, passing `--force-reset` to empty the
@@ -34,6 +38,7 @@ const readConstraintsSql = (): string =>
     check(`Battle`, `index`, `index >= 0 AND index < ${readBattleCountSql()}`),
     checkName(`Division`, DIVISION_NAME.maxLength),
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
+    checkName(`Contest`, CONTEST_NAME.maxLength),
   ].join(`\n`)
 
 // The battle's round's count, or 0 for a round the app doesn't know

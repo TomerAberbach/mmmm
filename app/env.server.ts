@@ -14,6 +14,9 @@ export const requireEnv = (name: string): string => {
   return value
 }
 
+export const toAppUrl = (path: string): URL =>
+  new URL(path, requireEnv(`BETTER_AUTH_URL`))
+
 const APP_ENVS = [`development`, `test`, `staging`, `production`] as const
 export type AppEnv = (typeof APP_ENVS)[number]
 

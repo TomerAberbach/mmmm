@@ -6,7 +6,7 @@ import {
 } from '~/components/second-factor-setup.tsx'
 import { sendEmail } from '~/email.server.ts'
 import { secondFactorSetupEmail } from '~/emails/second-factor-setup.server.tsx'
-import { requireEnv } from '~/env.server.ts'
+import { toAppUrl } from '~/env.server.ts'
 import {
   createSetupLinkToken,
   hasSecondFactor,
@@ -16,7 +16,7 @@ import {
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
-const SETUP_URL = new URL(`/admin/setup`, requireEnv(`BETTER_AUTH_URL`))
+const SETUP_URL = toAppUrl(`/admin/setup`)
 
 // Only for an admin without a second factor. The emailed link returns here
 // with its token, which this browser's session uses up. A session that

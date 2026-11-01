@@ -12,6 +12,8 @@ test.each([
     path: `//api/auth/reset-password/secret`,
     redacted: `//api/auth/reset-password/[redacted]`,
   },
+  { path: `/play/secret`, redacted: `/play/[redacted]` },
+  { path: `/play/secret.data`, redacted: `/play/[redacted]` },
 ])(`logs $path as $redacted`, ({ path, redacted }) => {
   expect(redactPath(path)).toBe(redacted)
 })
