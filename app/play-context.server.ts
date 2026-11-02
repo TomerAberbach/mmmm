@@ -27,7 +27,9 @@ export const readPlayContest = (
   context: Readonly<RouterContextProvider>,
 ): ContestByLink => context.get(contestContext)
 
-const playerContext = createContext<{ displayName: string }>()
+export type RequiredPlayer = { id: string; displayName: string }
+
+const playerContext = createContext<RequiredPlayer>()
 
 // Sends anyone the browser doesn't remember to the contest link. Each response
 // restarts the remembered player's 15 minutes. Nest it after
@@ -41,7 +43,7 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
   if (!player) {
     return redirect(toContestPath(params.linkSecret ?? ``))
   }
-  context.set(playerContext, { displayName: player.displayName })
+  context.set(playerContext, { id: player.id, displayName: player.displayName })
   const response = await next()
   response.headers.append(
     `Set-Cookie`,
@@ -52,4 +54,4 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
 
 export const readRequiredPlayer = (
   context: Readonly<RouterContextProvider>,
-): { displayName: string } => context.get(playerContext)
+): RequiredPlayer => context.get(playerContext)

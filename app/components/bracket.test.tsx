@@ -9,7 +9,7 @@ import {
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import type { BracketInput } from '../bracket-input.ts'
 import { buildBracketView } from '../bracket-view.ts'
-import type { ResultInput } from '../bracket-view.ts'
+import type { Winners } from '../bracket-view.ts'
 import { PRINTED_PAGE } from './bracket-diagram.tsx'
 import { Bracket } from './bracket.tsx'
 
@@ -21,13 +21,13 @@ const tabPanel = () => page.getByRole(`tabpanel`)
 const renderBracket = async (
   viewport: { width: number; height: number },
   {
-    results = [],
+    winners = {},
     year = 2025,
     bracket = BRACKET_2025,
-  }: { results?: ResultInput[]; year?: number; bracket?: BracketInput } = {},
+  }: { winners?: Winners; year?: number; bracket?: BracketInput } = {},
 ) => {
   await page.viewport(viewport.width, viewport.height)
-  await render(<Bracket view={buildBracketView(year, bracket, results)} />)
+  await render(<Bracket view={buildBracketView(year, bracket, winners)} />)
   await document.fonts.ready
 }
 
@@ -73,9 +73,7 @@ test(`a phone shows one round at a time`, async () => {
 
 test(`a battle's label names its winner`, async () => {
   await renderBracket(PHONE, {
-    results: [
-      { battle: { round: `ROUND_1`, index: 0 }, winner: `Olympic Marmot` },
-    ],
+    winners: { 'ROUND_1:0': `Olympic Marmot` },
   })
 
   await expect

@@ -15,7 +15,7 @@ export const readCurrentBracketView =
     const bracket = await readCurrentBracket()
     return (
       bracket && {
-        view: buildBracketView(bracket.year, bracket.input, []),
+        view: buildBracketView(bracket.year, bracket.input, {}),
         expectedLockDate:
           bracket.expectedLockDate && formatDate(bracket.expectedLockDate),
       }

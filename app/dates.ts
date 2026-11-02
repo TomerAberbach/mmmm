@@ -24,3 +24,7 @@ const ARIZONA_LONG_DATE = new Intl.DateTimeFormat(`en-US`, {
 // The day in Arizona, such as "March 2, 2027"
 export const formatArizonaDate = (date: Date): string =>
   ARIZONA_LONG_DATE.format(date)
+
+// The time on the reader's clock, such as "2:41 PM"
+export const formatTime = (date: Date): string =>
+  date.toLocaleTimeString([], { hour: `numeric`, minute: `2-digit` })

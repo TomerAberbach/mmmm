@@ -184,6 +184,7 @@ model Combatant {
   bracket         Bracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
   seedSlot        SeedSlot?
   wildCardEntrant WildCardEntrant?
+  picks           Pick[]
 
   @@unique([bracketId, name])
 }
@@ -226,6 +227,7 @@ model Battle {
   round     Round
   index     Int
   bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  picks     Pick[]
 
   @@unique([bracketId, round, index])
 }
@@ -251,14 +253,32 @@ model Contest {
 
 // One person's bracket in one contest: a draft until it's submitted
 model Player {
-  id               String   @id
+  id               String    @id
   contestId        String
   displayName      String
   // A SHA-256 hash of the personal link's secret, so a database leak reveals
   // no working link
-  personalLinkHash String   @unique
-  createdAt        DateTime @default(now())
-  contest          Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  personalLinkHash String    @unique
+  createdAt        DateTime  @default(now())
+  // Null until the player's first pick. A tiebreak and a sign of edits the
+  // player didn't make
+  picksChangedAt   DateTime?
+  contest          Contest   @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  picks            Pick[]
 
   @@index([contestId])
+}
+
+// A player's chosen winner of one battle, always one of its battle's sides
+model Pick {
+  playerId    String
+  battleId    String
+  combatantId String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  battle      Battle    @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  combatant   Combatant @relation(fields: [combatantId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, battleId])
+  @@index([battleId])
+  @@index([combatantId])
 }

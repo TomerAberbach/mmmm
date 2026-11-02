@@ -14,10 +14,30 @@ import {
 } from '~/bracket.ts'
 import type { Round } from '~/bracket.ts'
 
-// One round at a time, for screens too narrow for the diagram
-export const BracketRoundTabs = ({ view }: { view: BracketView }) => (
+// The tab to show, for tabs that another control also switches
+export type RoundSelection = {
+  round: Round
+  onSelect: (round: Round) => void
+}
+
+// One round at a time, for screens too narrow for the diagram. Without a
+// selection, it starts on the earliest round left to decide
+export const BracketRoundTabs = ({
+  view,
+  selection,
+  showBattlesLeft = false,
+}: {
+  view: BracketView
+  selection?: RoundSelection | undefined
+  showBattlesLeft?: boolean
+}) => (
   <Tabs
-    defaultSelectedKey={readStartingRound(view)}
+    {...(selection
+      ? {
+          selectedKey: selection.round,
+          onSelectionChange: key => selection.onSelect(key as Round),
+        }
+      : { defaultSelectedKey: readStartingRound(view) })}
     className='flex flex-col gap-6'
   >
     <TabList
@@ -31,6 +51,9 @@ export const BracketRoundTabs = ({ view }: { view: BracketView }) => (
           className='-mb-0.5 flex min-h-11 shrink-0 cursor-pointer items-center border-b-4 border-transparent px-3 font-condensed text-lg font-bold whitespace-nowrap uppercase outline-none data-focus-visible:outline-3 data-focus-visible:-outline-offset-3 data-focus-visible:outline-accent-strong data-selected:border-accent data-selected:text-accent-strong'
         >
           {ROUND_NAMES[round]}
+          {showBattlesLeft ? (
+            <BattlesLeft battles={view.battles[round]} />
+          ) : null}
         </Tab>
       ))}
     </TabList>
@@ -51,6 +74,15 @@ export const BracketRoundTabs = ({ view }: { view: BracketView }) => (
     ))}
   </Tabs>
 )
+
+const BattlesLeft = ({ battles }: { battles: BattleView[] }) => {
+  const count = battles.filter(battle => battle.winner === undefined).length
+  return (
+    <span className='ms-2 text-sm text-muted'>
+      {count === 0 ? `done` : `${count} left`}
+    </span>
+  )
+}
 
 // Every round, each with a heading, for screen readers beside the diagram
 export const BracketRoundList = ({ view }: { view: BracketView }) => (
@@ -115,10 +147,7 @@ const BattleList = ({
     {battles.map(battle => (
       <li key={battle.index}>
         {showBoxes ? (
-          <>
-            <span className='sr-only'>{describeBattle(battle)}</span>
-            <BattleBox battle={battle} size='regular' />
-          </>
+          <BattleBox battle={battle} size='regular' describe />
         ) : (
           describeBattle(battle)
         )}

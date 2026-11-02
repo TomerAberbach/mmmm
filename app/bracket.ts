@@ -73,6 +73,12 @@ export type SeedSlotRef = { position: DivisionPosition; seed: Seed }
 
 export type BattleRef = { round: Round; index: number }
 
+export const toBattleKey = ({ round, index }: BattleRef): string =>
+  `${round}:${index}`
+
+export const toSeedSlotKey = ({ position, seed }: SeedSlotRef): string =>
+  `${position}:${seed}`
+
 // Every battle in play order: the wild card, then each round top to bottom
 export const listBattles = (): BattleRef[] =>
   ROUNDS.flatMap(round =>

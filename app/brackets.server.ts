@@ -5,7 +5,7 @@ import {
   listSeedSlotNames,
 } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
-import { DIVISION_POSITIONS, listBattles } from './bracket.ts'
+import { DIVISION_POSITIONS, listBattles, toBattleKey } from './bracket.ts'
 import type { DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
@@ -200,6 +200,36 @@ export const readBracket = async (
       input: readStoredInput(bracket),
       publishedAt: bracket.publishedAt,
       expectedLockDate: bracket.expectedLockDate,
+    }
+  )
+}
+
+// The year's bracket with the row IDs that picks reference, or null when it
+// has none
+export const readBracketRows = async (
+  yearId: number,
+): Promise<{
+  input: BracketInput
+  battleIdByKey: ReadonlyMap<string, string>
+  combatantIdByName: ReadonlyMap<string, string>
+} | null> => {
+  const bracket = await prisma.bracket.findUnique({
+    where: { yearId },
+    select: {
+      ...BRACKET_SELECT,
+      battles: { select: { id: true, round: true, index: true } },
+      combatants: { select: { id: true, name: true } },
+    },
+  })
+  return (
+    bracket && {
+      input: readStoredInput(bracket),
+      battleIdByKey: new Map(
+        bracket.battles.map(battle => [toBattleKey(battle), battle.id]),
+      ),
+      combatantIdByName: new Map(
+        bracket.combatants.map(({ id, name }) => [name, id]),
+      ),
     }
   )
 }

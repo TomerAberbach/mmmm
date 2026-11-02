@@ -11,7 +11,7 @@ export const loader = ({ context }: Route.LoaderArgs) => {
 }
 
 const PlayLayout = ({ loaderData }: Route.ComponentProps) => (
-  <div className='flex max-w-xl flex-col gap-6'>
+  <div className='flex flex-col gap-6'>
     {/* Search engines skip these pages, since their URLs hold the contest
         link's secret */}
     <meta name='robots' content='noindex' />

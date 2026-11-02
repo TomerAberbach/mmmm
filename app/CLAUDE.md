@@ -127,8 +127,10 @@ app
   at its seed when the wild card moves. `bracket-form.ts` converts between the
   two
 - Show a bracket from `buildBracketView` in `bracket-view.ts`, which fills each
-  side from the seed slots and results. `BattleBox` is hidden from screen
-  readers, so put `describeBattle`'s text beside it
+  side from the seed slots and the winners so far. `BattleBox` is hidden from
+  screen readers, so pass it `describe` unless a list of the battles beside it
+  describes them. Inside a `PickingContext`, each box is a labeled control
+  instead
 - The diagram's boxes fit the year's longest name using the glyph widths in
   `name-width.ts`. Measure the glyphs again in Chromium after changing the font,
   weight, or tracking of names in `battle-box.tsx`
@@ -157,6 +159,9 @@ app
   15 minutes on each response, so leave it off a page that asks who the player
   is, such as the contest link's "Continue as" prompt
 - Check `isTakingPlayers` before `createPlayer`, which doesn't check it
+- Change a player's picks with `pickWinner` from `picks.ts`, which also picks
+  the winner's earlier wins and clears the later picks that no longer fit.
+  `savePlayerPicks` refuses picks that `pickWinner` wouldn't produce
 
 ## Testing
 

@@ -31,10 +31,10 @@ const readPlayerSecret = async (
 export const readRememberedPlayer = async (
   request: Request,
   contestId: string,
-): Promise<{ secret: string; displayName: string } | null> => {
+): Promise<{ secret: string; id: string; displayName: string } | null> => {
   const secret = await readPlayerSecret(request, contestId)
   const player = secret && (await readContestPlayer(contestId, secret))
-  return player ? { secret, displayName: player.displayName } : null
+  return player ? { secret, ...player } : null
 }
 
 // Also restarts the 15 minutes

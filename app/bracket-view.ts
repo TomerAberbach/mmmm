@@ -1,4 +1,4 @@
-import { listSeedSlotNames } from './bracket-input.ts'
+import { listSeedSlotNames, readNameBySeedSlot } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
 import {
   DIVISION_POSITIONS,
@@ -6,6 +6,8 @@ import {
   readBattleSides,
   ROUND_NAMES,
   ROUNDS,
+  toBattleKey,
+  toSeedSlotKey,
 } from './bracket.ts'
 import type {
   BattleRef,
@@ -31,23 +33,22 @@ export type BracketView = {
   battles: Record<Round, BattleView[]>
 }
 
-export type ResultInput = { battle: BattleRef; winner: string }
+// Each decided battle's key, from `toBattleKey`, mapped to its winner's name
+export type Winners = Readonly<Record<string, string>>
 
 // Every battle of the bracket, with each side filled from the seed slots and
-// the winners of the results so far
+// the winners so far
 export const buildBracketView = (
   year: number,
   input: BracketInput,
-  results: ResultInput[],
+  winners: Winners,
 ): BracketView => {
   const wildCardSlot: SeedSlotRef = {
     position: input.wildCard.position,
     seed: input.wildCard.seed,
   }
-  const { nameBySeedSlot, seedByName } = indexSeeds(input)
-  const winnerByBattle = new Map(
-    results.map(({ battle, winner }) => [readBattleKey(battle), winner]),
-  )
+  const nameBySeedSlot = readNameBySeedSlot(input)
+  const seedByName = indexSeeds(input)
 
   // Every name is the input's, or a winner checked against its battle's sides
   // before any later battle reads it
@@ -57,7 +58,7 @@ export const buildBracketView = (
     seed: seedByName.get(name)!,
   })
   const toWinnerSide = (battle: BattleRef): Side => {
-    const winner = winnerByBattle.get(readBattleKey(battle))
+    const winner = winners[toBattleKey(battle)]
     return winner === undefined
       ? { kind: `undecided`, battle }
       : toCombatant(winner)
@@ -70,13 +71,13 @@ export const buildBracketView = (
             side.kind === `seedSlot`
               ? // Only the wild card's seed slot has no name, and its side is
                 // the wild card's winner
-                toCombatant(nameBySeedSlot.get(readSeedSlotKey(side.seedSlot))!)
+                toCombatant(nameBySeedSlot.get(toSeedSlotKey(side.seedSlot))!)
               : toWinnerSide(side.battle),
         )
 
   const battles = Object.groupBy(
     listBattles().map((battle): BattleView => {
-      const winner = winnerByBattle.get(readBattleKey(battle))
+      const winner = winners[toBattleKey(battle)]
       const sides = readSides(battle)
       if (winner !== undefined) {
         assertWinnerHasSide(battle, sides, winner)
@@ -103,23 +104,16 @@ export const buildBracketView = (
   }
 }
 
-// Each seed slot's combatant, and each combatant's seed. Every wild card
-// entrant has the wild card's seed
-const indexSeeds = (input: BracketInput) => {
-  const seedSlots = listSeedSlotNames(input)
-  const nameBySeedSlot = new Map(
-    seedSlots.map(({ name, ...seedSlot }) => [readSeedSlotKey(seedSlot), name]),
-  )
-  const seedByName = new Map<string, Seed>([
-    ...seedSlots.flatMap(({ name, seed }) =>
+// Each combatant's seed. Every wild card entrant has the wild card's seed
+const indexSeeds = (input: BracketInput): ReadonlyMap<string, Seed> =>
+  new Map([
+    ...listSeedSlotNames(input).flatMap(({ name, seed }) =>
       name === undefined ? [] : [[name, seed] as const],
     ),
     ...input.wildCard.entrants.map(
       name => [name, input.wildCard.seed] as const,
     ),
   ])
-  return { nameBySeedSlot, seedByName }
-}
 
 const assertWinnerHasSide = (
   battle: BattleRef,
@@ -130,12 +124,6 @@ const assertWinnerHasSide = (
     throw new Error(`${winner} isn't in ${readBattleName(battle)}`)
   }
 }
-
-const readBattleKey = ({ round, index }: BattleRef): string =>
-  `${round}:${index}`
-
-const readSeedSlotKey = ({ position, seed }: SeedSlotRef): string =>
-  `${position}:${seed}`
 
 // The round's battles within the division, top to bottom
 export const readDivisionBattles = (
@@ -170,7 +158,7 @@ const describeSide = (side: Side): string =>
       }`
 
 // Battles are numbered from 1 within their round
-const readBattleName = ({ round, index }: BattleRef): string =>
+export const readBattleName = ({ round, index }: BattleRef): string =>
   round === `WILD_CARD`
     ? ROUND_NAMES.WILD_CARD
     : `${ROUND_NAMES[round]}, battle ${index + 1}`

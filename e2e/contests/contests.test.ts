@@ -130,3 +130,31 @@ test(`a personal link opens the player's bracket in another browser`, async ({
   ).toBeVisible()
   expect(new URL(otherBrowser.url()).pathname).toMatch(/^\/play\/.+\/bracket$/u)
 })
+
+test(`a player's picks save and follow their personal link`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const firstBattle = page.getByRole(`radiogroup`, {
+    name: `Round 1, battle 1`,
+  })
+  const winner = await firstBattle
+    .getByRole(`radio`)
+    .first()
+    .getAttribute(`value`)
+  await firstBattle.locator(`label`).first().click()
+  await expect(page.getByText(/^Saved at/u)).toBeVisible()
+  const secret = await readPersonalLinkSecret(page)
+  const otherBrowser = await browser.newPage()
+
+  await otherBrowser.goto(`/my-bracket/${secret}`)
+
+  await expect(otherBrowser.getByText(`1 of 64 picked`)).toBeVisible()
+  await expect(
+    otherBrowser
+      .getByRole(`radiogroup`, { name: `Round 1, battle 1` })
+      .locator(`input[value="${winner}"]`),
+  ).toBeChecked()
+})
