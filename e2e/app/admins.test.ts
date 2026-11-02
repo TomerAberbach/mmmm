@@ -1,15 +1,15 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { readTotpCode } from '../test/totp.ts'
-import { ADMIN_LIST, openSetupLink, signInAsAdmin } from './admins.ts'
+import { readTotpCode } from '../../test/totp.ts'
+import { ADMIN_LIST, openSetupLink, signInAsAdmin } from '../admins.ts'
 import {
   newEmailAddress,
   PASSWORD,
   signIn,
   signInConfirmed,
   signOut,
-} from './auth.ts'
-import { readActionLink, readEmails } from './mailbox.ts'
+} from '../auth.ts'
+import { readActionLink, readEmails } from '../mailbox.ts'
 
 const [
   AUTHENTICATOR_APP_ADMIN = ``,

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { collectConsoleMessages } from './console.ts'
-import { SIGNED_OUT_HOME_HEADING } from './home-page.ts'
+import { collectConsoleMessages } from '../console.ts'
+import { SIGNED_OUT_HOME_HEADING } from '../home-page.ts'
 
 test(`home page renders from the production build`, async ({ page }) => {
   await page.goto(`/`)

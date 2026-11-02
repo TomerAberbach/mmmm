@@ -30,8 +30,12 @@ jobs:
           - name: Unit and browser tests
             script: check:test
             browser-and-database: true
-          - name: End-to-end tests
-            script: test:e2e
+          # The e2e tests keep 4 cores busy, so 2 runners finish them sooner
+          - name: End-to-end tests, half 1
+            script: test:e2e --shard=1/2
+            browser-and-database: true
+          - name: End-to-end tests, half 2
+            script: test:e2e --shard=2/2
             browser-and-database: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

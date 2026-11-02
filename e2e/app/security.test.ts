@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { collectConsoleMessages } from './console.ts'
+import { collectConsoleMessages } from '../console.ts'
 
 test(`pages set security headers`, async ({ request }) => {
   const response = await request.get(`/`)

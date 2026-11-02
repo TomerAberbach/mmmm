@@ -45,7 +45,7 @@ fly deploy --ha=false   # Deploy staging. See docs/operations.md
 
 # Run one test file
 pnpm test --run app/components/signed-out-home.test.tsx
-pnpm test:e2e e2e/home.test.ts  # Builds first
+pnpm test:e2e e2e/app/home.test.ts  # Builds first
 ```
 
 CI runs each script that `pnpm check` runs, `check:static`, `check:test`, and

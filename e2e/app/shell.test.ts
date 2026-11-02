@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { SIGNED_OUT_HOME_HEADING } from './home-page.ts'
+import { SIGNED_OUT_HOME_HEADING } from '../home-page.ts'
 
 test(`the footer links the privacy policy`, async ({ page }) => {
   await page.goto(`/`)

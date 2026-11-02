@@ -6,8 +6,8 @@ import {
   signUp,
   signUpConfirmed,
   submitResetRequest,
-} from './auth.ts'
-import { readEmails } from './mailbox.ts'
+} from '../auth.ts'
+import { readEmails } from '../mailbox.ts'
 
 test(`an address gets 10 sign-in attempts from one browser before it has to wait`, async ({
   page,
