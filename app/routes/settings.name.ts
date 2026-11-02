@@ -3,8 +3,8 @@ import { redirect } from 'react-router'
 import type { Route } from './+types/settings.name.ts'
 import { serverNameSchema } from '~/auth-forms.server.ts'
 import { auth } from '~/auth.server.ts'
-import type { SavedResult } from '~/components/saved-notice.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
+import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
 
 export const loader = (): Response => redirect(`/settings`)
 
@@ -24,5 +24,5 @@ export const action = async ({
     body: { name: submission.value.name },
     headers: request.headers,
   })
-  return { result: submission.reply(), saved: true }
+  return acceptSubmission(submission)
 }

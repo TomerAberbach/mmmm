@@ -10,7 +10,7 @@ import {
   signUp,
   signUpConfirmed,
 } from '../auth.ts'
-import { readActionLink, readEmails } from '../mailbox.ts'
+import { readEmails, readNewestActionLink } from '../mailbox.ts'
 
 // Adds signing the educator in from a second browser, with its own cookies,
 // which closes after the test
@@ -33,12 +33,8 @@ const test = base.extend<{
 
 const NEW_PASSWORD = `a brand new password`
 
-const readResetLink = async (page: Page, email: string) => {
-  const [latest = ``] = await readEmails(page, email, {
-    newestContaining: `Set a new password`,
-  })
-  return readActionLink(latest, `Set a new password`)
-}
+const readResetLink = (page: Page, email: string) =>
+  readNewestActionLink(page, email, `Set a new password`)
 
 const setNewPassword = async (page: Page, link: string) => {
   await page.goto(link)

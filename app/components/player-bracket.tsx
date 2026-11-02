@@ -24,6 +24,7 @@ import { listBattles, toBattleKey } from '~/bracket.ts'
 import type { BattleRef, Round } from '~/bracket.ts'
 import { formatDateTime, formatTime } from '~/dates.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
+import type { PicksRequest } from '~/picks-request.ts'
 import {
   arePicksEqual,
   listContenders,
@@ -33,7 +34,6 @@ import {
 } from '~/picks.ts'
 import type { Picks } from '~/picks.ts'
 import type { Submission } from '~/player-picks.server.ts'
-import type { PicksRequest } from '~/routes/play.bracket.picks.ts'
 
 // The player's bracket, each battle a control. Every change saves the whole
 // set of picks to the player's draft through `picksPath`, and submitting copies

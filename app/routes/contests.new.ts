@@ -4,7 +4,7 @@ import type { Route } from './+types/contests.new.ts'
 import { readCurrentYear } from '~/brackets.server.ts'
 import { serverContestNameSchema } from '~/contest-forms.server.ts'
 import { createContest } from '~/contests.server.ts'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import { rejectSubmission } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
 export const loader = (): Response => redirect(`/contests`)

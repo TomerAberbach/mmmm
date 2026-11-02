@@ -190,9 +190,9 @@ test(`saving an unpublished bracket replaces it`, async () => {
 
   await saveUnpublishedBracket(year, BRACKET_2025)
 
-  await expect(readBracket(year)).resolves.toMatchObject({
-    input: BRACKET_2025,
-    publishedAt: null,
+  await expect(readBracket(year)).resolves.toStrictEqual(BRACKET_2025)
+  await expect(readBracketSummary(year)).resolves.toMatchObject({
+    phase: `SETUP`,
   })
 })
 
@@ -204,7 +204,7 @@ test(`saving an unpublished bracket keeps its expected lock date`, async () => {
 
   await saveUnpublishedBracket(year, BRACKET_2025)
 
-  await expect(readBracket(year)).resolves.toMatchObject({
+  await expect(readBracketSummary(year)).resolves.toMatchObject({
     expectedLockDate,
   })
 })
@@ -215,9 +215,10 @@ test(`saving over a published bracket changes nothing`, async () => {
   const saved = await saveUnpublishedBracket(year, BRACKET_2025)
 
   expect(saved).toBe(false)
-  const bracket = await readBracket(year)
-  expect(bracket?.input).toStrictEqual(BRACKET_2026)
-  expect(bracket?.publishedAt).toBeInstanceOf(Date)
+  await expect(readBracket(year)).resolves.toStrictEqual(BRACKET_2026)
+  await expect(readBracketSummary(year)).resolves.toMatchObject({
+    phase: `OPEN`,
+  })
 })
 
 test(`deleting an unpublished bracket removes it`, async () => {
@@ -345,9 +346,7 @@ test(`renaming a combatant changes its name everywhere the bracket shows it`, as
 
   expect(result).toStrictEqual({ ok: true })
   const bracket = await readBracket(year)
-  expect(bracket?.input.divisions.TOP_LEFT.combatants).toContain(
-    `Gelada Baboon`,
-  )
+  expect(bracket?.divisions.TOP_LEFT.combatants).toContain(`Gelada Baboon`)
 })
 
 test(`a rename to another combatant's name is refused`, async () => {

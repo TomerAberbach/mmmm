@@ -5,6 +5,9 @@ import { INVALID_EMAIL_MESSAGE } from './auth-forms.ts'
 import { isTooManyAttempts } from './auth-limits.server.ts'
 import { isSecondFactorRefusal } from './second-factor.ts'
 
+// What an action answers once it saves a form submitted through a fetcher
+export type SavedResult = { result: SubmissionResult; saved?: true }
+
 const BAD_REQUEST: ResponseInit = { status: 400 }
 
 // The reply never sends a password back to the browser, so it drops every
@@ -26,6 +29,11 @@ export const rejectSubmission = (
     },
     init,
   )
+
+export const acceptSubmission = (
+  submission: Submission<unknown>,
+  options?: { resetForm?: boolean },
+): SavedResult => ({ result: submission.reply(options), saved: true })
 
 // Answers each refusal Better Auth gives a form, and rethrows any other error:
 // too many attempts, an address it checks more strictly than `emailSchema`, a

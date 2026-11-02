@@ -186,22 +186,12 @@ export const readCurrentYear = async (): Promise<number | null> => {
 // The year's bracket, published or not, or null when it has none
 export const readBracket = async (
   yearId: number,
-): Promise<{
-  input: BracketInput
-  publishedAt: Date | null
-  expectedLockDate: Date | null
-} | null> => {
+): Promise<BracketInput | null> => {
   const bracket = await prisma.bracket.findUnique({
     where: { yearId },
     select: BRACKET_SELECT,
   })
-  return (
-    bracket && {
-      input: readStoredInput(bracket),
-      publishedAt: bracket.publishedAt,
-      expectedLockDate: bracket.expectedLockDate,
-    }
-  )
+  return bracket && readStoredInput(bracket)
 }
 
 // The year's bracket with the row IDs that picks reference, or null when it
@@ -336,46 +326,33 @@ export const readBracketCombatants = async (
 ): Promise<
   { position: DivisionPosition; name: string; combatants: CombatantRow[] }[]
 > => {
-  const divisions = await prisma.division.findMany({
-    where: { bracket: { yearId } },
-    select: {
-      position: true,
-      name: true,
-      seedSlots: {
-        orderBy: { seed: `asc` },
-        select: {
-          seed: true,
-          combatant: { select: { id: true, name: true } },
-          wildCard: {
-            select: {
-              entrants: {
-                orderBy: { index: `asc` },
-                select: { combatant: { select: { id: true, name: true } } },
-              },
-            },
-          },
-        },
-      },
-    },
+  const bracket = await readBracketRows(yearId)
+  if (!bracket) {
+    return []
+  }
+  const { input, combatantIdByName } = bracket
+  const toRow = (
+    name: string,
+    seed: number,
+    isWildCardEntrant: boolean,
+  ): CombatantRow => ({
+    id: combatantIdByName.get(name)!,
+    name,
+    seed,
+    isWildCardEntrant,
   })
-  return DIVISION_POSITIONS.flatMap(position =>
-    divisions
-      .filter(division => division.position === position)
-      .map(({ name, seedSlots }) => ({
-        position,
-        name,
-        combatants: seedSlots.flatMap(
-          ({ seed, combatant, wildCard }): CombatantRow[] =>
-            combatant
-              ? [{ ...combatant, seed, isWildCardEntrant: false }]
-              : (wildCard?.entrants ?? []).map(entrant => ({
-                  ...entrant.combatant,
-                  seed,
-                  isWildCardEntrant: true,
-                })),
-        ),
-      })),
-  )
+  const seedSlots = listSeedSlotNames(input)
+  return DIVISION_POSITIONS.map(position => ({
+    position,
+    name: input.divisions[position].name,
+    combatants: seedSlots
+      .filter(slot => slot.position === position)
+      .flatMap(({ seed, name }) =>
+        name === undefined
+          ? input.wildCard.entrants.map(entrant => toRow(entrant, seed, true))
+          : [toRow(name, seed, false)],
+      ),
+  }))
 }
 
 // Names the combatant `name`, which the route has checked, unless another
@@ -425,7 +402,6 @@ export const renameCombatant = async (
 
 const BRACKET_SELECT = {
   yearId: true,
-  publishedAt: true,
   expectedLockDate: true,
   divisions: {
     select: {

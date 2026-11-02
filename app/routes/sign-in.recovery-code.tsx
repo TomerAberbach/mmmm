@@ -1,18 +1,11 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect, useRouteLoaderData } from 'react-router'
+import { useRouteLoaderData } from 'react-router'
 import type { Route } from './+types/sign-in.recovery-code.ts'
 import { recoveryCodeSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { RecoveryCodeForm } from '~/components/sign-in-code-form.tsx'
-import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 import type { loader as rootLoader } from '~/root.tsx'
-import { readSignedInEducator } from '~/session.server.ts'
 import { answerSignInChallenge } from '~/sign-in-challenge.server.ts'
-
-export const loader = async ({ context }: Route.LoaderArgs) =>
-  (await readSignedInEducator(context))
-    ? redirect(EDUCATOR_DASHBOARD_PATH)
-    : null
 
 export const action = async ({ request }: Route.ActionArgs) =>
   answerSignInChallenge(

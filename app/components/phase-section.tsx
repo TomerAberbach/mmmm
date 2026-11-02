@@ -4,20 +4,13 @@ import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { FormError } from './form-error.tsx'
 import { SavedNotice } from './saved-notice.tsx'
-import type { SavedResult } from './saved-notice.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import { expectedLockDateSchema } from '~/bracket-admin-forms.ts'
-import type { Phase } from '~/brackets.server.ts'
-
-export type PhaseView = {
-  // YYYY-MM-DD
-  expectedLockDate: string | null
-} & (
-  | { phase: `SETUP` }
-  | { phase: `OPEN`; publishedOn: string; hasContests: boolean }
-)
+import type { BracketSummary, Phase } from '~/brackets.server.ts'
+import { formatArizonaDate, toIsoDate } from '~/dates.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
 
 const PHASE_LABELS: Record<Phase, string> = { SETUP: `Setup`, OPEN: `Open` }
 
@@ -25,28 +18,34 @@ const PHASE_LABELS: Record<Phase, string> = { SETUP: `Setup`, OPEN: `Open` }
 // date
 export const PhaseSection = ({
   year,
-  view,
+  summary,
 }: {
   year: number
-  view: PhaseView
+  summary: BracketSummary
 }) => (
   <section className='flex max-w-3xl flex-col gap-3 border-2 border-ink p-5'>
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
       <h2 className={SECTION_HEADING_CLASS_NAME}>Status</h2>
-      <PhaseTag phase={view.phase} />
-      {view.phase === `OPEN` ? (
-        <span className='text-muted'>Published {view.publishedOn}</span>
+      <PhaseTag phase={summary.phase} />
+      {summary.phase === `OPEN` ? (
+        <span className='text-muted'>
+          Published {formatArizonaDate(summary.publishedAt)}
+        </span>
       ) : null}
     </div>
     <p className='max-w-prose'>
-      {view.phase === `OPEN`
+      {summary.phase === `OPEN`
         ? `Educators can create contests with this bracket, and it’s the current bracket on the home page. Only combatant names can change now.`
         : `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`}
     </p>
-    <ExpectedLockDateForm expectedLockDate={view.expectedLockDate} />
+    <ExpectedLockDateForm
+      expectedLockDate={
+        summary.expectedLockDate && toIsoDate(summary.expectedLockDate)
+      }
+    />
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-      {view.phase === `OPEN` ? (
-        <UnpublishControls year={year} hasContests={view.hasContests} />
+      {summary.phase === `OPEN` ? (
+        <UnpublishControls year={year} hasContests={summary.hasContests} />
       ) : (
         <ConfirmDialog
           trigger={<Button>{`Publish ${year} bracket`}</Button>}

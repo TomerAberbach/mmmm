@@ -98,7 +98,7 @@ test.each([
   { assurance: `SETUP_LINK`, hasAuthenticatorApp: true, mayChange: false },
   { assurance: `SECOND_FACTOR`, hasAuthenticatorApp: true, mayChange: true },
 ] as const)(
-  `a $assurance session, with an authenticator app: $hasAuthenticatorApp, may change second secondFactors: $mayChange`,
+  `a $assurance session, with an authenticator app: $hasAuthenticatorApp, may change second factors: $mayChange`,
   ({ assurance, hasAuthenticatorApp, mayChange }) => {
     const secondFactors = { passkeys: [], hasAuthenticatorApp }
 

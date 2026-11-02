@@ -60,7 +60,8 @@ for a **Player**'s **Draft** or **Submission**.
 | **Personal link**  | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                              | Recovery link, magic link, sign-in token  |
 | **Pick**           | A **Player**'s chosen winner of one **Battle**                                                                      | Choice, guess, prediction                 |
 | **Clear**          | To remove a **Pick** whose winner can no longer reach its **Battle** after an earlier **Pick** changes              | Invalidate, reset, drop                   |
-| **Draft**          | A **Player**'s **Picks** before they submit them                                                                    | Unsubmitted bracket, fill-out, completion |
+| **Draft**          | A **Player**'s **Picks** that they edit, which become their **Submission** when they submit                         | Unsubmitted bracket, fill-out, completion |
+| **Discard**        | To replace a **Player**'s **Draft** with their **Submission**'s **Picks**                                           | Revert, undo                              |
 | **Submission**     | A submitted set of **Picks** in a **Contest**, with a status of pending, approved, or rejected                      | Entry, fill-out, completion, bracket      |
 | **Marked bracket** | A **Player**'s **Picks**, each shown as right or wrong                                                              | Graded bracket, scored bracket            |
 | **Share**          | An **Educator**'s grant of one colleague's full view of a **Contest**                                               | Collaborator, co-teacher                  |
@@ -99,7 +100,7 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Player** belongs to exactly one **Contest** and has exactly one **Personal
   link**
 - A **Contest** has zero or more **Players**
-- A **Draft** becomes exactly one **Submission** when submitted
+- A **Player** has exactly one **Draft** and at most one **Submission**
 - An **Admin** has at least one **Second factor**
 - An **Educator** has zero or more **Passkeys** and at most one **Authenticator
   app**

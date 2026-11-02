@@ -2,7 +2,8 @@
 
 - Tests run in Playwright against the production build. They set `APP_ENV=test`
   anyway, because only development and tests may use the mailbox. Read the email
-  a test sent with `readEmails` and `readActionLink` from `mailbox.ts`
+  a test sent with `readEmails` from `mailbox.ts`, and the link in the newest
+  one with `readNewestActionLink`
 - Tests run in parallel, and each directory under `e2e/` gets its own server and
   database from `playwright.config.ts`, because a published bracket changes the
   current year for every test on its server. Put a test in `app/` unless it
@@ -13,7 +14,7 @@
   for such a project, because a retry starts from the state the failed attempt
   left
 - The server's `ADMIN_LIST` comes from `admins.ts`, since a test can't change it
-  once the server starts. Give each admin test its own address from that list
+  once the server starts. Give each admin test its own address in `ADMINS`
 - Sign in as an admin with `signInAsAdmin` from `admins.ts`, which adds a
   passkey through Chromium's virtual authenticator. Test authenticator apps with
   `readTotpCode` from `test/totp.ts`

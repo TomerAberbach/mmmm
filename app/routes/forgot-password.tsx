@@ -7,10 +7,7 @@ import {
   ForgotPasswordForm,
   ResetLinkSent,
 } from '~/components/forgot-password-form.tsx'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from '~/reject-submission.server.ts'
+import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) =>

@@ -5,13 +5,15 @@ export default [
   index(`routes/home.tsx`),
   route(`bracket`, `routes/bracket.tsx`),
   route(`privacy`, `routes/privacy.tsx`),
-  route(`sign-up`, `routes/sign-up.tsx`),
-  route(`sign-in`, `routes/sign-in.tsx`),
+  layout(`routes/signed-out.tsx`, [
+    route(`sign-up`, `routes/sign-up.tsx`),
+    route(`sign-in`, `routes/sign-in.tsx`),
+    route(`sign-in/code`, `routes/sign-in.code.tsx`),
+    route(`sign-in/recovery-code`, `routes/sign-in.recovery-code.tsx`),
+  ]),
   route(`sign-out`, `routes/sign-out.ts`),
   route(`forgot-password`, `routes/forgot-password.tsx`),
   route(`reset-password`, `routes/reset-password.tsx`),
-  route(`sign-in/code`, `routes/sign-in.code.tsx`),
-  route(`sign-in/recovery-code`, `routes/sign-in.recovery-code.tsx`),
   route(`settings`, `routes/settings.tsx`, [
     index(`routes/settings._index.tsx`),
     route(`name`, `routes/settings.name.ts`),
@@ -37,6 +39,7 @@ export default [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
       route(`bracket`, `routes/admin.bracket.tsx`),
+      route(`bracket/delete`, `routes/admin.bracket.delete.ts`),
       route(`bracket/publication`, `routes/admin.bracket.publication.ts`),
       route(`bracket/rename`, `routes/admin.bracket.rename.ts`),
       route(

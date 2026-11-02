@@ -14,10 +14,7 @@ import {
   ScanStep,
 } from '~/components/authenticator-app-setup.tsx'
 import { RecoveryCodes } from '~/components/recovery-codes.tsx'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from '~/reject-submission.server.ts'
+import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
 import {
   mayChangeSecondFactors,
   readSecondFactors,

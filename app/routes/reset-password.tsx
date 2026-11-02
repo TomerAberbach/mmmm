@@ -5,7 +5,7 @@ import type { Route } from './+types/reset-password.ts'
 import { resetPasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { ResetPasswordForm } from '~/components/reset-password-form.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import { rejectSubmission } from '~/form-replies.server.ts'
 
 const LINK_INVALID_URL = `/forgot-password?link-invalid`
 

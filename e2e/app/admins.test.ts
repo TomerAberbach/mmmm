@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readTotpCode } from '../../test/totp.ts'
-import { ADMIN_LIST, openSetupLink, signInAsAdmin } from '../admins.ts'
+import { ADMINS, openSetupLink, signInAsAdmin } from '../admins.ts'
 import {
   newEmailAddress,
   PASSWORD,
@@ -9,13 +9,7 @@ import {
   signInConfirmed,
   signOut,
 } from '../auth.ts'
-import { readActionLink, readEmails } from '../mailbox.ts'
-
-const [
-  AUTHENTICATOR_APP_ADMIN = ``,
-  PASSKEY_ADMIN = ``,
-  OTHER_BROWSER_ADMIN = ``,
-] = ADMIN_LIST
+import { readNewestActionLink } from '../mailbox.ts'
 
 // Reads the key under "Can't scan it?", as an educator would type it
 const readTotpUri = async (page: Page): Promise<string> => {
@@ -44,8 +38,8 @@ test(`educators who aren't admins get the not-found page`, async ({ page }) => {
 test(`an admin sets up an authenticator app and enters its code at sign-in`, async ({
   page,
 }) => {
-  await signInConfirmed(page, AUTHENTICATOR_APP_ADMIN)
-  await openSetupLink(page, AUTHENTICATOR_APP_ADMIN)
+  await signInConfirmed(page, ADMINS.authenticatorApp)
+  await openSetupLink(page, ADMINS.authenticatorApp)
   await page.getByRole(`link`, { name: `Use an authenticator app` }).click()
   await page.getByLabel(`Password`, { exact: true }).fill(PASSWORD)
   await page.getByRole(`button`, { name: `Continue` }).click()
@@ -57,7 +51,7 @@ test(`an admin sets up an authenticator app and enters its code at sign-in`, asy
   await expect(page.getByRole(`heading`, { name: `Admin` })).toBeVisible()
   await signOut(page)
 
-  await signIn(page, AUTHENTICATOR_APP_ADMIN)
+  await signIn(page, ADMINS.authenticatorApp)
   await expect(page).toHaveURL(`/sign-in/code`)
   await enterCode(page, readTotpCode(totpUri))
   await page.getByRole(`button`, { name: `Continue` }).click()
@@ -68,7 +62,7 @@ test(`an admin sets up an authenticator app and enters its code at sign-in`, asy
 })
 
 test(`an admin adds a passkey and signs in with it`, async ({ page }) => {
-  await signInAsAdmin(page, PASSKEY_ADMIN)
+  await signInAsAdmin(page, ADMINS.passkey)
   await signOut(page)
 
   await page.goto(`/sign-in`)
@@ -84,14 +78,15 @@ test(`a setup link opened in another browser doesn't start setup there`, async (
   browser,
   baseURL,
 }) => {
-  await signInConfirmed(page, OTHER_BROWSER_ADMIN)
+  await signInConfirmed(page, ADMINS.otherBrowser)
   await page.goto(`/admin`)
   await page.getByRole(`button`, { name: `Email me a setup link` }).click()
   await expect(page.getByRole(`status`)).toContainText(`We emailed you`)
-  const [latest = ``] = await readEmails(page, OTHER_BROWSER_ADMIN, {
-    newestContaining: `Set up a second factor`,
-  })
-  const link = readActionLink(latest, `Set up a second factor`)
+  const link = await readNewestActionLink(
+    page,
+    ADMINS.otherBrowser,
+    `Set up a second factor`,
+  )
   const otherContext = await browser.newContext({ baseURL })
   const other = await otherContext.newPage()
 

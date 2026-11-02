@@ -3,12 +3,10 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
-import type {
-  AuthenticatorAppResult,
-  SecondFactorSettingsData,
-} from './second-factor-settings.tsx'
+import type { AuthenticatorAppResult } from './second-factor-settings.tsx'
 
 const ADMIN: SecondFactorSettingsData = {
   isAdmin: true,

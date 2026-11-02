@@ -1,11 +1,8 @@
 import type { Submission } from '@conform-to/react'
 import { APIError } from 'better-auth/api'
 import { redirect } from 'react-router'
+import { rejectAuthError, rejectSubmission } from './form-replies.server.ts'
 import { EDUCATOR_DASHBOARD_PATH } from './paths.ts'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from './reject-submission.server.ts'
 
 // Sign-in sends an educator with an authenticator app here with a cookie that
 // lasts 10 minutes and allows 5 codes. Once it runs out, they start over

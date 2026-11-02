@@ -1,14 +1,23 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { signInConfirmed } from './auth.ts'
-import { readActionLink, readEmails } from './mailbox.ts'
+import { readNewestActionLink } from './mailbox.ts'
 
 // Tests can't change the server's environment once it starts, so each test
-// that needs an admin takes its own address from this list
-export const ADMIN_LIST = Array.from(
-  { length: 9 },
-  (_, index) => `admin-${index}@example.com`,
-)
+// that needs an admin takes its own address from this record
+export const ADMINS = {
+  authenticatorApp: `authenticator-app-admin@example.com`,
+  passkey: `passkey-admin@example.com`,
+  otherBrowser: `other-browser-admin@example.com`,
+  setup: `setup-admin@example.com`,
+  publish: `publish-admin@example.com`,
+  unpublish: `unpublish-admin@example.com`,
+  check: `check-admin@example.com`,
+  contest: `contest-admin@example.com`,
+  staysPublished: `stays-published-admin@example.com`,
+}
+
+export const ADMIN_LIST = Object.values(ADMINS)
 
 // Chromium's virtual authenticator stands in for a device that checks a
 // fingerprint, face, or PIN
@@ -35,10 +44,9 @@ export const openSetupLink = async (
   await expect(page).toHaveURL(`/admin/setup`)
   await page.getByRole(`button`, { name: `Email me a setup link` }).click()
   await expect(page.getByRole(`status`)).toContainText(`We emailed you`)
-  const [latest = ``] = await readEmails(page, email, {
-    newestContaining: `Set up a second factor`,
-  })
-  await page.goto(readActionLink(latest, `Set up a second factor`))
+  await page.goto(
+    await readNewestActionLink(page, email, `Set up a second factor`),
+  )
   await expect(
     page.getByRole(`heading`, { name: `Authenticator app` }),
   ).toBeVisible()

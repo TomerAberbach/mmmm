@@ -55,12 +55,11 @@ export const pickWinner = (
   if (!listContenders(bracket, battle).includes(winner)) {
     throw new Error(`${winner} can't reach ${toBattleKey(battle)}`)
   }
-  const next = new Map(Object.entries(picks))
+  const picked = { ...picks }
   for (const won of listPathTo(bracket, battle, winner)) {
-    next.set(toBattleKey(won), winner)
+    picked[toBattleKey(won)] = winner
   }
-  const cleared = clearUnreachablePicks(bracket, next)
-  return { picks: Object.fromEntries(next), cleared }
+  return keepReachablePicks(bracket, picked)
 }
 
 // Whether every pick is of a battle in the bracket, with a winner on one of its
@@ -72,7 +71,7 @@ export const arePicksConsistent = (
   const battleKeys = new Set(listBattles().map(toBattleKey))
   return (
     Object.keys(picks).every(key => battleKeys.has(key)) &&
-    clearUnreachablePicks(bracket, new Map(Object.entries(picks))).length === 0
+    keepReachablePicks(bracket, picks).cleared.length === 0
   )
 }
 
@@ -103,38 +102,40 @@ const listPathTo = (
     : [battle, ...listPathTo(bracket, side.battle, winner)]
 }
 
-// Clears, in play order, each pick whose winner isn't on one of its battle's
-// sides, so a clear cascades to the picks after it. Returns the cleared battles
-const clearUnreachablePicks = (
+// Keeps, in play order, each pick whose winner is on one of its battle's sides,
+// so a cleared pick also clears the picks that depended on it
+const keepReachablePicks = (
   bracket: PickBracket,
-  picks: Map<string, string>,
-): BattleRef[] => {
+  picks: Picks,
+): { picks: Picks; cleared: BattleRef[] } => {
+  const kept: Record<string, string> = {}
   const cleared: BattleRef[] = []
   for (const battle of listBattles()) {
     const key = toBattleKey(battle)
-    const winner = picks.get(key)
-    if (
-      winner !== undefined &&
-      !readSideNames(bracket, picks, battle).includes(winner)
-    ) {
-      picks.delete(key)
+    const winner = picks[key]
+    if (winner === undefined) {
+      continue
+    }
+    if (readSideNames(bracket, kept, battle).includes(winner)) {
+      kept[key] = winner
+    } else {
       cleared.push(battle)
     }
   }
-  return cleared
+  return { picks: kept, cleared }
 }
 
 // The names on the battle's sides so far
 const readSideNames = (
   bracket: PickBracket,
-  picks: ReadonlyMap<string, string>,
+  picks: Picks,
   battle: BattleRef,
 ): string[] =>
   battle.round === `WILD_CARD`
     ? [...bracket.wildCardEntrants]
     : readPickSides(bracket, { ...battle, round: battle.round })
         .map(side =>
-          `name` in side ? side.name : picks.get(toBattleKey(side.battle)),
+          `name` in side ? side.name : picks[toBattleKey(side.battle)],
         )
         .filter(name => name !== undefined)
 

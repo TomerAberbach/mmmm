@@ -1,13 +1,22 @@
 import { isAdmin } from './admins.server.ts'
 import { auth } from './auth.server.ts'
-import type { SecondFactorSettingsData } from './components/second-factor-settings.tsx'
-import { formatDate } from './dates.ts'
+import { formatArizonaDate } from './dates.ts'
 import {
   hasSecondFactor,
   mayChangeSecondFactors,
   readSecondFactors,
 } from './second-factor.server.ts'
 import type { SignedInEducator, SignedInSession } from './session.server.ts'
+
+export type SecondFactorSettingsData = {
+  isAdmin: boolean
+  // Whether this session used a second factor, or a setup link before the
+  // first one, so the server allows changes
+  canChange: boolean
+  passkeys: { id: string; label: string; added: string }[]
+  // Set while the authenticator app is on
+  recoveryCodesLeft?: number
+}
 
 // Only admins, and former admins who still have a second factor, see the
 // section
@@ -29,7 +38,7 @@ export const readSecondFactorSettings = async (
       label: provider ?? `Passkey`,
       // The month and day are enough to recognize a passkey. Formatting here
       // keeps the server's and the browser's text the same
-      added: formatDate(addedAt),
+      added: formatArizonaDate(addedAt),
     })),
     recoveryCodesLeft: secondFactors.hasAuthenticatorApp
       ? await countRecoveryCodes(educator.id, headers)

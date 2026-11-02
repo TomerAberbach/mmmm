@@ -4,6 +4,7 @@ import { redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
 import { CONTEST_CLOSED, PlayContestPage } from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
+import { rejectSubmission } from '~/form-replies.server.ts'
 import { toBracketPath, toContestPath } from '~/paths.ts'
 import { readPlayContest } from '~/play-context.server.ts'
 import {
@@ -14,7 +15,6 @@ import {
 import { serverDisplayNameSchema } from '~/player-forms.server.ts'
 import { limitNewPlayer } from '~/player-limits.server.ts'
 import { createPlayer, isTakingPlayers } from '~/players.server.ts'
-import { rejectSubmission } from '~/reject-submission.server.ts'
 
 // The prompt leaves the player's cookie as it is, because the next person on
 // a shared computer may be the one who sees it

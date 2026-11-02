@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { readActionLink, readEmails } from './mailbox.ts'
+import { readNewestActionLink } from './mailbox.ts'
 
 export const PASSWORD = `correct horse battery`
 
@@ -23,8 +23,9 @@ export const signUp = async (
 }
 
 export const confirm = async (page: Page, email: string): Promise<void> => {
-  const [latest = ``] = await readEmails(page, email)
-  await page.goto(readActionLink(latest, `Confirm email address`))
+  await page.goto(
+    await readNewestActionLink(page, email, `Confirm email address`),
+  )
   await expect(page.getByRole(`status`)).toContainText(
     `Your email address is confirmed`,
   )

@@ -7,17 +7,12 @@ import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
+import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
 import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from '~/reject-submission.server.ts'
-import { readSignedInEducator } from '~/session.server.ts'
 
-export const loader = async ({ request, context }: Route.LoaderArgs) =>
-  (await readSignedInEducator(context))
-    ? redirect(EDUCATOR_DASHBOARD_PATH)
-    : { notice: readNotice(new URL(request.url).searchParams) }
+export const loader = ({ request }: Route.LoaderArgs) => ({
+  notice: readNotice(new URL(request.url).searchParams),
+})
 
 // A confirmation link returns here with `confirmed`, plus an `error` when it
 // fails. A password reset returns here with `password-reset`, and a sign-in

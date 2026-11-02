@@ -393,8 +393,7 @@ const DeleteSection = ({ year }: { year: number }) => (
         trigger={<Button variant='danger'>{`Delete ${year} bracket`}</Button>}
         title={`Delete the ${year} bracket?`}
         confirmLabel={`Delete ${year} bracket`}
-        action='/admin/bracket'
-        fields={{ intent: `delete` }}
+        action='/admin/bracket/delete'
       >
         <p>
           This deletes its divisions, combatants, and wild card. Nobody else has

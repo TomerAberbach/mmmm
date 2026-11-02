@@ -47,29 +47,26 @@ const checkNamesAndCounts = (
 ): void => {
   const { divisions, wildCard } = input
   const allDivisions = Object.entries(divisions)
-  if (
-    findDuplicateNames(
-      allDivisions.map(([position, { name }]) => ({ place: position, name })),
-    ).length > 0
-  ) {
+  if (hasDuplicateNames(allDivisions.map(([, { name }]) => name))) {
     ctx.addIssue({ code: `custom`, message: `Give each division its own name` })
   }
-  let countsMatch = true
   for (const [position, { name, combatants }] of allDivisions) {
     const expected =
       position === wildCard.position
         ? SEEDS_PER_DIVISION - 1
         : SEEDS_PER_DIVISION
     if (combatants.length !== expected) {
-      countsMatch = false
       ctx.addIssue({
         code: `custom`,
         message: `Give ${name} ${expected} combatants`,
       })
     }
   }
-  // Seed slots line up with names only once every count matches
-  if (countsMatch && findDuplicateCombatants(input).length > 0) {
+  const combatantNames = [
+    ...allDivisions.flatMap(([, { combatants }]) => combatants),
+    ...wildCard.entrants,
+  ]
+  if (hasDuplicateNames(combatantNames)) {
     ctx.addIssue({
       code: `custom`,
       message: `Give each combatant its own name`,
@@ -80,28 +77,13 @@ const checkNamesAndCounts = (
 export const bracketInputSchema =
   bracketInputShape.superRefine(checkNamesAndCounts)
 
-// Where a combatant's name is entered
-export type CombatantPlace =
-  | { kind: `seedSlot`; seedSlot: SeedSlotRef }
-  | { kind: `entrant`; index: number }
-
-const findDuplicateCombatants = (input: BracketInput) =>
-  findDuplicateNames<CombatantPlace>([
-    ...listSeedSlotNames(input)
-      .filter(slot => slot.name !== undefined)
-      .map(({ name, ...seedSlot }) => ({
-        place: { kind: `seedSlot` as const, seedSlot },
-        name: name!,
-      })),
-    ...input.wildCard.entrants.map((name, index) => ({
-      place: { kind: `entrant` as const, index },
-      name,
-    })),
-  ])
-
 // Each place whose name another place shares, with the first other place that
 // shares it. Names differing only in case, spacing, or the style of
-// apostrophe count as the same
+// Whether two names count as the same, by the rule `findDuplicateNames` uses
+const hasDuplicateNames = (names: string[]): boolean =>
+  new Set(names.map(normalizeName)).size < names.length
+
+// Apostrophe count as the same
 export const findDuplicateNames = <Place>(
   entries: { place: Place; name: string }[],
 ): { place: Place; other: Place }[] => {
