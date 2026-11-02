@@ -1,7 +1,9 @@
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { lockBracketRow } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
+import { toContestPath } from './paths.ts'
+import { createSecret } from './secrets.server.ts'
 
 // `link` is the contest link, which players open
 export type ContestSummary = { id: string; name: string; link: string }
@@ -25,15 +27,13 @@ export const createContest = (
         yearId,
         educatorId,
         name,
-        linkSecret: createLinkSecret(),
+        // 144 random bits keep the contest link short
+        linkSecret: createSecret(18),
       },
       select: { id: true },
     })
     return id
   })
-
-// 144 random bits, written in 24 URL-safe characters
-const createLinkSecret = (): string => randomBytes(18).toString(`base64url`)
 
 // Replaces the stored secret with the contest link built from it
 const withLink = <Row extends { linkSecret: string }>({
@@ -41,7 +41,7 @@ const withLink = <Row extends { linkSecret: string }>({
   ...row
 }: Row): Omit<Row, `linkSecret`> & { link: string } => ({
   ...row,
-  link: toAppUrl(`/play/${linkSecret}`).href,
+  link: toAppUrl(toContestPath(linkSecret)).href,
 })
 
 // Oldest first
@@ -83,15 +83,28 @@ export const renameContest = async (
 }
 
 // What a contest link shows a player. Null for a link that matches no contest
+export type ContestByLink = {
+  id: string
+  name: string
+  yearId: number
+  educatorName: string
+}
+
 export const readContestByLink = async (
   linkSecret: string,
-): Promise<{ name: string; yearId: number; educatorName: string } | null> => {
+): Promise<ContestByLink | null> => {
   const contest = await prisma.contest.findUnique({
     where: { linkSecret },
-    select: { name: true, yearId: true, educator: { select: { name: true } } },
+    select: {
+      id: true,
+      name: true,
+      yearId: true,
+      educator: { select: { name: true } },
+    },
   })
   return (
     contest && {
+      id: contest.id,
       name: contest.name,
       yearId: contest.yearId,
       educatorName: contest.educator.name,

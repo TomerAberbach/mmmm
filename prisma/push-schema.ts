@@ -8,6 +8,7 @@ import {
 import {
   COMBATANT_NAME,
   CONTEST_NAME,
+  DISPLAY_NAME,
   DIVISION_NAME,
 } from '../app/free-text.ts'
 
@@ -39,6 +40,7 @@ const readConstraintsSql = (): string =>
     checkName(`Division`, DIVISION_NAME.maxLength),
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
     checkName(`Contest`, CONTEST_NAME.maxLength),
+    checkName(`Player`, DISPLAY_NAME.maxLength, `displayName`),
   ].join(`\n`)
 
 // The battle's round's count, or 0 for a round the app doesn't know
@@ -53,11 +55,11 @@ const check = (table: string, column: string, condition: string): string => {
 }
 
 // Trimmed and within the field's length, as `freeTextSchema` requires
-const checkName = (table: string, maxLength: number): string =>
+const checkName = (table: string, maxLength: number, column = `name`): string =>
   check(
     table,
-    `name`,
-    `name = btrim(name) AND char_length(name) BETWEEN 1 AND ${maxLength}`,
+    column,
+    `"${column}" = btrim("${column}") AND char_length("${column}") BETWEEN 1 AND ${maxLength}`,
   )
 
 const runPrisma = (

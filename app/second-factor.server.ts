@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { getAuthenticatorName } from '@better-auth/passkey'
 import type { GenericEndpointContext } from 'better-auth'
 import { APIError, getSessionFromCtx } from 'better-auth/api'
@@ -10,6 +10,7 @@ import {
   SECOND_FACTOR_REQUIRED,
   SETUP_LINK_EXPIRES_IN_HOURS,
 } from './second-factor.ts'
+import { createSecret, hashSecret } from './secrets.server.ts'
 
 // Sessions these paths create used a second factor
 export const SECOND_FACTOR_SIGN_IN_PATHS = new Set([
@@ -136,7 +137,7 @@ const SETUP_LINK_PREFIX = `second-factor-setup:`
 export const createSetupLinkToken = async (
   educatorId: string,
 ): Promise<string> => {
-  const token = randomBytes(32).toString(`base64url`)
+  const token = createSecret()
   await prisma.$transaction([
     prisma.verification.deleteMany({
       where: {
@@ -174,7 +175,7 @@ export const redeemSetupLinkToken = async (
 }
 
 const setupLinkIdentifier = (token: string): string =>
-  `${SETUP_LINK_PREFIX}${createHash(`sha256`).update(token).digest(`base64url`)}`
+  `${SETUP_LINK_PREFIX}${hashSecret(token)}`
 
 // Using a second factor, here or by adding one, opens the admin area for the
 // session

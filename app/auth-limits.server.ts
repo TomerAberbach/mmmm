@@ -1,8 +1,13 @@
 import { APIError } from 'better-auth/api'
-import { ipKeyGenerator } from 'express-rate-limit'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
-import { CLIENT_IP_HEADER } from './client-ip.ts'
-import { normalizeEmail, tryConsume } from './limits.server.ts'
+import {
+  consumeAll,
+  describeWait,
+  normalizeEmail,
+  readClientIp,
+  refund,
+} from './limits.server.ts'
+import type { Counted } from './limits.server.ts'
 
 export const TOO_MANY_ATTEMPTS = `TOO_MANY_ATTEMPTS`
 
@@ -70,14 +75,9 @@ type AuthRequest = {
 // on the path, and then counts nothing, so a refused request costs no rule an
 // attempt. A path without limits passes
 export const limitAuthRequest = async (request: AuthRequest): Promise<void> => {
-  const counted: Counted[] = []
-  for (const entry of readCounted(request)) {
-    const refusal = await tryConsume(entry.limiter, entry.key)
-    if (refusal) {
-      await Promise.all(counted.map(refund))
-      throw tooManyAttempts(refusal.msBeforeNext)
-    }
-    counted.push(entry)
+  const refusal = await consumeAll(readCounted(request))
+  if (refusal) {
+    throw tooManyAttempts(refusal.msBeforeNext)
   }
 }
 
@@ -90,8 +90,6 @@ export const refundAuthRequest = async (
     await Promise.all(readCounted(request).map(refund))
   }
 }
-
-type Counted = { limiter: RateLimiterMemory; key: string }
 
 const readCounted = ({ path, email, headers }: AuthRequest): Counted[] => {
   const limiters = LIMITERS.get(path)?.limiters
@@ -118,36 +116,12 @@ const readKeys = (
     typeof email === `string` ? `${normalizeEmail(email)} ${ip}` : undefined,
 })
 
-// Without the header, every request would share one IP address's count, so a
-// call that forgets to pass the request's headers fails instead. IPv6
-// addresses count per /56 network, as the app-wide limit does
-const readClientIp = (headers: Headers | undefined): string => {
-  const ip = headers?.get(CLIENT_IP_HEADER)
-  if (!ip) {
-    throw new Error(
-      `Pass the request's headers to Better Auth, so its limits can count the client's IP address`,
-    )
-  }
-  return ipKeyGenerator(ip)
-}
-
-// Rewarding a key whose window has ended would start a new window with an
-// extra attempt
-const refund = async ({ limiter, key }: Counted): Promise<void> => {
-  const counts = await limiter.get(key)
-  if (counts && counts.consumedPoints > 0) {
-    await limiter.reward(key, 1)
-  }
-}
-
-const tooManyAttempts = (msBeforeNext: number): APIError => {
-  const minutes = Math.max(1, Math.ceil(msBeforeNext / 60_000))
-  return new APIError(
+const tooManyAttempts = (msBeforeNext: number): APIError =>
+  new APIError(
     `TOO_MANY_REQUESTS`,
     {
       code: TOO_MANY_ATTEMPTS,
-      message: `Too many attempts. Try again in ${minutes} ${minutes === 1 ? `minute` : `minutes`}.`,
+      message: `Too many attempts. ${describeWait(msBeforeNext)}.`,
     },
     { 'Retry-After': String(Math.ceil(msBeforeNext / 1000)) },
   )
-}
