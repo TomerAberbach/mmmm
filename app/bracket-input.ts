@@ -7,6 +7,7 @@ import {
   MIN_WILD_CARD_ENTRANTS,
   SEEDS,
   SEEDS_PER_DIVISION,
+  toSeedSlotKey,
 } from './bracket.ts'
 import type { SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME, freeTextSchema } from './free-text.ts'
@@ -120,6 +121,17 @@ export const findDuplicateNames = <Place>(
 
 const normalizeName = (name: string): string =>
   name.trim().toLowerCase().replaceAll(/\s+/gu, ` `).replaceAll(`’`, `'`)
+
+// Each seed slot's combatant, keyed by `toSeedSlotKey`. The wild card's seed
+// slot has none
+export const readNameBySeedSlot = (
+  input: BracketInput,
+): ReadonlyMap<string, string> =>
+  new Map(
+    listSeedSlotNames(input).flatMap(({ name, ...seedSlot }) =>
+      name === undefined ? [] : [[toSeedSlotKey(seedSlot), name] as const],
+    ),
+  )
 
 // Every seed slot in seed order, with its combatant's name. The wild card's
 // seed slot has none, since the wild card's winner fills it

@@ -20,7 +20,7 @@ const renderHome = async (
           current={
             current
               ? {
-                  view: buildBracketView(current.year, BRACKET_2025, []),
+                  view: buildBracketView(current.year, BRACKET_2025, {}),
                   expectedLockDate: current.expectedLockDate,
                 }
               : null

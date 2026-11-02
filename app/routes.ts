@@ -29,6 +29,7 @@ export default [
   route(`play/:linkSecret`, `routes/play.tsx`, [
     index(`routes/play._index.tsx`),
     route(`bracket`, `routes/play.bracket.tsx`),
+    route(`bracket/picks`, `routes/play.bracket.picks.ts`),
   ]),
   route(`my-bracket/:secret`, `routes/my-bracket.tsx`),
   route(`admin`, `routes/admin.tsx`, [

@@ -18,8 +18,7 @@ import type {
 
 // The whole bracket as ASU prints it: mirrored halves meeting at the
 // Championship, division names on the outer edges, and round labels between
-// each half's divisions. Screen readers skip it, so pair it with a list of the
-// battles
+// each half's divisions
 export const BracketDiagram = ({ view }: { view: BracketView }) => {
   const wildCard = readWildCardPlacement(view)
   const nameWidth = readNameWidth(view)
@@ -28,7 +27,7 @@ export const BracketDiagram = ({ view }: { view: BracketView }) => {
     '--zoom': readPrintZoom(nameWidth, wildCard.battle.sides.length),
   } as CSSProperties
   return (
-    <div aria-hidden className='overflow-x-auto print:overflow-visible'>
+    <div className='overflow-x-auto print:overflow-visible'>
       <div
         style={style}
         className='mx-auto grid w-max auto-cols-auto py-14 print:zoom print:py-0'

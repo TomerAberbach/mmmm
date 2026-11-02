@@ -85,6 +85,8 @@ const rejectTooManyNewPlayers = (
   )
 
 const PlayPage = ({ loaderData, actionData }: Route.ComponentProps) => (
-  <PlayContestPage view={loaderData} lastResult={actionData?.result} />
+  <div className='max-w-xl'>
+    <PlayContestPage view={loaderData} lastResult={actionData?.result} />
+  </div>
 )
 export default PlayPage

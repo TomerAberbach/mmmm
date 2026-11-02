@@ -1,5 +1,6 @@
 import { Link, useFetcher } from 'react-router'
 import { CONFIRMATION_EXPIRES_IN_DAYS } from '../auth-forms.ts'
+import { formatTime } from '../dates.ts'
 import { Button } from './button.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
@@ -48,10 +49,7 @@ export const CheckEmail = ({
         {resend.data && `sentAt` in resend.data ? (
           <output>
             Sent again at{` `}
-            {resend.data.sentAt.toLocaleTimeString([], {
-              hour: `numeric`,
-              minute: `2-digit`,
-            })}
+            {formatTime(resend.data.sentAt)}
           </output>
         ) : null}
         {resend.data && `error` in resend.data ? (

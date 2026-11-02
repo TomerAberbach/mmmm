@@ -22,6 +22,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Round**              | One stage of the **Bracket**: Wild card, Round 1, Round 2, Sweet 16, Elite Trait, Final Roar, or Championship                          | Elite 8, Final Four, finals             |
 | **Battle**             | One matchup in a **Round**                                                                                                             | Game, match, matchup                    |
 | **Side**               | One of a **Battle**'s places, filled by a **Combatant** or by an earlier **Battle**'s winner                                           | Slot, competitor                        |
+| **Contender**          | A **Combatant** who could win a **Battle**, given the **Bracket** alone                                                                | Candidate, possible winner              |
 | **Champion**           | The winner of a **Year**'s Championship **Battle**                                                                                     | Winner of the year, title holder        |
 | **Result**             | The admin's record of who won a **Battle**                                                                                             | Winner announcement, outcome            |
 | **Merge**              | A **Result** where both **Sides** of a **Battle** advance together under a combined name                                               | Tie, Tag Team                           |
@@ -58,6 +59,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Display name**   | The name a **Player** enters, such as a first name and last initial                                                 | Username, student name, nickname          |
 | **Personal link**  | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                              | Recovery link, magic link, sign-in token  |
 | **Pick**           | A **Player**'s chosen winner of one **Battle**                                                                      | Choice, guess, prediction                 |
+| **Clear**          | To remove a **Pick** whose winner can no longer reach its **Battle** after an earlier **Pick** changes              | Invalidate, reset, drop                   |
 | **Draft**          | A **Player**'s **Picks** before they submit them                                                                    | Unsubmitted bracket, fill-out, completion |
 | **Submission**     | A submitted set of **Picks** in a **Contest**, with a status of pending, approved, or rejected                      | Entry, fill-out, completion, bracket      |
 | **Marked bracket** | A **Player**'s **Picks**, each shown as right or wrong                                                              | Graded bracket, scored bracket            |
@@ -90,6 +92,7 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Wild card** has 2 to 4 **Combatants**, and its **Seed slot** holds no
   **Combatant** of its own
 - A **Battle** after the **Wild card** has exactly 2 **Sides**
+- A **Battle** has 2 or more **Contenders**
 - A **Battle** has exactly one **Result** once decided
 - A **Contest** belongs to exactly one **Educator** and exactly one **Year**
 - A **Contest** has exactly one active **Contest link**
