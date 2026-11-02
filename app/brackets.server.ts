@@ -206,13 +206,15 @@ export const readBracket = async (
 
 // The year's bracket with the row IDs that picks reference, or null when it
 // has none
-export const readBracketRows = async (
-  yearId: number,
-): Promise<{
+export type BracketRows = {
   input: BracketInput
   battleIdByKey: ReadonlyMap<string, string>
   combatantIdByName: ReadonlyMap<string, string>
-} | null> => {
+}
+
+export const readBracketRows = async (
+  yearId: number,
+): Promise<BracketRows | null> => {
   const bracket = await prisma.bracket.findUnique({
     where: { yearId },
     select: {

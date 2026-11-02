@@ -158,3 +158,43 @@ test(`a player's picks save and follow their personal link`, async ({
       .locator(`input[value="${winner}"]`),
   ).toBeChecked()
 })
+
+test(`a player submits by keyboard, forgets this computer, and returns with their personal link`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const nextBattle = page.getByRole(`button`, { name: `Next battle to pick` })
+  while (await nextBattle.isVisible()) {
+    await nextBattle.click()
+    await page.keyboard.press(`Space`)
+  }
+  await expect(page.getByText(`64 of 64 picked`)).toBeVisible()
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+  await expect(
+    page.getByRole(`heading`, { name: `Bracket submitted` }),
+  ).toBeFocused()
+  const secret = await readPersonalLinkSecret(page)
+  await expect(page.getByText(`/my-bracket/${secret}`)).toBeVisible()
+  await page
+    .getByRole(`button`, { name: `Done, forget this computer` })
+    .first()
+    .click()
+  await page
+    .getByRole(`button`, { name: `Forget this computer`, exact: true })
+    .click()
+  await expect(
+    page.getByRole(`heading`, { name: `This computer forgot your bracket` }),
+  ).toBeVisible()
+  await page.goto(link)
+  await expect(
+    page.getByRole(`button`, { name: `Start my bracket` }),
+  ).toBeVisible()
+
+  await page.goto(`/my-bracket/${secret}`)
+
+  await expect(page.getByText(`Submitted · waiting for approval`)).toBeVisible()
+  await expect(page.getByText(`64 of 64 picked`)).not.toBeVisible()
+})

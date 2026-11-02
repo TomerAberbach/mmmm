@@ -76,6 +76,15 @@ export const arePicksConsistent = (
   )
 }
 
+// Whether the picks are consistent and pick every battle, as a submission must
+export const arePicksComplete = (bracket: PickBracket, picks: Picks): boolean =>
+  Object.keys(picks).length === TOTAL_BATTLES &&
+  arePicksConsistent(bracket, picks)
+
+export const arePicksEqual = (picks: Picks, otherPicks: Picks): boolean =>
+  Object.keys(picks).length === Object.keys(otherPicks).length &&
+  Object.entries(picks).every(([key, winner]) => otherPicks[key] === winner)
+
 // The battle, then each earlier battle the winner wins on its way there
 const listPathTo = (
   bracket: PickBracket,

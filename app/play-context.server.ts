@@ -27,7 +27,11 @@ export const readPlayContest = (
   context: Readonly<RouterContextProvider>,
 ): ContestByLink => context.get(contestContext)
 
-export type RequiredPlayer = { id: string; displayName: string }
+export type RequiredPlayer = {
+  id: string
+  displayName: string
+  personalLinkSecret: string
+}
 
 const playerContext = createContext<RequiredPlayer>()
 
@@ -43,7 +47,11 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
   if (!player) {
     return redirect(toContestPath(params.linkSecret ?? ``))
   }
-  context.set(playerContext, { id: player.id, displayName: player.displayName })
+  context.set(playerContext, {
+    id: player.id,
+    displayName: player.displayName,
+    personalLinkSecret: player.secret,
+  })
   const response = await next()
   response.headers.append(
     `Set-Cookie`,

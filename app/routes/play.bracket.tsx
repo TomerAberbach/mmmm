@@ -2,12 +2,14 @@ import type { Route } from './+types/play.bracket.ts'
 import { readBracket } from '~/brackets.server.ts'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
+import { toAppUrl } from '~/env.server.ts'
+import { toForgottenPath, toPersonalLinkPath, toPicksPath } from '~/paths.ts'
 import {
   readPlayContest,
   readRequiredPlayer,
   requirePlayer,
 } from '~/play-context.server.ts'
-import { readPlayerPicks } from '~/players.server.ts'
+import { readDraftAndSubmission } from '~/player-picks.server.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
@@ -18,15 +20,21 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
   const { yearId } = readPlayContest(context)
   // A contest exists only while its year's bracket is published
-  const [bracket, picks] = await Promise.all([
+  const [bracket, { draft, submission }] = await Promise.all([
     readBracket(yearId),
-    readPlayerPicks(player.id),
+    readDraftAndSubmission(player.id),
   ])
   return {
     displayName: player.displayName,
     year: yearId,
     input: bracket!.input,
-    picks,
+    draft,
+    // A player sees their personal link once they submit
+    submitted: submission && {
+      submission,
+      personalLink: toAppUrl(toPersonalLinkPath(player.personalLinkSecret))
+        .href,
+    },
   }
 }
 
@@ -36,8 +44,10 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => (
     <PlayerBracket
       year={loaderData.year}
       input={loaderData.input}
-      initialPicks={loaderData.picks}
-      savePath={`/play/${params.linkSecret}/bracket/picks`}
+      initialDraft={loaderData.draft}
+      submitted={loaderData.submitted}
+      picksPath={toPicksPath(params.linkSecret)}
+      forgetPath={toForgottenPath(params.linkSecret)}
     />
   </div>
 )
