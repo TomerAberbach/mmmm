@@ -63,6 +63,7 @@ test(`a contest's link shows the contest and its educator`, async () => {
   const contest = await readContestByLink(readLinkSecret(link))
 
   expect(contest).toStrictEqual({
+    id: contestId,
     name: `Period 6 Biology`,
     yearId: year,
     educatorName: `Ms. Rivera`,

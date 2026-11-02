@@ -20,5 +20,5 @@ const offensiveWords = new RegExpMatcher({
 export const serverFreeTextSchema = (field: FreeTextField): z.ZodString =>
   freeTextSchema(field).refine(
     text => !offensiveWords.hasMatch(text),
-    `Remove the offensive words from ${field.label}`,
+    field.offensiveMessage ?? `Remove the offensive words from ${field.label}`,
   )

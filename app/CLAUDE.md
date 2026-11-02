@@ -83,6 +83,9 @@ app
 - Send a signed-in educator to `EDUCATOR_DASHBOARD_PATH` from `paths.ts`, and
   build absolute URLs, such as for emails and contest links, with `toAppUrl`
   from `env.server.ts`
+- Count a request against several rate limits with `consumeAll` from
+  `limits.server.ts`, which gives back the earlier limits' attempts when a later
+  one refuses, and key per-IP limits on `readClientIp`
 - Pass `headers: request.headers` to every `auth.api` call. The auth limits read
   the client's IP address from them, and throw without it
 - Force request fields that no client may choose in `FORCED_FIELDS` in
@@ -141,6 +144,19 @@ app
   import loads late in development on pages that match no route, such as a 404
 - The content security policy allows only scripts with the request's nonce. Read
   it from `nonceContext` in `nonce.ts`
+
+## Players
+
+- Players have no accounts. The browser remembers one in a `player-<contestId>`
+  cookie that holds their personal link's secret. Create link secrets with
+  `createSecret` and store only `hashSecret`'s hash, from `secrets.server.ts`
+- Nest the pages a player opens under `routes/play.tsx`, whose `loadPlayContest`
+  middleware answers an unknown contest link with the not-found page. Require
+  the remembered player with `requirePlayer` and read them with
+  `readRequiredPlayer` from `play-context.server.ts`. It restarts the player's
+  15 minutes on each response, so leave it off a page that asks who the player
+  is, such as the contest link's "Continue as" prompt
+- Check `isTakingPlayers` before `createPlayer`, which doesn't check it
 
 ## Testing
 

@@ -26,7 +26,11 @@ export default [
     route(`:contestId`, `routes/contests.$contestId.tsx`),
     route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
   ]),
-  route(`play/:linkSecret`, `routes/play.tsx`),
+  route(`play/:linkSecret`, `routes/play.tsx`, [
+    index(`routes/play._index.tsx`),
+    route(`bracket`, `routes/play.bracket.tsx`),
+  ]),
+  route(`my-bracket/:secret`, `routes/my-bracket.tsx`),
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),

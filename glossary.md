@@ -35,7 +35,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Admin**             | An **Educator** whose confirmed email address is on the **Admin list**                                          | Operator, superuser               |
 | **Admin list**        | The admin email addresses in the app's configuration                                                            | `ADMIN_EMAIL`                     |
 | **Educator**          | A person who signs up and runs **Contests**                                                                     | Teacher, user, account            |
-| **Player**            | A person who fills out a bracket through a **Contest link**                                                     | Student, participant, submitter   |
+| **Player**            | A person's place in one **Contest**, under the **Display name** they enter                                      | Student, participant, submitter   |
 | **Organization**      | The **Educators** who share a confirmed email domain                                                            | School, district                  |
 | **Credential**        | An **Educator**'s email address and password                                                                    | Account, login                    |
 | **Session**           | One signed-in browser of an **Educator**                                                                        | Login                             |
@@ -93,7 +93,9 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Battle** has exactly one **Result** once decided
 - A **Contest** belongs to exactly one **Educator** and exactly one **Year**
 - A **Contest** has exactly one active **Contest link**
-- A **Player** has exactly one **Personal link** per **Contest** they play in
+- A **Player** belongs to exactly one **Contest** and has exactly one **Personal
+  link**
+- A **Contest** has zero or more **Players**
 - A **Draft** becomes exactly one **Submission** when submitted
 - An **Admin** has at least one **Second factor**
 - An **Educator** has zero or more **Passkeys** and at most one **Authenticator

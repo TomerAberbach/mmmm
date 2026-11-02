@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { PageTitle } from './page-title.tsx'
 
+export const PAGE_LABEL_CLASS_NAME = `font-condensed text-lg font-bold tracking-widest text-muted uppercase`
+
 // The page's title under a small label, such as its year, with the page's main
 // action beside them
 export const PageHeader = ({
@@ -14,11 +16,7 @@ export const PageHeader = ({
 }) => (
   <div className='flex flex-wrap items-end justify-between gap-x-6 gap-y-3'>
     <div className='flex min-w-0 flex-col gap-1'>
-      {label ? (
-        <p className='font-condensed text-lg font-bold tracking-widest text-muted uppercase'>
-          {label}
-        </p>
-      ) : null}
+      {label ? <p className={PAGE_LABEL_CLASS_NAME}>{label}</p> : null}
       <PageTitle>{title}</PageTitle>
     </div>
     {action}

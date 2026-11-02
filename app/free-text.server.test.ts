@@ -34,3 +34,15 @@ test(`text past the limit asks for a shorter one`, () => {
     `Shorten your full name to 20 characters or fewer`,
   )
 })
+
+test(`a field can replace the filter's refusal`, () => {
+  const displayName = serverFreeTextSchema({
+    label: `your first name and last initial`,
+    maxLength: 30,
+    offensiveMessage: `Use a different name`,
+  })
+
+  const result = displayName.safeParse(`sh1t`)
+
+  expect(result.error?.issues[0]?.message).toBe(`Use a different name`)
+})

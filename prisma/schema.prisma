@@ -243,7 +243,22 @@ model Contest {
   updatedAt  DateTime @updatedAt
   year       Year     @relation(fields: [yearId], references: [id], onDelete: Restrict)
   educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Restrict)
+  players    Player[]
 
   @@index([educatorId, yearId])
   @@index([yearId])
+}
+
+// One person's bracket in one contest: a draft until it's submitted
+model Player {
+  id               String   @id
+  contestId        String
+  displayName      String
+  // A SHA-256 hash of the personal link's secret, so a database leak reveals
+  // no working link
+  personalLinkHash String   @unique
+  createdAt        DateTime @default(now())
+  contest          Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  @@index([contestId])
 }
