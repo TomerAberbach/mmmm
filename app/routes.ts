@@ -30,6 +30,7 @@ export default [
     index(`routes/play._index.tsx`),
     route(`bracket`, `routes/play.bracket.tsx`),
     route(`bracket/picks`, `routes/play.bracket.picks.ts`),
+    route(`forgotten`, `routes/play.forgotten.tsx`),
   ]),
   route(`my-bracket/:secret`, `routes/my-bracket.tsx`),
   route(`admin`, `routes/admin.tsx`, [

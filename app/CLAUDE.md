@@ -22,9 +22,13 @@ app
   scale lacks a value, add it to the theme in `app.css`
 - Build interactive controls on React Aria Components, as in
   `components/button.tsx`. Style a link as a button with `ButtonLink`
-- Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its action
-  returns a `ConfirmResult`, and the dialog shows any `error`. Build any other
-  modal dialog on `ModalFrame` from `components/modal-frame.tsx`
+- Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its route
+  action returns a `ConfirmResult`, and the dialog shows any `error`. Pass
+  `onConfirm` instead for a change the page makes itself. Build any other modal
+  dialog on `ModalFrame` from `components/modal-frame.tsx`
+- Show an instant in the reader's time zone with `LocalTime` from
+  `components/local-time.tsx`. Formatting it during the server render shows the
+  server's time zone and fails hydration
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
 - Pages are `max-w-6xl` unless the route exports `handle = { fullWidth: true }`.
   Print a wide page with `page-landscape` and scale it with `print:zoom` from
@@ -161,7 +165,16 @@ app
 - Check `isTakingPlayers` before `createPlayer`, which doesn't check it
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
-  `savePlayerPicks` refuses picks that `pickWinner` wouldn't produce
+  `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`
+  wouldn't produce
+- A player edits a draft, and submitting copies it to their submission. Both are
+  `Pick` rows, told apart by `stage`. Change them only through
+  `player-picks.server.ts`, which locks the player's row so two requests can't
+  interleave
+- Send the picker's requests through `usePicksRequests` in
+  `components/picks-requests.ts`, which sends one at a time so the server
+  applies them in order. React Router's fetchers cancel an earlier request in
+  the browser, but the server still applies it
 
 ## Testing
 

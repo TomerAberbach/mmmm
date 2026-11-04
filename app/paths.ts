@@ -8,3 +8,15 @@ export const toContestPath = (linkSecret: string): string =>
 // A player's bracket in the contest, for the player the browser remembers
 export const toBracketPath = (linkSecret: string): string =>
   `${toContestPath(linkSecret)}/bracket`
+
+// Saves, submits, or discards the remembered player's picks
+export const toPicksPath = (linkSecret: string): string =>
+  `${toBracketPath(linkSecret)}/picks`
+
+// Opens the player's bracket on any device
+export const toPersonalLinkPath = (secret: string): string =>
+  `/my-bracket/${secret}`
+
+// Where a player lands once this browser forgets them
+export const toForgottenPath = (linkSecret: string): string =>
+  `${toContestPath(linkSecret)}/forgotten`
