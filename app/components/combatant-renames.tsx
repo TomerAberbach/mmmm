@@ -5,7 +5,7 @@ import { useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
-import type { SavedResult } from './saved-notice.tsx'
+import { isSaved } from './saved-notice.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
@@ -14,6 +14,7 @@ import { POSITION_LABELS } from '~/bracket-form.ts'
 import { ROUND_NAMES } from '~/bracket.ts'
 import type { DivisionPosition } from '~/bracket.ts'
 import type { CombatantRow } from '~/brackets.server.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
 
 type DivisionCombatants = {
   position: DivisionPosition
@@ -75,7 +76,7 @@ const RenameRow = ({
   onDone: () => void
 }) => {
   const fetcher = useFetcher<SavedResult>()
-  const isSaved = fetcher.state === `idle` && fetcher.data?.saved === true
+  const saved = isSaved(fetcher)
   const startEditing = () => {
     fetcher.reset()
     onEdit()
@@ -86,7 +87,7 @@ const RenameRow = ({
       {combatant.seed}
     </span>
   )
-  if (!isEditing || isSaved) {
+  if (!isEditing || saved) {
     return (
       <li className='grid min-h-11 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-muted-light last:border-b-0'>
         {seedCell}

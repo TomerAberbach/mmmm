@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import type { PicksRequest } from '~/routes/play.bracket.picks.ts'
+import type { PicksRequest } from '~/picks-request.ts'
 
 type Intent = PicksRequest[`intent`]
 

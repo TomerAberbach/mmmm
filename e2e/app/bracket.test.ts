@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { ADMIN_LIST, signInAsAdmin } from '../admins.ts'
+import { ADMINS, signInAsAdmin } from '../admins.ts'
 import { newEmailAddress, signInConfirmed } from '../auth.ts'
 import { fillBracketForm, PASTED_NAMES, YEAR } from '../brackets.ts'
-
-const CHECK_ADMIN = ADMIN_LIST[6] ?? ``
 
 test(`the bracket page returns 404 before any bracket is published`, async ({
   page,
@@ -32,7 +30,7 @@ test(`before any bracket is published, the educator dashboard says why no contes
 test(`saving a bracket with a name used twice lists the problem at the top`, async ({
   page,
 }) => {
-  await signInAsAdmin(page, CHECK_ADMIN)
+  await signInAsAdmin(page, ADMINS.check)
   await page.goto(`/admin/bracket`)
   await fillBracketForm(
     page,

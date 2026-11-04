@@ -29,11 +29,7 @@ export const Bracket = ({
         </div>
       )}
       <div className='xl:hidden print:hidden'>
-        <BracketRoundTabs
-          view={view}
-          selection={selection}
-          showBattlesLeft={picking !== null}
-        />
+        <BracketRoundTabs view={view} selection={selection} />
       </div>
     </>
   )

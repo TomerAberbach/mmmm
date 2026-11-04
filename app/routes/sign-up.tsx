@@ -1,22 +1,11 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
 import type { Route } from './+types/sign-up.ts'
 import { serverNameSchema } from '~/auth-forms.server.ts'
 import { signUpSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
-import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from '~/reject-submission.server.ts'
-import { readSignedInEducator } from '~/session.server.ts'
-
-export const loader = async ({ context }: Route.LoaderArgs) =>
-  (await readSignedInEducator(context))
-    ? redirect(EDUCATOR_DASHBOARD_PATH)
-    : null
+import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
 
 const SERVER_SIGN_UP_SCHEMA = signUpSchema.extend(serverNameSchema.shape)
 

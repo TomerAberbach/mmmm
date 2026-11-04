@@ -1,7 +1,7 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { expect, test } from 'vitest'
 import { z } from 'zod'
-import { rejectSubmission } from './reject-submission.server.ts'
+import { rejectSubmission } from './form-replies.server.ts'
 
 test(`a rejection sends back every field except those named for a password`, () => {
   const formData = new FormData()

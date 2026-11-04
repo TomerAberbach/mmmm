@@ -3,8 +3,8 @@ import { redirect } from 'react-router'
 import type { Route } from './+types/admin.bracket.rename.ts'
 import { renameSchema } from '~/bracket-admin-forms.ts'
 import { renameCombatant } from '~/brackets.server.ts'
-import type { SavedResult } from '~/components/saved-notice.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
+import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
 export const loader = (): Response => redirect(`/admin/bracket`)
@@ -12,7 +12,7 @@ export const loader = (): Response => redirect(`/admin/bracket`)
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<
-  ReturnType<typeof rejectSubmission> | SavedResult
+  SavedResult | ReturnType<typeof rejectSubmission>
 > => {
   const submission = parseWithZod(await request.formData(), {
     schema: renameSchema,
@@ -28,5 +28,5 @@ export const action = async ({
   )
   return `error` in renamed
     ? rejectSubmission(submission, { fieldErrors: { name: [renamed.error] } })
-    : { result: submission.reply(), saved: true as const }
+    : acceptSubmission(submission)
 }

@@ -1,10 +1,8 @@
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
-import { ADMIN_LIST, signInAsAdmin } from '../admins.ts'
+import { ADMINS, signInAsAdmin } from '../admins.ts'
 import { newEmailAddress, signInConfirmed } from '../auth.ts'
 import { createContest } from '../brackets.ts'
-
-const STAYS_PUBLISHED_ADMIN = ADMIN_LIST[8] ?? ``
 
 // `setup.test.ts` publishes this server's bracket first
 
@@ -41,7 +39,7 @@ test(`a bracket with a contest stays published`, async ({ page, browser }) => {
   const educator = await browser.newPage()
   await signInConfirmed(educator, newEmailAddress())
   await createContest(educator, `Period 3 Biology`)
-  await signInAsAdmin(page, STAYS_PUBLISHED_ADMIN)
+  await signInAsAdmin(page, ADMINS.staysPublished)
 
   await page.goto(`/admin/bracket`)
 

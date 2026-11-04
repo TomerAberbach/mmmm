@@ -4,6 +4,8 @@ import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
 import { isAdmin } from './admins.server.ts'
 import { auth } from './auth.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
+import { EDUCATOR_DASHBOARD_PATH } from './paths.ts'
+import { readAssurance } from './second-factor.server.ts'
 
 export type SignedInEducator = {
   id: string
@@ -62,7 +64,7 @@ const toSignedIn = ({ user, session }: BetterAuthSession): SignedIn => ({
     email: user.email,
     emailVerified: user.emailVerified,
   },
-  session: { id: session.id, assurance: session.assurance ?? `PASSWORD` },
+  session: { id: session.id, assurance: readAssurance(session) },
 })
 
 export const readSignedInEducator = async (
@@ -85,6 +87,16 @@ export const requireSignedInEducator: MiddlewareFunction<Response> = async (
   context.set(requiredContext, signedIn)
   return next()
 }
+
+// Sends a signed-in educator to their dashboard, away from the pages that sign
+// in or sign up
+export const requireSignedOut: MiddlewareFunction<Response> = async (
+  { context },
+  next,
+) =>
+  (await context.get(signedInContext)())
+    ? redirect(EDUCATOR_DASHBOARD_PATH)
+    : next()
 
 export const readRequiredEducator = (
   context: Readonly<RouterContextProvider>,

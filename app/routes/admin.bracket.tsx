@@ -7,21 +7,16 @@ import {
   toBracketInput,
 } from '~/bracket-form.ts'
 import {
-  deleteUnpublishedBracket,
   readBracket,
   readBracketCombatants,
   readBracketSummary,
   saveUnpublishedBracket,
 } from '~/brackets.server.ts'
-import type { BracketSummary } from '~/brackets.server.ts'
 import { BracketSetupForm } from '~/components/bracket-setup-form.tsx'
 import { CombatantRenames } from '~/components/combatant-renames.tsx'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
-import type { PhaseView } from '~/components/phase-section.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
-import { formatArizonaDate, toIsoDate } from '~/dates.ts'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import { rejectSubmission } from '~/form-replies.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
 // Only the upcoming year's bracket can be managed here. Until it's published,
@@ -33,44 +28,24 @@ export const loader = async () => {
     return {
       editor: `renames` as const,
       year,
-      phaseView: toPhaseView(summary),
+      summary,
       divisions: await readBracketCombatants(year),
     }
   }
-  const bracket = summary && (await readBracket(year))
+  const input = summary && (await readBracket(year))
   return {
     editor: `setup` as const,
     year,
-    phaseView: summary && toPhaseView(summary),
-    defaultValue: bracket ? toBracketForm(bracket.input) : undefined,
+    summary,
+    defaultValue: input ? toBracketForm(input) : undefined,
   }
-}
-
-const toPhaseView = (summary: BracketSummary): PhaseView => {
-  const expectedLockDate =
-    summary.expectedLockDate && toIsoDate(summary.expectedLockDate)
-  return summary.phase === `OPEN`
-    ? {
-        phase: summary.phase,
-        publishedOn: formatArizonaDate(summary.publishedAt),
-        expectedLockDate,
-        hasContests: summary.hasContests,
-      }
-    : { phase: summary.phase, expectedLockDate }
 }
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const year = readUpcomingYear(new Date())
-  const formData = await request.formData()
-  if (formData.get(`intent`) === `delete`) {
-    return (await deleteUnpublishedBracket(year))
-      ? redirect(`/admin`)
-      : ({
-          error: `The ${year} bracket is already published or deleted`,
-        } satisfies ConfirmResult)
-  }
-
-  const submission = parseWithZod(formData, { schema: bracketFormSchema })
+  const submission = parseWithZod(await request.formData(), {
+    schema: bracketFormSchema,
+  })
   if (submission.status !== `success`) {
     return rejectSubmission(submission)
   }
@@ -87,8 +62,8 @@ const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <PageTitle>{`${loaderData.year} bracket`}</PageTitle>
     {/* A bracket can be published once it's saved */}
-    {loaderData.phaseView ? (
-      <PhaseSection year={loaderData.year} view={loaderData.phaseView} />
+    {loaderData.summary ? (
+      <PhaseSection year={loaderData.year} summary={loaderData.summary} />
     ) : null}
     {loaderData.editor === `renames` ? (
       <CombatantRenames divisions={loaderData.divisions} />
@@ -96,9 +71,7 @@ const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (
       <BracketSetupForm
         year={loaderData.year}
         defaultValue={loaderData.defaultValue}
-        lastResult={
-          actionData && `result` in actionData ? actionData.result : undefined
-        }
+        lastResult={actionData?.result}
       />
     )}
   </div>

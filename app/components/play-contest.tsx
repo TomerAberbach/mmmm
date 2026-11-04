@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form, useNavigation } from 'react-router'
+import { Form } from 'react-router'
 import { Button, ButtonLink } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { PAGE_LABEL_CLASS_NAME } from './page-header.tsx'
@@ -10,7 +10,7 @@ import { useValidatedForm } from './use-validated-form.ts'
 import type { ContestByLink } from '~/contests.server.ts'
 import { displayNameSchema } from '~/player-forms.ts'
 
-export type PlayContest = Omit<ContestByLink, `id`>
+type PlayContest = Omit<ContestByLink, `id`>
 
 // What the contest link shows: the name question, the prompt for a player
 // this browser remembers, or that the contest no longer takes players
@@ -50,8 +50,10 @@ export const ContestContext = ({ contest }: { contest: PlayContest }) => (
 const NAME_QUESTION = `What’s your first name and last initial?`
 
 const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
-  const { form, fields } = useValidatedForm(displayNameSchema, lastResult)
-  const isSubmitting = useNavigation().state === `submitting`
+  const { form, fields, isSubmitting } = useValidatedForm(
+    displayNameSchema,
+    lastResult,
+  )
   return (
     <Form method='post' {...getFormProps(form)} className='flex flex-col gap-5'>
       <PageTitle>{NAME_QUESTION}</PageTitle>

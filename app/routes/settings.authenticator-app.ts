@@ -4,10 +4,7 @@ import type { Route } from './+types/settings.authenticator-app.ts'
 import { confirmPasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import type { AuthenticatorAppResult } from '~/components/second-factor-settings.tsx'
-import {
-  rejectAuthError,
-  rejectSubmission,
-} from '~/reject-submission.server.ts'
+import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
 
 export const loader = (): Response => redirect(`/settings`)
 

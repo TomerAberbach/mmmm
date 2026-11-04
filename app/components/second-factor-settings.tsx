@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { Link, useFetcher } from 'react-router'
 import { confirmPasswordSchema } from '../auth-forms.ts'
 import { addPasskey } from '../passkeys.ts'
+import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { Button, ButtonLink } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { FormError } from './form-error.tsx'
@@ -13,16 +14,6 @@ import { RecoveryCodeList } from './recovery-codes.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
-
-export type SecondFactorSettingsData = {
-  isAdmin: boolean
-  // Whether this session used a second factor, or a setup link before the
-  // first one, so the server allows changes
-  canChange: boolean
-  passkeys: { id: string; label: string; added: string }[]
-  // Set while the authenticator app is on
-  recoveryCodesLeft?: number
-}
 
 export type AuthenticatorAppResult = {
   result: SubmissionResult

@@ -45,15 +45,16 @@ app
   `components/text-field.tsx`, spreading `fieldProps(fields.<name>)`
 - Set up a form with `useValidatedForm` from `components/use-validated-form.ts`,
   and answer a failed submission with `rejectSubmission` from
-  `reject-submission.server.ts`, which never sends a password back. Answer
-  Better Auth's refusals, such as too many attempts, with `rejectAuthError`
+  `form-replies.server.ts`, which never sends a password back. Answer Better
+  Auth's refusals, such as too many attempts, with `rejectAuthError`
 - Put a field's error under its input, and a form's error below its submit
   button as a `FormError` from `components/form-error.tsx`, so nothing above
   them moves when they appear. Forms validate only once first submitted. A form
   too long to see at once also lists its field errors above it with
   `ErrorSummary` from `components/error-summary.tsx`
-- Answer a form submitted through a fetcher with a `SavedResult` once it saves,
-  and show `SavedNotice` from `components/saved-notice.tsx`
+- Answer a form submitted through a fetcher with `acceptSubmission` from
+  `form-replies.server.ts` once it saves, and show `SavedNotice` from
+  `components/saved-notice.tsx`
 - Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
   UTC, so read it in UTC. Show an instant as its day in Arizona with
   `formatArizonaDate`
@@ -71,6 +72,10 @@ app
   `requireSignedInEducator` middleware, as `routes/settings.tsx` does, and read
   the educator there with `readRequiredEducator` and the session with
   `readRequiredSession`
+- Nest pages a signed-in educator shouldn't see, such as sign-in, under the
+  `routes/signed-out.tsx` layout. A layout whose middleware must run on
+  client-side navigation needs a loader, because React Router runs server
+  middleware only for a request that calls one
 - Root's loader data reaches every page, so it passes only what the header
   shows. Load an educator's address or ID in the route that needs it
 - Add admin pages under the `routes/admin.second-factor.tsx` layout in

@@ -9,7 +9,7 @@ import {
   signOut,
   signUp,
 } from '../auth.ts'
-import { readActionLink, readEmails } from '../mailbox.ts'
+import { readActionLink, readEmails, readNewestActionLink } from '../mailbox.ts'
 
 test(`an educator who confirms from the email can sign in`, async ({
   page,
@@ -104,8 +104,9 @@ test(`an altered confirmation link says to sign in for a new one`, async ({
 }) => {
   const email = newEmailAddress()
   await signUp(page, email)
-  const [latest = ``] = await readEmails(page, email)
-  const link = new URL(readActionLink(latest, `Confirm email address`))
+  const link = new URL(
+    await readNewestActionLink(page, email, `Confirm email address`),
+  )
   link.searchParams.set(`token`, `altered`)
 
   await page.goto(link.href)
@@ -190,12 +191,16 @@ test(`a confirmation link sent before signing up again no longer confirms`, asyn
 }) => {
   const email = newEmailAddress()
   await signUp(page, email)
-  const [firstEmail = ``] = await readEmails(page, email)
+  const firstLink = await readNewestActionLink(
+    page,
+    email,
+    `Confirm email address`,
+  )
   // A link records its time to the second, so the next sign-up must come later
   await page.waitForTimeout(1100)
   await signUp(page, email, { password: `someone else's password` })
 
-  await page.goto(readActionLink(firstEmail, `Confirm email address`))
+  await page.goto(firstLink)
 
   await expect(page.getByRole(`alert`)).toContainText(
     `Sign in to get a new one`,

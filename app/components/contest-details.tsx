@@ -7,10 +7,11 @@ import { CopyButton } from './copy-button.tsx'
 import { Notice } from './notice.tsx'
 import { PageHeader } from './page-header.tsx'
 import { QrCode } from './qr-code.tsx'
-import type { SavedResult } from './saved-notice.tsx'
+import { isSaved } from './saved-notice.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { TextField } from './text-field.tsx'
 import type { Contest } from '~/contests.server.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
 
 export const ContestDetails = ({ contest }: { contest: Contest }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
@@ -26,8 +27,8 @@ export const ContestDetails = ({ contest }: { contest: Contest }) => (
 const ContestName = ({ contest }: { contest: Contest }) => {
   const [isEditing, setIsEditing] = useState(false)
   const fetcher = useFetcher<SavedResult>()
-  const isSaved = fetcher.state === `idle` && fetcher.data?.saved === true
-  const isFormOpen = isEditing && !isSaved
+  const saved = isSaved(fetcher)
+  const isFormOpen = isEditing && !saved
   const startEditing = () => {
     fetcher.reset()
     setIsEditing(true)
@@ -53,7 +54,7 @@ const ContestName = ({ contest }: { contest: Contest }) => {
           onCancel={() => setIsEditing(false)}
         />
       ) : null}
-      {isSaved ? <Notice kind='status'>Saved the contest name</Notice> : null}
+      {saved ? <Notice kind='status'>Saved the contest name</Notice> : null}
     </div>
   )
 }

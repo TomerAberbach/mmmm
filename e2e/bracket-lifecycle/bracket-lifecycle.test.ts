@@ -1,10 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { ADMIN_LIST, signInAsAdmin } from '../admins.ts'
+import { ADMINS, signInAsAdmin } from '../admins.ts'
 import { confirmDialog, fillBracketForm, YEAR } from '../brackets.ts'
-
-const SETUP_ADMIN = ADMIN_LIST[3] ?? ``
-const PUBLISH_ADMIN = ADMIN_LIST[4] ?? ``
-const UNPUBLISH_ADMIN = ADMIN_LIST[5] ?? ``
 
 // Each test takes the upcoming year's one bracket a step further
 test.describe.configure({ mode: `serial` })
@@ -12,7 +8,7 @@ test.describe.configure({ mode: `serial` })
 test(`an admin sets up the upcoming year's bracket from a pasted list`, async ({
   page,
 }) => {
-  await signInAsAdmin(page, SETUP_ADMIN)
+  await signInAsAdmin(page, ADMINS.setup)
   await page.getByRole(`link`, { name: `Set up the ${YEAR} bracket` }).click()
   await fillBracketForm(page)
 
@@ -27,7 +23,7 @@ test(`a published bracket is on the home page, with each rename`, async ({
   page,
   browser,
 }) => {
-  await signInAsAdmin(page, PUBLISH_ADMIN)
+  await signInAsAdmin(page, ADMINS.publish)
   await page.getByRole(`link`, { name: `Manage the ${YEAR} bracket` }).click()
   await page.getByLabel(`Expected lock date`).fill(`${YEAR}-03-19`)
   await page.getByRole(`button`, { name: `Save date` }).click()
@@ -61,7 +57,7 @@ test(`a published bracket is on the home page, with each rename`, async ({
 test(`an unpublished bracket leaves the public pages, and can then be deleted`, async ({
   page,
 }) => {
-  await signInAsAdmin(page, UNPUBLISH_ADMIN)
+  await signInAsAdmin(page, ADMINS.unpublish)
   await page.getByRole(`link`, { name: `Manage the ${YEAR} bracket` }).click()
   await confirmDialog(page, `Unpublish`, `Unpublish ${YEAR} bracket`)
   await expect(

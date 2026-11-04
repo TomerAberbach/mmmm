@@ -5,18 +5,18 @@ import {
   MIN_PASSWORD_LENGTH,
   nameSchema,
 } from '../auth-forms.ts'
+import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { SavedNotice } from './saved-notice.tsx'
-import type { SavedResult } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
-import type { SecondFactorSettingsData } from './second-factor-settings.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
 
 export const EducatorSettings = ({
   name,

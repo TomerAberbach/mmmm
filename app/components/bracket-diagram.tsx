@@ -327,7 +327,7 @@ const Round1Battle = ({
       <BattleBox
         battle={battle}
         size='diagram'
-        mark={
+        wildCardLine={
           lineEnd && {
             side: lineEnd.side,
             edge: lineEnd.edge,

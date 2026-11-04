@@ -47,12 +47,12 @@ export const readNameWidth = ({ battles }: BracketView): number =>
 export const BattleBox = ({
   battle,
   size,
-  mark,
+  wildCardLine,
   describe = false,
 }: {
   battle: BattleView
   size: keyof typeof SIZE_CLASSES
-  mark?: SideMark
+  wildCardLine?: WildCardLine
   describe?: boolean
 }) => {
   const picking = usePicking()
@@ -62,7 +62,7 @@ export const BattleBox = ({
       <PickableBattleBox
         battle={battle}
         classes={classes}
-        mark={mark}
+        wildCardLine={wildCardLine}
         picking={picking}
       />
     )
@@ -79,7 +79,7 @@ export const BattleBox = ({
             key={index}
             className={`${readRowClasses(classes)} ${readResultClasses(side, battle.winner)}`}
           >
-            <MarkBar mark={mark} side={index} />
+            <WildCardLineBar wildCardLine={wildCardLine} side={index} />
             <SeedNumber side={side} />
             <SideName side={side} className={classes.name} />
           </div>
@@ -89,9 +89,10 @@ export const BattleBox = ({
   )
 }
 
-// A side marked with an accent bar on one edge. The side's row holds
-// `content`, such as a line arriving at that edge, positioned against the row
-export type SideMark = {
+// The end of the wild card's line on the side its winner fills: an accent bar
+// on the edge the line arrives at, and `content`, the line's last turn,
+// positioned against the side's row
+export type WildCardLine = {
   side: 0 | 1
   edge: `left` | `right`
   content: ReactNode
@@ -151,19 +152,19 @@ const readRowClasses = (classes: SizeClasses) =>
 
 const FOCUS_CLASSES = `cursor-pointer outline-none data-focus-visible:outline-3 data-focus-visible:-outline-offset-3 data-focus-visible:outline-accent-strong`
 
-const MarkBar = ({
-  mark,
+const WildCardLineBar = ({
+  wildCardLine,
   side,
 }: {
-  mark: SideMark | undefined
+  wildCardLine: WildCardLine | undefined
   side: number
 }) =>
-  side === mark?.side ? (
+  side === wildCardLine?.side ? (
     <>
       <div
-        className={`absolute inset-y-0 w-1 bg-accent ${mark.edge === `left` ? `left-0` : `right-0`}`}
+        className={`absolute inset-y-0 w-1 bg-accent ${wildCardLine.edge === `left` ? `left-0` : `right-0`}`}
       />
-      {mark.content}
+      {wildCardLine.content}
     </>
   ) : null
 
@@ -176,12 +177,12 @@ const SeedNumber = ({ side }: { side: Side }) => (
 const PickableBattleBox = ({
   battle,
   classes,
-  mark,
+  wildCardLine,
   picking,
 }: {
   battle: BattleView
   classes: SizeClasses
-  mark: SideMark | undefined
+  wildCardLine: WildCardLine | undefined
   picking: Picking
 }) => (
   <RadioGroup
@@ -200,7 +201,7 @@ const PickableBattleBox = ({
           value={side.name}
           className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
         >
-          <MarkBar mark={mark} side={index} />
+          <WildCardLineBar wildCardLine={wildCardLine} side={index} />
           <RadioButton
             className={`flex min-w-0 flex-1 items-center gap-2 self-stretch ${FOCUS_CLASSES}`}
           >
@@ -210,7 +211,7 @@ const PickableBattleBox = ({
         </RadioField>
       ) : (
         <div key={index} className={readRowClasses(classes)}>
-          <MarkBar mark={mark} side={index} />
+          <WildCardLineBar wildCardLine={wildCardLine} side={index} />
           <ContenderMenu
             side={side}
             className={classes.name}

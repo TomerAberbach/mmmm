@@ -21,6 +21,17 @@ export const readEmails = async (
   return emails.locator(`pre`).allTextContents()
 }
 
+// Returns the link after `label` in the address's newest email, once the
+// newest email contains it
+export const readNewestActionLink = async (
+  page: Page,
+  to: string,
+  label: string,
+): Promise<string> => {
+  const [latest = ``] = await readEmails(page, to, { newestContaining: label })
+  return readActionLink(latest, label)
+}
+
 // Returns the link on the line after an email action's label
 export const readActionLink = (text: string, label: string): string => {
   const link = text.split(`${label}:\n`)[1]?.split(/\s/u)[0]

@@ -54,9 +54,7 @@ export const guardSecondFactorChange = async (
   }
   const { user: educator, session } = signedIn
   const secondFactors = await readSecondFactors(educator.id)
-  // Better Auth types its sessions without the app's fields
-  const assurance = session.assurance as SessionAssurance | null | undefined
-  if (!mayChangeSecondFactors(assurance ?? `PASSWORD`, secondFactors)) {
+  if (!mayChangeSecondFactors(readAssurance(session), secondFactors)) {
     throw new APIError(`FORBIDDEN`, {
       code: SECOND_FACTOR_REQUIRED,
       message: `Use your second factor before changing it`,
@@ -65,7 +63,7 @@ export const guardSecondFactorChange = async (
   if (ADDING_PATHS.has(ctx.path) && !isAdmin(educator)) {
     throw new APIError(`FORBIDDEN`, {
       code: SECOND_FACTOR_REQUIRED,
-      message: `Only admins add second secondFactors`,
+      message: `Only admins add second factors`,
     })
   }
   if (
@@ -79,6 +77,15 @@ export const guardSecondFactorChange = async (
     })
   }
 }
+
+// A session Better Auth just created can lack `assurance`, which the database
+// defaults to PASSWORD
+export const readAssurance = (session: {
+  // Without a required field, TypeScript refuses Better Auth's session type,
+  // which lacks `assurance`
+  id: string
+  assurance?: SessionAssurance | null
+}): SessionAssurance => session.assurance ?? `PASSWORD`
 
 const changesSecondFactors = (path: string): boolean =>
   path.startsWith(`/two-factor/`) ||

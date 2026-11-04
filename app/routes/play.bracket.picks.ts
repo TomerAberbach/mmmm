@@ -1,6 +1,6 @@
-import { z } from 'zod'
 import type { Route } from './+types/play.bracket.picks.ts'
 import { readCurrentYear } from '~/brackets.server.ts'
+import { picksRequestSchema } from '~/picks-request.ts'
 import { TOTAL_BATTLES } from '~/picks.ts'
 import {
   readPlayContest,
@@ -15,31 +15,21 @@ import {
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
-const picksSchema = z
-  .record(z.string().max(40), z.string().max(200))
-  .refine(picks => Object.keys(picks).length <= TOTAL_BATTLES)
-
-const requestSchema = z.discriminatedUnion(`intent`, [
-  z.object({ intent: z.literal(`save`), picks: picksSchema }),
-  z.object({ intent: z.literal(`submit`), picks: picksSchema }),
-  z.object({ intent: z.literal(`discard`) }),
-])
-
-export type PicksRequest = z.infer<typeof requestSchema>
-
 // Saves the player's draft, submits it, or discards it for their submission
 export const action = async ({
   request,
   context,
 }: Route.ActionArgs): Promise<Response> => {
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null))
+  const parsed = picksRequestSchema.safeParse(
+    await request.json().catch(() => null),
+  )
   if (!parsed.success) {
     return refuse(`Send a save, submit, or discard request as JSON`)
   }
   const player = readRequiredPlayer(context)
   const { yearId } = readPlayContest(context)
   // Only the current year's contests take picks. The storage functions don't
-  // check, so tests can use years that aren't current
+  // check the year
   if ((await readCurrentYear()) !== yearId) {
     return refuse(`This contest’s year is over`)
   }

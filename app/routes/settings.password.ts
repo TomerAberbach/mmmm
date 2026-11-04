@@ -4,8 +4,8 @@ import { data, redirect } from 'react-router'
 import type { Route } from './+types/settings.password.ts'
 import { changePasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
-import type { SavedResult } from '~/components/saved-notice.tsx'
-import { rejectSubmission } from '~/reject-submission.server.ts'
+import type { SavedResult } from '~/form-replies.server.ts'
+import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
 
 export const loader = (): Response => redirect(`/settings`)
 
@@ -29,13 +29,9 @@ export const action = async ({
       headers: request.headers,
       returnHeaders: true,
     })
-    return data(
-      {
-        result: submission.reply({ resetForm: true }),
-        saved: true,
-      },
-      { headers },
-    )
+    return data(acceptSubmission(submission, { resetForm: true }), {
+      headers,
+    })
   } catch (error) {
     if (error instanceof APIError && error.body?.code === `INVALID_PASSWORD`) {
       return rejectSubmission(submission, {
