@@ -1,23 +1,23 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { data, redirect } from 'react-router'
+import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/settings.authenticator-app.ts'
 import { confirmPasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import type { AuthenticatorAppResult } from '~/components/second-factor-settings.tsx'
-import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
+import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
 
-export const loader = (): Response => redirect(`/settings`)
+export const loader = (): Response => redirect(href(`/settings`))
 
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<
   | ReturnType<typeof data<AuthenticatorAppResult>>
-  | ReturnType<typeof rejectSubmission>
+  | ReturnType<typeof rejectForm>
 > => {
   const formData = await request.formData()
   const submission = parseWithZod(formData, { schema: confirmPasswordSchema })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
 
   const { password } = submission.value

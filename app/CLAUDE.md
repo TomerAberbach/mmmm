@@ -44,7 +44,7 @@ app
   the action too. Build fields from `TextField` and `PasswordField` in
   `components/text-field.tsx`, spreading `fieldProps(fields.<name>)`
 - Set up a form with `useValidatedForm` from `components/use-validated-form.ts`,
-  and answer a failed submission with `rejectSubmission` from
+  and answer a form the action refuses with `rejectForm` from
   `form-replies.server.ts`, which never sends a password back. Answer Better
   Auth's refusals, such as too many attempts, with `rejectAuthError`
 - Put a field's error under its input, and a form's error below its submit
@@ -52,7 +52,7 @@ app
   them moves when they appear. Forms validate only once first submitted. A form
   too long to see at once also lists its field errors above it with
   `ErrorSummary` from `components/error-summary.tsx`
-- Answer a form submitted through a fetcher with `acceptSubmission` from
+- Answer a form submitted through a fetcher with `acceptForm` from
   `form-replies.server.ts` once it saves, and show `SavedNotice` from
   `components/saved-notice.tsx`
 - Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
@@ -60,8 +60,13 @@ app
   `formatArizonaDate`
 - Check every free-text field that educators and players fill on the server with
   `serverFreeTextSchema` from `free-text.server.ts`, which adds the length limit
-  and the offensive word filter. The browser bundle leaves the filter out.
-  Admins' fields skip the filter, which flags some real combatants' names
+  and the offensive word filter. The browser bundle leaves the filter out, so a
+  shared schema with such a field takes its text schema as a parameter, as
+  `contestNameSchema` does. The action passes `serverFreeTextSchema`, and the
+  component passes `freeTextSchema`. Admins' fields skip the filter, which flags
+  some real combatants' names
+- Open an editor in place, such as a rename, with `useInlineEdit` from
+  `components/use-inline-edit.ts`, which closes it once the save succeeds
 
 ## Auth
 
@@ -89,9 +94,8 @@ app
 - Better Auth copies a session's fields when it replaces the session, such as
   when an authenticator app turns on. Leave `assurance` without a Better Auth
   `defaultValue`, which would reset the copy to `PASSWORD`
-- Send a signed-in educator to `EDUCATOR_DASHBOARD_PATH` from `paths.ts`, and
-  build absolute URLs, such as for emails and contest links, with `toAppUrl`
-  from `env.server.ts`
+- Send a signed-in educator to `href('/contests')`, and build absolute URLs,
+  such as for emails and contest links, with `toAppUrl` from `env.server.ts`
 - Count a request against several rate limits with `consumeAll` from
   `limits.server.ts`, which gives back the earlier limits' attempts when a later
   one refuses, and key per-IP limits on `readClientIp`
@@ -118,26 +122,34 @@ app
 
 ## Brackets
 
-- Store a bracket with `createBracket` from `brackets.server.ts`, or replace an
-  unpublished one with `saveUnpublishedBracket`. Both write every seed slot,
-  battle, and the wild card in one transaction
+- Store or replace an unpublished bracket with `saveUnpublishedBracket` from
+  `brackets.server.ts`, which writes every seed slot, battle, and the wild card
+  in one transaction
 - Read a year's phase with `readBracketSummary`, instead of checking
   `publishedAt`
-- A year has contests only while its bracket is published. Take `lockBracketRow`
-  from `brackets.server.ts` in the transaction of any write that depends on
-  whether a year is published, as `createContest` and `setBracketPublished` do,
-  so the two can't interleave
-- Read which seed slots or earlier battles feed a battle, and where its winner
-  goes, from `bracket.ts`. `Battle` rows store no links, only a round and an
-  index for results and picks to reference
+- Only the current year takes new contests, players, and picks. Check a write
+  that depends on whether a year is published or current inside its transaction
+  with `lockYear` from `brackets.server.ts`, in `SHARE` mode, as `createPlayer`
+  and the pick writes do, or with `lockYears` before reading the current year,
+  as `createContest` does. Publishing and unpublishing take it in `UPDATE` mode,
+  so neither interleaves with those writes. A transaction that also locks a
+  player's row locks it first
+- Read which seed slots or earlier battles feed a battle, and which Round 1
+  battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
+  links, only a round and an index for results and picks to reference
 - A `BracketInput` skips the wild card's seed in its division's list, so read
   each seed slot's combatant with `listSeedSlotNames` instead of indexing the
   list by seed. The setup form keeps one field per seed instead, so a name stays
   at its seed when the wild card moves. `bracket-form.ts` converts between the
   two
-- Show a bracket from `buildBracketView` in `bracket-view.ts`, which fills each
-  side from the seed slots and the winners so far. `BattleBox` is hidden from
-  screen readers, so pass it `describe` unless a list of the battles beside it
+- Fill a battle's sides with `fillSides` from `seeded-bracket.ts`, which reads
+  the seed slots, the wild card's entrants, and the winners so far from a
+  `SeededBracket`. Build the `SeededBracket` once per input with
+  `toSeededBracket`, and pass it to both `buildBracketView` and the pick rules
+  in `picks.ts`
+- Show a bracket from `buildBracketView` in `bracket-view.ts`. A regular
+  `BattleBox` is hidden from screen readers and describes its battle in text for
+  them. A diagram box adds no text, since the list of battles beside the diagram
   describes them. Inside a `PickingContext`, each box is a labeled control
   instead
 - The diagram's boxes fit the year's longest name using the glyph widths in
@@ -151,6 +163,9 @@ app
 
 - Route modules import their types from `./+types/<route>.ts`, which
   `react-router typegen` generates. Run `pnpm typecheck` after adding a route
+- Build every path to one of the app's routes with `href` from `react-router`,
+  such as `href('/contests/:contestId', { contestId })`, so `pnpm typecheck`
+  checks it against `routes.ts`
 - Add stylesheets through root's `links` export with a `?url` import. A bare CSS
   import loads late in development on pages that match no route, such as a 404
 - The content security policy allows only scripts with the request's nonce. Read
@@ -167,7 +182,6 @@ app
   `readRequiredPlayer` from `play-context.server.ts`. It restarts the player's
   15 minutes on each response, so leave it off a page that asks who the player
   is, such as the contest link's "Continue as" prompt
-- Check `isTakingPlayers` before `createPlayer`, which doesn't check it
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
   `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`
@@ -175,7 +189,7 @@ app
 - A player edits a draft, and submitting copies it to their submission. Both are
   `Pick` rows, told apart by `stage`. Change them only through
   `player-picks.server.ts`, which locks the player's row so two requests can't
-  interleave
+  interleave. Pass the year of the player's contest from `readPlayContest`
 - Send the picker's requests through `usePicksRequests` in
   `components/picks-requests.ts`, which sends one at a time so the server
   applies them in order. React Router's fetchers cancel an earlier request in
@@ -186,9 +200,14 @@ app
 - `*.test.ts` files run in Node, and `*.test.tsx` files run in Chromium through
   Vitest browser mode. Both are colocated with the code they test
 - Node test files run in parallel against one database, and the current year is
-  the newest published bracket's. Store each test's bracket under a year of its
-  own, below 3000 except in `brackets.server.test.ts`, which tests the current
-  year. Create educators with `createEducator` from `test/educators.ts`
+  the newest published bracket's. Store each test's bracket under a year from
+  `claimYear` in `test/years.ts`, which never returns the same year twice in a
+  run. A test that needs the current year, such as to create a contest, runs
+  inside `withCurrentYear` from the same file and adds its years there. It runs
+  one such test at a time across files, in years newer than any `claimYear`
+  returns. Create a contest or a player in a new current year with
+  `createContestInNewYear` or `createPlayerInNewYear` from `test/contests.ts`,
+  and educators with `createEducator` from `test/educators.ts`
 - Browser tests load `app.css` and check accessibility, including contrast, with
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching

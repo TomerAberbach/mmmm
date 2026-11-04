@@ -3,6 +3,7 @@ import bodyFont from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url
 import type { ReactNode } from 'react'
 import { RouterProvider } from 'react-aria-components'
 import {
+  href,
   isRouteErrorResponse,
   Link,
   Links,
@@ -107,7 +108,7 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   return (
     <div className='flex flex-col gap-4'>
       <PageTitle>{heading}</PageTitle>
-      <Link to='/' className='font-semibold'>
+      <Link to={href(`/`)} className='font-semibold'>
         Go to the home page
       </Link>
       {import.meta.env.DEV && error instanceof Error ? (

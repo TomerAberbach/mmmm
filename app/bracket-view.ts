@@ -1,28 +1,20 @@
-import { listSeedSlotNames, readNameBySeedSlot } from './bracket-input.ts'
-import type { BracketInput } from './bracket-input.ts'
 import {
   DIVISION_POSITIONS,
   listBattles,
-  readBattleSides,
   ROUND_NAMES,
   ROUNDS,
   toBattleKey,
-  toSeedSlotKey,
 } from './bracket.ts'
 import type {
   BattleRef,
   DivisionPosition,
   DivisionRound,
   Round,
-  Seed,
   SeedSlotRef,
+  Winners,
 } from './bracket.ts'
-
-// A battle's side once its combatant is known, or the earlier battle whose
-// winner fills it
-export type Side =
-  | { kind: `combatant`; name: string; seed: Seed }
-  | { kind: `undecided`; battle: BattleRef }
+import { fillSides, hasCombatant } from './seeded-bracket.ts'
+import type { SeededBracket, Side } from './seeded-bracket.ts'
 
 export type BattleView = BattleRef & { sides: Side[]; winner?: string }
 
@@ -33,95 +25,35 @@ export type BracketView = {
   battles: Record<Round, BattleView[]>
 }
 
-// Each decided battle's key, from `toBattleKey`, mapped to its winner's name
-export type Winners = Readonly<Record<string, string>>
-
 // Every battle of the bracket, with each side filled from the seed slots and
-// the winners so far
+// the winners so far. Throws when a winner isn't on one of its battle's sides
 export const buildBracketView = (
   year: number,
-  input: BracketInput,
+  bracket: SeededBracket,
   winners: Winners,
 ): BracketView => {
-  const wildCardSlot: SeedSlotRef = {
-    position: input.wildCard.position,
-    seed: input.wildCard.seed,
-  }
-  const nameBySeedSlot = readNameBySeedSlot(input)
-  const seedByName = indexSeeds(input)
-
-  // Every name is the input's, or a winner checked against its battle's sides
-  // before any later battle reads it
-  const toCombatant = (name: string): Side => ({
-    kind: `combatant`,
-    name,
-    seed: seedByName.get(name)!,
-  })
-  const toWinnerSide = (battle: BattleRef): Side => {
-    const winner = winners[toBattleKey(battle)]
-    return winner === undefined
-      ? { kind: `undecided`, battle }
-      : toCombatant(winner)
-  }
-  const readSides = (battle: BattleRef): Side[] =>
-    battle.round === `WILD_CARD`
-      ? input.wildCard.entrants.map(toCombatant)
-      : readBattleSides({ ...battle, round: battle.round }, wildCardSlot).map(
-          side =>
-            side.kind === `seedSlot`
-              ? // Only the wild card's seed slot has no name, and its side is
-                // the wild card's winner
-                toCombatant(nameBySeedSlot.get(toSeedSlotKey(side.seedSlot))!)
-              : toWinnerSide(side.battle),
-        )
-
+  // In play order, so each winner is checked before a later battle's side
+  // reads it
   const battles = Object.groupBy(
     listBattles().map((battle): BattleView => {
       const winner = winners[toBattleKey(battle)]
-      const sides = readSides(battle)
-      if (winner !== undefined) {
-        assertWinnerHasSide(battle, sides, winner)
+      const sides = fillSides(bracket, battle, winners)
+      if (winner === undefined) {
+        return { ...battle, sides }
       }
-      return {
-        ...battle,
-        sides,
-        ...(winner === undefined ? {} : { winner }),
+      if (!hasCombatant(sides, winner)) {
+        throw new Error(`${winner} isn't in ${readBattleName(battle)}`)
       }
+      return { ...battle, sides, winner }
     }),
     ({ round }) => round,
   ) as Record<Round, BattleView[]>
 
   return {
     year,
-    divisionNames: Object.fromEntries(
-      DIVISION_POSITIONS.map(position => [
-        position,
-        input.divisions[position].name,
-      ]),
-    ) as Record<DivisionPosition, string>,
-    wildCardSlot,
+    divisionNames: bracket.divisionNames,
+    wildCardSlot: bracket.wildCardSlot,
     battles,
-  }
-}
-
-// Each combatant's seed. Every wild card entrant has the wild card's seed
-const indexSeeds = (input: BracketInput): ReadonlyMap<string, Seed> =>
-  new Map([
-    ...listSeedSlotNames(input).flatMap(({ name, seed }) =>
-      name === undefined ? [] : [[name, seed] as const],
-    ),
-    ...input.wildCard.entrants.map(
-      name => [name, input.wildCard.seed] as const,
-    ),
-  ])
-
-const assertWinnerHasSide = (
-  battle: BattleRef,
-  sides: Side[],
-  winner: string,
-): void => {
-  if (!sides.some(side => side.kind === `combatant` && side.name === winner)) {
-    throw new Error(`${winner} isn't in ${readBattleName(battle)}`)
   }
 }
 

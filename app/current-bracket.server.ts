@@ -2,6 +2,7 @@ import { buildBracketView } from './bracket-view.ts'
 import type { BracketView } from './bracket-view.ts'
 import { readCurrentBracket } from './brackets.server.ts'
 import { formatDate } from './dates.ts'
+import { toSeededBracket } from './seeded-bracket.ts'
 
 export type CurrentBracket = {
   view: BracketView
@@ -15,7 +16,11 @@ export const readCurrentBracketView =
     const bracket = await readCurrentBracket()
     return (
       bracket && {
-        view: buildBracketView(bracket.year, bracket.input, {}),
+        view: buildBracketView(
+          bracket.year,
+          toSeededBracket(bracket.input),
+          {},
+        ),
         expectedLockDate:
           bracket.expectedLockDate && formatDate(bracket.expectedLockDate),
       }

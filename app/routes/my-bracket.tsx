@@ -1,7 +1,6 @@
-import { data, redirect } from 'react-router'
+import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/my-bracket.ts'
 import { PageTitle } from '~/components/page-title.tsx'
-import { toBracketPath } from '~/paths.ts'
 import { rememberPlayer } from '~/player-cookie.server.ts'
 import { readPlayerByLink } from '~/players.server.ts'
 
@@ -12,11 +11,14 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
   if (!player) {
     return data(null, { status: 404 })
   }
-  throw redirect(toBracketPath(player.contestLinkSecret), {
-    headers: {
-      'Set-Cookie': await rememberPlayer(player.contestId, params.secret),
+  throw redirect(
+    href(`/play/:linkSecret/bracket`, { linkSecret: player.contestLinkSecret }),
+    {
+      headers: {
+        'Set-Cookie': await rememberPlayer(player.contestId, params.secret),
+      },
     },
-  })
+  )
 }
 
 const BrokenLinkPage = () => (

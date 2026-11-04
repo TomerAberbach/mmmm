@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form, Link } from 'react-router'
+import { Form, href, Link } from 'react-router'
 import { recoveryCodeSchema, securityCodeFormSchema } from '../auth-forms.ts'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
@@ -24,7 +24,7 @@ export const SignInCodeForm = ({
       <p>Open your authenticator app and enter the code it shows for MMMM.</p>
       <Form
         method='post'
-        action='/sign-in/code'
+        action={href(`/sign-in/code`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -33,7 +33,9 @@ export const SignInCodeForm = ({
           <Button type='submit' isPending={isSubmitting}>
             Continue
           </Button>
-          <Link to='/sign-in/recovery-code'>Use a recovery code instead</Link>
+          <Link to={href(`/sign-in/recovery-code`)}>
+            Use a recovery code instead
+          </Link>
         </div>
         <FormError form={form} />
       </Form>
@@ -58,7 +60,7 @@ export const RecoveryCodeForm = ({
       <p>Enter one of the recovery codes you saved. Each code works once.</p>
       <Form
         method='post'
-        action='/sign-in/recovery-code'
+        action={href(`/sign-in/recovery-code`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -72,7 +74,7 @@ export const RecoveryCodeForm = ({
           <Button type='submit' isPending={isSubmitting}>
             Continue
           </Button>
-          <Link to='/sign-in/code'>Use your authenticator app</Link>
+          <Link to={href(`/sign-in/code`)}>Use your authenticator app</Link>
         </div>
         <FormError form={form} />
       </Form>

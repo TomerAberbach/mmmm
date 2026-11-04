@@ -1,7 +1,7 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { expect, test } from 'vitest'
 import { z } from 'zod'
-import { rejectSubmission } from './form-replies.server.ts'
+import { rejectForm } from './form-replies.server.ts'
 
 test(`a rejection sends back every field except those named for a password`, () => {
   const formData = new FormData()
@@ -12,7 +12,7 @@ test(`a rejection sends back every field except those named for a password`, () 
     schema: z.object({ email: z.string() }),
   })
 
-  const { data } = rejectSubmission(submission)
+  const { data } = rejectForm(submission)
 
   expect(data.result.initialValue).toStrictEqual({ email: `ada@school.org` })
 })

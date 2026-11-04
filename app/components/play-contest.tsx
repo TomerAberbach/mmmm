@@ -8,6 +8,7 @@ import { PageTitle } from './page-title.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import type { ContestByLink } from '~/contests.server.ts'
+import { freeTextSchema } from '~/free-text.ts'
 import { displayNameSchema } from '~/player-forms.ts'
 
 type PlayContest = Omit<ContestByLink, `id`>
@@ -49,9 +50,11 @@ export const ContestContext = ({ contest }: { contest: PlayContest }) => (
 
 const NAME_QUESTION = `What’s your first name and last initial?`
 
+const DISPLAY_NAME_SCHEMA = displayNameSchema(freeTextSchema)
+
 const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
-    displayNameSchema,
+    DISPLAY_NAME_SCHEMA,
     lastResult,
   )
   return (

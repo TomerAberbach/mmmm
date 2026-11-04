@@ -6,7 +6,7 @@ import {
   DIVISION_ROUNDS,
   isDivisionRound,
   readBattleSides,
-  readNextBattle,
+  readWildCardRound1Battle,
   ROUND_NAMES,
 } from '~/bracket.ts'
 import type {
@@ -132,15 +132,8 @@ const readWildCardPlacement = ({
   battles,
   wildCardSlot,
 }: BracketView): WildCardPlacement => {
-  // The wild card always moves on to Round 1
-  const round1Battle = readNextBattle(
-    { round: `WILD_CARD`, index: 0 },
-    wildCardSlot,
-  )!
-  const sides = readBattleSides(
-    { round: `ROUND_1`, index: round1Battle.index },
-    wildCardSlot,
-  )
+  const round1Battle = readWildCardRound1Battle(wildCardSlot)
+  const sides = readBattleSides(round1Battle, wildCardSlot)
   return {
     battle: battles.WILD_CARD[0]!,
     slot: wildCardSlot,

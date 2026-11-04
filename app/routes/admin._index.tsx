@@ -1,3 +1,4 @@
+import { href } from 'react-router'
 import type { Route } from './+types/admin._index.ts'
 import { readBracketSummary } from '~/brackets.server.ts'
 import { ButtonLink } from '~/components/button.tsx'
@@ -42,7 +43,7 @@ const Admin = ({
         <p className='text-muted'>Expected to lock {expectedLockDate}</p>
       ) : null}
       <div>
-        <ButtonLink href='/admin/bracket'>
+        <ButtonLink href={href(`/admin/bracket`)}>
           {phase === null
             ? `Set up the ${year} bracket`
             : `Manage the ${year} bracket`}

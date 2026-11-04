@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { getAuthenticatorName } from '@better-auth/passkey'
 import type { GenericEndpointContext } from 'better-auth'
 import { APIError, getSessionFromCtx } from 'better-auth/api'
+import { href } from 'react-router'
 import { isAdmin } from './admins.server.ts'
 import { prisma } from './db.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
@@ -206,7 +207,5 @@ export const markSetupLinkUsed = async (sessionId: string): Promise<void> => {
 
 // Where an admin's session goes when it hasn't used a second factor: setup
 // without one, or verifying one they have
-export const readSecondFactorStep = (
-  secondFactors: SecondFactors,
-): `/admin/setup` | `/admin/verify` =>
-  hasSecondFactor(secondFactors) ? `/admin/verify` : `/admin/setup`
+export const readSecondFactorStep = (secondFactors: SecondFactors): string =>
+  href(hasSecondFactor(secondFactors) ? `/admin/verify` : `/admin/setup`)

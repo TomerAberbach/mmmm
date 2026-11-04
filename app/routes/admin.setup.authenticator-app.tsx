@@ -1,6 +1,6 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { APIError } from 'better-auth/api'
-import { data, redirect } from 'react-router'
+import { data, href, redirect } from 'react-router'
 import type { ShouldRevalidateFunctionArgs } from 'react-router'
 import type { Route } from './+types/admin.setup.authenticator-app.ts'
 import {
@@ -14,7 +14,7 @@ import {
   ScanStep,
 } from '~/components/authenticator-app-setup.tsx'
 import { RecoveryCodes } from '~/components/recovery-codes.tsx'
-import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
+import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
 import {
   mayChangeSecondFactors,
   readSecondFactors,
@@ -30,7 +30,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     readRequiredEducator(context).id,
   )
   if (secondFactors.hasAuthenticatorApp) {
-    return redirect(`/admin`)
+    return redirect(href(`/admin`))
   }
   return mayChangeSecondFactors(assurance, secondFactors)
     ? null
@@ -50,10 +50,7 @@ export const shouldRevalidate = ({
 // password
 type Step = `password` | `scan` | `codes`
 
-const rejectPassword = ({
-  data: reply,
-  init,
-}: ReturnType<typeof rejectSubmission>) =>
+const rejectPassword = ({ data: reply, init }: ReturnType<typeof rejectForm>) =>
   data({ step: `password` as const, ...reply }, init ?? undefined)
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -67,7 +64,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 const start = async (request: Request, formData: FormData) => {
   const submission = parseWithZod(formData, { schema: confirmPasswordSchema })
   if (submission.status !== `success`) {
-    return rejectPassword(rejectSubmission(submission))
+    return rejectPassword(rejectForm(submission))
   }
   try {
     const enabled = await auth.api.enableTwoFactor({
@@ -98,15 +95,15 @@ const turnOn = async (
   const totpUri = formData.get(`totpUri`)
   // Only an altered form loses the URI. Starting over makes a new one
   if (typeof totpUri !== `string` || !URL.canParse(totpUri)) {
-    return redirect(`/admin/setup/authenticator-app`)
+    return redirect(href(`/admin/setup/authenticator-app`))
   }
   // Sends the URI back, so the page shows the same QR code again
-  const rejectScan = (errors?: Parameters<typeof rejectSubmission>[1]) =>
+  const rejectScan = (errors?: Parameters<typeof rejectForm>[1]) =>
     data(
       {
         step: `scan` as const,
         totpUri,
-        ...rejectSubmission(submission, errors).data,
+        ...rejectForm(submission, errors).data,
       },
       400,
     )
@@ -138,7 +135,10 @@ const AuthenticatorAppSetup = ({ actionData }: Route.ComponentProps) => {
   switch (actionData?.step) {
     case `codes`:
       return (
-        <RecoveryCodes codes={actionData.recoveryCodes} continueTo='/admin' />
+        <RecoveryCodes
+          codes={actionData.recoveryCodes}
+          continueTo={href(`/admin`)}
+        />
       )
     case `scan`:
       return (

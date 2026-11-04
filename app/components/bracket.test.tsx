@@ -9,7 +9,8 @@ import {
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import type { BracketInput } from '../bracket-input.ts'
 import { buildBracketView } from '../bracket-view.ts'
-import type { Winners } from '../bracket-view.ts'
+import type { Winners } from '../bracket.ts'
+import { toSeededBracket } from '../seeded-bracket.ts'
 import { PRINTED_PAGE } from './bracket-diagram.tsx'
 import { Bracket } from './bracket.tsx'
 
@@ -27,7 +28,11 @@ const renderBracket = async (
   }: { winners?: Winners; year?: number; bracket?: BracketInput } = {},
 ) => {
   await page.viewport(viewport.width, viewport.height)
-  await render(<Bracket view={buildBracketView(year, bracket, winners)} />)
+  await render(
+    <Bracket
+      view={buildBracketView(year, toSeededBracket(bracket), winners)}
+    />,
+  )
   await document.fonts.ready
 }
 

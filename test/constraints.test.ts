@@ -1,13 +1,12 @@
 import { beforeAll, expect, test } from 'vitest'
-import { createBracket } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import { BRACKET_2026 } from '../prisma/brackets.ts'
+import { createClaimedBracket } from './years.ts'
 
 // Every write here is refused, so the tests share one bracket
-const createTestBracket = async () => {
-  const bracketId = await createBracket(5000, BRACKET_2026)
-  return prisma.bracket.findUniqueOrThrow({
-    where: { id: bracketId },
+const createTestBracket = async () =>
+  prisma.bracket.findUniqueOrThrow({
+    where: { id: await createClaimedBracket(BRACKET_2026) },
     select: {
       id: true,
       wildCard: { select: { entrants: { take: 1 } } },
@@ -20,7 +19,6 @@ const createTestBracket = async () => {
       },
     },
   })
-}
 
 type TestBracket = Awaited<ReturnType<typeof createTestBracket>>
 

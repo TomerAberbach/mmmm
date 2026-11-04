@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useFetcher } from 'react-router'
+import { href, Link } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
@@ -7,15 +7,15 @@ import { CopyButton } from './copy-button.tsx'
 import { Notice } from './notice.tsx'
 import { PageHeader } from './page-header.tsx'
 import { QrCode } from './qr-code.tsx'
-import { isSaved } from './saved-notice.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { TextField } from './text-field.tsx'
+import { useInlineEdit } from './use-inline-edit.ts'
 import type { Contest } from '~/contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 
 export const ContestDetails = ({ contest }: { contest: Contest }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
-    <Link to='/contests' className='self-start'>
+    <Link to={href(`/contests`)} className='self-start'>
       All contests
     </Link>
     <ContestName contest={contest} />
@@ -26,13 +26,10 @@ export const ContestDetails = ({ contest }: { contest: Contest }) => (
 // Rename opens the name's field below the heading until the save succeeds
 const ContestName = ({ contest }: { contest: Contest }) => {
   const [isEditing, setIsEditing] = useState(false)
-  const fetcher = useFetcher<SavedResult>()
-  const saved = isSaved(fetcher)
-  const isFormOpen = isEditing && !saved
-  const startEditing = () => {
-    fetcher.reset()
-    setIsEditing(true)
-  }
+  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit(
+    isEditing,
+    setIsEditing,
+  )
 
   return (
     <div className='flex flex-col gap-3'>
@@ -40,21 +37,17 @@ const ContestName = ({ contest }: { contest: Contest }) => {
         label={`${contest.yearId} contest`}
         title={contest.name}
         action={
-          isFormOpen ? null : (
-            <Button variant='secondary' onPress={startEditing}>
+          isOpen ? null : (
+            <Button variant='secondary' onPress={open}>
               Rename
             </Button>
           )
         }
       />
-      {isFormOpen ? (
-        <RenameForm
-          contest={contest}
-          fetcher={fetcher}
-          onCancel={() => setIsEditing(false)}
-        />
+      {isOpen ? (
+        <RenameForm contest={contest} fetcher={fetcher} onCancel={close} />
       ) : null}
-      {saved ? <Notice kind='status'>Saved the contest name</Notice> : null}
+      {isSaved ? <Notice kind='status'>Saved the contest name</Notice> : null}
     </div>
   )
 }
@@ -70,19 +63,10 @@ const RenameForm = ({
 }) => (
   <ContestNameForm
     fetcher={fetcher}
-    action={`/contests/${id}/name`}
+    action={href(`/contests/:contestId/name`, { contestId: id })}
     submitLabel='Save'
     defaultName={name}
-    cancelButton={
-      <Button variant='secondary' onPress={onCancel}>
-        Cancel
-      </Button>
-    }
-    onKeyDown={event => {
-      if (event.key === `Escape`) {
-        onCancel()
-      }
-    }}
+    onCancel={onCancel}
   />
 )
 

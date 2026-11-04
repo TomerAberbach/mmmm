@@ -1,7 +1,7 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
 import type { ReactNode } from 'react'
-import { Link, useFetcher } from 'react-router'
+import { href, Link, useFetcher } from 'react-router'
 import { confirmPasswordSchema } from '../auth-forms.ts'
 import { addPasskey } from '../passkeys.ts'
 import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
@@ -38,8 +38,8 @@ export const SecondFactorSettings = ({
         <Notice kind='status'>
           {isAdmin ? (
             <>
-              Open the <Link to='/admin'>admin area</Link> and use your second
-              factor before changing these.
+              Open the <Link to={href(`/admin`)}>admin area</Link> and use your
+              second factor before changing these.
             </>
           ) : (
             `Sign in with your passkey or authenticator app before changing these.`
@@ -63,7 +63,7 @@ export const SecondFactorSettings = ({
         {canAdd ? (
           <PasskeyButton
             ceremony={addPasskey}
-            successTo='/settings'
+            successTo={href(`/settings`)}
             variant='secondary'
           >
             Add a passkey
@@ -77,7 +77,7 @@ export const SecondFactorSettings = ({
             {canAdd ? (
               <div>
                 <ButtonLink
-                  href='/admin/setup/authenticator-app'
+                  href={href(`/admin/setup/authenticator-app`)}
                   variant='secondary'
                 >
                   Set up an authenticator app
@@ -118,7 +118,7 @@ const PasskeyItem = ({
         trigger={<Button variant='secondary'>Remove</Button>}
         title={`Remove this ${label === `Passkey` ? `passkey` : `${label} passkey`}?`}
         confirmLabel='Remove passkey'
-        action='/settings/remove-passkey'
+        action={href(`/settings/remove-passkey`)}
         fields={{ id }}
       >
         You won&apos;t be able to sign in with it. We&apos;ll email you about
@@ -162,7 +162,7 @@ const AuthenticatorAppSettings = ({
       {canChange ? (
         <fetcher.Form
           method='post'
-          action='/settings/authenticator-app'
+          action={href(`/settings/authenticator-app`)}
           {...getFormProps(form)}
           className='flex flex-col gap-5'
         >

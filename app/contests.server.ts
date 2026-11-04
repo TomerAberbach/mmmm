@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { lockBracketRow } from './brackets.server.ts'
+import { href } from 'react-router'
+import { lockYears, readCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
-import { toContestPath } from './paths.ts'
 import { createSecret } from './secrets.server.ts'
 
 // `link` is the contest link, which players open
@@ -10,15 +10,16 @@ export type ContestSummary = { id: string; name: string; link: string }
 
 export type Contest = ContestSummary & { yearId: number }
 
-// Creates a contest in the year, unless its bracket isn't published. Returns
-// the contest's ID, or null when it created none
+// Creates a contest in the current year. Returns the contest's ID, or null
+// before any bracket is published
 export const createContest = (
   educatorId: string,
-  yearId: number,
   name: string,
 ): Promise<string | null> =>
   prisma.$transaction(async tx => {
-    if (!(await lockBracketRow(tx, yearId))?.isPublished) {
+    await lockYears(tx, `SHARE`)
+    const yearId = await readCurrentYear(tx)
+    if (yearId === null) {
       return null
     }
     const { id } = await tx.contest.create({
@@ -41,7 +42,7 @@ const withLink = <Row extends { linkSecret: string }>({
   ...row
 }: Row): Omit<Row, `linkSecret`> & { link: string } => ({
   ...row,
-  link: toAppUrl(toContestPath(linkSecret)).href,
+  link: toAppUrl(href(`/play/:linkSecret`, { linkSecret })).href,
 })
 
 // Oldest first

@@ -1,5 +1,5 @@
 import { getFormProps } from '@conform-to/react'
-import { useFetcher } from 'react-router'
+import { href, useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { FormError } from './form-error.tsx'
@@ -52,7 +52,7 @@ export const PhaseSection = ({
           title={`Publish the ${year} bracket?`}
           confirmLabel={`Publish ${year} bracket`}
           confirmVariant='primary'
-          action='/admin/bracket/publication'
+          action={href(`/admin/bracket/publication`)}
           fields={{ published: `true` }}
         >
           <div className='flex flex-col gap-2'>
@@ -88,7 +88,7 @@ const UnpublishControls = ({
         trigger={<Button variant='secondary'>Unpublish</Button>}
         title={`Unpublish the ${year} bracket?`}
         confirmLabel={`Unpublish ${year} bracket`}
-        action='/admin/bracket/publication'
+        action={href(`/admin/bracket/publication`)}
         fields={{ published: `false` }}
       >
         <p>
@@ -124,7 +124,7 @@ const ExpectedLockDateForm = ({
   return (
     <fetcher.Form
       method='post'
-      action='/admin/bracket/expected-lock-date'
+      action={href(`/admin/bracket/expected-lock-date`)}
       {...getFormProps(form)}
       className='flex flex-col gap-2'
     >

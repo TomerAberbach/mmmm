@@ -1,9 +1,9 @@
+import { href } from 'react-router'
 import type { Route } from './+types/play.bracket.ts'
 import { readBracket } from '~/brackets.server.ts'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
 import { toAppUrl } from '~/env.server.ts'
-import { toForgottenPath, toPersonalLinkPath, toPicksPath } from '~/paths.ts'
 import {
   readPlayContest,
   readRequiredPlayer,
@@ -32,8 +32,9 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     // A player sees their personal link once they submit
     submitted: submission && {
       submission,
-      personalLink: toAppUrl(toPersonalLinkPath(player.personalLinkSecret))
-        .href,
+      personalLink: toAppUrl(
+        href(`/my-bracket/:secret`, { secret: player.personalLinkSecret }),
+      ).href,
     },
   }
 }
@@ -46,8 +47,8 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => (
       input={loaderData.input}
       initialDraft={loaderData.draft}
       submitted={loaderData.submitted}
-      picksPath={toPicksPath(params.linkSecret)}
-      forgetPath={toForgottenPath(params.linkSecret)}
+      picksPath={href(`/play/:linkSecret/bracket/picks`, params)}
+      forgetPath={href(`/play/:linkSecret/forgotten`, params)}
     />
   </div>
 )
