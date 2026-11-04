@@ -5,6 +5,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { contestNameSchema } from '../contest-forms.ts'
+import { freeTextSchema } from '../free-text.ts'
 import { ContestDetails } from './contest-details.tsx'
 import type { Contest } from '~/contests.server.ts'
 
@@ -27,7 +28,7 @@ const renderContest = async () => {
       path: `/contests/period-2/name`,
       action: async ({ request }) => {
         const submission = parseWithZod(await request.formData(), {
-          schema: contestNameSchema,
+          schema: contestNameSchema(freeTextSchema),
         })
         if (submission.status === `success`) {
           contest = { ...contest, name: submission.value.name }

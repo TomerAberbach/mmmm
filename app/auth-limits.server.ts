@@ -2,10 +2,10 @@ import { APIError } from 'better-auth/api'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import {
   consumeAll,
-  describeWait,
   normalizeEmail,
   readClientIp,
   refund,
+  toRefusal,
 } from './limits.server.ts'
 import type { Counted } from './limits.server.ts'
 
@@ -77,7 +77,15 @@ type AuthRequest = {
 export const limitAuthRequest = async (request: AuthRequest): Promise<void> => {
   const refusal = await consumeAll(readCounted(request))
   if (refusal) {
-    throw tooManyAttempts(refusal.msBeforeNext)
+    const { message, headers } = toRefusal(
+      refusal,
+      wait => `Too many attempts. ${wait}.`,
+    )
+    throw new APIError(
+      `TOO_MANY_REQUESTS`,
+      { code: TOO_MANY_ATTEMPTS, message },
+      headers,
+    )
   }
 }
 
@@ -115,13 +123,3 @@ const readKeys = (
   emailAndIp:
     typeof email === `string` ? `${normalizeEmail(email)} ${ip}` : undefined,
 })
-
-const tooManyAttempts = (msBeforeNext: number): APIError =>
-  new APIError(
-    `TOO_MANY_REQUESTS`,
-    {
-      code: TOO_MANY_ATTEMPTS,
-      message: `Too many attempts. ${describeWait(msBeforeNext)}.`,
-    },
-    { 'Retry-After': String(Math.ceil(msBeforeNext / 1000)) },
-  )

@@ -1,10 +1,11 @@
 import { getFormProps } from '@conform-to/react'
-import { useFetcher } from 'react-router'
+import { href, useFetcher } from 'react-router'
 import {
   changePasswordSchema,
   MIN_PASSWORD_LENGTH,
   nameSchema,
 } from '../auth-forms.ts'
+import { freeTextSchema } from '../free-text.ts'
 import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
@@ -37,14 +38,16 @@ export const EducatorSettings = ({
   </div>
 )
 
+const NAME_SCHEMA = nameSchema(freeTextSchema)
+
 const NameSettings = ({ name }: { name: string }) => {
   const fetcher = useFetcher<SavedResult>()
-  const { form, fields } = useValidatedForm(nameSchema, fetcher.data?.result)
+  const { form, fields } = useValidatedForm(NAME_SCHEMA, fetcher.data?.result)
   return (
     <SettingsSection title='Name'>
       <fetcher.Form
         method='post'
-        action='/settings/name'
+        action={href(`/settings/name`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -82,7 +85,7 @@ const PasswordSettings = () => {
       </p>
       <fetcher.Form
         method='post'
-        action='/settings/password'
+        action={href(`/settings/password`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -130,7 +133,7 @@ const SessionSettings = () => {
           trigger={<Button variant='secondary'>Sign out other sessions</Button>}
           title='Sign out other sessions?'
           confirmLabel='Sign out other sessions'
-          action='/settings/sign-out-others'
+          action={href(`/settings/sign-out-others`)}
           fetcherKey={SIGN_OUT_OTHERS_KEY}
         >
           Every browser and device signed in to your account, except this one,

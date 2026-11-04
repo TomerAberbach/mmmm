@@ -1,4 +1,4 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.verify.ts'
 import { VerifySecondFactor } from '~/components/verify-second-factor.tsx'
 import {
@@ -9,13 +9,13 @@ import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   if (readRequiredSession(context).assurance === `SECOND_FACTOR`) {
-    return redirect(`/admin`)
+    return redirect(href(`/admin`))
   }
   const secondFactors = await readSecondFactors(
     readRequiredEducator(context).id,
   )
   const step = readSecondFactorStep(secondFactors)
-  return step === `/admin/verify`
+  return step === href(`/admin/verify`)
     ? { hasPasskey: secondFactors.passkeys.length > 0 }
     : redirect(step)
 }

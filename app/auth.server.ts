@@ -5,6 +5,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
+import { href } from 'react-router'
 import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
@@ -34,9 +35,9 @@ const BASE_URL = requireEnv(`BETTER_AUTH_URL`)
 const CONFIRMATION_EXPIRES_IN_SECONDS =
   CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60
 
-const SIGN_IN_URL = toAppUrl(`/sign-in`)
-const SETTINGS_URL = toAppUrl(`/settings`)
-const FORGOT_PASSWORD_URL = toAppUrl(`/forgot-password`)
+const SIGN_IN_URL = toAppUrl(href(`/sign-in`))
+const SETTINGS_URL = toAppUrl(href(`/settings`))
+const FORGOT_PASSWORD_URL = toAppUrl(href(`/forgot-password`))
 // Every confirmation link returns to sign-in, whatever the request asked for.
 // Sign-in shows whether the link worked
 const CONFIRMED_CALLBACK_URL = `${SIGN_IN_URL.pathname}?confirmed`
@@ -48,7 +49,7 @@ const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
   '/sign-in/email': { callbackURL: CONFIRMED_CALLBACK_URL },
   '/send-verification-email': { callbackURL: CONFIRMED_CALLBACK_URL },
   // A reset link returns here with its token, or with `error` when it fails
-  '/request-password-reset': { redirectTo: `/reset-password` },
+  '/request-password-reset': { redirectTo: href(`/reset-password`) },
   // Whoever knew the old password loses access, however it changed
   '/change-password': { revokeOtherSessions: true },
   // Every sign-in asks for the second factor. NIST SP 800-63B forbids

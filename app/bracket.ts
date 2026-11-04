@@ -73,6 +73,9 @@ export type SeedSlotRef = { position: DivisionPosition; seed: Seed }
 
 export type BattleRef = { round: Round; index: number }
 
+// Each decided battle's key, from `toBattleKey`, mapped to its winner's name
+export type Winners = Readonly<Record<string, string>>
+
 export const toBattleKey = ({ round, index }: BattleRef): string =>
   `${round}:${index}`
 
@@ -136,23 +139,16 @@ const readSeedSlotSide = (
     ? { kind: `winner`, battle: WILD_CARD_BATTLE }
     : { kind: `seedSlot`, seedSlot }
 
-// The battle the winner moves on to, or undefined after the Championship
-export const readNextBattle = (
-  battle: BattleRef,
-  wildCardSlot: SeedSlotRef,
-): BattleRef | undefined => {
-  assertBattleExists(battle)
-  if (battle.round === `WILD_CARD`) {
-    return { round: `ROUND_1`, index: readRound1Index(wildCardSlot) }
-  }
-  const round = ROUNDS[ROUNDS.indexOf(battle.round) + 1]
-  return round && { round, index: Math.floor(battle.index / 2) }
-}
-
-// The Round 1 battle where a seed slot's combatant starts
-const readRound1Index = ({ position, seed }: SeedSlotRef): number =>
-  DIVISION_POSITIONS.indexOf(position) * SEED_PAIRS.length +
-  PAIR_INDEX_BY_SEED[seed]
+// The Round 1 battle the wild card's winner plays, at the wild card's seed slot
+export const readWildCardRound1Battle = ({
+  position,
+  seed,
+}: SeedSlotRef): BattleRef & { round: `ROUND_1` } => ({
+  round: `ROUND_1`,
+  index:
+    DIVISION_POSITIONS.indexOf(position) * SEED_PAIRS.length +
+    PAIR_INDEX_BY_SEED[seed],
+})
 
 const assertBattleExists = ({ round, index }: BattleRef): void => {
   if (

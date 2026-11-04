@@ -1,14 +1,13 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/play.forgotten.ts'
 import { PageTitle } from '~/components/page-title.tsx'
-import { toForgottenPath } from '~/paths.ts'
 import { readPlayContest } from '~/play-context.server.ts'
 import { forgetPlayer } from '~/player-cookie.server.ts'
 
 // Forgets the player this browser remembers in the contest, for shared
 // computers
 export const action = async ({ params, context }: Route.ActionArgs) => {
-  throw redirect(toForgottenPath(params.linkSecret), {
+  throw redirect(href(`/play/:linkSecret/forgotten`, params), {
     headers: { 'Set-Cookie': await forgetPlayer(readPlayContest(context).id) },
   })
 }

@@ -1,14 +1,13 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { APIError } from 'better-auth/api'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/sign-in.ts'
 import { signInSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
-import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
-import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
+import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
 
 export const loader = ({ request }: Route.LoaderArgs) => ({
   notice: readNotice(new URL(request.url).searchParams),
@@ -35,7 +34,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     schema: signInSchema,
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
 
   const { email, password } = submission.value
@@ -48,12 +47,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
     // An educator with an authenticator app enters its code next, and
     // Better Auth makes the session only then
     return redirect(
-      `twoFactorRedirect` in response
-        ? `/sign-in/code`
-        : EDUCATOR_DASHBOARD_PATH,
-      {
-        headers,
-      },
+      href(`twoFactorRedirect` in response ? `/sign-in/code` : `/contests`),
+      { headers },
     )
   } catch (error) {
     if (error instanceof APIError) {
@@ -61,7 +56,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         return { unconfirmed: email }
       }
       if (error.body?.code === `INVALID_EMAIL_OR_PASSWORD`) {
-        return rejectSubmission(submission, {
+        return rejectForm(submission, {
           formErrors: [`Email address or password is incorrect`],
         })
       }

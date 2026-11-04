@@ -16,9 +16,11 @@ const LONG_DATE = new Intl.DateTimeFormat(`en-US`, {
 // Such as "March 19, 2027"
 export const formatDate = (date: Date): string => LONG_DATE.format(date)
 
+export const ARIZONA_TIME_ZONE = `America/Phoenix`
+
 const ARIZONA_LONG_DATE = new Intl.DateTimeFormat(`en-US`, {
   dateStyle: `long`,
-  timeZone: `America/Phoenix`,
+  timeZone: ARIZONA_TIME_ZONE,
 })
 
 // The day in Arizona, such as "March 2, 2027"

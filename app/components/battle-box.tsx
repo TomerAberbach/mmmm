@@ -12,10 +12,11 @@ import {
 import { usePicking } from './picking.ts'
 import type { Picking } from './picking.ts'
 import { describeBattle, readBattleName } from '~/bracket-view.ts'
-import type { BattleView, BracketView, Side } from '~/bracket-view.ts'
+import type { BattleView, BracketView } from '~/bracket-view.ts'
 import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { measureWidestName } from '~/name-width.ts'
+import type { Side } from '~/seeded-bracket.ts'
 
 const SIZE_CLASSES = {
   diagram: {
@@ -40,20 +41,19 @@ export const readNameWidth = ({ battles }: BracketView): number =>
   ])
 
 // One battle's sides, with the winner shaded and the loser muted. Screen
-// readers skip it, so `describe` adds `describeBattle`'s text for them. Inside a
-// `PickingContext`, each side is a radio button instead, and a side not yet
-// decided opens a menu of the combatants who could fill it. A regular box fills
-// its container and truncates long names
+// readers skip the boxes, so a regular box adds `describeBattle`'s text for
+// them. A diagram box adds none, since a list of the battles beside the diagram
+// describes them. Inside a `PickingContext`, each side is a radio button
+// instead, and a side not yet decided opens a menu of the combatants who could
+// fill it. A regular box fills its container and truncates long names
 export const BattleBox = ({
   battle,
   size,
   wildCardLine,
-  describe = false,
 }: {
   battle: BattleView
   size: keyof typeof SIZE_CLASSES
   wildCardLine?: WildCardLine
-  describe?: boolean
 }) => {
   const picking = usePicking()
   const classes = SIZE_CLASSES[size]
@@ -69,7 +69,7 @@ export const BattleBox = ({
   }
   return (
     <>
-      {describe ? (
+      {size === `regular` ? (
         <span className='sr-only'>{describeBattle(battle)}</span>
       ) : null}
       <div dir='ltr' aria-hidden className={readBoxClasses(classes)}>

@@ -1,69 +1,89 @@
-import { expect, test } from 'vitest'
-import { BRACKET_2026 } from '../prisma/brackets.ts'
+import { expect, test, vi } from 'vitest'
+import {
+  addContest,
+  addPlayer,
+  createContestInNewYear,
+} from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
-import { createBracket, setBracketPublished } from './brackets.server.ts'
-import { createContest } from './contests.server.ts'
+import { withCurrentYear } from '../test/years.ts'
 import { prisma } from './db.server.ts'
+import type { LimitRefusal } from './limits.server.ts'
 import {
   createPlayer,
   readContestPlayer,
   readPlayerByLink,
 } from './players.server.ts'
 
-// The test database is shared across this run, so this file uses years of its
-// own, below the ones brackets.server.test.ts publishes as the current year
-let nextYear = 2300
+test(`a player's personal link finds their contest`, () =>
+  withCurrentYear(async addYear => {
+    const { contestId } = await createContestInNewYear(addYear)
+    const { secret } = await addPlayer(contestId)
 
-const createContestInNewYear = async (): Promise<{
-  contestId: string
-  year: number
-}> => {
-  const year = nextYear++
-  await createBracket(year, BRACKET_2026)
-  await setBracketPublished(year, true)
-  const contestId = await createContest(
-    await createEducator(),
-    year,
-    `Period 2 Biology`,
-  )
-  return { contestId: contestId!, year }
-}
+    const player = await readPlayerByLink(secret)
 
-test(`a player's personal link finds their contest`, async () => {
-  const { contestId } = await createContestInNewYear()
-  const secret = await createPlayer(contestId, `Maya R.`)
+    expect(player).toMatchObject({ contestId })
+  }))
 
-  const player = await readPlayerByLink(secret)
+test(`a personal link finds the player only in their own contest`, () =>
+  withCurrentYear(async addYear => {
+    const { contestId } = await createContestInNewYear(addYear)
+    const otherContestId = await addContest(
+      await createEducator(),
+      `Science Club`,
+    )
+    const { secret } = await addPlayer(contestId)
 
-  expect(player).toMatchObject({ contestId })
-})
+    const inOwnContest = await readContestPlayer(contestId, secret)
+    const inOtherContest = await readContestPlayer(otherContestId, secret)
 
-test(`a personal link finds the player only in their own contest`, async () => {
-  const { contestId } = await createContestInNewYear()
-  const { contestId: otherContestId } = await createContestInNewYear()
-  const secret = await createPlayer(contestId, `Maya R.`)
-
-  const inOwnContest = await readContestPlayer(contestId, secret)
-  const inOtherContest = await readContestPlayer(otherContestId, secret)
-
-  expect(inOwnContest).toMatchObject({ displayName: `Maya R.` })
-  expect(inOtherContest).toBeNull()
-})
+    expect(inOwnContest).toMatchObject({ displayName: `Maya R.` })
+    expect(inOtherContest).toBeNull()
+  }))
 
 test(`a link that matches no player finds nothing`, async () => {
   await expect(readPlayerByLink(`not-a-personal-link`)).resolves.toBeNull()
 })
 
-test(`the database stores no working personal link`, async () => {
-  const { contestId } = await createContestInNewYear()
-  const secret = await createPlayer(contestId, `Maya R.`)
+test(`the database stores no working personal link`, () =>
+  withCurrentYear(async addYear => {
+    const { contestId } = await createContestInNewYear(addYear)
+    const { secret } = await addPlayer(contestId)
 
-  const rows = await prisma.player.findMany({
-    where: { contestId },
-    select: { personalLinkHash: true },
-  })
+    const rows = await prisma.player.findMany({
+      where: { contestId },
+      select: { personalLinkHash: true },
+    })
 
-  expect(rows.map(({ personalLinkHash }) => personalLinkHash)).not.toContain(
-    secret,
-  )
-})
+    expect(rows.map(({ personalLinkHash }) => personalLinkHash)).not.toContain(
+      secret,
+    )
+  }))
+
+test(`a contest takes no players once a newer year is published, and costs the limit nothing`, () =>
+  withCurrentYear(async addYear => {
+    const { contestId } = await createContestInNewYear(addYear)
+    await addYear({ published: true })
+    const limit = vi.fn(() => Promise.resolve(undefined))
+
+    const player = await createPlayer(contestId, `Maya R.`, limit)
+
+    expect(player).toStrictEqual({ refusal: `NOT_CURRENT_YEAR` })
+    expect(limit).not.toHaveBeenCalled()
+    await expect(prisma.player.count({ where: { contestId } })).resolves.toBe(0)
+  }))
+
+test(`a player the limit refuses isn't created`, () =>
+  withCurrentYear(async addYear => {
+    const { contestId } = await createContestInNewYear(addYear)
+    const limit: LimitRefusal = {
+      message: `Too many new brackets right now. Try again in 5 minutes`,
+      headers: { 'Retry-After': `300` },
+    }
+
+    const player = await createPlayer(contestId, `Maya R.`, () =>
+      Promise.resolve(limit),
+    )
+
+    expect(player).toStrictEqual({ refusal: `LIMITED`, limit })
+    await expect(prisma.player.count({ where: { contestId } })).resolves.toBe(0)
+  }))

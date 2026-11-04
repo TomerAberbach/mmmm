@@ -1,4 +1,4 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.setup.ts'
 import {
   SecondFactorChoice,
@@ -16,7 +16,7 @@ import {
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
-const SETUP_URL = toAppUrl(`/admin/setup`)
+const SETUP_URL = toAppUrl(href(`/admin/setup`))
 
 // Only for an admin without a second factor. The emailed link returns here
 // with its token, which this browser's session uses up. A session that
@@ -26,17 +26,17 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const educator = readRequiredEducator(context)
   const session = readRequiredSession(context)
   if (hasSecondFactor(await readSecondFactors(educator.id))) {
-    return redirect(`/admin`)
+    return redirect(href(`/admin`))
   }
   if (session.assurance !== `PASSWORD`) {
     return new URL(request.url).search
-      ? redirect(`/admin/setup`)
+      ? redirect(href(`/admin/setup`))
       : ({ step: `choose` } as const)
   }
   const token = new URL(request.url).searchParams.get(`token`)
   if (token !== null && (await redeemSetupLinkToken(token, educator.id))) {
     await markSetupLinkUsed(session.id)
-    return redirect(`/admin/setup`)
+    return redirect(href(`/admin/setup`))
   }
   return {
     step: `request`,
@@ -48,7 +48,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 export const action = async ({ context }: Route.ActionArgs) => {
   const educator = readRequiredEducator(context)
   if (hasSecondFactor(await readSecondFactors(educator.id))) {
-    return redirect(`/admin`)
+    return redirect(href(`/admin`))
   }
   const url = new URL(SETUP_URL)
   url.searchParams.set(`token`, await createSetupLinkToken(educator.id))

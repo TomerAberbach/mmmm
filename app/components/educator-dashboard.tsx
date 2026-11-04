@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { href, Link } from 'react-router'
 import { CopyButton } from './copy-button.tsx'
 import { CreateContestDialog } from './create-contest-dialog.tsx'
 import { PageHeader } from './page-header.tsx'
@@ -70,7 +70,7 @@ const ContestList = ({ contests }: { contests: ContestSummary[] }) => (
         className='flex min-h-14 flex-wrap items-center justify-between gap-x-4 border-b border-muted-light py-1'
       >
         <Link
-          to={`/contests/${id}`}
+          to={href(`/contests/:contestId`, { contestId: id })}
           className='min-w-0 text-lg font-semibold break-words'
         >
           {name}

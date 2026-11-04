@@ -1,27 +1,26 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.name.ts'
-import { serverContestNameSchema } from '~/contest-forms.server.ts'
+import { contestNameSchema } from '~/contest-forms.ts'
 import { renameContest } from '~/contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
-import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
+import { acceptForm, rejectForm } from '~/form-replies.server.ts'
+import { serverFreeTextSchema } from '~/free-text.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
-  redirect(`/contests/${params.contestId}`)
+  redirect(href(`/contests/:contestId`, params))
 
 export const action = async ({
   request,
   context,
   params,
-}: Route.ActionArgs): Promise<
-  SavedResult | ReturnType<typeof rejectSubmission>
-> => {
+}: Route.ActionArgs): Promise<SavedResult | ReturnType<typeof rejectForm>> => {
   const submission = parseWithZod(await request.formData(), {
-    schema: serverContestNameSchema,
+    schema: contestNameSchema(serverFreeTextSchema),
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
   const renamed = await renameContest(
     readRequiredEducator(context).id,
@@ -29,8 +28,8 @@ export const action = async ({
     submission.value.name,
   )
   return renamed
-    ? acceptSubmission(submission)
-    : rejectSubmission(submission, {
+    ? acceptForm(submission)
+    : rejectForm(submission, {
         formErrors: [`This contest is gone, so its name wasn’t saved`],
       })
 }

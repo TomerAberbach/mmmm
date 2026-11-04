@@ -1,25 +1,23 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.bracket.expected-lock-date.ts'
 import { expectedLockDateSchema } from '~/bracket-admin-forms.ts'
 import { setExpectedLockDate } from '~/brackets.server.ts'
 import { fromIsoDate } from '~/dates.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
-import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
+import { acceptForm, rejectForm } from '~/form-replies.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
-export const loader = (): Response => redirect(`/admin/bracket`)
+export const loader = (): Response => redirect(href(`/admin/bracket`))
 
 export const action = async ({
   request,
-}: Route.ActionArgs): Promise<
-  SavedResult | ReturnType<typeof rejectSubmission>
-> => {
+}: Route.ActionArgs): Promise<SavedResult | ReturnType<typeof rejectForm>> => {
   const submission = parseWithZod(await request.formData(), {
     schema: expectedLockDateSchema,
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
   const year = readUpcomingYear(new Date())
   const { expectedLockDate } = submission.value
@@ -27,8 +25,8 @@ export const action = async ({
     year,
     expectedLockDate ? fromIsoDate(expectedLockDate) : null,
   ))
-    ? acceptSubmission(submission)
-    : rejectSubmission(submission, {
+    ? acceptForm(submission)
+    : rejectForm(submission, {
         formErrors: [`Set up the ${year} bracket first`],
       })
 }

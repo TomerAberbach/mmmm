@@ -1,8 +1,8 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/sign-out.ts'
 import { auth } from '~/auth.server.ts'
 
-export const loader = (): Response => redirect(`/`)
+export const loader = (): Response => redirect(href(`/`))
 
 export const action = async ({
   request,
@@ -11,5 +11,5 @@ export const action = async ({
     headers: request.headers,
     returnHeaders: true,
   })
-  return redirect(`/`, { headers })
+  return redirect(href(`/`), { headers })
 }

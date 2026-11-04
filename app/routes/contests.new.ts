@@ -1,38 +1,31 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.new.ts'
-import { readCurrentYear } from '~/brackets.server.ts'
-import { serverContestNameSchema } from '~/contest-forms.server.ts'
+import { contestNameSchema } from '~/contest-forms.ts'
 import { createContest } from '~/contests.server.ts'
-import { rejectSubmission } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
+import { serverFreeTextSchema } from '~/free-text.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
-export const loader = (): Response => redirect(`/contests`)
+export const loader = (): Response => redirect(href(`/contests`))
 
 export const action = async ({
   request,
   context,
-}: Route.ActionArgs): Promise<
-  Response | ReturnType<typeof rejectSubmission>
-> => {
+}: Route.ActionArgs): Promise<Response | ReturnType<typeof rejectForm>> => {
   const submission = parseWithZod(await request.formData(), {
-    schema: serverContestNameSchema,
+    schema: contestNameSchema(serverFreeTextSchema),
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
-  const year = await readCurrentYear()
-  const contestId =
-    year === null
-      ? null
-      : await createContest(
-          readRequiredEducator(context).id,
-          year,
-          submission.value.name,
-        )
+  const contestId = await createContest(
+    readRequiredEducator(context).id,
+    submission.value.name,
+  )
   return contestId
-    ? redirect(`/contests/${contestId}`)
-    : rejectSubmission(submission, {
+    ? redirect(href(`/contests/:contestId`, { contestId }))
+    : rejectForm(submission, {
         formErrors: [
           `Contests open once the bracket is published, so this one wasn’t created`,
         ],
