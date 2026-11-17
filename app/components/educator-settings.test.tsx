@@ -5,6 +5,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { changePasswordSchema, nameSchema } from '../auth-forms.ts'
+import { freeTextSchema } from '../free-text.ts'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { EducatorSettings } from './educator-settings.tsx'
 
@@ -18,7 +19,7 @@ const renderSettings = async ({
       path: `/settings/name`,
       action: async ({ request }) => ({
         result: parseWithZod(await request.formData(), {
-          schema: nameSchema,
+          schema: nameSchema(freeTextSchema),
         }).reply(),
         saved: true,
       }),

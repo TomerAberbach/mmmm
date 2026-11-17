@@ -1,10 +1,9 @@
 import { parseSetCookieHeader } from 'better-auth/cookies'
-import { createContext, data, redirect } from 'react-router'
+import { createContext, data, href, redirect } from 'react-router'
 import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
 import { isAdmin } from './admins.server.ts'
 import { auth } from './auth.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
-import { EDUCATOR_DASHBOARD_PATH } from './paths.ts'
 import { readAssurance } from './second-factor.server.ts'
 
 export type SignedInEducator = {
@@ -82,7 +81,7 @@ export const requireSignedInEducator: MiddlewareFunction<Response> = async (
 ) => {
   const signedIn = await context.get(signedInContext)()
   if (!signedIn) {
-    return redirect(`/sign-in`)
+    return redirect(href(`/sign-in`))
   }
   context.set(requiredContext, signedIn)
   return next()
@@ -94,9 +93,7 @@ export const requireSignedOut: MiddlewareFunction<Response> = async (
   { context },
   next,
 ) =>
-  (await context.get(signedInContext)())
-    ? redirect(EDUCATOR_DASHBOARD_PATH)
-    : next()
+  (await context.get(signedInContext)()) ? redirect(href(`/contests`)) : next()
 
 export const readRequiredEducator = (
   context: Readonly<RouterContextProvider>,

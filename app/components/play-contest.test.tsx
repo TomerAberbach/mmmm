@@ -5,6 +5,7 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { freeTextSchema } from '../free-text.ts'
 import { displayNameSchema } from '../player-forms.ts'
 import { ContestContext, PlayContestPage } from './play-contest.tsx'
 import type { PlayView } from './play-contest.tsx'
@@ -22,7 +23,7 @@ const renderPlay = async (view: PlayView, error = ``) => {
       path: `/play/secret`,
       action: async ({ request }) => {
         const submission = parseWithZod(await request.formData(), {
-          schema: displayNameSchema,
+          schema: displayNameSchema(freeTextSchema),
         })
         return {
           result: submission.reply({ fieldErrors: { displayName: [error] } }),

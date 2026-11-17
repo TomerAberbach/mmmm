@@ -1,6 +1,10 @@
 import type { SubmissionResult } from '@conform-to/react'
-import { DialogTrigger } from 'react-aria-components'
-import { useFetcher } from 'react-router'
+import { use } from 'react'
+import {
+  DialogTrigger,
+  OverlayTriggerStateContext,
+} from 'react-aria-components'
+import { href, useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ModalFrame } from './modal-frame.tsx'
@@ -16,15 +20,14 @@ export const CreateContestDialog = () => (
 )
 
 // Mounts with each opening, so the form starts empty
-const CreateContestForm = () => (
-  <ContestNameForm
-    fetcher={useFetcher<{ result: SubmissionResult }>()}
-    action='/contests/new'
-    submitLabel='Create contest'
-    cancelButton={
-      <Button slot='close' variant='secondary'>
-        Cancel
-      </Button>
-    }
-  />
-)
+const CreateContestForm = () => {
+  const dialog = use(OverlayTriggerStateContext)
+  return (
+    <ContestNameForm
+      fetcher={useFetcher<{ result: SubmissionResult }>()}
+      action={href(`/contests/new`)}
+      submitLabel='Create contest'
+      onCancel={() => dialog?.close()}
+    />
+  )
+}

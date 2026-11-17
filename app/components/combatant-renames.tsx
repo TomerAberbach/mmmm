@@ -1,13 +1,13 @@
 import { getFormProps } from '@conform-to/react'
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { useFetcher } from 'react-router'
+import { href } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
-import { isSaved } from './saved-notice.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
+import { useInlineEdit } from './use-inline-edit.ts'
 import { useValidatedForm } from './use-validated-form.ts'
 import { renameSchema } from '~/bracket-admin-forms.ts'
 import { POSITION_LABELS } from '~/bracket-form.ts'
@@ -51,8 +51,9 @@ export const CombatantRenames = ({
                   key={combatant.id}
                   combatant={combatant}
                   isEditing={combatant.id === editingId}
-                  onEdit={() => setEditingId(combatant.id)}
-                  onDone={() => setEditingId(undefined)}
+                  setIsEditing={isEditing =>
+                    setEditingId(isEditing ? combatant.id : undefined)
+                  }
                 />
               ))}
             </ol>
@@ -67,27 +68,23 @@ export const CombatantRenames = ({
 const RenameRow = ({
   combatant,
   isEditing,
-  onEdit,
-  onDone,
+  setIsEditing,
 }: {
   combatant: CombatantRow
   isEditing: boolean
-  onEdit: () => void
-  onDone: () => void
+  setIsEditing: (isEditing: boolean) => void
 }) => {
-  const fetcher = useFetcher<SavedResult>()
-  const saved = isSaved(fetcher)
-  const startEditing = () => {
-    fetcher.reset()
-    onEdit()
-  }
+  const { fetcher, isOpen, open, close } = useInlineEdit(
+    isEditing,
+    setIsEditing,
+  )
 
   const seedCell = (
     <span className='text-end font-condensed text-lg font-bold text-muted tabular-nums'>
       {combatant.seed}
     </span>
   )
-  if (!isEditing || saved) {
+  if (!isOpen) {
     return (
       <li className='grid min-h-11 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-muted-light last:border-b-0'>
         {seedCell}
@@ -101,7 +98,7 @@ const RenameRow = ({
         </span>
         <Button
           variant='quiet'
-          onPress={startEditing}
+          onPress={open}
           aria-label={`Rename ${combatant.name}`}
         >
           Rename
@@ -112,7 +109,7 @@ const RenameRow = ({
   return (
     <li className='grid grid-cols-[2rem_minmax(0,1fr)] gap-2 border-b border-muted-light py-2 last:border-b-0'>
       {seedCell}
-      <RenameForm combatant={combatant} fetcher={fetcher} onCancel={onDone} />
+      <RenameForm combatant={combatant} fetcher={fetcher} onCancel={close} />
     </li>
   )
 }
@@ -139,7 +136,7 @@ const RenameForm = ({
   return (
     <fetcher.Form
       method='post'
-      action='/admin/bracket/rename'
+      action={href(`/admin/bracket/rename`)}
       {...getFormProps(form)}
       onKeyDown={cancelOnEscape}
       className='flex flex-col gap-2'

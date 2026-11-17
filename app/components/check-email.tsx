@@ -1,4 +1,4 @@
-import { Link, useFetcher } from 'react-router'
+import { href, Link, useFetcher } from 'react-router'
 import { CONFIRMATION_EXPIRES_IN_DAYS } from '../auth-forms.ts'
 import { formatTime } from '../dates.ts'
 import { Button } from './button.tsx'
@@ -35,7 +35,7 @@ export const CheckEmail = ({
       <p>Can&apos;t find it? Check your spam folder, or send it again.</p>
       <resend.Form
         method='post'
-        action='/resend-confirmation'
+        action={href(`/resend-confirmation`)}
         className='flex flex-wrap items-center gap-4'
       >
         <input type='hidden' name='email' value={email} />
@@ -57,8 +57,8 @@ export const CheckEmail = ({
         ) : null}
       </resend.Form>
       <p>
-        Wrong address? <Link to='/sign-up'>Sign up again</Link> with the right
-        one.
+        Wrong address? <Link to={href(`/sign-up`)}>Sign up again</Link> with the
+        right one.
       </p>
     </div>
   )

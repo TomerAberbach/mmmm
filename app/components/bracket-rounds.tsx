@@ -136,7 +136,7 @@ const BattleList = ({
     {battles.map(battle => (
       <li key={battle.index}>
         {showBoxes ? (
-          <BattleBox battle={battle} size='regular' describe />
+          <BattleBox battle={battle} size='regular' />
         ) : (
           describeBattle(battle)
         )}

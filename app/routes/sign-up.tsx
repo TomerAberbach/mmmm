@@ -1,20 +1,18 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import type { Route } from './+types/sign-up.ts'
-import { serverNameSchema } from '~/auth-forms.server.ts'
 import { signUpSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
-import { rejectAuthError, rejectSubmission } from '~/form-replies.server.ts'
-
-const SERVER_SIGN_UP_SCHEMA = signUpSchema.extend(serverNameSchema.shape)
+import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
+import { serverFreeTextSchema } from '~/free-text.server.ts'
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const submission = parseWithZod(await request.formData(), {
-    schema: SERVER_SIGN_UP_SCHEMA,
+    schema: signUpSchema(serverFreeTextSchema),
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
 
   const { name, email, password } = submission.value

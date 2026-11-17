@@ -19,7 +19,7 @@ import {
   RadioGroup,
   TextArea,
 } from 'react-aria-components'
-import { Form } from 'react-router'
+import { Form, href } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { ErrorSummary } from './error-summary.tsx'
@@ -393,7 +393,7 @@ const DeleteSection = ({ year }: { year: number }) => (
         trigger={<Button variant='danger'>{`Delete ${year} bracket`}</Button>}
         title={`Delete the ${year} bracket?`}
         confirmLabel={`Delete ${year} bracket`}
-        action='/admin/bracket/delete'
+        action={href(`/admin/bracket/delete`)}
       >
         <p>
           This deletes its divisions, combatants, and wild card. Nobody else has

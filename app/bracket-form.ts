@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { findDuplicateNames, listSeedSlotNames } from './bracket-input.ts'
+import { findDuplicateNames } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
 import {
   DIVISION_POSITIONS,
@@ -11,6 +11,7 @@ import {
 } from './bracket.ts'
 import type { SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME } from './free-text.ts'
+import { listSeedSlotNames } from './seeded-bracket.ts'
 
 // Where a combatant's name is entered
 type CombatantPlace =

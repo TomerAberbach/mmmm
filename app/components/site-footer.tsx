@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { href, Link } from 'react-router'
 
 export const SiteFooter = ({ supportEmail }: { supportEmail?: string }) => (
   <footer className='border-t-2 border-ink print:hidden'>
@@ -11,7 +11,7 @@ export const SiteFooter = ({ supportEmail }: { supportEmail?: string }) => (
           {supportEmail}
         </a>
       ) : null}
-      <Link to='/privacy' className='no-underline hover:underline'>
+      <Link to={href(`/privacy`)} className='no-underline hover:underline'>
         Privacy policy
       </Link>
     </div>

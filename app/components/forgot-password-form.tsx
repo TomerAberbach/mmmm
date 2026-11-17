@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form, Link } from 'react-router'
+import { Form, href, Link } from 'react-router'
 import { forgotPasswordSchema, RESET_EXPIRES_IN_HOURS } from '../auth-forms.ts'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
@@ -37,7 +37,7 @@ export const ForgotPasswordForm = ({
       )}
       <Form
         method='post'
-        action='/forgot-password'
+        action={href(`/forgot-password`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -55,7 +55,7 @@ export const ForgotPasswordForm = ({
         <FormError form={form} />
       </Form>
       <p>
-        Remembered it? <Link to='/sign-in'>Sign in</Link>
+        Remembered it? <Link to={href(`/sign-in`)}>Sign in</Link>
       </p>
     </div>
   )
@@ -72,7 +72,7 @@ export const ResetLinkSent = ({ email }: { email: string }) => (
       {RESET_EXPIRES_IN_HOURS} hour. Check your spam folder too.
     </p>
     <p>
-      <Link to='/sign-in'>Back to sign in</Link>
+      <Link to={href(`/sign-in`)}>Back to sign in</Link>
     </p>
   </div>
 )

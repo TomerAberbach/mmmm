@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form, Link } from 'react-router'
+import { Form, href, Link } from 'react-router'
 import { signInSchema } from '../auth-forms.ts'
 import { signInWithPasskey } from '../passkeys.ts'
 import { Button } from './button.tsx'
@@ -11,7 +11,6 @@ import { PasskeyButton } from './passkey-button.tsx'
 import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
-import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 
 // Where a link left the educator: confirmed, with a confirmation link that
 // expired or was altered, or with a new password. Or the code page ran out of
@@ -60,7 +59,7 @@ export const SignInForm = ({
       ) : null}
       <Form
         method='post'
-        action='/sign-in'
+        action={href(`/sign-in`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -79,7 +78,7 @@ export const SignInForm = ({
           <Button type='submit' isPending={isSubmitting}>
             Sign in
           </Button>
-          <Link to='/forgot-password'>Forgot password?</Link>
+          <Link to={href(`/forgot-password`)}>Forgot password?</Link>
         </div>
         <FormError form={form} />
       </Form>
@@ -87,14 +86,14 @@ export const SignInForm = ({
         <p>Have a passkey?</p>
         <PasskeyButton
           ceremony={signInWithPasskey}
-          successTo={EDUCATOR_DASHBOARD_PATH}
+          successTo={href(`/contests`)}
           variant='secondary'
         >
           Sign in with a passkey
         </PasskeyButton>
       </div>
       <p>
-        New to MMMM? <Link to='/sign-up'>Sign up</Link>
+        New to MMMM? <Link to={href(`/sign-up`)}>Sign up</Link>
       </p>
     </div>
   )

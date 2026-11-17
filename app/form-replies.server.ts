@@ -12,7 +12,7 @@ const BAD_REQUEST: ResponseInit = { status: 400 }
 
 // The reply never sends a password back to the browser, so it drops every
 // field whose name mentions one
-export const rejectSubmission = (
+export const rejectForm = (
   submission: Submission<unknown>,
   errors: {
     formErrors?: string[]
@@ -30,7 +30,7 @@ export const rejectSubmission = (
     init,
   )
 
-export const acceptSubmission = (
+export const acceptForm = (
   submission: Submission<unknown>,
   options?: { resetForm?: boolean },
 ): SavedResult => ({ result: submission.reply(options), saved: true })
@@ -43,16 +43,16 @@ export const rejectAuthError = (
   submission: Submission<unknown>,
   error: unknown,
   { passwordField }: { passwordField?: string } = {},
-): ReturnType<typeof rejectSubmission> => {
+): ReturnType<typeof rejectForm> => {
   if (isTooManyAttempts(error)) {
-    return rejectSubmission(
+    return rejectForm(
       submission,
       { formErrors: [error.body.message] },
       { status: 429, headers: error.headers },
     )
   }
   if (error instanceof APIError && error.body?.code === `INVALID_EMAIL`) {
-    return rejectSubmission(submission, {
+    return rejectForm(submission, {
       fieldErrors: { email: [INVALID_EMAIL_MESSAGE] },
     })
   }
@@ -61,12 +61,12 @@ export const rejectAuthError = (
     error instanceof APIError &&
     error.body?.code === `INVALID_PASSWORD`
   ) {
-    return rejectSubmission(submission, {
+    return rejectForm(submission, {
       fieldErrors: { [passwordField]: [`Your password is incorrect`] },
     })
   }
   if (error instanceof APIError && isSecondFactorRefusal(error.body?.code)) {
-    return rejectSubmission(
+    return rejectForm(
       submission,
       { formErrors: [error.body?.message ?? error.message] },
       { status: error.statusCode },

@@ -1,8 +1,7 @@
-import { createContext, data, redirect } from 'react-router'
+import { createContext, data, href, redirect } from 'react-router'
 import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
 import { readContestByLink } from './contests.server.ts'
 import type { ContestByLink } from './contests.server.ts'
-import { toContestPath } from './paths.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 
 const contestContext = createContext<ContestByLink>()
@@ -45,7 +44,9 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
   const contest = readPlayContest(context)
   const player = await readRememberedPlayer(request, contest.id)
   if (!player) {
-    return redirect(toContestPath(params.linkSecret ?? ``))
+    return redirect(
+      href(`/play/:linkSecret`, { linkSecret: params.linkSecret ?? `` }),
+    )
   }
   context.set(playerContext, {
     id: player.id,

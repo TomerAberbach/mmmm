@@ -1,4 +1,4 @@
-import { Form } from 'react-router'
+import { Form, href } from 'react-router'
 import { signInWithPasskey } from '../passkeys.ts'
 import { Button } from './button.tsx'
 import { PageTitle } from './page-title.tsx'
@@ -12,7 +12,7 @@ export const VerifySecondFactor = ({ hasPasskey }: { hasPasskey: boolean }) => (
     {hasPasskey ? (
       <>
         <p>Use your passkey to open the admin area.</p>
-        <PasskeyButton ceremony={signInWithPasskey} successTo='/admin'>
+        <PasskeyButton ceremony={signInWithPasskey} successTo={href(`/admin`)}>
           Use your passkey
         </PasskeyButton>
       </>
@@ -22,7 +22,7 @@ export const VerifySecondFactor = ({ hasPasskey }: { hasPasskey: boolean }) => (
           You signed in before your authenticator app was on. Sign out, then
           sign in again and enter the code from your app.
         </p>
-        <Form method='post' action='/sign-out'>
+        <Form method='post' action={href(`/sign-out`)}>
           <Button type='submit'>Sign out</Button>
         </Form>
       </>

@@ -1,11 +1,11 @@
 import { APIError } from 'better-auth/api'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/settings.remove-passkey.ts'
 import { auth } from '~/auth.server.ts'
 import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { isSecondFactorRefusal } from '~/second-factor.ts'
 
-export const loader = (): Response => redirect(`/settings`)
+export const loader = (): Response => redirect(href(`/settings`))
 
 export const action = async ({
   request,

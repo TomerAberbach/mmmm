@@ -5,6 +5,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { signUpSchema } from '../auth-forms.ts'
+import { freeTextSchema } from '../free-text.ts'
 import { SignUpForm } from './sign-up-form.tsx'
 
 // Renders the form with an action that answers like the server would
@@ -21,7 +22,7 @@ const renderSignUp = async (
       action: async ({ request }) => {
         counts.submissions++
         const submission = parseWithZod(await request.formData(), {
-          schema: signUpSchema,
+          schema: signUpSchema(freeTextSchema),
         })
         return { result: submission.reply({ fieldErrors: serverErrors }) }
       },

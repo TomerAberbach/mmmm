@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Form, useNavigation } from 'react-router'
+import { Form, href, useNavigation } from 'react-router'
 import { addPasskey } from '../passkeys.ts'
 import { SETUP_LINK_EXPIRES_IN_HOURS } from '../second-factor.ts'
 import { Button, ButtonLink } from './button.tsx'
@@ -71,7 +71,7 @@ export const SecondFactorChoice = () => (
       isRecommended
       description="Use your fingerprint, face, or device PIN. It can't be phished, and you can sign in with it instead of your password."
     >
-      <PasskeyButton ceremony={addPasskey} successTo='/admin'>
+      <PasskeyButton ceremony={addPasskey} successTo={href(`/admin`)}>
         Add a passkey
       </PasskeyButton>
     </SetupOption>
@@ -80,7 +80,10 @@ export const SecondFactorChoice = () => (
       description='Enter a 6-digit code from an app such as 1Password, Google Authenticator, or Authy each time you sign in.'
     >
       <div>
-        <ButtonLink href='/admin/setup/authenticator-app' variant='secondary'>
+        <ButtonLink
+          href={href(`/admin/setup/authenticator-app`)}
+          variant='secondary'
+        >
           Use an authenticator app
         </ButtonLink>
       </div>

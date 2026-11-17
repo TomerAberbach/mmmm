@@ -2,14 +2,10 @@ import { expect, test } from 'vitest'
 import { BRACKET_2025 } from '../prisma/brackets.ts'
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
-import {
-  arePicksConsistent,
-  listContenders,
-  pickWinner,
-  toPickBracket,
-} from './picks.ts'
+import { arePicksConsistent, listContenders, pickWinner } from './picks.ts'
+import { toSeededBracket } from './seeded-bracket.ts'
 
-const BRACKET = toPickBracket(BRACKET_2025)
+const BRACKET = toSeededBracket(BRACKET_2025)
 
 const ROUND_1_FIRST: BattleRef = { round: `ROUND_1`, index: 0 }
 const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }

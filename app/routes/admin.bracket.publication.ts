@@ -1,11 +1,11 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import { z } from 'zod'
 import type { Route } from './+types/admin.bracket.publication.ts'
 import { setBracketPublished } from '~/brackets.server.ts'
 import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { readUpcomingYear } from '~/year.ts'
 
-export const loader = (): Response => redirect(`/admin/bracket`)
+export const loader = (): Response => redirect(href(`/admin/bracket`))
 
 const publicationSchema = z.object({
   published: z.enum([`true`, `false`]).transform(value => value === `true`),

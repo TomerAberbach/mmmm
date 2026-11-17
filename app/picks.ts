@@ -1,53 +1,28 @@
-import { readNameBySeedSlot } from './bracket-input.ts'
-import type { BracketInput } from './bracket-input.ts'
-import type { Winners } from './bracket-view.ts'
-import {
-  listBattles,
-  readBattleSides,
-  toBattleKey,
-  toSeedSlotKey,
-} from './bracket.ts'
-import type { BattleRef, Round, SeedSlotRef } from './bracket.ts'
+import { listBattles, toBattleKey } from './bracket.ts'
+import type { BattleRef, Winners } from './bracket.ts'
+import { fillSides, hasCombatant } from './seeded-bracket.ts'
+import type { SeededBracket } from './seeded-bracket.ts'
 
 export type Picks = Winners
 
 export const TOTAL_BATTLES = listBattles().length
 
-// What the pick rules need from a bracket
-export type PickBracket = {
-  wildCardSlot: SeedSlotRef
-  wildCardEntrants: readonly string[]
-  nameBySeedSlot: ReadonlyMap<string, string>
-}
-
-export const toPickBracket = (input: BracketInput): PickBracket => ({
-  wildCardSlot: {
-    position: input.wildCard.position,
-    seed: input.wildCard.seed,
-  },
-  wildCardEntrants: input.wildCard.entrants,
-  nameBySeedSlot: readNameBySeedSlot(input),
-})
-
 // Every combatant who could win the battle, whatever the picks
 export const listContenders = (
-  bracket: PickBracket,
+  bracket: SeededBracket,
   battle: BattleRef,
 ): string[] =>
-  battle.round === `WILD_CARD`
-    ? [...bracket.wildCardEntrants]
-    : readPickSides(bracket, { ...battle, round: battle.round }).flatMap(side =>
-        listSideContenders(bracket, side),
-      )
-
-const listSideContenders = (bracket: PickBracket, side: PickSide): string[] =>
-  `name` in side ? [side.name] : listContenders(bracket, side.battle)
+  fillSides(bracket, battle, {}).flatMap(side =>
+    side.kind === `combatant`
+      ? side.name
+      : listContenders(bracket, side.battle),
+  )
 
 // Picks `winner` in the battle, and in every earlier battle on its way there.
 // Clears each later pick that no longer has its winner on one of its battle's
 // sides. Throws when the winner can't reach the battle
 export const pickWinner = (
-  bracket: PickBracket,
+  bracket: SeededBracket,
   picks: Picks,
   battle: BattleRef,
   winner: string,
@@ -65,7 +40,7 @@ export const pickWinner = (
 // Whether every pick is of a battle in the bracket, with a winner on one of its
 // sides
 export const arePicksConsistent = (
-  bracket: PickBracket,
+  bracket: SeededBracket,
   picks: Picks,
 ): boolean => {
   const battleKeys = new Set(listBattles().map(toBattleKey))
@@ -76,7 +51,10 @@ export const arePicksConsistent = (
 }
 
 // Whether the picks are consistent and pick every battle, as a submission must
-export const arePicksComplete = (bracket: PickBracket, picks: Picks): boolean =>
+export const arePicksComplete = (
+  bracket: SeededBracket,
+  picks: Picks,
+): boolean =>
   Object.keys(picks).length === TOTAL_BATTLES &&
   arePicksConsistent(bracket, picks)
 
@@ -86,18 +64,16 @@ export const arePicksEqual = (picks: Picks, otherPicks: Picks): boolean =>
 
 // The battle, then each earlier battle the winner wins on its way there
 const listPathTo = (
-  bracket: PickBracket,
+  bracket: SeededBracket,
   battle: BattleRef,
   winner: string,
 ): BattleRef[] => {
-  if (battle.round === `WILD_CARD`) {
-    return [battle]
-  }
-  const side = readPickSides(bracket, {
-    ...battle,
-    round: battle.round,
-  }).find(candidate => listSideContenders(bracket, candidate).includes(winner))!
-  return `name` in side
+  const side = fillSides(bracket, battle, {}).find(candidate =>
+    candidate.kind === `combatant`
+      ? candidate.name === winner
+      : listContenders(bracket, candidate.battle).includes(winner),
+  )!
+  return side.kind === `combatant`
     ? [battle]
     : [battle, ...listPathTo(bracket, side.battle, winner)]
 }
@@ -105,7 +81,7 @@ const listPathTo = (
 // Keeps, in play order, each pick whose winner is on one of its battle's sides,
 // so a cleared pick also clears the picks that depended on it
 const keepReachablePicks = (
-  bracket: PickBracket,
+  bracket: SeededBracket,
   picks: Picks,
 ): { picks: Picks; cleared: BattleRef[] } => {
   const kept: Record<string, string> = {}
@@ -116,7 +92,7 @@ const keepReachablePicks = (
     if (winner === undefined) {
       continue
     }
-    if (readSideNames(bracket, kept, battle).includes(winner)) {
+    if (hasCombatant(fillSides(bracket, battle, kept), winner)) {
       kept[key] = winner
     } else {
       cleared.push(battle)
@@ -124,30 +100,3 @@ const keepReachablePicks = (
   }
   return { picks: kept, cleared }
 }
-
-// The names on the battle's sides so far
-const readSideNames = (
-  bracket: PickBracket,
-  picks: Picks,
-  battle: BattleRef,
-): string[] =>
-  battle.round === `WILD_CARD`
-    ? [...bracket.wildCardEntrants]
-    : readPickSides(bracket, { ...battle, round: battle.round })
-        .map(side =>
-          `name` in side ? side.name : picks[toBattleKey(side.battle)],
-        )
-        .filter(name => name !== undefined)
-
-// A battle's side, with a seed slot resolved to its combatant's name
-type PickSide = { name: string } | { battle: BattleRef }
-
-const readPickSides = (
-  bracket: PickBracket,
-  battle: BattleRef & { round: Exclude<Round, `WILD_CARD`> },
-): PickSide[] =>
-  readBattleSides(battle, bracket.wildCardSlot).map(side =>
-    side.kind === `seedSlot`
-      ? { name: bracket.nameBySeedSlot.get(toSeedSlotKey(side.seedSlot))! }
-      : { battle: side.battle },
-  )

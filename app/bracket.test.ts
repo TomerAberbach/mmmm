@@ -3,7 +3,7 @@ import {
   BATTLE_COUNTS,
   listBattles,
   readBattleSides,
-  readNextBattle,
+  readWildCardRound1Battle,
   ROUNDS,
 } from './bracket.ts'
 import type { SeedSlotRef } from './bracket.ts'
@@ -56,9 +56,9 @@ test(`the wild card's winner takes its seed slot in Round 1`, () => {
 test(`a wild card at seed 14, as in 2025, meets the division's 3 seed`, () => {
   const wildCardSlot: SeedSlotRef = { position: `TOP_LEFT`, seed: 14 }
 
-  const next = readNextBattle({ round: `WILD_CARD`, index: 0 }, wildCardSlot)
+  const round1Battle = readWildCardRound1Battle(wildCardSlot)
 
-  expect(next).toStrictEqual({ round: `ROUND_1`, index: 5 })
+  expect(round1Battle).toStrictEqual({ round: `ROUND_1`, index: 5 })
   expect(
     readBattleSides({ round: `ROUND_1`, index: 5 }, wildCardSlot).map(
       describeSide,
@@ -89,31 +89,6 @@ test.each([
     )
   },
 )
-
-test(`the left divisions meet in the first Final Roar battle`, () => {
-  const topLeft = readNextBattle(
-    { round: `ELITE_TRAIT`, index: 0 },
-    WILD_CARD_AT_16,
-  )
-  const bottomLeft = readNextBattle(
-    { round: `ELITE_TRAIT`, index: 1 },
-    WILD_CARD_AT_16,
-  )
-
-  expect([topLeft, bottomLeft]).toStrictEqual([
-    { round: `FINAL_ROAR`, index: 0 },
-    { round: `FINAL_ROAR`, index: 0 },
-  ])
-})
-
-test(`the Championship's winner moves on to no battle`, () => {
-  const next = readNextBattle(
-    { round: `CHAMPIONSHIP`, index: 0 },
-    WILD_CARD_AT_16,
-  )
-
-  expect(next).toBeUndefined()
-})
 
 const describeSide = (side: ReturnType<typeof readBattleSides>[number]) =>
   side.kind === `seedSlot`

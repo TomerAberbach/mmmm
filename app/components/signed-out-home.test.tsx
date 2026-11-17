@@ -5,6 +5,7 @@ import { render } from 'vitest-browser-react'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { buildBracketView } from '../bracket-view.ts'
+import { toSeededBracket } from '../seeded-bracket.ts'
 import { SignedOutHome } from './signed-out-home.tsx'
 
 const renderHome = async (
@@ -20,7 +21,11 @@ const renderHome = async (
           current={
             current
               ? {
-                  view: buildBracketView(current.year, BRACKET_2025, {}),
+                  view: buildBracketView(
+                    current.year,
+                    toSeededBracket(BRACKET_2025),
+                    {},
+                  ),
                   expectedLockDate: current.expectedLockDate,
                 }
               : null

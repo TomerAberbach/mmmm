@@ -34,12 +34,14 @@ export const DISPLAY_NAME: FreeTextField = {
   offensiveMessage: `Use a different name. This one has a word MMMM doesn’t allow`,
 }
 
+// Builds a form's free-text fields. The server passes `serverFreeTextSchema`,
+// which adds the offensive word filter that the browser bundle leaves out, and
+// the browser passes `freeTextSchema`
+export type FreeTextSchema = (field: FreeTextField) => z.ZodString
+
 // The checks the browser can run too. The server adds the offensive word
 // filter
-export const freeTextSchema = ({
-  label,
-  maxLength,
-}: FreeTextField): z.ZodString =>
+export const freeTextSchema: FreeTextSchema = ({ label, maxLength }) =>
   z
     .string({ error: `Enter ${label}` })
     .trim()

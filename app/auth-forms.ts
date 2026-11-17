@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { EDUCATOR_NAME, freeTextSchema } from './free-text.ts'
+import { EDUCATOR_NAME } from './free-text.ts'
+import type { FreeTextSchema } from './free-text.ts'
 
 export const MIN_PASSWORD_LENGTH = 10
 export const MAX_PASSWORD_LENGTH = 128
@@ -24,12 +25,18 @@ const newPasswordSchema = z
     `Shorten the password to ${MAX_PASSWORD_LENGTH} characters or fewer`,
   )
 
-export const nameSchema = z.object({ name: freeTextSchema(EDUCATOR_NAME) })
+export const nameSchema = (
+  text: FreeTextSchema,
+): z.ZodObject<{ name: z.ZodString }> => z.object({ name: text(EDUCATOR_NAME) })
 
-export const signUpSchema = nameSchema.extend({
-  email: emailSchema,
-  password: newPasswordSchema,
-})
+export const signUpSchema = (
+  text: FreeTextSchema,
+): z.ZodObject<{
+  name: z.ZodString
+  email: typeof emailSchema
+  password: typeof newPasswordSchema
+}> =>
+  nameSchema(text).extend({ email: emailSchema, password: newPasswordSchema })
 
 export const signInSchema = z.object({
   email: emailSchema,

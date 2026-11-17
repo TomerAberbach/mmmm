@@ -1,24 +1,24 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { APIError } from 'better-auth/api'
-import { data, redirect } from 'react-router'
+import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/settings.password.ts'
 import { changePasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
-import { acceptSubmission, rejectSubmission } from '~/form-replies.server.ts'
+import { acceptForm, rejectForm } from '~/form-replies.server.ts'
 
-export const loader = (): Response => redirect(`/settings`)
+export const loader = (): Response => redirect(href(`/settings`))
 
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<
-  ReturnType<typeof data<SavedResult>> | ReturnType<typeof rejectSubmission>
+  ReturnType<typeof data<SavedResult>> | ReturnType<typeof rejectForm>
 > => {
   const submission = parseWithZod(await request.formData(), {
     schema: changePasswordSchema,
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
 
   const { currentPassword, newPassword } = submission.value
@@ -29,12 +29,12 @@ export const action = async ({
       headers: request.headers,
       returnHeaders: true,
     })
-    return data(acceptSubmission(submission, { resetForm: true }), {
+    return data(acceptForm(submission, { resetForm: true }), {
       headers,
     })
   } catch (error) {
     if (error instanceof APIError && error.body?.code === `INVALID_PASSWORD`) {
-      return rejectSubmission(submission, {
+      return rejectForm(submission, {
         fieldErrors: {
           currentPassword: [`Your current password is incorrect`],
         },

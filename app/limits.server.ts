@@ -69,8 +69,21 @@ export const readClientIp = (headers: Headers | undefined): string => {
   return ipKeyGenerator(ip)
 }
 
-// Such as "Try again in 5 minutes"
-export const describeWait = (msBeforeNext: number): string => {
+export type LimitRefusal = {
+  message: string
+  headers: { 'Retry-After': string }
+}
+
+// `toMessage` receives the wait, such as "Try again in 5 minutes"
+export const toRefusal = (
+  { msBeforeNext }: RateLimiterRes,
+  toMessage: (wait: string) => string,
+): LimitRefusal => {
   const minutes = Math.max(1, Math.ceil(msBeforeNext / 60_000))
-  return `Try again in ${minutes} ${minutes === 1 ? `minute` : `minutes`}`
+  return {
+    message: toMessage(
+      `Try again in ${minutes} ${minutes === 1 ? `minute` : `minutes`}`,
+    ),
+    headers: { 'Retry-After': String(Math.ceil(msBeforeNext / 1000)) },
+  }
 }

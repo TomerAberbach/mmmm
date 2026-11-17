@@ -1,5 +1,6 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible'
-import { consumeAll, describeWait, readClientIp } from './limits.server.ts'
+import { consumeAll, readClientIp, toRefusal } from './limits.server.ts'
+import type { LimitRefusal } from './limits.server.ts'
 
 const HOUR = 60 * 60
 
@@ -23,15 +24,13 @@ const PER_IP = new RateLimiterMemory({
 export const limitNewPlayer = async (
   request: Request,
   contestId: string,
-): Promise<{ message: string; retryAfterSeconds: number } | undefined> => {
+): Promise<LimitRefusal | undefined> => {
   const refusal = await consumeAll([
     { limiter: PER_CONTEST, key: contestId },
     { limiter: PER_IP, key: readClientIp(request.headers) },
   ])
   return (
-    refusal && {
-      message: `Too many new brackets right now. ${describeWait(refusal.msBeforeNext)}`,
-      retryAfterSeconds: Math.ceil(refusal.msBeforeNext / 1000),
-    }
+    refusal &&
+    toRefusal(refusal, wait => `Too many new brackets right now. ${wait}`)
   )
 }

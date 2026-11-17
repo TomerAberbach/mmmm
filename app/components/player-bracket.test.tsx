@@ -6,13 +6,14 @@ import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { pickEveryBattle } from '../../test/picks.ts'
 import { formatDateTime } from '../dates.ts'
-import { listContenders, pickWinner, toPickBracket } from '../picks.ts'
+import { listContenders, pickWinner } from '../picks.ts'
 import type { Picks } from '../picks.ts'
 import type { Submission } from '../player-picks.server.ts'
+import { toSeededBracket } from '../seeded-bracket.ts'
 import { PlayerBracket } from './player-bracket.tsx'
 import type { Submitted } from './player-bracket.tsx'
 
-const BRACKET = toPickBracket(BRACKET_2025)
+const BRACKET = toSeededBracket(BRACKET_2025)
 const [SEED_1 = ``, SEED_16 = ``] = listContenders(BRACKET, {
   round: `ROUND_1`,
   index: 0,

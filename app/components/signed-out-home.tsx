@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { href, Link } from 'react-router'
 import { Bracket } from './bracket.tsx'
 import { ButtonLink } from './button.tsx'
 import { LockHeadsUp } from './lock-heads-up.tsx'
@@ -64,9 +64,9 @@ const Intro = ({
       </p>
     )}
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-      <ButtonLink href='/sign-up'>Sign up</ButtonLink>
+      <ButtonLink href={href(`/sign-up`)}>Sign up</ButtonLink>
       <p>
-        Already have an account? <Link to='/sign-in'>Sign in</Link>
+        Already have an account? <Link to={href(`/sign-in`)}>Sign in</Link>
       </p>
     </div>
     <PlayerNote />

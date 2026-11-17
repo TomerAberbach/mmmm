@@ -1,8 +1,7 @@
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/home.ts'
 import { SignedOutHome } from '~/components/signed-out-home.tsx'
 import { readCurrentBracketView } from '~/current-bracket.server.ts'
-import { EDUCATOR_DASHBOARD_PATH } from '~/paths.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
@@ -11,7 +10,7 @@ export const handle = { fullWidth: true }
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   if (await readSignedInEducator(context)) {
-    throw redirect(EDUCATOR_DASHBOARD_PATH)
+    throw redirect(href(`/contests`))
   }
   return {
     upcomingYear: readUpcomingYear(new Date()),

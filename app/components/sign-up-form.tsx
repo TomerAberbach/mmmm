@@ -1,7 +1,8 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form, Link } from 'react-router'
+import { Form, href, Link } from 'react-router'
 import { MIN_PASSWORD_LENGTH, signUpSchema } from '../auth-forms.ts'
+import { freeTextSchema } from '../free-text.ts'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { PageTitle } from './page-title.tsx'
@@ -9,13 +10,15 @@ import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 
+const SIGN_UP_SCHEMA = signUpSchema(freeTextSchema)
+
 export const SignUpForm = ({
   lastResult,
 }: {
   lastResult?: SubmissionResult
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
-    signUpSchema,
+    SIGN_UP_SCHEMA,
     lastResult,
   )
   return (
@@ -24,7 +27,7 @@ export const SignUpForm = ({
       <PlayerNote />
       <Form
         method='post'
-        action='/sign-up'
+        action={href(`/sign-up`)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -52,14 +55,14 @@ export const SignUpForm = ({
           </Button>
           <p className='text-sm text-muted'>
             By signing up, you agree to the{` `}
-            <Link to='/privacy'>privacy policy</Link> and confirm that you or
-            your school consent for players under 13 to use MMMM.
+            <Link to={href(`/privacy`)}>privacy policy</Link> and confirm that
+            you or your school consent for players under 13 to use MMMM.
           </p>
         </div>
         <FormError form={form} />
       </Form>
       <p>
-        Already have an account? <Link to='/sign-in'>Sign in</Link>
+        Already have an account? <Link to={href(`/sign-in`)}>Sign in</Link>
       </p>
     </div>
   )

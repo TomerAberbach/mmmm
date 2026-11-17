@@ -1,20 +1,22 @@
 import type { Submission } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
+import { readCurrentYear } from '~/brackets.server.ts'
 import { CONTEST_CLOSED, PlayContestPage } from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
-import { rejectSubmission } from '~/form-replies.server.ts'
-import { toBracketPath, toContestPath } from '~/paths.ts'
+import { rejectForm } from '~/form-replies.server.ts'
+import { serverFreeTextSchema } from '~/free-text.server.ts'
+import type { LimitRefusal } from '~/limits.server.ts'
 import { readPlayContest } from '~/play-context.server.ts'
 import {
   forgetPlayer,
   readRememberedPlayer,
   rememberPlayer,
 } from '~/player-cookie.server.ts'
-import { serverDisplayNameSchema } from '~/player-forms.server.ts'
+import { displayNameSchema } from '~/player-forms.ts'
 import { limitNewPlayer } from '~/player-limits.server.ts'
-import { createPlayer, isTakingPlayers } from '~/players.server.ts'
+import { createPlayer } from '~/players.server.ts'
 
 // The prompt leaves the player's cookie as it is, because the next person on
 // a shared computer may be the one who sees it
@@ -29,11 +31,11 @@ export const loader = async ({
     return {
       state: `returning`,
       displayName: player.displayName,
-      bracketPath: toBracketPath(params.linkSecret),
+      bracketPath: href(`/play/:linkSecret/bracket`, params),
     }
   }
   return {
-    state: (await isTakingPlayers(contest.yearId)) ? `askName` : `closed`,
+    state: (await readCurrentYear()) === contest.yearId ? `askName` : `closed`,
   }
 }
 
@@ -45,44 +47,36 @@ export const action = async ({
   const contest = readPlayContest(context)
   const formData = await request.formData()
   if (formData.get(`intent`) === `not-you`) {
-    return redirect(toContestPath(params.linkSecret), {
+    return redirect(href(`/play/:linkSecret`, params), {
       headers: { 'Set-Cookie': await forgetPlayer(contest.id) },
     })
   }
 
   const submission = parseWithZod(formData, {
-    schema: serverDisplayNameSchema,
+    schema: displayNameSchema(serverFreeTextSchema),
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
-  // Publishing a newer bracket between this check and the insert can let one
-  // last player in, which is harmless
-  if (!(await isTakingPlayers(contest.yearId))) {
-    return rejectSubmission(submission, { formErrors: [CONTEST_CLOSED] })
+  const player = await createPlayer(
+    contest.id,
+    submission.value.displayName,
+    () => limitNewPlayer(request, contest.id),
+  )
+  if (`refusal` in player) {
+    return player.refusal === `LIMITED`
+      ? rejectTooManyNewPlayers(submission, player.limit)
+      : rejectForm(submission, { formErrors: [CONTEST_CLOSED] })
   }
-  const refusal = await limitNewPlayer(request, contest.id)
-  if (refusal) {
-    return rejectTooManyNewPlayers(submission, refusal)
-  }
-  const secret = await createPlayer(contest.id, submission.value.displayName)
-  return redirect(toBracketPath(params.linkSecret), {
-    headers: { 'Set-Cookie': await rememberPlayer(contest.id, secret) },
+  return redirect(href(`/play/:linkSecret/bracket`, params), {
+    headers: { 'Set-Cookie': await rememberPlayer(contest.id, player.secret) },
   })
 }
 
 const rejectTooManyNewPlayers = (
   submission: Submission<unknown>,
-  {
-    message,
-    retryAfterSeconds,
-  }: { message: string; retryAfterSeconds: number },
-) =>
-  rejectSubmission(
-    submission,
-    { formErrors: [message] },
-    { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
-  )
+  { message, headers }: LimitRefusal,
+) => rejectForm(submission, { formErrors: [message] }, { status: 429, headers })
 
 const PlayPage = ({ loaderData, actionData }: Route.ComponentProps) => (
   <div className='max-w-xl'>

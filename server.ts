@@ -2,7 +2,7 @@ import compression from 'compression'
 import express from 'express'
 import type { Express, RequestHandler } from 'express'
 import { checkEmailSettings } from './app/email-settings.server.ts'
-import { readAppEnv, requireEnv } from './app/env.server.ts'
+import { isDevelopment, readAppEnv, requireEnv } from './app/env.server.ts'
 import { forwardClientIp } from './server/client-ip.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
@@ -15,7 +15,7 @@ import { requireStagingPassword } from './server/staging-password.ts'
 
 const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
-const IS_PRODUCTION = process.env.NODE_ENV !== `development`
+const IS_PRODUCTION = !isDevelopment()
 checkEmailSettings()
 // Staging fails to start without its password, so it's never public
 const STAGING_PASSWORD =
@@ -63,9 +63,9 @@ if (IS_PRODUCTION) {
 }
 server.use(compression())
 server.use(setSecurityHeaders(IS_PRODUCTION))
-const app = IS_PRODUCTION
-  ? await serveProductionApp(server)
-  : await serveDevelopmentApp(server)
+const app = isDevelopment()
+  ? await serveDevelopmentApp(server)
+  : await serveProductionApp(server)
 // React Router needs every page's nonce, the health check's included
 server.use(setContentSecurityPolicy(IS_PRODUCTION))
 // Fly.io's health checks skip logging, rate limits, and the staging password

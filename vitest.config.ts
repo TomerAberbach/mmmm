@@ -19,6 +19,9 @@ export default defineConfig({
           include: [`{app,server,test}/**/*.test.ts`],
           // Vitest stubs CSS imports by default, which empties `app.css?raw`
           css: { include: [/app\.css/u] },
+          // A test that needs the current year can wait for other files'
+          // `withCurrentYear` tests, which run one at a time
+          testTimeout: 30_000,
           globalSetup: [`test/global-setup.ts`],
           setupFiles: [`test/setup.ts`],
           env: {

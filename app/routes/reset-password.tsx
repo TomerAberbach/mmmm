@@ -1,13 +1,13 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { APIError } from 'better-auth/api'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/reset-password.ts'
 import { resetPasswordSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
 import { ResetPasswordForm } from '~/components/reset-password-form.tsx'
-import { rejectSubmission } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
 
-const LINK_INVALID_URL = `/forgot-password?link-invalid`
+const LINK_INVALID_URL = `${href(`/forgot-password`)}?link-invalid`
 
 // A reset link returns here with `token`, or with `error` when it expired or
 // was used
@@ -21,7 +21,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     schema: resetPasswordSchema,
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
 
   const { token, password } = submission.value
@@ -41,7 +41,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
     throw error
   }
-  return redirect(`/sign-in?password-reset`)
+  return redirect(`${href(`/sign-in`)}?password-reset`)
 }
 
 const ResetPassword = ({ loaderData, actionData }: Route.ComponentProps) => (

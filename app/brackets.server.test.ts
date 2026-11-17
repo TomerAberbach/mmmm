@@ -1,10 +1,14 @@
 import { expect, test } from 'vitest'
 import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
-import { createEducator } from '../test/educators.ts'
-import type { BracketInput } from './bracket-input.ts'
+import { createContestInNewYear } from '../test/contests.ts'
 import {
-  createBracket,
+  addClaimedYear,
+  claimYear,
+  createClaimedBracket,
+  withCurrentYear,
+} from '../test/years.ts'
+import {
   deleteUnpublishedBracket,
   readBracket,
   readBracketCombatants,
@@ -15,14 +19,7 @@ import {
   setBracketPublished,
   setExpectedLockDate,
 } from './brackets.server.ts'
-import { createContest } from './contests.server.ts'
 import { prisma } from './db.server.ts'
-
-// The test database is shared across this run, and each year holds one
-// bracket, so each test stores its bracket under a year of its own
-let nextYear = 3000
-const createInNewYear = (input: BracketInput) =>
-  createBracket(nextYear++, input)
 
 // The combatant in a seed slot, or the wild card's entrants for its slot
 const readSeedSlotNames = async (
@@ -50,7 +47,7 @@ const readSeedSlotNames = async (
 }
 
 test(`2025's wild card fills seed 14, and seed 15 keeps its own combatant`, async () => {
-  const bracketId = await createInNewYear(BRACKET_2025)
+  const bracketId = await createClaimedBracket(BRACKET_2025)
 
   const seeds = [
     await readSeedSlotNames(bracketId, `SAME & DIFFERENT`, 13),
@@ -66,7 +63,7 @@ test(`2025's wild card fills seed 14, and seed 15 keeps its own combatant`, asyn
 })
 
 test(`2017's wild card keeps its 4 entrants in order`, async () => {
-  const bracketId = await createInNewYear(BRACKET_2017)
+  const bracketId = await createClaimedBracket(BRACKET_2017)
 
   const entrants = await readSeedSlotNames(bracketId, `COULDA SHOULDA`, 16)
 
@@ -79,7 +76,7 @@ test(`2017's wild card keeps its 4 entrants in order`, async () => {
 })
 
 test(`a stored bracket has all 64 battles and starts unpublished`, async () => {
-  const bracketId = await createInNewYear(BRACKET_2026)
+  const bracketId = await createClaimedBracket(BRACKET_2026)
 
   const bracket = await prisma.bracket.findUniqueOrThrow({
     where: { id: bracketId },
@@ -90,7 +87,7 @@ test(`a stored bracket has all 64 battles and starts unpublished`, async () => {
 })
 
 test(`an admin's names skip the offensive word filter`, async () => {
-  const bracketId = await createInNewYear({
+  const bracketId = await createClaimedBracket({
     ...BRACKET_2026,
     wildCard: {
       ...BRACKET_2026.wildCard,
@@ -148,45 +145,38 @@ test.each([
     },
   },
 ])(`a bracket with $scenario isn't stored`, async ({ input }) => {
-  const year = nextYear++
+  const year = await claimYear()
 
-  await expect(createBracket(year, input)).rejects.toBeInstanceOf(ZodError)
+  await expect(saveUnpublishedBracket(year, input)).rejects.toBeInstanceOf(
+    ZodError,
+  )
 
   await expect(
     prisma.year.findUnique({ where: { id: year } }),
   ).resolves.toBeNull()
 })
 
-const addInNewYear = async (
-  input: BracketInput,
-  { published }: { published: boolean },
-): Promise<number> => {
-  const year = nextYear++
-  await createBracket(year, input)
-  await setBracketPublished(year, published)
-  return year
-}
+test(`the current bracket is the newest published one, read back as entered`, () =>
+  withCurrentYear(async addYear => {
+    await addYear({ published: true })
+    const newestPublishedYear = await addYear({
+      published: true,
+      input: BRACKET_2025,
+    })
+    await addYear({ published: false })
 
-const publishInNewYear = (input: BracketInput) =>
-  addInNewYear(input, { published: true })
+    const current = await readCurrentBracket()
 
-test(`the current bracket is the newest published one, read back as entered`, async () => {
-  await publishInNewYear(BRACKET_2026)
-  const newestPublishedYear = await publishInNewYear(BRACKET_2025)
-  await createInNewYear(BRACKET_2017)
-
-  const current = await readCurrentBracket()
-
-  expect(current).toStrictEqual({
-    year: newestPublishedYear,
-    input: BRACKET_2025,
-    expectedLockDate: null,
-  })
-})
+    expect(current).toStrictEqual({
+      year: newestPublishedYear,
+      input: BRACKET_2025,
+      expectedLockDate: null,
+    })
+  }))
 
 test(`saving an unpublished bracket replaces it`, async () => {
-  const year = nextYear++
-  await createBracket(year, BRACKET_2026)
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2026)
 
   await saveUnpublishedBracket(year, BRACKET_2025)
 
@@ -197,8 +187,8 @@ test(`saving an unpublished bracket replaces it`, async () => {
 })
 
 test(`saving an unpublished bracket keeps its expected lock date`, async () => {
-  const year = nextYear++
-  await createBracket(year, BRACKET_2026)
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2026)
   const expectedLockDate = new Date(`2027-03-19T00:00:00Z`)
   await setExpectedLockDate(year, expectedLockDate)
 
@@ -210,7 +200,7 @@ test(`saving an unpublished bracket keeps its expected lock date`, async () => {
 })
 
 test(`saving over a published bracket changes nothing`, async () => {
-  const year = await publishInNewYear(BRACKET_2026)
+  const year = await addClaimedYear({ published: true, input: BRACKET_2026 })
 
   const saved = await saveUnpublishedBracket(year, BRACKET_2025)
 
@@ -222,8 +212,8 @@ test(`saving over a published bracket changes nothing`, async () => {
 })
 
 test(`deleting an unpublished bracket removes it`, async () => {
-  const year = nextYear++
-  await createBracket(year, BRACKET_2026)
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2026)
 
   const deleted = await deleteUnpublishedBracket(year)
 
@@ -232,7 +222,7 @@ test(`deleting an unpublished bracket removes it`, async () => {
 })
 
 test(`deleting a published bracket leaves it`, async () => {
-  const year = await publishInNewYear(BRACKET_2026)
+  const year = await addClaimedYear({ published: true, input: BRACKET_2026 })
 
   const deleted = await deleteUnpublishedBracket(year)
 
@@ -241,7 +231,7 @@ test(`deleting a published bracket leaves it`, async () => {
 })
 
 test(`a combatant in a seed slot can't be deleted on its own`, async () => {
-  const bracketId = await createInNewYear(BRACKET_2026)
+  const bracketId = await createClaimedBracket(BRACKET_2026)
   const { combatantId } = await prisma.seedSlot.findFirstOrThrow({
     where: { division: { bracketId }, combatantId: { not: null } },
     select: { combatantId: true },
@@ -278,48 +268,49 @@ test.each([
     change: `UNCHANGED`,
   },
 ])(`$scenario reports whether it changed it`, async ({ from, to, change }) => {
-  const year = await addInNewYear(BRACKET_2026, { published: from })
+  const year = await addClaimedYear({ published: from, input: BRACKET_2026 })
 
   const result = await setBracketPublished(year, to)
 
   expect(result).toBe(change)
 })
 
-test(`a bracket with a contest stays published`, async () => {
-  const year = await publishInNewYear(BRACKET_2026)
-  const educatorId = await createEducator()
-  await createContest(educatorId, year, `Period 2 Biology`)
+test(`a bracket with a contest stays published`, () =>
+  withCurrentYear(async addYear => {
+    const { year } = await createContestInNewYear(addYear)
 
-  const result = await setBracketPublished(year, false)
+    const result = await setBracketPublished(year, false)
 
-  expect(result).toBe(`HAS_CONTESTS`)
-  await expect(readBracketSummary(year)).resolves.toMatchObject({
-    phase: `OPEN`,
-  })
-})
+    expect(result).toBe(`HAS_CONTESTS`)
+    await expect(readBracketSummary(year)).resolves.toMatchObject({
+      phase: `OPEN`,
+    })
+  }))
 
-test(`an unpublished bracket is no longer current`, async () => {
-  const year = await publishInNewYear(BRACKET_2025)
+test(`an unpublished bracket is no longer current`, () =>
+  withCurrentYear(async addYear => {
+    const year = await addYear({ published: true })
 
-  await setBracketPublished(year, false)
+    await setBracketPublished(year, false)
 
-  await expect(readCurrentBracket()).resolves.not.toMatchObject({ year })
-})
+    await expect(readCurrentBracket()).resolves.not.toMatchObject({ year })
+  }))
 
-test(`the current bracket carries its expected lock date`, async () => {
-  const year = await publishInNewYear(BRACKET_2025)
-  const expectedLockDate = new Date(`2099-03-19T00:00:00Z`)
+test(`the current bracket carries its expected lock date`, () =>
+  withCurrentYear(async addYear => {
+    const year = await addYear({ published: true })
+    const expectedLockDate = new Date(`2099-03-19T00:00:00Z`)
 
-  await setExpectedLockDate(year, expectedLockDate)
+    await setExpectedLockDate(year, expectedLockDate)
 
-  await expect(readCurrentBracket()).resolves.toMatchObject({
-    year,
-    expectedLockDate,
-  })
-})
+    await expect(readCurrentBracket()).resolves.toMatchObject({
+      year,
+      expectedLockDate,
+    })
+  }))
 
 test(`the wild card's entrants are listed at its seed`, async () => {
-  const year = await addInNewYear(BRACKET_2025, { published: false })
+  const year = await addClaimedYear({ published: false, input: BRACKET_2025 })
 
   const divisions = await readBracketCombatants(year)
 
@@ -339,7 +330,7 @@ const findCombatant = async (year: number, name: string) => {
 }
 
 test(`renaming a combatant changes its name everywhere the bracket shows it`, async () => {
-  const year = await publishInNewYear(BRACKET_2025)
+  const year = await addClaimedYear({ published: true, input: BRACKET_2025 })
   const { id } = await findCombatant(year, `Gelada`)
 
   const result = await renameCombatant(year, id, `Gelada Baboon`)
@@ -350,7 +341,7 @@ test(`renaming a combatant changes its name everywhere the bracket shows it`, as
 })
 
 test(`a rename to another combatant's name is refused`, async () => {
-  const year = await publishInNewYear(BRACKET_2025)
+  const year = await addClaimedYear({ published: true, input: BRACKET_2025 })
   const { id } = await findCombatant(year, `Gelada`)
 
   const result = await renameCombatant(year, id, `sun bear`)
@@ -361,8 +352,11 @@ test(`a rename to another combatant's name is refused`, async () => {
 })
 
 test(`a combatant from another year can't be renamed`, async () => {
-  const year = await publishInNewYear(BRACKET_2025)
-  const otherYear = await addInNewYear(BRACKET_2026, { published: false })
+  const year = await addClaimedYear({ published: true, input: BRACKET_2025 })
+  const otherYear = await addClaimedYear({
+    published: false,
+    input: BRACKET_2026,
+  })
   const { id } = await findCombatant(otherYear, `Lions`)
 
   const result = await renameCombatant(year, id, `Lionesses`)

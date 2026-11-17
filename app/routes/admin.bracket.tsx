@@ -1,5 +1,5 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.bracket.ts'
 import {
   bracketFormSchema,
@@ -16,7 +16,7 @@ import { BracketSetupForm } from '~/components/bracket-setup-form.tsx'
 import { CombatantRenames } from '~/components/combatant-renames.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
-import { rejectSubmission } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
 // Only the upcoming year's bracket can be managed here. Until it's published,
@@ -47,11 +47,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
     schema: bracketFormSchema,
   })
   if (submission.status !== `success`) {
-    return rejectSubmission(submission)
+    return rejectForm(submission)
   }
   return (await saveUnpublishedBracket(year, toBracketInput(submission.value)))
-    ? redirect(`/admin`)
-    : rejectSubmission(submission, {
+    ? redirect(href(`/admin`))
+    : rejectForm(submission, {
         formErrors: [
           `The ${year} bracket is published, so it can't change here`,
         ],

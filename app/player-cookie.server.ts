@@ -1,4 +1,5 @@
 import { createCookie } from 'react-router'
+import { isServedOverHttps } from './env.server.ts'
 import { readContestPlayer } from './players.server.ts'
 
 // The player stays recognized for 15 minutes after their last request, so a
@@ -11,7 +12,7 @@ const playerCookie = (contestId: string) =>
   createCookie(`player-${contestId}`, {
     httpOnly: true,
     sameSite: `lax`,
-    secure: process.env.NODE_ENV === `production`,
+    secure: isServedOverHttps(),
     path: `/`,
     maxAge: MAX_AGE_SECONDS,
   })
