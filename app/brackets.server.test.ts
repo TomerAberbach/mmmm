@@ -3,12 +3,7 @@ import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
 import { createContestInNewYear } from '../test/contests.ts'
 import { findCombatantId } from '../test/picks.ts'
-import {
-  addClaimedYear,
-  claimYear,
-  createClaimedBracket,
-  withCurrentYear,
-} from '../test/years.ts'
+import { addClaimedYear, claimYear, withCurrentYear } from '../test/years.ts'
 import { toNames } from './bracket-input.ts'
 import {
   deleteUnpublishedBracket,
@@ -31,12 +26,12 @@ const readBracketNames = async (year: number) => {
 
 // The combatant in a seed slot, or the wild card's entrants for its slot
 const readSeedSlotNames = async (
-  bracketId: string,
+  year: number,
   divisionName: string,
   seed: number,
 ): Promise<string[]> => {
   const { combatant, wildCard } = await prisma.seedSlot.findFirstOrThrow({
-    where: { seed, division: { bracketId, name: divisionName } },
+    where: { seed, division: { year, name: divisionName } },
     select: {
       combatant: { select: { name: true } },
       wildCard: {
@@ -55,12 +50,12 @@ const readSeedSlotNames = async (
 }
 
 test(`2025's wild card fills seed 14, and seed 15 keeps its own combatant`, async () => {
-  const bracketId = await createClaimedBracket(BRACKET_2025)
+  const year = await addClaimedYear({ published: false, input: BRACKET_2025 })
 
   const seeds = [
-    await readSeedSlotNames(bracketId, `SAME & DIFFERENT`, 13),
-    await readSeedSlotNames(bracketId, `SAME & DIFFERENT`, 14),
-    await readSeedSlotNames(bracketId, `SAME & DIFFERENT`, 15),
+    await readSeedSlotNames(year, `SAME & DIFFERENT`, 13),
+    await readSeedSlotNames(year, `SAME & DIFFERENT`, 14),
+    await readSeedSlotNames(year, `SAME & DIFFERENT`, 15),
   ]
 
   expect(seeds).toStrictEqual([
@@ -71,9 +66,9 @@ test(`2025's wild card fills seed 14, and seed 15 keeps its own combatant`, asyn
 })
 
 test(`2017's wild card keeps its 4 entrants in order`, async () => {
-  const bracketId = await createClaimedBracket(BRACKET_2017)
+  const year = await addClaimedYear({ published: false, input: BRACKET_2017 })
 
-  const entrants = await readSeedSlotNames(bracketId, `COULDA SHOULDA`, 16)
+  const entrants = await readSeedSlotNames(year, `COULDA SHOULDA`, 16)
 
   expect(entrants).toStrictEqual([
     `Snow Leopard`,
@@ -84,10 +79,10 @@ test(`2017's wild card keeps its 4 entrants in order`, async () => {
 })
 
 test(`a stored bracket has all 64 battles and starts unpublished`, async () => {
-  const bracketId = await createClaimedBracket(BRACKET_2026)
+  const year = await addClaimedYear({ published: false, input: BRACKET_2026 })
 
   const bracket = await prisma.bracket.findUniqueOrThrow({
-    where: { id: bracketId },
+    where: { year },
     select: { publishedAt: true, _count: { select: { battles: true } } },
   })
 
@@ -95,15 +90,18 @@ test(`a stored bracket has all 64 battles and starts unpublished`, async () => {
 })
 
 test(`an admin's names skip the offensive word filter`, async () => {
-  const bracketId = await createClaimedBracket({
-    ...BRACKET_2026,
-    wildCard: {
-      ...BRACKET_2026.wildCard,
-      entrants: [`Great Tit`, `Assassin Bug`],
+  const year = await addClaimedYear({
+    published: false,
+    input: {
+      ...BRACKET_2026,
+      wildCard: {
+        ...BRACKET_2026.wildCard,
+        entrants: [`Great Tit`, `Assassin Bug`],
+      },
     },
   })
 
-  const entrants = await readSeedSlotNames(bracketId, `THAT’S SO METAL`, 16)
+  const entrants = await readSeedSlotNames(year, `THAT’S SO METAL`, 16)
 
   expect(entrants).toStrictEqual([`Great Tit`, `Assassin Bug`])
 })
@@ -158,10 +156,6 @@ test.each([
   await expect(saveUnpublishedBracket(year, input)).rejects.toBeInstanceOf(
     ZodError,
   )
-
-  await expect(
-    prisma.year.findUnique({ where: { id: year } }),
-  ).resolves.toBeNull()
 })
 
 test(`the current bracket is the newest published one, read back as entered`, () =>
@@ -239,9 +233,9 @@ test(`deleting a published bracket leaves it`, async () => {
 })
 
 test(`a combatant in a seed slot can't be deleted on its own`, async () => {
-  const bracketId = await createClaimedBracket(BRACKET_2026)
+  const year = await addClaimedYear({ published: false, input: BRACKET_2026 })
   const { combatantId } = await prisma.seedSlot.findFirstOrThrow({
-    where: { division: { bracketId }, combatantId: { not: null } },
+    where: { division: { year }, combatantId: { not: null } },
     select: { combatantId: true },
   })
 
@@ -293,6 +287,16 @@ test(`a bracket with a contest stays published`, () =>
     await expect(readBracketSummary(year)).resolves.toMatchObject({
       phase: `OPEN`,
     })
+  }))
+
+test(`a bracket with a contest can't be deleted`, () =>
+  withCurrentYear(async addYear => {
+    const { year } = await createContestInNewYear(addYear)
+
+    const deleting = prisma.bracket.delete({ where: { year } })
+
+    await expect(deleting).rejects.toMatchObject({ code: `P2003` })
+    await expect(readBracket(year)).resolves.not.toBeNull()
   }))
 
 test(`an unpublished bracket is no longer current`, () =>

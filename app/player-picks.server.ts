@@ -50,10 +50,10 @@ export type PicksRefusal = {
 // bracket
 export const savePlayerDraft = (
   playerId: string,
-  yearId: number,
+  year: number,
   picks: Picks,
 ): Promise<{ saved: true } | PicksRefusal> =>
-  withPlayerBracket(playerId, yearId, async (tx, bracket, battleIdByKey) => {
+  withPlayerBracket(playerId, year, async (tx, bracket, battleIdByKey) => {
     if (!arePicksConsistent(bracket, picks)) {
       return { refusal: `INCONSISTENT` } as const
     }
@@ -66,10 +66,10 @@ export const savePlayerDraft = (
 // submission's status
 export const submitPlayerPicks = (
   playerId: string,
-  yearId: number,
+  year: number,
   picks: Picks,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
-  withPlayerBracket(playerId, yearId, async (tx, bracket, battleIdByKey) => {
+  withPlayerBracket(playerId, year, async (tx, bracket, battleIdByKey) => {
     if (!arePicksComplete(bracket, picks)) {
       return { refusal: `INCOMPLETE` } as const
     }
@@ -97,9 +97,9 @@ export const submitPlayerPicks = (
 // hasn't submitted
 export const discardPlayerDraft = (
   playerId: string,
-  yearId: number,
+  year: number,
 ): Promise<{ discarded: true } | PicksRefusal> =>
-  withCurrentPlayer(playerId, yearId, async tx => {
+  withCurrentPlayer(playerId, year, async tx => {
     if (!(await tx.submission.findUnique({ where: { playerId } }))) {
       return { refusal: `NOT_SUBMITTED` } as const
     }
@@ -157,12 +157,12 @@ const writePicks = async (
 // contests
 const withCurrentPlayer = <Result>(
   playerId: string,
-  yearId: number,
+  year: number,
   change: (tx: Prisma.TransactionClient) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
   prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT 1 FROM "Player" WHERE "id" = ${playerId} FOR UPDATE`
-    return (await lockYear(tx, yearId, `SHARE`)) === `CURRENT`
+    return (await lockYear(tx, year, `SHARE`)) === `CURRENT`
       ? change(tx)
       : ({ refusal: `NOT_CURRENT_YEAR` } as const)
   })
@@ -171,15 +171,15 @@ const withCurrentPlayer = <Result>(
 // battles' row IDs, keyed by `toBattleKey`
 const withPlayerBracket = <Result>(
   playerId: string,
-  yearId: number,
+  year: number,
   change: (
     tx: Prisma.TransactionClient,
     bracket: SeededBracket,
     battleIdByKey: ReadonlyMap<string, string>,
   ) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
-  withCurrentPlayer(playerId, yearId, async tx => {
+  withCurrentPlayer(playerId, year, async tx => {
     // A current year's bracket is published, so it exists
-    const { bracket, battleIdByKey } = (await readBracketRows(yearId, tx))!
+    const { bracket, battleIdByKey } = (await readBracketRows(year, tx))!
     return change(tx, toSeededBracket(bracket), battleIdByKey)
   })

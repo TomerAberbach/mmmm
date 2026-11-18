@@ -34,7 +34,7 @@ const ContestName = ({ contest }: { contest: Contest }) => {
   return (
     <div className='flex flex-col gap-3'>
       <PageHeader
-        label={`${contest.yearId} contest`}
+        label={`${contest.year} contest`}
         title={contest.name}
         action={
           isOpen ? null : (

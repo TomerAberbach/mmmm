@@ -12,7 +12,7 @@ import type { PlayView } from './play-contest.tsx'
 
 const CONTEST = {
   name: `Period 6 Biology`,
-  yearId: 2027,
+  year: 2027,
   educatorName: `Ms. Rivera`,
 }
 

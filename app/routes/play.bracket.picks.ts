@@ -27,24 +27,20 @@ export const action = async ({
     return refuse()
   }
   const { id } = readRequiredPlayer(context)
-  const { yearId } = readPlayContest(context)
-  const result = await writePicks(id, yearId, parsed.data)
+  const { year } = readPlayContest(context)
+  const result = await writePicks(id, year, parsed.data)
   return `refusal` in result ? refuse() : new Response(null)
 }
 
 const refuse = (): Response => new Response(null, { status: 400 })
 
-const writePicks = (
-  playerId: string,
-  yearId: number,
-  request: PicksRequest,
-) => {
+const writePicks = (playerId: string, year: number, request: PicksRequest) => {
   switch (request.intent) {
     case `save`:
-      return savePlayerDraft(playerId, yearId, request.picks)
+      return savePlayerDraft(playerId, year, request.picks)
     case `submit`:
-      return submitPlayerPicks(playerId, yearId, request.picks)
+      return submitPlayerPicks(playerId, year, request.picks)
     case `discard`:
-      return discardPlayerDraft(playerId, yearId)
+      return discardPlayerDraft(playerId, year)
   }
 }

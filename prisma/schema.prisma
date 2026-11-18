@@ -117,28 +117,20 @@ model AuthenticatorApp {
   @@index([secret])
 }
 
-// One March Mammal Madness tournament. The ID is its calendar year
-model Year {
-  id       Int       @id
-  bracket  Bracket?
-  contests Contest[]
-}
-
 // Unpublished while `publishedAt` is null, when only the admin sees it
 model Bracket {
-  id               String      @id
-  yearId           Int         @unique
+  year             Int         @id
   publishedAt      DateTime?
   // A heads-up for educators and players. Only the first result locks
   // submissions
   expectedLockDate DateTime?   @db.Date
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
-  year             Year        @relation(fields: [yearId], references: [id], onDelete: Cascade)
   divisions        Division[]
   combatants       Combatant[]
   battles          Battle[]
   wildCard         WildCard?
+  contests         Contest[]
 }
 
 // Where a division sits on the diagram. The two left divisions meet in one
@@ -152,14 +144,14 @@ enum DivisionPosition {
 
 model Division {
   id        String           @id
-  bracketId String
+  year      Int
   position  DivisionPosition
   name      String
-  bracket   Bracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  bracket   Bracket          @relation(fields: [year], references: [year], onDelete: Cascade)
   seedSlots SeedSlot[]
 
-  @@unique([bracketId, position])
-  @@unique([bracketId, name])
+  @@unique([year, position])
+  @@unique([year, name])
 }
 
 // Empty only when the wild card's winner fills it
@@ -179,22 +171,22 @@ model SeedSlot {
 
 model Combatant {
   id              String           @id
-  bracketId       String
+  year            Int
   name            String
-  bracket         Bracket          @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  bracket         Bracket          @relation(fields: [year], references: [year], onDelete: Cascade)
   seedSlot        SeedSlot?
   wildCardEntrant WildCardEntrant?
   picks           Pick[]
 
-  @@unique([bracketId, name])
+  @@unique([year, name])
 }
 
 // The battle of 2 to 4 entrants whose winner fills `seedSlot`
 model WildCard {
   id         String            @id
-  bracketId  String            @unique
+  year       Int               @unique
   seedSlotId String            @unique
-  bracket    Bracket           @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  bracket    Bracket           @relation(fields: [year], references: [year], onDelete: Cascade)
   seedSlot   SeedSlot          @relation(fields: [seedSlotId], references: [id], onDelete: Cascade)
   entrants   WildCardEntrant[]
 }
@@ -222,33 +214,33 @@ enum Round {
 // `index` orders a round's battles top to bottom, left divisions first, as
 // `app/bracket.ts` lays them out
 model Battle {
-  id        String  @id
-  bracketId String
-  round     Round
-  index     Int
-  bracket   Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
-  picks     Pick[]
+  id      String  @id
+  year    Int
+  round   Round
+  index   Int
+  bracket Bracket @relation(fields: [year], references: [year], onDelete: Cascade)
+  picks   Pick[]
 
-  @@unique([bracketId, round, index])
+  @@unique([year, round, index])
 }
 
 // A year's contests exist only while its bracket is published. Deleting the
-// educator or the year fails while either has a contest
+// educator or the bracket fails while either has a contest
 model Contest {
   id         String   @id
-  yearId     Int
+  year       Int
   educatorId String
   name       String
   // The contest link's secret. Stored as is, since the educator copies it
   linkSecret String   @unique
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  year       Year     @relation(fields: [yearId], references: [id], onDelete: Restrict)
+  bracket    Bracket  @relation(fields: [year], references: [year], onDelete: Restrict)
   educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Restrict)
   players    Player[]
 
-  @@index([educatorId, yearId])
-  @@index([yearId])
+  @@index([educatorId, year])
+  @@index([year])
 }
 
 // One person's bracket in one contest: a draft until it's submitted

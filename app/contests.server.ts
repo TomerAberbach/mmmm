@@ -8,7 +8,7 @@ import { createSecret } from './secrets.server.ts'
 // `link` is the contest link, which players open
 export type ContestSummary = { id: string; name: string; link: string }
 
-export type Contest = ContestSummary & { yearId: number }
+export type Contest = ContestSummary & { year: number }
 
 // Creates a contest in the current year. Returns the contest's ID, or null
 // before any bracket is published
@@ -18,14 +18,14 @@ export const createContest = (
 ): Promise<string | null> =>
   prisma.$transaction(async tx => {
     await lockYears(tx, `SHARE`)
-    const yearId = await readCurrentYear(tx)
-    if (yearId === null) {
+    const year = await readCurrentYear(tx)
+    if (year === null) {
       return null
     }
     const { id } = await tx.contest.create({
       data: {
         id: randomUUID(),
-        yearId,
+        year,
         educatorId,
         name,
         // 144 random bits keep the contest link short
@@ -48,10 +48,10 @@ const withLink = <Row extends { linkSecret: string }>({
 // Oldest first
 export const readEducatorContests = async (
   educatorId: string,
-  yearId: number,
+  year: number,
 ): Promise<ContestSummary[]> => {
   const contests = await prisma.contest.findMany({
-    where: { educatorId, yearId },
+    where: { educatorId, year },
     orderBy: [{ createdAt: `asc` }, { id: `asc` }],
     select: { id: true, name: true, linkSecret: true },
   })
@@ -65,7 +65,7 @@ export const readEducatorContest = async (
 ): Promise<Contest | null> => {
   const contest = await prisma.contest.findFirst({
     where: { id: contestId, educatorId },
-    select: { id: true, name: true, yearId: true, linkSecret: true },
+    select: { id: true, name: true, year: true, linkSecret: true },
   })
   return contest && withLink(contest)
 }
@@ -87,7 +87,7 @@ export const renameContest = async (
 export type ContestByLink = {
   id: string
   name: string
-  yearId: number
+  year: number
   educatorName: string
 }
 
@@ -99,7 +99,7 @@ export const readContestByLink = async (
     select: {
       id: true,
       name: true,
-      yearId: true,
+      year: true,
       educator: { select: { name: true } },
     },
   })
@@ -107,7 +107,7 @@ export const readContestByLink = async (
     contest && {
       id: contest.id,
       name: contest.name,
-      yearId: contest.yearId,
+      year: contest.year,
       educatorName: contest.educator.name,
     }
   )

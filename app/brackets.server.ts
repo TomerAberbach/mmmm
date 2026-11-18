@@ -18,21 +18,21 @@ import type { Combatant, StoredBracket } from './seeded-bracket.ts'
 // nothing when the year's bracket is published. Throws on input
 // `bracketInputSchema` rejects
 export const saveUnpublishedBracket = async (
-  yearId: number,
+  year: number,
   input: BracketInput,
 ): Promise<boolean> => {
   const existing = await prisma.bracket.findUnique({
-    where: { yearId },
+    where: { year },
     select: { expectedLockDate: true },
   })
   const operations = buildCreateOperations(
-    yearId,
+    year,
     input,
     existing?.expectedLockDate,
   )
   try {
     await prisma.$transaction([
-      prisma.bracket.deleteMany({ where: { yearId, publishedAt: null } }),
+      prisma.bracket.deleteMany({ where: { year, publishedAt: null } }),
       ...operations,
     ])
     return true
@@ -51,30 +51,24 @@ export const saveUnpublishedBracket = async (
 
 // Returns whether the year had an unpublished bracket to delete
 export const deleteUnpublishedBracket = async (
-  yearId: number,
+  year: number,
 ): Promise<boolean> => {
   const { count } = await prisma.bracket.deleteMany({
-    where: { yearId, publishedAt: null },
+    where: { year, publishedAt: null },
   })
   return count > 0
 }
 
 const buildCreateOperations = (
-  yearId: number,
+  year: number,
   input: BracketInput,
   expectedLockDate?: Date | null,
 ) => {
-  const rows = buildBracketRows(randomUUID(), bracketInputSchema.parse(input))
+  const rows = buildBracketRows(year, bracketInputSchema.parse(input))
   return [
-    prisma.year.upsert({
-      where: { id: yearId },
-      update: {},
-      create: { id: yearId },
-    }),
     prisma.bracket.create({
       data: {
-        id: rows.bracketId,
-        yearId,
+        year,
         expectedLockDate,
         battles: { createMany: { data: rows.battles } },
       },
@@ -87,20 +81,20 @@ const buildCreateOperations = (
   ]
 }
 
-// Every row of the bracket, linked by IDs made here, so each table takes one
-// insert
-const buildBracketRows = (bracketId: string, input: BracketInput) => {
-  const combatants: { id: string; bracketId: string; name: string }[] = []
+// Every row of the year's bracket, linked by IDs made here, so each table
+// takes one insert
+const buildBracketRows = (year: number, input: BracketInput) => {
+  const combatants: { id: string; year: number; name: string }[] = []
   const addCombatant = (name: string): string => {
     const id = randomUUID()
-    combatants.push({ id, bracketId, name })
+    combatants.push({ id, year, name })
     return id
   }
   const wildCardSlotId = randomUUID()
 
   const divisionRows = DIVISION_POSITIONS.map(position => ({
     id: randomUUID(),
-    bracketId,
+    year,
     position,
     name: input.divisions[position].name,
   }))
@@ -125,11 +119,10 @@ const buildBracketRows = (bracketId: string, input: BracketInput) => {
 
   const wildCardId = randomUUID()
   return {
-    bracketId,
     battles: listBattles().map(battle => ({ id: randomUUID(), ...battle })),
     divisions: divisionRows,
     seedSlots,
-    wildCard: { id: wildCardId, bracketId, seedSlotId: wildCardSlotId },
+    wildCard: { id: wildCardId, year, seedSlotId: wildCardSlotId },
     wildCardEntrants: input.wildCard.entrants.map((name, index) => ({
       wildCardId,
       index,
@@ -142,7 +135,7 @@ const buildBracketRows = (bracketId: string, input: BracketInput) => {
 // The current year's bracket is the newest published one
 const CURRENT_BRACKET = {
   where: { publishedAt: { not: null } },
-  orderBy: { yearId: `desc` },
+  orderBy: { year: `desc` },
 } satisfies Prisma.BracketFindFirstArgs
 
 // Null before any bracket is published
@@ -157,7 +150,7 @@ export const readCurrentBracket = async (): Promise<{
   })
   return (
     bracket && {
-      year: bracket.yearId,
+      year: bracket.year,
       bracket: readStoredBracket(bracket),
       expectedLockDate: bracket.expectedLockDate,
     }
@@ -170,17 +163,17 @@ export const readCurrentYear = async (
 ): Promise<number | null> => {
   const bracket = await db.bracket.findFirst({
     ...CURRENT_BRACKET,
-    select: { yearId: true },
+    select: { year: true },
   })
-  return bracket?.yearId ?? null
+  return bracket?.year ?? null
 }
 
 // The year's bracket, published or not, or null when it has none
 export const readBracket = async (
-  yearId: number,
+  year: number,
 ): Promise<StoredBracket | null> => {
   const bracket = await prisma.bracket.findUnique({
-    where: { yearId },
+    where: { year },
     select: BRACKET_SELECT,
   })
   return bracket && readStoredBracket(bracket)
@@ -194,19 +187,19 @@ type BracketRows = {
 }
 
 export const readBracketRows = async (
-  yearId: number,
+  year: number,
   db: Prisma.TransactionClient,
 ): Promise<BracketRows | null> => {
   const bracket = await db.bracket.findUnique({
-    where: { yearId },
-    select: { id: true },
+    where: { year },
+    select: { year: true },
   })
   if (!bracket) {
     return null
   }
-  const stored = await readBracketInTransaction(db, bracket.id)
+  const stored = await readBracketInTransaction(db, year)
   const battles = await db.battle.findMany({
-    where: { bracketId: bracket.id },
+    where: { year },
     select: { id: true, round: true, index: true },
   })
   return {
@@ -221,9 +214,9 @@ export const readBracketRows = async (
 // transaction's connection runs one query at a time
 const readBracketInTransaction = async (
   db: Prisma.TransactionClient,
-  bracketId: string,
+  year: number,
 ): Promise<StoredBracket> => {
-  const where = { bracketId }
+  const where = { year }
   const divisions = await db.division.findMany({
     where,
     select: BRACKET_SELECT.divisions.select,
@@ -252,26 +245,26 @@ export type BracketSummary = { expectedLockDate: Date | null } & (
 
 // Null when the year has no bracket
 export const readBracketSummary = async (
-  yearId: number,
+  year: number,
 ): Promise<BracketSummary | null> => {
   const bracket = await prisma.bracket.findUnique({
-    where: { yearId },
+    where: { year },
     select: {
       publishedAt: true,
       expectedLockDate: true,
-      year: { select: { _count: { select: { contests: true } } } },
+      _count: { select: { contests: true } },
     },
   })
   if (!bracket) {
     return null
   }
-  const { publishedAt, expectedLockDate, year } = bracket
+  const { publishedAt, expectedLockDate, _count } = bracket
   return publishedAt
     ? {
         phase: `OPEN`,
         publishedAt,
         expectedLockDate,
-        hasContests: year._count.contests > 0,
+        hasContests: _count.contests > 0,
       }
     : { phase: `SETUP`, expectedLockDate }
 }
@@ -282,22 +275,22 @@ export type PublicationChange = `CHANGED` | `UNCHANGED` | `HAS_CONTESTS`
 // until the year has a contest. `UNCHANGED` means the year has no bracket, or
 // its bracket is already in that state
 export const setBracketPublished = (
-  yearId: number,
+  year: number,
   published: boolean,
 ): Promise<PublicationChange> =>
   prisma.$transaction(async tx => {
-    const publication = await lockYear(tx, yearId, `UPDATE`)
+    const publication = await lockYear(tx, year, `UPDATE`)
     if (!publication || (publication !== `UNPUBLISHED`) === published) {
       return `UNCHANGED`
     }
     if (
       !published &&
-      (await tx.contest.findFirst({ where: { yearId }, select: { id: true } }))
+      (await tx.contest.findFirst({ where: { year }, select: { id: true } }))
     ) {
       return `HAS_CONTESTS`
     }
     await tx.bracket.update({
-      where: { yearId },
+      where: { year },
       data: { publishedAt: published ? new Date() : null },
     })
     return `CHANGED`
@@ -327,12 +320,12 @@ const YEARS_LOCK_KEY = 7_041_903
 // Null when the year has no bracket
 export const lockYear = async (
   tx: Prisma.TransactionClient,
-  yearId: number,
+  year: number,
   mode: `SHARE` | `UPDATE`,
 ): Promise<YearPublication | null> => {
   await lockYears(tx, mode)
   const bracket = await tx.bracket.findUnique({
-    where: { yearId },
+    where: { year },
     select: { publishedAt: true },
   })
   if (!bracket) {
@@ -341,16 +334,16 @@ export const lockYear = async (
   if (bracket.publishedAt === null) {
     return `UNPUBLISHED`
   }
-  return (await readCurrentYear(tx)) === yearId ? `CURRENT` : `PUBLISHED`
+  return (await readCurrentYear(tx)) === year ? `CURRENT` : `PUBLISHED`
 }
 
 // Returns whether the year has a bracket. Null clears the date
 export const setExpectedLockDate = async (
-  yearId: number,
+  year: number,
   expectedLockDate: Date | null,
 ): Promise<boolean> => {
   const { count } = await prisma.bracket.updateMany({
-    where: { yearId },
+    where: { year },
     data: { expectedLockDate },
   })
   return count > 0
@@ -361,11 +354,11 @@ export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
 // Each division's combatants in seed order, with the wild card's entrants at
 // its seed
 export const readBracketCombatants = async (
-  yearId: number,
+  year: number,
 ): Promise<
   { position: DivisionPosition; name: string; combatants: CombatantRow[] }[]
 > => {
-  const bracket = await readBracket(yearId)
+  const bracket = await readBracket(year)
   if (!bracket) {
     return []
   }
@@ -390,16 +383,16 @@ export const readBracketCombatants = async (
 // Names the combatant `name`, which the route has checked, unless another
 // combatant in the year's bracket has the same name
 export const renameCombatant = async (
-  yearId: number,
+  year: number,
   combatantId: string,
   name: string,
 ): Promise<{ ok: true } | { error: string }> => {
   const combatants = await prisma.combatant.findMany({
-    where: { bracket: { yearId } },
+    where: { year },
     select: { id: true, name: true },
   })
   if (!combatants.some(({ id }) => id === combatantId)) {
-    return { error: `That combatant isn't in the ${yearId} bracket` }
+    return { error: `That combatant isn't in the ${year} bracket` }
   }
   const others = combatants.filter(({ id }) => id !== combatantId)
   const duplicate = findDuplicateNames([
@@ -433,7 +426,7 @@ export const renameCombatant = async (
 }
 
 const BRACKET_SELECT = {
-  yearId: true,
+  year: true,
   expectedLockDate: true,
   divisions: {
     select: {
