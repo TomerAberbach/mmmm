@@ -6,6 +6,6 @@ import { CLIENT_IP_HEADER } from '../app/client-ip.ts'
  * to the app. It replaces whatever the client sent, so no one can forge it
  */
 export const forwardClientIp: RequestHandler = (req, _res, next) => {
-  req.headers[CLIENT_IP_HEADER] = req.ip ?? `unknown`
+  req.headers[CLIENT_IP_HEADER] = req.ip
   next()
 }

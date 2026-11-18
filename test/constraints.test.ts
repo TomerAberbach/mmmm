@@ -1,13 +1,13 @@
 import { beforeAll, expect, test } from 'vitest'
 import { prisma } from '../app/db.server.ts'
 import { BRACKET_2026 } from '../prisma/brackets.ts'
-import { addClaimedYear } from './years.ts'
+import { addYear } from './years.ts'
 
 /** Every write here is refused, so the tests share one bracket */
 const createTestBracket = async () =>
   prisma.bracket.findUniqueOrThrow({
     where: {
-      year: await addClaimedYear({ published: false, input: BRACKET_2026 }),
+      year: await addYear({ published: false, input: BRACKET_2026 }),
     },
     select: {
       year: true,

@@ -59,14 +59,9 @@ export const PlayerBracket = ({
   const submission = submitted?.submission ?? null
   const bracket = useMemo(() => toSeededBracket(stored), [stored])
   const [picks, setPicks] = useState(initialDraft)
-  // The panel after submitting shows until the player's next change
-  const [justSubmitted, setJustSubmitted] = useState<
-    `bracket` | `changes` | null
-  >(null)
-  const [isShowingUnpicked, setIsShowingUnpicked] = useState(false)
+  const [outcome, setOutcome] = useState<Outcome | null>(null)
   // Every battle a change has cleared. One picked again shows as picked
   const [cleared, setCleared] = useState<ReadonlySet<string>>(() => new Set())
-  const [lastCleared, setLastCleared] = useState<BattleRef[]>([])
   const view = useMemo(
     () => buildBracketView(year, bracket, picks),
     [year, bracket, picks],
@@ -85,9 +80,11 @@ export const PlayerBracket = ({
         changeCount.current += 1
         setPicks(next.picks)
         setCleared(new Set([...cleared, ...next.cleared.map(toBattleKey)]))
-        setLastCleared(next.cleared)
-        setIsShowingUnpicked(false)
-        setJustSubmitted(null)
+        setOutcome(
+          next.cleared.length > 0
+            ? { kind: `cleared`, battles: next.cleared }
+            : null,
+        )
         send({ intent: `save`, picks: next.picks })
       },
       listContenders: battle => listContenders(bracket, battle),
@@ -105,7 +102,7 @@ export const PlayerBracket = ({
   const submit = (): void => {
     const [nextBattle] = unpicked
     if (nextBattle) {
-      setIsShowingUnpicked(true)
+      setOutcome({ kind: `unpicked` })
       showBattle(nextBattle)
       return
     }
@@ -114,7 +111,10 @@ export const PlayerBracket = ({
     send({ intent: `submit`, picks }, async () => {
       await revalidator.revalidate()
       if (changeCount.current === changeCountAtSubmit) {
-        setJustSubmitted(submission ? `changes` : `bracket`)
+        setOutcome({
+          kind: `submitted`,
+          submitted: submission ? `changes` : `bracket`,
+        })
       }
     })
   }
@@ -124,8 +124,7 @@ export const PlayerBracket = ({
     changeCount.current += 1
     setPicks(submitted.picks)
     setCleared(new Set())
-    setLastCleared([])
-    setIsShowingUnpicked(false)
+    setOutcome(null)
     send({ intent: `discard` })
   }
 
@@ -133,10 +132,10 @@ export const PlayerBracket = ({
     submission !== null && !arePicksEqual(picks, submission.picks)
   return (
     <PickingContext value={picking}>
-      {submitted && justSubmitted ? (
+      {submitted && outcome?.kind === `submitted` ? (
         <SubmittedPanel
           {...submitted}
-          kind={justSubmitted}
+          kind={outcome.submitted}
           forgetPath={forgetPath}
         />
       ) : null}
@@ -172,18 +171,30 @@ export const PlayerBracket = ({
           Your submitted bracket still counts until you submit these changes.
         </p>
       ) : null}
-      {isShowingUnpicked && unpicked[0] ? (
+      {outcome?.kind === `unpicked` && unpicked[0] ? (
         <div className='max-w-prose'>
           <Notice kind='alert'>
             {describeUnpicked(unpicked.length, unpicked[0], submission)}
           </Notice>
         </div>
       ) : null}
-      <ClearedNotice cleared={lastCleared} />
+      <ClearedNotice
+        cleared={outcome?.kind === `cleared` ? outcome.battles : []}
+      />
       <Bracket view={view} selection={{ round, onSelect: setRound }} />
     </PickingContext>
   )
 }
+
+/**
+ * The result of the player's latest action, shown until their next one: the
+ * picks a change cleared, the battles left to pick before submitting, or the
+ * panel after submitting
+ */
+type Outcome =
+  | { kind: `cleared`; battles: BattleRef[] }
+  | { kind: `unpicked` }
+  | { kind: `submitted`; submitted: `bracket` | `changes` }
 
 /** A player's submission, and the personal link they see once they submit */
 export type Submitted = { submission: Submission; personalLink: string }

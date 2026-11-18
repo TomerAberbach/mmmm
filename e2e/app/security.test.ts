@@ -5,7 +5,6 @@ test(`pages set security headers`, async ({ request }) => {
   const response = await request.get(`/`)
 
   expect(response.headers()).toMatchObject({
-    'strict-transport-security': `max-age=31536000; includeSubDomains`,
     'x-content-type-options': `nosniff`,
     'x-frame-options': `SAMEORIGIN`,
     'referrer-policy': `no-referrer`,

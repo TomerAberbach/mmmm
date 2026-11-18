@@ -132,15 +132,19 @@ app
   with `lockYear` from `brackets.server.ts`, in `SHARE` mode, as `createPlayer`
   and the pick writes do, or with `lockYears` before reading the current year,
   as `createContest` does. Publishing and unpublishing take it in `UPDATE` mode,
-  so neither interleaves with those writes. A transaction that also locks a
-  player's row locks it first
+  so neither interleaves with those writes or with each other.
+  `saveUnpublishedBracket` takes `lockYears` in `SHARE` mode and a lock on its
+  year, so saves of different years and pick writes run alongside it. A
+  transaction that also locks a player's row locks it first
 - Read which seed slots or earlier battles feed a battle, and which Round 1
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
   links, only a round and an index for results and picks to reference
 - A `BracketInput` skips the wild card's seed in its division's list, so read
   each seed slot's combatant with `listSeedSlots` instead of indexing the list
   by seed. The setup form keeps one field per seed instead, so a name stays at
-  its seed when the wild card moves. `bracket-form.ts` converts between the two
+  its seed when the wild card moves. `bracket-form.ts` converts between the two,
+  and shows the problems `listBracketProblems` finds at the fields for their
+  places, so add a bracket rule only to `bracket-input.ts`
 - Key winners and picks by combatant ID, and show names only for display, so a
   rename leaves saved picks as they were. A `BracketInput` and the setup form
   hold names, because combatants have no IDs until the bracket is saved
@@ -201,15 +205,14 @@ app
 
 - `*.test.ts` files run in Node, and `*.test.tsx` files run in Chromium through
   Vitest browser mode. Both are colocated with the code they test
-- Node test files run in parallel against one database, and the current year is
-  the newest published bracket's. Store each test's bracket under a year from
-  `claimYear` in `test/years.ts`, which never returns the same year twice in a
-  run. A test that needs the current year, such as to create a contest, runs
-  inside `withCurrentYear` from the same file and adds its years there. It runs
-  one such test at a time across files, in years newer than any `claimYear`
-  returns. Create a contest or a player in a new current year with
-  `createContestInNewYear` or `createPlayerInNewYear` from `test/contests.ts`,
-  and educators with `createEducator` from `test/educators.ts`
+- Each Vitest worker has its own database, and runs its Node test files one
+  after another. The current year is the newest published bracket's. Store each
+  bracket with `addYear` from `test/years.ts`, or under a year from `claimYear`,
+  which returns a newer year on each call, so a test's newest published year is
+  current until the test ends. Create a contest or a player in a new current
+  year with `createContestInNewYear` or `createPlayerInNewYear` from
+  `test/contests.ts`, and educators with `createEducator` from
+  `test/educators.ts`
 - Browser tests load `app.css` and check accessibility, including contrast, with
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching

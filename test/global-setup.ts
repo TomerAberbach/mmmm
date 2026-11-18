@@ -1,19 +1,23 @@
 import type { TestProject } from 'vitest/node'
-import { createTestDatabase } from './database.ts'
+import { createTestDatabase, dropTemplateCopies } from './database.ts'
 
 declare module 'vitest' {
   // Declaration merging requires an interface
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   export interface ProvidedContext {
-    databaseUrl: string
+    templateDatabase: string
   }
 }
 
-const setUpTestDatabase = async ({
+/** Creates the template that each worker copies its database from */
+const setUpTemplateDatabase = async ({
   provide,
 }: TestProject): Promise<() => Promise<void>> => {
-  const database = await createTestDatabase()
-  provide(`databaseUrl`, database.url)
-  return database.drop
+  const template = await createTestDatabase()
+  provide(`templateDatabase`, template.name)
+  return async () => {
+    await dropTemplateCopies(template.name)
+    await template.drop()
+  }
 }
-export default setUpTestDatabase
+export default setUpTemplateDatabase

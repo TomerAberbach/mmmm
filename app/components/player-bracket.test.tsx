@@ -215,6 +215,30 @@ test(`submitting with battles left says how many and shows the next one`, async 
   expect(fetchSpy).not.toHaveBeenCalled()
 })
 
+test(`only the latest notice shows`, async () => {
+  answerRequests(Response.json({ ok: true }))
+  await renderBracket()
+  await firstBattle().getByText(SEED_1.name).click()
+  await page.getByRole(`tab`, { name: /^Round 2/u }).click()
+  await page
+    .getByRole(`radiogroup`, { name: `Round 2, battle 1` })
+    .getByText(SEED_1.name)
+    .click()
+  await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+  await firstBattle().getByText(SEED_16.name).click()
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(
+      `Pick the last 63 battles to submit. Next up: Wild card.`,
+    )
+  await expect
+    .element(page.getByText(`Your change cleared`, { exact: false }))
+    .not.toBeInTheDocument()
+})
+
 test(`submitting every pick shows the personal link and how to keep it`, async () => {
   const { server } = await renderBracket({ draft: COMPLETE_PICKS })
   const fetchSpy = answerRequests(Response.json({ ok: true }), () =>

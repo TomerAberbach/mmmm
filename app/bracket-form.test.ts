@@ -103,6 +103,38 @@ test(`a division name used twice is reported at both fields`, () => {
   ])
 })
 
+test.each([
+  {
+    scenario: `division`,
+    edit: (form: BracketForm) => {
+      form.divisions.TOP_LEFT.name = `x`.repeat(81)
+    },
+    problem: {
+      field: `divisions.TOP_LEFT.name`,
+      message: `Shorten the top left division's name to 80 characters or fewer`,
+    },
+  },
+  {
+    scenario: `combatant`,
+    edit: (form: BracketForm) => {
+      form.divisions.TOP_RIGHT.seeds[8] = `x`.repeat(81)
+    },
+    problem: {
+      field: `divisions.TOP_RIGHT.seeds.8`,
+      message: `Shorten the name of seed 9 in TUXEDO STYLE to 80 characters or fewer`,
+    },
+  },
+])(
+  `a $scenario name that's too long is reported at its field`,
+  ({ edit, problem }) => {
+    const form = editForm(edit)
+
+    const problems = readProblems(form)
+
+    expect(problems).toStrictEqual([problem])
+  },
+)
+
 test(`the wild card's seed needs no name of its own`, () => {
   const form = editForm(form => {
     form.divisions.TOP_LEFT.seeds[13] = undefined

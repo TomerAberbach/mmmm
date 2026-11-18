@@ -8,3 +8,6 @@
   `styleSrc` in `security.ts` lists, such as React Aria's pressable style. When
   a React Aria upgrade fails `e2e/app/security.test.ts` with a blocked inline
   style, update the hash from the error
+- Key what only HTTPS needs, such as HSTS and `upgrade-insecure-requests`, on
+  `isServedOverHttps()` from `app/env.server.ts`, and `trust proxy` on Fly's
+  `FLY_APP_NAME`. Keep `isDevelopment()` for what Vite needs

@@ -1,7 +1,7 @@
 import { createContest } from '../app/contests.server.ts'
 import { createPlayer, readContestPlayer } from '../app/players.server.ts'
 import { createEducator } from './educators.ts'
-import type { AddYear } from './years.ts'
+import { addYear } from './years.ts'
 
 /** Creates the contest in the current year, and returns its ID */
 export const addContest = async (
@@ -16,9 +16,10 @@ export const addContest = async (
 }
 
 /** Publishes a new current year with a contest in it */
-export const createContestInNewYear = async (
-  addYear: AddYear,
-): Promise<{ contestId: string; year: number }> => {
+export const createContestInNewYear = async (): Promise<{
+  contestId: string
+  year: number
+}> => {
   const year = await addYear({ published: true })
   const contestId = await addContest(await createEducator(), `Period 2 Biology`)
   return { contestId, year }
@@ -45,10 +46,11 @@ export const addPlayer = async (
  * Publishes a new current year, creates a player in a contest there, and
  * returns the player's ID and the year
  */
-export const createPlayerInNewYear = async (
-  addYear: AddYear,
-): Promise<{ playerId: string; year: number }> => {
-  const { contestId, year } = await createContestInNewYear(addYear)
+export const createPlayerInNewYear = async (): Promise<{
+  playerId: string
+  year: number
+}> => {
+  const { contestId, year } = await createContestInNewYear()
   const { id } = await addPlayer(contestId)
   return { playerId: id, year }
 }
