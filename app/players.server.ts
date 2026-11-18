@@ -19,11 +19,11 @@ export const createPlayer = (
   limit: () => Promise<LimitRefusal | undefined>,
 ): Promise<NewPlayer> =>
   prisma.$transaction(async tx => {
-    const { yearId } = await tx.contest.findUniqueOrThrow({
+    const { year } = await tx.contest.findUniqueOrThrow({
       where: { id: contestId },
-      select: { yearId: true },
+      select: { year: true },
     })
-    if ((await lockYear(tx, yearId, `SHARE`)) !== `CURRENT`) {
+    if ((await lockYear(tx, year, `SHARE`)) !== `CURRENT`) {
       return { refusal: `NOT_CURRENT_YEAR` }
     }
     const limitRefusal = await limit()

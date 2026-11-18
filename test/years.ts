@@ -12,9 +12,13 @@ const FIRST_YEAR = 9000
 
 const LOCK_KEY = 9000
 
-// Creates the sequence `claimYear` reads, once per test database. Its last
-// value is below `FIRST_YEAR`, and it fails instead of wrapping around
-export const CREATE_YEAR_SEQUENCE_SQL = `CREATE SEQUENCE test_year START 2100 MAXVALUE ${FIRST_YEAR - 1}`
+// Creates the sequences `claimYear` and `withCurrentYear` read, once per test
+// database. `claimYear`'s last value is below `FIRST_YEAR`, and it fails
+// instead of wrapping around
+export const CREATE_YEAR_SEQUENCES_SQL = [
+  `CREATE SEQUENCE test_year START 2100 MAXVALUE ${FIRST_YEAR - 1}`,
+  `CREATE SEQUENCE test_current_year START ${FIRST_YEAR}`,
+]
 
 // Returns a year that no other test in this run stores a bracket under
 export const claimYear = async (): Promise<number> => {
@@ -45,19 +49,6 @@ export const addClaimedYear: AddYear = async options => {
   return year
 }
 
-// Stores `input` unpublished in a year from `claimYear`, and returns the
-// bracket's ID
-export const createClaimedBracket = async (
-  input: BracketInput,
-): Promise<string> => {
-  const year = await addClaimedYear({ published: false, input })
-  const { id } = await prisma.bracket.findUniqueOrThrow({
-    where: { yearId: year },
-    select: { id: true },
-  })
-  return id
-}
-
 // Runs `run` while no other test adds a year from `FIRST_YEAR` up, so the
 // newest year `run` publishes stays the current year until `run` ends
 export const withCurrentYear = <Result>(
@@ -66,10 +57,12 @@ export const withCurrentYear = <Result>(
   prisma.$transaction(
     async tx => {
       await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(${LOCK_KEY})`
-      // Each year is newer than any year stored so far
+      // Each year is newer than any year added before it, even a deleted one
       const addYear: AddYear = async options => {
-        const { _max } = await prisma.year.aggregate({ _max: { id: true } })
-        const year = Math.max(FIRST_YEAR, (_max.id ?? 0) + 1)
+        const [row] = await prisma.$queryRaw<{ year: number }[]>`
+          SELECT nextval('test_current_year')::int AS year
+        `
+        const { year } = row!
         await storeBracket(year, options)
         return year
       }

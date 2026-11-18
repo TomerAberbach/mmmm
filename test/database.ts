@@ -2,15 +2,15 @@ import { randomUUID } from 'node:crypto'
 import { createPrismaClient } from '../app/db.server.ts'
 import { requireEnv } from '../app/env.server.ts'
 import { pushSchema } from '../prisma/push-schema.ts'
-import { CREATE_YEAR_SEQUENCE_SQL } from './years.ts'
+import { CREATE_YEAR_SEQUENCES_SQL } from './years.ts'
 
 type TestDatabase = {
   url: string
   drop: () => Promise<void>
 }
 
-// Creates an empty database with the schema and the sequence that `claimYear`
-// reads, on the server that `DATABASE_URL` points to
+// Creates an empty database with the schema and the sequences that
+// `test/years.ts` reads, on the server that `DATABASE_URL` points to
 export const createTestDatabase = async (): Promise<TestDatabase> => {
   const serverUrl = new URL(requireEnv(`DATABASE_URL`))
   const name = `mmmm_test_${randomUUID().replaceAll(`-`, ``)}`
@@ -22,7 +22,9 @@ export const createTestDatabase = async (): Promise<TestDatabase> => {
   await runSql(serverUrl, `CREATE DATABASE "${name}"`)
   try {
     await pushSchema({ env: { ...process.env, DATABASE_URL: url.href } })
-    await runSql(url, CREATE_YEAR_SEQUENCE_SQL)
+    for (const sql of CREATE_YEAR_SEQUENCES_SQL) {
+      await runSql(url, sql)
+    }
   } catch (error) {
     await drop()
     throw error

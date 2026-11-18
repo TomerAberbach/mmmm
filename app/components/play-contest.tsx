@@ -40,7 +40,7 @@ export const PlayContestPage = ({
 export const ContestContext = ({ contest }: { contest: PlayContest }) => (
   <div className='flex flex-col items-start gap-2'>
     <p className='bg-ink px-2 py-0.5 font-condensed font-bold tracking-widest text-white uppercase'>
-      {`March Mammal Madness ${contest.yearId}`}
+      {`March Mammal Madness ${contest.year}`}
     </p>
     <p className={PAGE_LABEL_CLASS_NAME}>
       {`${contest.name} · ${contest.educatorName}’s contest`}

@@ -14,7 +14,7 @@ const renderContest = async () => {
   let contest: Contest = {
     id: `period-2`,
     name: `Period 2 Biology`,
-    yearId: 2027,
+    year: 2027,
     link: `https://mmmm.onl/play/secret`,
   }
   const Stub = createRoutesStub([

@@ -35,7 +35,7 @@ export const loader = async ({
     }
   }
   return {
-    state: (await readCurrentYear()) === contest.yearId ? `askName` : `closed`,
+    state: (await readCurrentYear()) === contest.year ? `askName` : `closed`,
   }
 }
 

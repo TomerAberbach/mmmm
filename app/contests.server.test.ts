@@ -39,7 +39,7 @@ test(`a contest is created in the newest published year, before a newer unpublis
 
     await expect(
       readEducatorContest(educatorId, contestId),
-    ).resolves.toMatchObject({ yearId: year })
+    ).resolves.toMatchObject({ year })
   }))
 
 test(`a contest's link shows the contest and its educator`, () =>
@@ -54,7 +54,7 @@ test(`a contest's link shows the contest and its educator`, () =>
     expect(contest).toStrictEqual({
       id: contestId,
       name: `Period 6 Biology`,
-      yearId: year,
+      year,
       educatorName: `Ms. Rivera`,
     })
   }))

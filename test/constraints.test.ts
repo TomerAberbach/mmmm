@@ -1,14 +1,16 @@
 import { beforeAll, expect, test } from 'vitest'
 import { prisma } from '../app/db.server.ts'
 import { BRACKET_2026 } from '../prisma/brackets.ts'
-import { createClaimedBracket } from './years.ts'
+import { addClaimedYear } from './years.ts'
 
 // Every write here is refused, so the tests share one bracket
 const createTestBracket = async () =>
   prisma.bracket.findUniqueOrThrow({
-    where: { id: await createClaimedBracket(BRACKET_2026) },
+    where: {
+      year: await addClaimedYear({ published: false, input: BRACKET_2026 }),
+    },
     select: {
-      id: true,
+      year: true,
       wildCard: { select: { entrants: { take: 1 } } },
       divisions: {
         take: 1,
@@ -69,11 +71,11 @@ test.each([
   },
   {
     scenario: `a 33rd Round 1 battle`,
-    write: ({ id }: TestBracket) =>
+    write: ({ year }: TestBracket) =>
       prisma.battle.create({
         data: {
           id: crypto.randomUUID(),
-          bracketId: id,
+          year,
           round: `ROUND_1`,
           index: 32,
         },

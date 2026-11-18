@@ -57,12 +57,12 @@ for (const educator of EDUCATORS) {
 // 2025's is published, so it's the current year's bracket. The upcoming
 // year's is unpublished, as a new bracket starts, so an admin can publish it.
 // It takes 2026's names
-if (!(await prisma.bracket.findUnique({ where: { yearId: 2025 } }))) {
+if (!(await prisma.bracket.findUnique({ where: { year: 2025 } }))) {
   await saveUnpublishedBracket(2025, BRACKET_2025)
 }
 await setBracketPublished(2025, true)
 const upcomingYear = readUpcomingYear(new Date())
-if (!(await prisma.bracket.findUnique({ where: { yearId: upcomingYear } }))) {
+if (!(await prisma.bracket.findUnique({ where: { year: upcomingYear } }))) {
   await saveUnpublishedBracket(upcomingYear, BRACKET_2026)
 }
 

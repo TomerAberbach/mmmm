@@ -18,15 +18,15 @@ export const handle = { fullWidth: true }
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
-  const { yearId } = readPlayContest(context)
+  const { year } = readPlayContest(context)
   // A contest exists only while its year's bracket is published
   const [bracket, { draft, submission }] = await Promise.all([
-    readBracket(yearId),
+    readBracket(year),
     readDraftAndSubmission(player.id),
   ])
   return {
     displayName: player.displayName,
-    year: yearId,
+    year,
     bracket: bracket!,
     draft,
     // A player sees their personal link once they submit
