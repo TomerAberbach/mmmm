@@ -3,8 +3,10 @@ import type { Page } from '@playwright/test'
 import { signInConfirmed } from './auth.ts'
 import { readNewestActionLink } from './mailbox.ts'
 
-// Tests can't change the server's environment once it starts, so each test
-// that needs an admin takes its own address from this record
+/**
+ * Tests can't change the server's environment once it starts, so each test
+ * that needs an admin takes its own address from this record
+ */
 export const ADMINS = {
   authenticatorApp: `authenticator-app-admin@example.com`,
   passkey: `passkey-admin@example.com`,
@@ -19,8 +21,10 @@ export const ADMINS = {
 
 export const ADMIN_LIST = Object.values(ADMINS)
 
-// Chromium's virtual authenticator stands in for a device that checks a
-// fingerprint, face, or PIN
+/**
+ * Chromium's virtual authenticator stands in for a device that checks a
+ * fingerprint, face, or PIN
+ */
 const addVirtualAuthenticator = async (page: Page): Promise<void> => {
   const cdp = await page.context().newCDPSession(page)
   await cdp.send(`WebAuthn.enable`)
@@ -52,7 +56,7 @@ export const openSetupLink = async (
   ).toBeVisible()
 }
 
-// Signs in as a new admin with a passkey, so the admin area opens
+/** Signs in as a new admin with a passkey, so the admin area opens */
 export const signInAsAdmin = async (
   page: Page,
   email: string,

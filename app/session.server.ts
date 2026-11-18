@@ -21,8 +21,10 @@ type SessionLookup = { signedIn: SignedIn | null; headers: Headers }
 
 const signedInContext = createContext<() => Promise<SignedIn | null>>()
 
-// Looks up the session at most once per request, and only when
-// `readSignedInEducator` runs or `requireSignedInEducator` needs it
+/**
+ * Looks up the session at most once per request, and only when
+ * `readSignedInEducator` runs or `requireSignedInEducator` needs it
+ */
 export const loadSignedInEducator: MiddlewareFunction<Response> = async (
   { request, context },
   next,
@@ -73,8 +75,10 @@ export const readSignedInEducator = async (
 
 const requiredContext = createContext<SignedIn>()
 
-// Sends signed-out visitors to sign in. Routes below it read the educator with
-// `readRequiredEducator`, and the session with `readRequiredSession`
+/**
+ * Sends signed-out visitors to sign in. Routes below it read the educator with
+ * `readRequiredEducator`, and the session with `readRequiredSession`
+ */
 export const requireSignedInEducator: MiddlewareFunction<Response> = async (
   { context },
   next,
@@ -87,8 +91,10 @@ export const requireSignedInEducator: MiddlewareFunction<Response> = async (
   return next()
 }
 
-// Sends a signed-in educator to their dashboard, away from the pages that sign
-// in or sign up
+/**
+ * Sends a signed-in educator to their dashboard, away from the pages that sign
+ * in or sign up
+ */
 export const requireSignedOut: MiddlewareFunction<Response> = async (
   { context },
   next,
@@ -103,8 +109,10 @@ export const readRequiredSession = (
   context: Readonly<RouterContextProvider>,
 ): SignedInSession => context.get(requiredContext).session
 
-// Answers anyone but an admin with the not-found page, so the admin area looks
-// like any missing page. Nest it after `requireSignedInEducator`
+/**
+ * Answers anyone but an admin with the not-found page, so the admin area looks
+ * like any missing page. Nest it after `requireSignedInEducator`
+ */
 export const requireAdmin: MiddlewareFunction<Response> = async (
   { context },
   next,

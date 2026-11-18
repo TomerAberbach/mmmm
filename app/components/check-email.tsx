@@ -12,7 +12,7 @@ export const CheckEmail = ({
   reason,
 }: {
   email: string
-  // `unconfirmed` points to the link sent at sign-up instead of a new one
+  /** `unconfirmed` points to the link sent at sign-up instead of a new one */
   reason: `signed-up` | `unconfirmed`
 }) => {
   const resend = useFetcher<ResendResult>()

@@ -6,23 +6,27 @@ import { Button } from './button.tsx'
 import { ModalFrame } from './modal-frame.tsx'
 
 type ConfirmDialogProps = {
-  // The button that opens the dialog
+  /** The button that opens the dialog */
   trigger: ReactElement
-  // A question that names the change, such as "Delete Period 5 Biology?"
+  /** A question that names the change, such as "Delete Period 5 Biology?" */
   title: string
-  // What will change, and whether it can be undone
+  /** What will change, and whether it can be undone */
   children: ReactNode
-  // The action itself, such as "Delete contest". Never "OK"
+  /** The action itself, such as "Delete contest". Never "OK" */
   confirmLabel: string
-  // `primary` for an action that adds rather than removes, such as publishing
+  /**
+   * `primary` for an action that adds rather than removes, such as publishing
+   */
   confirmVariant?: `danger` | `primary`
 } & (
   | {
-      // The route action that makes the change. It returns a ConfirmResult
+      /** The route action that makes the change. It returns a ConfirmResult */
       action: string
       fields?: Record<string, string>
-      // Lets the page read the result with `useFetcher({ key })` once the
-      // dialog closes
+      /**
+       * Lets the page read the result with `useFetcher({ key })` once the
+       * dialog closes
+       */
       fetcherKey?: string
     }
   // Makes the change in the page. The dialog closes when it's called
@@ -33,9 +37,11 @@ export type ConfirmResult = { ok: true } | { error: string }
 
 const NO_FIELDS: Record<string, string> = {}
 
-// Confirms a destructive or hard-to-undo action, which the route action or
-// `onConfirm` then performs. Focus starts on Cancel, and Escape cancels. The
-// dialog stays open to show an error the route action returns
+/**
+ * Confirms a destructive or hard-to-undo action, which the route action or
+ * `onConfirm` then performs. Focus starts on Cancel, and Escape cancels. The
+ * dialog stays open to show an error the route action returns
+ */
 export const ConfirmDialog = ({
   trigger,
   title,

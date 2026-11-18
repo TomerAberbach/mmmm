@@ -4,9 +4,11 @@ import type { RoundSelection } from './bracket-rounds.tsx'
 import { usePicking } from './picking.ts'
 import type { BracketView } from '~/bracket-view.ts'
 
-// The diagram on wide screens and on paper, and one round at a time on narrower
-// screens. Screen readers read the rounds as lists beside the diagram, unless
-// the bracket is being picked, which makes each box a labeled control
+/**
+ * The diagram on wide screens and on paper, and one round at a time on narrower
+ * screens. Screen readers read the rounds as lists beside the diagram, unless
+ * the bracket is being picked, which makes each box a labeled control
+ */
 export const Bracket = ({
   view,
   selection,

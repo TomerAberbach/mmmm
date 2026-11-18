@@ -5,13 +5,15 @@ import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
 import { createSecret } from './secrets.server.ts'
 
-// `link` is the contest link, which players open
+/** `link` is the contest link, which players open */
 export type ContestSummary = { id: string; name: string; link: string }
 
 export type Contest = ContestSummary & { year: number }
 
-// Creates a contest in the current year. Returns the contest's ID, or null
-// before any bracket is published
+/**
+ * Creates a contest in the current year. Returns the contest's ID, or null
+ * before any bracket is published
+ */
 export const createContest = (
   educatorId: string,
   name: string,
@@ -36,7 +38,7 @@ export const createContest = (
     return id
   })
 
-// Replaces the stored secret with the contest link built from it
+/** Replaces the stored secret with the contest link built from it */
 const withLink = <Row extends { linkSecret: string }>({
   linkSecret,
   ...row
@@ -45,7 +47,7 @@ const withLink = <Row extends { linkSecret: string }>({
   link: toAppUrl(href(`/play/:linkSecret`, { linkSecret })).href,
 })
 
-// Oldest first
+/** Oldest first */
 export const readEducatorContests = async (
   educatorId: string,
   year: number,
@@ -58,7 +60,7 @@ export const readEducatorContests = async (
   return contests.map(withLink)
 }
 
-// Null unless the educator runs the contest
+/** Null unless the educator runs the contest */
 export const readEducatorContest = async (
   educatorId: string,
   contestId: string,
@@ -70,7 +72,7 @@ export const readEducatorContest = async (
   return contest && withLink(contest)
 }
 
-// Returns whether the educator runs the contest
+/** Returns whether the educator runs the contest */
 export const renameContest = async (
   educatorId: string,
   contestId: string,
@@ -83,7 +85,9 @@ export const renameContest = async (
   return count > 0
 }
 
-// What a contest link shows a player. Null for a link that matches no contest
+/**
+ * What a contest link shows a player. Null for a link that matches no contest
+ */
 export type ContestByLink = {
   id: string
   name: string

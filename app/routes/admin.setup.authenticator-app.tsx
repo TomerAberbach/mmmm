@@ -22,8 +22,10 @@ import {
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
-// Opens for a session that may add a second factor, until the educator has an
-// authenticator app
+/**
+ * Opens for a session that may add a second factor, until the educator has an
+ * authenticator app
+ */
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const { assurance } = readRequiredSession(context)
   const secondFactors = await readSecondFactors(
@@ -37,8 +39,10 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     : redirect(readSecondFactorStep(secondFactors))
 }
 
-// The loader sends an educator with an app away, so once the app turns on,
-// skipping it keeps the recovery codes on screen
+/**
+ * The loader sends an educator with an app away, so once the app turns on,
+ * skipping it keeps the recovery codes on screen
+ */
 export const shouldRevalidate = ({
   actionResult,
   defaultShouldRevalidate,
@@ -46,8 +50,10 @@ export const shouldRevalidate = ({
   (actionResult as { step?: Step } | undefined)?.step !== `codes` &&
   defaultShouldRevalidate
 
-// The step the page shows next. Without an action result, it asks for the
-// password
+/**
+ * The step the page shows next. Without an action result, it asks for the
+ * password
+ */
 type Step = `password` | `scan` | `codes`
 
 const rejectPassword = ({ data: reply, init }: ReturnType<typeof rejectForm>) =>
@@ -60,7 +66,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
     : start(request, formData)
 }
 
-// Makes the app's secret, which stays off until a code from the app matches
+/** Makes the app's secret, which stays off until a code from the app matches */
 const start = async (request: Request, formData: FormData) => {
   const submission = parseWithZod(formData, { schema: confirmPasswordSchema })
   if (submission.status !== `success`) {
@@ -82,8 +88,10 @@ const start = async (request: Request, formData: FormData) => {
   }
 }
 
-// Better Auth replaces the session once the app turns on, so the response
-// sets the new session's cookie
+/**
+ * Better Auth replaces the session once the app turns on, so the response
+ * sets the new session's cookie
+ */
 const turnOn = async (
   request: Request,
   formData: FormData,

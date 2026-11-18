@@ -1,8 +1,10 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { Request, RequestHandler } from 'express'
 
-// Asks for a shared password, so only testers can reach staging. Any username
-// works
+/**
+ * Asks for a shared password, so only testers can reach staging. Any username
+ * works
+ */
 export const requireStagingPassword = (password: string): RequestHandler => {
   const expected = Buffer.from(password)
   return (req, res, next) => {

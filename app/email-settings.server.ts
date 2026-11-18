@@ -5,8 +5,10 @@ import type { AppEnv } from './env.server.ts'
 const TRANSPORTS = [`resend`, `mailbox`] as const
 type EmailTransport = (typeof TRANSPORTS)[number]
 
-// The mailbox shows every email, confirmation links included, without signing
-// in, so only development and tests may use it
+/**
+ * The mailbox shows every email, confirmation links included, without signing
+ * in, so only development and tests may use it
+ */
 const MAILBOX_APP_ENVS: ReadonlySet<AppEnv> = new Set([`development`, `test`])
 
 export const readEmailTransport = (): EmailTransport => {
@@ -22,7 +24,7 @@ export const readEmailTransport = (): EmailTransport => {
   return transport.data
 }
 
-// Throws when a setting that sending email needs is missing
+/** Throws when a setting that sending email needs is missing */
 export const checkEmailSettings = (): void => {
   requireEnv(`EMAIL_FROM`)
   if (readEmailTransport() === `resend`) {

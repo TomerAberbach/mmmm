@@ -20,8 +20,10 @@ import { PhaseSection } from '~/components/phase-section.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
-// Only the upcoming year's bracket can be managed here. Until it's published,
-// the setup form edits it. After that, only its combatants' names change
+/**
+ * Only the upcoming year's bracket can be managed here. Until it's published,
+ * the setup form edits it. After that, only its combatants' names change
+ */
 export const loader = async () => {
   const year = readUpcomingYear(new Date())
   const summary = await readBracketSummary(year)

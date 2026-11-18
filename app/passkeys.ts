@@ -5,8 +5,10 @@ import type {
 } from '@simplewebauthn/browser'
 import { isSecondFactorRefusal } from './second-factor.ts'
 
-// Resolves to an error message, or undefined once the ceremony succeeds. The
-// browser rejects the ceremony when the educator cancels it
+/**
+ * Resolves to an error message, or undefined once the ceremony succeeds. The
+ * browser rejects the ceremony when the educator cancels it
+ */
 export type PasskeyCeremony = () => Promise<string | undefined>
 
 export const addPasskey: PasskeyCeremony = () =>
@@ -42,8 +44,10 @@ const runCeremony = async (
   }
 }
 
-// Better Auth's message for a refusal the app adds, such as a missing second
-// factor
+/**
+ * Better Auth's message for a refusal the app adds, such as a missing second
+ * factor
+ */
 class RefusalError extends Error {
   public override readonly name = `RefusalError`
 }

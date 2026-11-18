@@ -90,7 +90,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   )
 }
 
-// A route's `handle` of `{ fullWidth: true }` lifts the page's width limit
+/** A route's `handle` of `{ fullWidth: true }` lifts the page's width limit */
 const isFullWidth = (handle: unknown): boolean =>
   typeof handle === `object` &&
   handle !== null &&

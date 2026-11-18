@@ -13,9 +13,11 @@ export const loader = ({ request }: Route.LoaderArgs) => ({
   notice: readNotice(new URL(request.url).searchParams),
 })
 
-// A confirmation link returns here with `confirmed`, plus an `error` when it
-// fails. A password reset returns here with `password-reset`, and a sign-in
-// whose code page ran out with `challenge-expired`
+/**
+ * A confirmation link returns here with `confirmed`, plus an `error` when it
+ * fails. A password reset returns here with `password-reset`, and a sign-in
+ * whose code page ran out with `challenge-expired`
+ */
 const readNotice = (params: URLSearchParams): SignInNotice | undefined => {
   if (params.has(`error`)) {
     return `link-invalid`

@@ -14,8 +14,10 @@ import {
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
-// Saves the player's draft, submits it, or discards it for their submission.
-// The picker reads only the status
+/**
+ * Saves the player's draft, submits it, or discards it for their submission.
+ * The picker reads only the status
+ */
 export const action = async ({
   request,
   context,

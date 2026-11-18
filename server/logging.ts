@@ -1,11 +1,13 @@
 import type { RequestHandler } from 'express'
 
-// Reset links, contest links, and personal links
+/** Reset links, contest links, and personal links */
 const SECRET_PATH =
   /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket)\/)[^/]+/u
 
-// Logs each request without its query string, its secrets, or the client's IP
-// address
+/**
+ * Logs each request without its query string, its secrets, or the client's IP
+ * address
+ */
 export const logRequests: RequestHandler = (req, res, next) => {
   const start = performance.now()
   // `close` also fires when the client disconnects before the response ends

@@ -15,9 +15,11 @@ export type Email = {
   body: ReactElement
 }
 
-// Skips the email once its address has received its share, so no one can
-// flood an inbox through any form that sends email. Skipping changes nothing
-// in the response, which reveals nothing about the address
+/**
+ * Skips the email once its address has received its share, so no one can
+ * flood an inbox through any form that sends email. Skipping changes nothing
+ * in the response, which reveals nothing about the address
+ */
 export const sendEmail = async (email: Email): Promise<void> => {
   if (!(await allowEmailTo(email.to))) {
     console.warn(`Skipped the email "${email.subject}" over the hourly limit`)
@@ -26,9 +28,11 @@ export const sendEmail = async (email: Email): Promise<void> => {
   await deliver(email)
 }
 
-// Sends a security notice past the cap, so filling an inbox's share can't hide
-// it. Only the owner's own actions trigger notices. Logs a failure instead of
-// throwing it, since the change it reports has already happened
+/**
+ * Sends a security notice past the cap, so filling an inbox's share can't hide
+ * it. Only the owner's own actions trigger notices. Logs a failure instead of
+ * throwing it, since the change it reports has already happened
+ */
 export const sendNoticeOrLog = (email: Email): Promise<void> =>
   logFailure(email, deliver(email))
 
@@ -50,7 +54,7 @@ const EMAILS_PER_ADDRESS = new RateLimiterMemory({
 const allowEmailTo = async (to: string): Promise<boolean> =>
   (await tryConsume(EMAILS_PER_ADDRESS, normalizeEmail(to))) === undefined
 
-// Logs a failure instead of throwing it, for an email sent without waiting
+/** Logs a failure instead of throwing it, for an email sent without waiting */
 export const sendEmailOrLog = (email: Email): Promise<void> =>
   logFailure(email, sendEmail(email))
 
@@ -74,7 +78,7 @@ const renderEmail = async ({
   }
 }
 
-// Prints an EmailAction's label with its link on the next line
+/** Prints an EmailAction's label with its link on the next line */
 const formatEmailAction: FormatCallback = (element, walk, builder) => {
   builder.openBlock({ leadingLineBreaks: 2 })
   walk(element.children, builder)
@@ -85,7 +89,7 @@ const formatEmailAction: FormatCallback = (element, walk, builder) => {
   builder.closeBlock({ trailingLineBreaks: 2 })
 }
 
-// `toPlainText` adds React Email's own selectors before these
+/** `toPlainText` adds React Email's own selectors before these */
 const PLAIN_TEXT_OPTIONS = {
   selectors: [
     { selector: `a[data-action]`, format: `emailAction` },
@@ -113,8 +117,10 @@ const sendWithResend = async (email: RenderedEmail): Promise<void> => {
   }
 }
 
-// Resend's error name, such as validation_error. Its message can quote the
-// recipient's address, which logs must not hold
+/**
+ * Resend's error name, such as validation_error. Its message can quote the
+ * recipient's address, which logs must not hold
+ */
 const readErrorName = async (response: Response): Promise<string> =>
   RESEND_ERROR_SCHEMA.safeParse(await response.json().catch(() => null)).data
     ?.name ?? `unknown_error`

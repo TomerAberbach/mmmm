@@ -47,14 +47,14 @@ import {
 } from '~/bracket.ts'
 import type { DivisionPosition } from '~/bracket.ts'
 
-// ASU's wild card usually fills seed 16 with two entrants
+/** ASU's wild card usually fills seed 16 with two entrants */
 const DEFAULT_WILD_CARD: WildCardChoice = {
   position: `TOP_LEFT`,
   seed: 16,
   entrantCount: 2,
 }
 
-// The left divisions, then the right ones
+/** The left divisions, then the right ones */
 const DIVISION_COLUMNS = [
   DIVISION_POSITIONS.slice(0, 2),
   DIVISION_POSITIONS.slice(2),
@@ -65,15 +65,17 @@ const ENTRANT_COUNTS = Array.from(
   (_, index) => MIN_WILD_CARD_ENTRANTS + index,
 )
 
-// Creates or edits the year's unpublished bracket. The wild card's choices
-// decide which seed holds its entrants, so they come first
+/**
+ * Creates or edits the year's unpublished bracket. The wild card's choices
+ * decide which seed holds its entrants, so they come first
+ */
 export const BracketSetupForm = ({
   year,
   defaultValue,
   lastResult,
 }: {
   year: number
-  // An existing bracket to edit
+  /** An existing bracket to edit */
   defaultValue?: BracketForm
   lastResult?: SubmissionResult
 }) => {
@@ -141,8 +143,10 @@ export const BracketSetupForm = ({
   )
 }
 
-// Reads the errors from the form's context, so only the summary re-renders as
-// they change. Field errors arrive in the order the form shows the fields
+/**
+ * Reads the errors from the form's context, so only the summary re-renders as
+ * they change. Field errors arrive in the order the form shows the fields
+ */
 const FormErrorSummary = () => {
   const { allErrors } = useFormMetadata()
   return (
@@ -360,8 +364,10 @@ const WildCardEntrants = ({ entrantCount }: { entrantCount: number }) => (
   </div>
 )
 
-// A name field tied to the form by `name`. A hidden label still names the
-// field for screen readers. A pasted name replaces the field through its key
+/**
+ * A name field tied to the form by `name`. A hidden label still names the
+ * field for screen readers. A pasted name replaces the field through its key
+ */
 const NameField = ({
   name,
   label,

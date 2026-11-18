@@ -22,7 +22,7 @@ type DivisionCombatants = {
   combatants: CombatantRow[]
 }
 
-// Renames a published bracket's combatants, one row at a time
+/** Renames a published bracket's combatants, one row at a time */
 export const CombatantRenames = ({
   divisions,
 }: {
@@ -64,7 +64,9 @@ export const CombatantRenames = ({
   )
 }
 
-// The row's editor closes once its save succeeds, and Rename opens it afresh
+/**
+ * The row's editor closes once its save succeeds, and Rename opens it afresh
+ */
 const RenameRow = ({
   combatant,
   isEditing,

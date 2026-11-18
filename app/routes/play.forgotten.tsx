@@ -4,8 +4,10 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { readPlayContest } from '~/play-context.server.ts'
 import { forgetPlayer } from '~/player-cookie.server.ts'
 
-// Forgets the player this browser remembers in the contest, for shared
-// computers
+/**
+ * Forgets the player this browser remembers in the contest, for shared
+ * computers
+ */
 export const action = async ({ params, context }: Route.ActionArgs) => {
   throw redirect(href(`/play/:linkSecret/forgotten`, params), {
     headers: { 'Set-Cookie': await forgetPlayer(readPlayContest(context).id) },

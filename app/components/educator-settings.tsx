@@ -24,7 +24,7 @@ export const EducatorSettings = ({
   secondFactors,
 }: {
   name: string
-  // Only for admins and educators who have a second factor
+  /** Only for admins and educators who have a second factor */
   secondFactors?: SecondFactorSettingsData
 }) => (
   <div className='flex max-w-md flex-col gap-8'>

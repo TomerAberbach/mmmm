@@ -11,7 +11,7 @@ import {
 } from '../auth.ts'
 import { readNewestActionLink } from '../mailbox.ts'
 
-// Reads the key under "Can't scan it?", as an educator would type it
+/** Reads the key under "Can't scan it?", as an educator would type it */
 const readTotpUri = async (page: Page): Promise<string> => {
   await page.getByRole(`button`, { name: `Can't scan it?` }).click()
   const key = await page

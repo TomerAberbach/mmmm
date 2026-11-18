@@ -12,9 +12,11 @@ import {
   DIVISION_NAME,
 } from '../app/free-text.ts'
 
-// Pushes schema.prisma, then adds the CHECK constraints it can't declare. Run
-// it with `node prisma/push-schema.ts`, passing `--force-reset` to empty the
-// database first
+/**
+ * Pushes schema.prisma, then adds the CHECK constraints it can't declare. Run
+ * it with `node prisma/push-schema.ts`, passing `--force-reset` to empty the
+ * database first
+ */
 export const pushSchema = async ({
   forceReset = false,
   env = process.env,
@@ -26,8 +28,10 @@ export const pushSchema = async ({
   await runPrisma([`db`, `execute`, `--stdin`], env, readConstraintsSql())
 }
 
-// Each constraint drops first, so the SQL reruns safely. The limits come from
-// the app's own constants, so the database and the app can't disagree
+/**
+ * Each constraint drops first, so the SQL reruns safely. The limits come from
+ * the app's own constants, so the database and the app can't disagree
+ */
 const readConstraintsSql = (): string =>
   [
     check(`SeedSlot`, `seed`, `seed BETWEEN 1 AND ${SEEDS_PER_DIVISION}`),
@@ -43,7 +47,7 @@ const readConstraintsSql = (): string =>
     checkName(`Player`, DISPLAY_NAME.maxLength, `displayName`),
   ].join(`\n`)
 
-// The battle's round's count, or 0 for a round the app doesn't know
+/** The battle's round's count, or 0 for a round the app doesn't know */
 const readBattleCountSql = (): string =>
   `CASE round ${ROUNDS.map(
     round => `WHEN '${round}' THEN ${BATTLE_COUNTS[round]}`,
@@ -54,7 +58,7 @@ const check = (table: string, column: string, condition: string): string => {
   return `ALTER TABLE "${table}" DROP CONSTRAINT IF EXISTS ${name}, ADD CONSTRAINT ${name} CHECK (${condition});`
 }
 
-// Trimmed and within the field's length, as `freeTextSchema` requires
+/** Trimmed and within the field's length, as `freeTextSchema` requires */
 const checkName = (table: string, maxLength: number, column = `name`): string =>
   check(
     table,

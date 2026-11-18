@@ -2,7 +2,7 @@ import type { BracketInput } from '../app/bracket-input.ts'
 
 // Past brackets as ASU published them, with names as printed
 
-// https://libguides.asu.edu/ld.php?content_id=79927309
+/** https://libguides.asu.edu/ld.php?content_id=79927309 */
 export const BRACKET_2026: BracketInput = {
   divisions: {
     TOP_LEFT: {
@@ -96,7 +96,7 @@ export const BRACKET_2026: BracketInput = {
   },
 }
 
-// https://libguides.asu.edu/ld.php?content_id=82950773
+/** https://libguides.asu.edu/ld.php?content_id=82950773 */
 export const BRACKET_2025: BracketInput = {
   divisions: {
     TOP_LEFT: {
@@ -190,7 +190,7 @@ export const BRACKET_2025: BracketInput = {
   },
 }
 
-// https://libguides.asu.edu/ld.php?content_id=29439696
+/** https://libguides.asu.edu/ld.php?content_id=29439696 */
 export const BRACKET_2017: BracketInput = {
   divisions: {
     TOP_LEFT: {

@@ -23,7 +23,7 @@ export const ContestDetails = ({ contest }: { contest: Contest }) => (
   </div>
 )
 
-// Rename opens the name's field below the heading until the save succeeds
+/** Rename opens the name's field below the heading until the save succeeds */
 const ContestName = ({ contest }: { contest: Contest }) => {
   const [isEditing, setIsEditing] = useState(false)
   const { fetcher, isOpen, isSaved, open, close } = useInlineEdit(

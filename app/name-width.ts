@@ -1,5 +1,7 @@
-// Advance widths in em of Barlow Condensed ExtraBold's uppercase glyphs,
-// measured in Chromium. ExtraBold is the widest weight a name shows in
+/**
+ * Advance widths in em of Barlow Condensed ExtraBold's uppercase glyphs,
+ * measured in Chromium. ExtraBold is the widest weight a name shows in
+ */
 const GLYPH_WIDTHS = new Map<string, number>([
   [` `, 0.2],
   [`!`, 0.289],
@@ -78,17 +80,21 @@ const GLYPH_WIDTHS = new Map<string, number>([
   [`—`, 0.593],
 ])
 
-// A character outside the table renders in a fallback font. Emoji and CJK
-// characters are about 1em wide there, so this one leaves room for them
+/**
+ * A character outside the table renders in a fallback font. Emoji and CJK
+ * characters are about 1em wide there, so this one leaves room for them
+ */
 const UNKNOWN_GLYPH_WIDTH = 1.25
 
-// `tracking-wide`
+/** `tracking-wide` */
 const LETTER_SPACING = 0.025
 
 const graphemes = new Intl.Segmenter()
 
-// The width in em of the widest name, uppercased as the boxes show names.
-// Kerning only narrows a name, so the estimate never falls short
+/**
+ * The width in em of the widest name, uppercased as the boxes show names.
+ * Kerning only narrows a name, so the estimate never falls short
+ */
 export const measureWidestName = (names: [string, ...string[]]): number =>
   Math.max(...names.map(measureName))
 

@@ -9,8 +9,10 @@ import { rejectForm } from '~/form-replies.server.ts'
 
 const LINK_INVALID_URL = `${href(`/forgot-password`)}?link-invalid`
 
-// A reset link returns here with `token`, or with `error` when it expired or
-// was used
+/**
+ * A reset link returns here with `token`, or with `error` when it expired or
+ * was used
+ */
 export const loader = ({ request }: Route.LoaderArgs) => {
   const token = new URL(request.url).searchParams.get(`token`)
   return token ? { token } : redirect(LINK_INVALID_URL)

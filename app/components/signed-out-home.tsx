@@ -7,7 +7,7 @@ import { PlayerNote } from './player-note.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import type { CurrentBracket } from '~/current-bracket.server.ts'
 
-// Below its intro, the page shows the current bracket, if any is published
+/** Below its intro, the page shows the current bracket, if any is published */
 export const SignedOutHome = ({
   upcomingYear,
   current,

@@ -2,15 +2,17 @@ import { useField } from '@conform-to/react'
 import { useId } from 'react'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 
-// Lists a long form's errors above it, each linking to its field, as the
-// GOV.UK error summary does. Each field still shows its own error. It isn't a
-// live region, since it changes on every keystroke once the form revalidates,
-// and the form already moves focus to the first invalid field. Render it
-// inside the form's FormProvider
+/**
+ * Lists a long form's errors above it, each linking to its field, as the
+ * GOV.UK error summary does. Each field still shows its own error. It isn't a
+ * live region, since it changes on every keystroke once the form revalidates,
+ * and the form already moves focus to the first invalid field. Render it
+ * inside the form's FormProvider
+ */
 export const ErrorSummary = ({
   errors,
 }: {
-  // Each field's Conform name with its error
+  /** Each field's Conform name with its error */
   errors: { name: string; message: string }[]
 }) => {
   const headingId = useId()

@@ -9,10 +9,12 @@ export type NewPlayer =
   | { refusal: `NOT_CURRENT_YEAR` }
   | { refusal: `LIMITED`; limit: LimitRefusal }
 
-// Starts a player's draft in the contest, and returns their personal link's
-// secret, which only the player's cookie and link keep. Only the current
-// year's contests take new players. `limit` runs once the contest takes the
-// player, so a refused player costs no attempt
+/**
+ * Starts a player's draft in the contest, and returns their personal link's
+ * secret, which only the player's cookie and link keep. Only the current
+ * year's contests take new players. `limit` runs once the contest takes the
+ * player, so a refused player costs no attempt
+ */
 export const createPlayer = (
   contestId: string,
   displayName: string,
@@ -42,7 +44,7 @@ export const createPlayer = (
     return { secret }
   })
 
-// Null unless the secret is a player's personal link in the contest
+/** Null unless the secret is a player's personal link in the contest */
 export const readContestPlayer = (
   contestId: string,
   secret: string,
@@ -52,7 +54,7 @@ export const readContestPlayer = (
     select: { id: true, displayName: true },
   })
 
-// Null for a secret that matches no player
+/** Null for a secret that matches no player */
 export const readPlayerByLink = async (
   secret: string,
 ): Promise<{ contestId: string; contestLinkSecret: string } | null> => {

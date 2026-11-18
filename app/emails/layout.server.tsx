@@ -17,7 +17,7 @@ import appCss from '../app.css?raw'
 import { LETTER_COLORS } from '../components/letter-colors.tsx'
 import { requireEnv } from '../env.server.ts'
 
-// Email clients support only hex colors, so any other color is an error
+/** Email clients support only hex colors, so any other color is an error */
 const readAppColors = (): Record<string, string> =>
   Object.fromEntries(
     Array.from(
@@ -32,10 +32,12 @@ const readAppColors = (): Record<string, string> =>
     ),
   )
 
-// Email clients can't load the app's stylesheet, so the email theme reads the
-// colors from its source. The email loads no web fonts, because loading them
-// would send each reader's IP address to the font host. Each font stack names
-// the app's font for readers who have it installed, then falls back
+/**
+ * Email clients can't load the app's stylesheet, so the email theme reads the
+ * colors from its source. The email loads no web fonts, because loading them
+ * would send each reader's IP address to the font host. Each font stack names
+ * the app's font for readers who have it installed, then falls back
+ */
 const EMAIL_THEME = {
   theme: {
     colors: readAppColors(),
@@ -66,7 +68,7 @@ export const EmailLayout = ({
   heading,
   children,
 }: {
-  // The line inboxes show after the subject
+  /** The line inboxes show after the subject */
   preview: string
   heading: string
   children: ReactNode
@@ -121,8 +123,10 @@ export const EmailParagraph = ({ children }: { children: ReactNode }) => (
   <Text className='m-0 mb-4 text-base leading-normal'>{children}</Text>
 )
 
-// The email's one action, as a button with a link to paste below it. The plain
-// text shows the label with the link on the next line
+/**
+ * The email's one action, as a button with a link to paste below it. The plain
+ * text shows the label with the link on the next line
+ */
 export const EmailAction = ({
   href,
   children,
@@ -151,7 +155,7 @@ export const EmailAction = ({
   </>
 )
 
-// A link inside a paragraph, for a secondary action beside EmailAction
+/** A link inside a paragraph, for a secondary action beside EmailAction */
 export const EmailLink = ({
   href,
   children,

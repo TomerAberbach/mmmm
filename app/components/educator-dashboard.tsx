@@ -5,8 +5,10 @@ import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import type { ContestSummary } from '~/contests.server.ts'
 
-// Contests open once a bracket is published, so there's no current year yet
-// when `current` is null
+/**
+ * Contests open once a bracket is published, so there's no current year yet
+ * when `current` is null
+ */
 export type EducatorDashboardView =
   | { current: null; upcomingYear: number }
   | { current: { year: number; contests: ContestSummary[] } }
@@ -38,7 +40,7 @@ export const EducatorDashboard = ({
   )
 }
 
-// A notice instead of a disabled Create button, which wouldn't say why
+/** A notice instead of a disabled Create button, which wouldn't say why */
 const BracketNotReady = ({ upcomingYear }: { upcomingYear: number }) => (
   <section className='flex flex-col gap-2 border-2 border-ink p-5 shadow-offset shadow-sweet-16'>
     <h2 className={SECTION_HEADING_CLASS_NAME}>

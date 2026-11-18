@@ -13,7 +13,7 @@ import {
 } from './second-factor.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
-// Sessions these paths create used a second factor
+/** Sessions these paths create used a second factor */
 export const SECOND_FACTOR_SIGN_IN_PATHS = new Set([
   `/two-factor/verify-totp`,
   `/two-factor/verify-backup-code`,
@@ -38,11 +38,13 @@ const PASSKEY_SIGN_IN_PATHS = new Set([
   `/passkey/verify-authentication`,
 ])
 
-// Refuses a change to an educator's second factors unless their session used
-// one, so a stolen password alone can't add or remove one. A session that a
-// setup link proved may add the first. Only admins add second factors, and an
-// admin keeps at least one. Better Auth's two-factor paths without a session
-// are the sign-in challenge, which this leaves alone
+/**
+ * Refuses a change to an educator's second factors unless their session used
+ * one, so a stolen password alone can't add or remove one. A session that a
+ * setup link proved may add the first. Only admins add second factors, and an
+ * admin keeps at least one. Better Auth's two-factor paths without a session
+ * are the sign-in challenge, which this leaves alone
+ */
 export const guardSecondFactorChange = async (
   ctx: GenericEndpointContext,
 ): Promise<void> => {
@@ -79,11 +81,15 @@ export const guardSecondFactorChange = async (
   }
 }
 
-// A session Better Auth just created can lack `assurance`, which the database
-// defaults to PASSWORD
+/**
+ * A session Better Auth just created can lack `assurance`, which the database
+ * defaults to PASSWORD
+ */
 export const readAssurance = (session: {
-  // Without a required field, TypeScript refuses Better Auth's session type,
-  // which lacks `assurance`
+  /**
+   * Without a required field, TypeScript refuses Better Auth's session type,
+   * which lacks `assurance`
+   */
   id: string
   assurance?: SessionAssurance | null
 }): SessionAssurance => session.assurance ?? `PASSWORD`
@@ -100,10 +106,12 @@ export const mayChangeSecondFactors = (
   (assurance === `SETUP_LINK` && !hasSecondFactor(secondFactors))
 
 export type SecondFactors = {
-  // Each passkey's provider, such as iCloud Keychain, when its authenticator
-  // reports one
+  /**
+   * Each passkey's provider, such as iCloud Keychain, when its authenticator
+   * reports one
+   */
   passkeys: { id: string; provider: string | undefined; addedAt: Date }[]
-  // Better Auth turns this on once the educator enters a first code
+  /** Better Auth turns this on once the educator enters a first code */
   hasAuthenticatorApp: boolean
 }
 
@@ -140,8 +148,10 @@ export const hasSecondFactor = (secondFactors: SecondFactors): boolean =>
 
 const SETUP_LINK_PREFIX = `second-factor-setup:`
 
-// Stores only the token's hash, so reading the database reveals no working
-// link. A new link replaces the educator's earlier ones
+/**
+ * Stores only the token's hash, so reading the database reveals no working
+ * link. A new link replaces the educator's earlier ones
+ */
 export const createSetupLinkToken = async (
   educatorId: string,
 ): Promise<string> => {
@@ -167,7 +177,7 @@ export const createSetupLinkToken = async (
   return token
 }
 
-// Uses up the token, so its link works once, and only for its own educator
+/** Uses up the token, so its link works once, and only for its own educator */
 export const redeemSetupLinkToken = async (
   token: string,
   educatorId: string,
@@ -185,8 +195,10 @@ export const redeemSetupLinkToken = async (
 const setupLinkIdentifier = (token: string): string =>
   `${SETUP_LINK_PREFIX}${hashSecret(token)}`
 
-// Using a second factor, here or by adding one, opens the admin area for the
-// session
+/**
+ * Using a second factor, here or by adding one, opens the admin area for the
+ * session
+ */
 export const markSecondFactorUsed = async (
   sessionId: string,
 ): Promise<void> => {
@@ -196,8 +208,10 @@ export const markSecondFactorUsed = async (
   })
 }
 
-// A setup link proves the session's educator reads their email. A session
-// that already used a second factor keeps that
+/**
+ * A setup link proves the session's educator reads their email. A session
+ * that already used a second factor keeps that
+ */
 export const markSetupLinkUsed = async (sessionId: string): Promise<void> => {
   await prisma.session.updateMany({
     where: { id: sessionId, assurance: `PASSWORD` },
@@ -205,7 +219,9 @@ export const markSetupLinkUsed = async (sessionId: string): Promise<void> => {
   })
 }
 
-// Where an admin's session goes when it hasn't used a second factor: setup
-// without one, or verifying one they have
+/**
+ * Where an admin's session goes when it hasn't used a second factor: setup
+ * without one, or verifying one they have
+ */
 export const readSecondFactorStep = (secondFactors: SecondFactors): string =>
   href(hasSecondFactor(secondFactors) ? `/admin/verify` : `/admin/setup`)

@@ -16,7 +16,7 @@ const CONTEST = {
   educatorName: `Ms. Rivera`,
 }
 
-// The action refuses every name with `error`
+/** The action refuses every name with `error` */
 const renderPlay = async (view: PlayView, error = ``) => {
   const Stub = createRoutesStub([
     {

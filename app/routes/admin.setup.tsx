@@ -18,10 +18,12 @@ import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
 const SETUP_URL = toAppUrl(href(`/admin/setup`))
 
-// Only for an admin without a second factor. The emailed link returns here
-// with its token, which this browser's session uses up. A session that
-// already used one skips the token, so opening the email again doesn't call
-// the used link invalid
+/**
+ * Only for an admin without a second factor. The emailed link returns here
+ * with its token, which this browser's session uses up. A session that
+ * already used one skips the token, so opening the email again doesn't call
+ * the used link invalid
+ */
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const educator = readRequiredEducator(context)
   const session = readRequiredSession(context)

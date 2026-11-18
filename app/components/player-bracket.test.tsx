@@ -26,7 +26,7 @@ const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST) as [
   Combatant,
 ]
 const COMPLETE_PICKS = pickEveryBattle(BRACKET)
-// The complete picks with a different champion from Round 1 on
+/** The complete picks with a different champion from Round 1 on */
 const COMPLETE_CHANGED_PICKS = pickWinner(
   BRACKET,
   pickWinner(BRACKET, COMPLETE_PICKS, ROUND_1_FIRST, SEED_16.id).picks,
@@ -40,7 +40,7 @@ const SUBMISSION: Submission = {
   picks: COMPLETE_PICKS,
 }
 
-// The picker sends its requests through `fetch`, which each test answers
+/** The picker sends its requests through `fetch`, which each test answers */
 const answerRequests = (
   response: Response | Error,
   onRequest: () => void = () => {},
@@ -52,7 +52,7 @@ const answerRequests = (
       : response.clone()
   })
 
-// Stands in for the server recording a submission
+/** Stands in for the server recording a submission */
 const recordSubmission = (server: Server, submission: Submission): void => {
   server.submitted = { submission, personalLink: PERSONAL_LINK }
 }
@@ -64,7 +64,9 @@ const readSentBodies = (
     JSON.parse(typeof init?.body === `string` ? init.body : ``),
   )
 
-// What the page's loader returns. A test changes it to stand in for the server
+/**
+ * What the page's loader returns. A test changes it to stand in for the server
+ */
 type Server = { draft: Picks; submitted: Submitted | null }
 
 const renderBracket = async ({

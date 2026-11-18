@@ -8,7 +8,7 @@ import { signUpSchema } from '../auth-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { SignUpForm } from './sign-up-form.tsx'
 
-// Renders the form with an action that answers like the server would
+/** Renders the form with an action that answers like the server would */
 const renderSignUp = async (
   serverErrors: Record<string, string[]> = {},
 ): Promise<{ submissions: number }> => {

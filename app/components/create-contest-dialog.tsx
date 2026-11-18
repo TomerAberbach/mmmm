@@ -9,7 +9,7 @@ import { Button } from './button.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ModalFrame } from './modal-frame.tsx'
 
-// The action redirects to the new contest's page once it saves
+/** The action redirects to the new contest's page once it saves */
 export const CreateContestDialog = () => (
   <DialogTrigger>
     <Button>Create contest</Button>
@@ -19,7 +19,7 @@ export const CreateContestDialog = () => (
   </DialogTrigger>
 )
 
-// Mounts with each opening, so the form starts empty
+/** Mounts with each opening, so the form starts empty */
 const CreateContestForm = () => {
   const dialog = use(OverlayTriggerStateContext)
   return (

@@ -11,7 +11,7 @@ const CONTESTS = [
   { id: `period-5`, name: `Period 5 Biology`, link: `https://mmmm.onl/play/b` },
 ]
 
-// The action creates the contest under its own name as the ID
+/** The action creates the contest under its own name as the ID */
 const renderDashboard = async (view: EducatorDashboardView) => {
   const Stub = createRoutesStub([
     { path: `/contests`, Component: () => <EducatorDashboard view={view} /> },

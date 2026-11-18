@@ -16,9 +16,11 @@ import type {
   SeedSlotRef,
 } from '~/bracket.ts'
 
-// The whole bracket as ASU prints it: mirrored halves meeting at the
-// Championship, division names on the outer edges, and round labels between
-// each half's divisions
+/**
+ * The whole bracket as ASU prints it: mirrored halves meeting at the
+ * Championship, division names on the outer edges, and round labels between
+ * each half's divisions
+ */
 export const BracketDiagram = ({ view }: { view: BracketView }) => {
   const wildCard = readWildCardPlacement(view)
   const nameWidth = readNameWidth(view)
@@ -47,17 +49,23 @@ export const BracketDiagram = ({ view }: { view: BracketView }) => {
   )
 }
 
-// Letter landscape inside the print margins, less main's padding and the page
-// title, in px
+/**
+ * Letter landscape inside the print margins, less main's padding and the page
+ * title, in px
+ */
 export const PRINTED_PAGE = { width: 912, height: 628 }
 
-// Zooming rounds each element's size up. Chromium printed 2025's diagram 0.6%
-// larger than the estimate below
+/**
+ * Zooming rounds each element's size up. Chromium printed 2025's diagram 0.6%
+ * larger than the estimate below
+ */
 const ROUNDING_ROOM = 0.98
 
-// The diagram's size, measured in Chromium: 11 boxes across, plus the
-// connectors, gutters, and division names. Each wild card entrant adds a side
-// to the wild card's box and to its invisible copy in the band
+/**
+ * The diagram's size, measured in Chromium: 11 boxes across, plus the
+ * connectors, gutters, and division names. Each wild card entrant adds a side
+ * to the wild card's box and to its invisible copy in the band
+ */
 const DIAGRAM_SIZE = {
   boxesAcross: 11,
   boxPadding: 48,
@@ -66,7 +74,7 @@ const DIAGRAM_SIZE = {
   entrantHeight: 68,
 }
 
-// Scales the printed diagram to fit one page
+/** Scales the printed diagram to fit one page */
 const readPrintZoom = (nameWidth: number, entrantCount: number): number => {
   const boxWidth = nameWidth * 16 + DIAGRAM_SIZE.boxPadding
   const width = DIAGRAM_SIZE.boxesAcross * boxWidth + DIAGRAM_SIZE.restOfWidth
@@ -79,17 +87,19 @@ const readPrintZoom = (nameWidth: number, entrantCount: number): number => {
   )
 }
 
-// Room before a Round 1 box for the wild card's line
+/** Room before a Round 1 box for the wild card's line */
 const ROUND_1_GUTTER = `ps-5`
 
-// Room before a later round's box for its connector and `Stub`, each `w-2`
+/** Room before a later round's box for its connector and `Stub`, each `w-2` */
 const CONNECTOR_GUTTER = `ps-4`
 
 type HalfLayout = (typeof HALVES)[number]
 
-// Grid columns run from the left half's divisions, through the Championship,
-// to the right half's divisions. The right half mirrors the left through `dir`.
-// Each half's Final Roar battle has the half's index
+/**
+ * Grid columns run from the left half's divisions, through the Championship,
+ * to the right half's divisions. The right half mirrors the left through `dir`.
+ * Each half's Final Roar battle has the half's index
+ */
 const HALVES = [
   {
     dir: `ltr`,
@@ -115,16 +125,20 @@ const HALVES = [
   columns: Record<string, string>
 }[]
 
-// Where the wild card's box sits, and the Round 1 side its line runs into.
-// The box sits beside its division, in the band between the half's divisions
+/**
+ * Where the wild card's box sits, and the Round 1 side its line runs into.
+ * The box sits beside its division, in the band between the half's divisions
+ */
 type WildCardPlacement = {
   battle: BattleView
   slot: SeedSlotRef
   round1Index: number
   side: 0 | 1
-  // The Round 1 box's edge the line arrives at, which the right half mirrors
+  /**
+   * The Round 1 box's edge the line arrives at, which the right half mirrors
+   */
   edge: `left` | `right`
-  // Whether the box sits above its division, so the line runs down
+  /** Whether the box sits above its division, so the line runs down */
   fromAbove: boolean
 }
 
@@ -204,8 +218,10 @@ const Half = ({
   )
 }
 
-// A bracket from each division's Elite Trait battle to the Final Roar, across
-// the grid's rows
+/**
+ * A bracket from each division's Elite Trait battle to the Final Roar, across
+ * the grid's rows
+ */
 const FinalRoarConnector = ({
   dir,
   column,
@@ -257,10 +273,12 @@ const Division = ({
   </div>
 )
 
-// A battle with the two battles that feed it on its outer side, down to Round
-// 1. Siblings have equal heights, so the connector's ends at a quarter and
-// three quarters meet their centers. Lines grow by a pixel past each mark, so
-// a 2px border is centered on it
+/**
+ * A battle with the two battles that feed it on its outer side, down to Round
+ * 1. Siblings have equal heights, so the connector's ends at a quarter and
+ * three quarters meet their centers. Lines grow by a pixel past each mark, so
+ * a 2px border is centered on it
+ */
 const Subtree = ({
   battle,
   view,
@@ -302,8 +320,10 @@ const Subtree = ({
   )
 }
 
-// A Round 1 battle. Its outer padding holds the wild card's line where the
-// line passes by or ends here, and matches the wild card's box
+/**
+ * A Round 1 battle. Its outer padding holds the wild card's line where the
+ * line passes by or ends here, and matches the wild card's box
+ */
 const Round1Battle = ({
   battle,
   wildCard,
@@ -332,23 +352,27 @@ const Round1Battle = ({
   )
 }
 
-// Whether the line passes the battle between the wild card's box and the
-// battle it ends at
+/**
+ * Whether the line passes the battle between the wild card's box and the
+ * battle it ends at
+ */
 const isLinePassing = (
   round1Index: number,
   { round1Index: endIndex, fromAbove }: WildCardPlacement,
 ): boolean => (fromAbove ? round1Index < endIndex : round1Index > endIndex)
 
-// The line's last turn, from the battle's padding edge to the middle of the
-// side it fills, with an arrowhead whose tip touches the box. It's placed in
-// the side's row, so it reaches past the box's 2px borders, the other side's
-// 32px, and the battle's `py-1.5`
+/**
+ * The line's last turn, from the battle's padding edge to the middle of the
+ * side it fills, with an arrowhead whose tip touches the box. It's placed in
+ * the side's row, so it reaches past the box's 2px borders, the other side's
+ * 32px, and the battle's `py-1.5`
+ */
 const LINE_END_CLASSES: Record<`above` | `below`, [string, string]> = {
   above: [`-top-2 bottom-1/2`, `-top-10.5 bottom-1/2`],
   below: [`top-1/2 -bottom-10.5`, `top-1/2 -bottom-2`],
 }
 
-// Outside the box's 2px border on the edge the line arrives at
+/** Outside the box's 2px border on the edge the line arrives at */
 const LINE_END_EDGE_CLASSES = {
   left: `right-full mr-0.5`,
   right: `left-full ml-0.5 -scale-x-100`,
@@ -368,9 +392,11 @@ const WildCardLineEnd = ({ wildCard }: { wildCard: WildCardPlacement }) => (
   </div>
 )
 
-// Between a half's divisions: the round labels, and the wild card beside its
-// division. An invisible copy of the wild card's box on the far side centers
-// the labels, so they line up with the other half's
+/**
+ * Between a half's divisions: the round labels, and the wild card beside its
+ * division. An invisible copy of the wild card's box on the far side centers
+ * the labels, so they line up with the other half's
+ */
 const Band = ({
   dir,
   className,
@@ -392,7 +418,7 @@ const Band = ({
   )
 }
 
-// The label faces away from the division
+/** The label faces away from the division */
 const WildCardBox = ({ wildCard }: { wildCard: WildCardPlacement }) => (
   <div
     className={`flex ${wildCard.fromAbove ? `flex-col` : `flex-col-reverse`}`}
@@ -409,7 +435,7 @@ const WildCardBox = ({ wildCard }: { wildCard: WildCardPlacement }) => (
   </div>
 )
 
-// Each label is centered over its round's boxes
+/** Each label is centered over its round's boxes */
 const ROUND_LABEL_CLASSES: Record<DivisionRound, string> = {
   ROUND_1: `${ROUND_1_GUTTER} fill-round-1`,
   ROUND_2: `${CONNECTOR_GUTTER} fill-round-2`,
@@ -437,7 +463,9 @@ const RoundLabels = () => (
   </div>
 )
 
-// The Championship between the Final Roar battles, with the champion above it
+/**
+ * The Championship between the Final Roar battles, with the champion above it
+ */
 const Center = ({ view }: { view: BracketView }) => {
   const championship = view.battles.CHAMPIONSHIP[0]!
   return (

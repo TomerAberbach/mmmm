@@ -1,7 +1,9 @@
 import { ARIZONA_TIME_ZONE } from './dates.ts'
 
-// The Year whose Bracket comes next. March Mammal Madness ends in April, so
-// from April on, that's next year's. Dates are in Arizona, where ASU runs it
+/**
+ * The Year whose Bracket comes next. March Mammal Madness ends in April, so
+ * from April on, that's next year's. Dates are in Arizona, where ASU runs it
+ */
 export const readUpcomingYear = (today: Date): number => {
   const { year, month } = readArizonaDate(today)
   return month >= APRIL ? year + 1 : year

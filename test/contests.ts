@@ -3,7 +3,7 @@ import { createPlayer, readContestPlayer } from '../app/players.server.ts'
 import { createEducator } from './educators.ts'
 import type { AddYear } from './years.ts'
 
-// Creates the contest in the current year, and returns its ID
+/** Creates the contest in the current year, and returns its ID */
 export const addContest = async (
   educatorId: string,
   name: string,
@@ -15,7 +15,7 @@ export const addContest = async (
   return contestId
 }
 
-// Publishes a new current year with a contest in it
+/** Publishes a new current year with a contest in it */
 export const createContestInNewYear = async (
   addYear: AddYear,
 ): Promise<{ contestId: string; year: number }> => {
@@ -24,8 +24,10 @@ export const createContestInNewYear = async (
   return { contestId, year }
 }
 
-// Creates a player named Maya R. in the contest, and returns the player's ID
-// and personal link's secret
+/**
+ * Creates a player named Maya R. in the contest, and returns the player's ID
+ * and personal link's secret
+ */
 export const addPlayer = async (
   contestId: string,
 ): Promise<{ id: string; secret: string }> => {
@@ -39,8 +41,10 @@ export const addPlayer = async (
   return { id, secret: player.secret }
 }
 
-// Publishes a new current year, creates a player in a contest there, and
-// returns the player's ID and the year
+/**
+ * Publishes a new current year, creates a player in a contest there, and
+ * returns the player's ID and the year
+ */
 export const createPlayerInNewYear = async (
   addYear: AddYear,
 ): Promise<{ playerId: string; year: number }> => {

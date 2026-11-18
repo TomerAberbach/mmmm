@@ -34,8 +34,10 @@ export const action = async ({
   }
 }
 
-// Resolves to the headers that set the new session's cookie, since Better Auth
-// replaces the session once the app turns off
+/**
+ * Resolves to the headers that set the new session's cookie, since Better Auth
+ * replaces the session once the app turns off
+ */
 const turnOff = async (password: string, headers: Headers): Promise<Headers> =>
   (
     await auth.api.disableTwoFactor({
@@ -45,7 +47,7 @@ const turnOff = async (password: string, headers: Headers): Promise<Headers> =>
     })
   ).headers
 
-// The new codes replace every earlier one
+/** The new codes replace every earlier one */
 const makeNewCodes = async (
   password: string,
   headers: Headers,

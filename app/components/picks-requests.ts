@@ -13,13 +13,15 @@ export type RequestState =
 
 type Queued = {
   request: PicksRequest
-  // The request stays in flight until a returned promise settles
+  /** The request stays in flight until a returned promise settles */
   onSent: () => void | Promise<void>
 }
 
-// Sends one request at a time, so they reach the server in order. A save waits
-// behind the request in flight, and a newer request replaces any waiting save,
-// since each request carries the whole set of picks or replaces it
+/**
+ * Sends one request at a time, so they reach the server in order. A save waits
+ * behind the request in flight, and a newer request replaces any waiting save,
+ * since each request carries the whole set of picks or replaces it
+ */
 export const usePicksRequests = (
   path: string,
 ): {
@@ -84,14 +86,18 @@ export const usePicksRequests = (
 
 const ignore = () => {}
 
-// A failed submit or discard stays shown past later saves, since a save doesn't
-// do what the player asked
+/**
+ * A failed submit or discard stays shown past later saves, since a save doesn't
+ * do what the player asked
+ */
 const keepsFailure = (previous: RequestState, intent: Intent): boolean =>
   previous.kind === `failed` && previous.intent !== `save` && intent === `save`
 
-// A redirect means the server no longer remembers the player, and a 4xx that
-// the bracket changed since the page loaded. Reloading resolves both, while a
-// network error or a 5xx may pass on a retry
+/**
+ * A redirect means the server no longer remembers the player, and a 4xx that
+ * the bracket changed since the page loaded. Reloading resolves both, while a
+ * network error or a 5xx may pass on a retry
+ */
 const postRequest = async (
   path: string,
   request: PicksRequest,

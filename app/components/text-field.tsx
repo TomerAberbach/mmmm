@@ -19,15 +19,19 @@ type TextFieldProps = Omit<
   label: string
   description?: string
   error?: string
-  // For a field the layout already labels visually. Screen readers still read
-  // the label
+  /**
+   * For a field the layout already labels visually. Screen readers still read
+   * the label
+   */
   hideLabel?: boolean
-  // Shown beside the input
+  /** Shown beside the input */
   children?: ReactNode
 }
 
-// Shows only the error it's given, so the form decides when to validate. The
-// error goes under the input, so the input stays put when the error appears
+/**
+ * Shows only the error it's given, so the form decides when to validate. The
+ * error goes under the input, so the input stays put when the error appears
+ */
 export const TextField = ({
   label,
   description,
@@ -76,9 +80,11 @@ export const PasswordField = (
   )
 }
 
-// TextField shows one error, so this passes the field's first. A field that
-// remounts starts from the value last typed in it, and its id lets an error
-// summary link to it
+/**
+ * TextField shows one error, so this passes the field's first. A field that
+ * remounts starts from the value last typed in it, and its id lets an error
+ * summary link to it
+ */
 export const fieldProps = (
   field: FieldMetadata<string>,
 ): Pick<TextFieldProps, `id` | `name` | `defaultValue` | `error`> => ({

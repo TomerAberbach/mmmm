@@ -1,12 +1,14 @@
 import { DivisionPosition, Round } from './generated/prisma/enums.ts'
 
-// Diagram order: the two left divisions, then the two right ones, so
-// consecutive pairs meet in the Final Roar
+/**
+ * Diagram order: the two left divisions, then the two right ones, so
+ * consecutive pairs meet in the Final Roar
+ */
 export const DIVISION_POSITIONS = Object.values(DivisionPosition)
 
 export const ROUNDS = Object.values(Round)
 
-// The rounds whose battles each stay within one division
+/** The rounds whose battles each stay within one division */
 export const DIVISION_ROUNDS = ROUNDS.slice(
   ROUNDS.indexOf(`ROUND_1`),
   ROUNDS.indexOf(`FINAL_ROAR`),
@@ -43,7 +45,7 @@ export const BATTLE_COUNTS: Record<Round, number> = {
 export const MIN_WILD_CARD_ENTRANTS = 2
 export const MAX_WILD_CARD_ENTRANTS = 4
 
-// Round 1 pairs each division's seeds in NCAA order, top to bottom
+/** Round 1 pairs each division's seeds in NCAA order, top to bottom */
 const SEED_PAIRS = [
   [1, 16],
   [8, 9],
@@ -55,10 +57,10 @@ const SEED_PAIRS = [
   [2, 15],
 ] as const
 
-// Each of a division's seeds, 1 to 16
+/** Each of a division's seeds, 1 to 16 */
 export type Seed = (typeof SEED_PAIRS)[number][number]
 
-// Built from `SEED_PAIRS`, so every seed has its pair's index
+/** Built from `SEED_PAIRS`, so every seed has its pair's index */
 const PAIR_INDEX_BY_SEED = Object.fromEntries(
   SEED_PAIRS.flatMap((pair, index) => pair.map(seed => [seed, index])),
 ) as Record<Seed, number>
@@ -73,8 +75,10 @@ export type SeedSlotRef = { position: DivisionPosition; seed: Seed }
 
 export type BattleRef = { round: Round; index: number }
 
-// Each decided battle's key, from `toBattleKey`, mapped to its winner's
-// combatant ID
+/**
+ * Each decided battle's key, from `toBattleKey`, mapped to its winner's
+ * combatant ID
+ */
 export type Winners = Readonly<Record<string, string>>
 
 export const toBattleKey = ({ round, index }: BattleRef): string =>
@@ -83,7 +87,7 @@ export const toBattleKey = ({ round, index }: BattleRef): string =>
 export const toSeedSlotKey = ({ position, seed }: SeedSlotRef): string =>
   `${position}:${seed}`
 
-// Every battle in play order: the wild card, then each round top to bottom
+/** Every battle in play order: the wild card, then each round top to bottom */
 export const listBattles = (): BattleRef[] =>
   ROUNDS.flatMap(round =>
     Array.from({ length: BATTLE_COUNTS[round] }, (_, index) => ({
@@ -92,16 +96,20 @@ export const listBattles = (): BattleRef[] =>
     })),
   )
 
-// What fills one side of a battle after the wild card: a seed slot's
-// combatant, or an earlier battle's winner
+/**
+ * What fills one side of a battle after the wild card: a seed slot's
+ * combatant, or an earlier battle's winner
+ */
 type BattleSide =
   | { kind: `seedSlot`; seedSlot: SeedSlotRef }
   | { kind: `winner`; battle: BattleRef }
 
 const WILD_CARD_BATTLE: BattleRef = { round: `WILD_CARD`, index: 0 }
 
-// The wild card's battle has 2 to 4 entrants instead of two sides. Its winner
-// fills the wild card's seed slot in Round 1
+/**
+ * The wild card's battle has 2 to 4 entrants instead of two sides. Its winner
+ * fills the wild card's seed slot in Round 1
+ */
 export const readBattleSides = (
   battle: BattleRef & { round: Exclude<Round, `WILD_CARD`> },
   wildCardSlot: SeedSlotRef,
@@ -118,7 +126,7 @@ export const readBattleSides = (
   return [winnerOf(battle.index * 2), winnerOf(battle.index * 2 + 1)]
 }
 
-// The division's seed pair for the battle's place in Round 1
+/** The division's seed pair for the battle's place in Round 1 */
 const readRound1Sides = (
   index: number,
   wildCardSlot: SeedSlotRef,
@@ -140,7 +148,9 @@ const readSeedSlotSide = (
     ? { kind: `winner`, battle: WILD_CARD_BATTLE }
     : { kind: `seedSlot`, seedSlot }
 
-// The Round 1 battle the wild card's winner plays, at the wild card's seed slot
+/**
+ * The Round 1 battle the wild card's winner plays, at the wild card's seed slot
+ */
 export const readWildCardRound1Battle = ({
   position,
   seed,

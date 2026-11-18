@@ -12,9 +12,11 @@ import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 
-// Where a link left the educator: confirmed, with a confirmation link that
-// expired or was altered, or with a new password. Or the code page ran out of
-// time or attempts
+/**
+ * Where a link left the educator: confirmed, with a confirmation link that
+ * expired or was altered, or with a new password. Or the code page ran out of
+ * time or attempts
+ */
 export type SignInNotice =
   `confirmed` | `link-invalid` | `password-reset` | `challenge-expired`
 
@@ -22,7 +24,7 @@ export const SignInForm = ({
   lastResult,
   notice,
 }: {
-  // Its form error never says which of the email and password was wrong
+  /** Its form error never says which of the email and password was wrong */
   lastResult?: SubmissionResult
   notice?: SignInNotice
 }) => {

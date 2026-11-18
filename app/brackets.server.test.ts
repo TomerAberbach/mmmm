@@ -24,7 +24,7 @@ const readBracketNames = async (year: number) => {
   return bracket && toNames(bracket)
 }
 
-// The combatant in a seed slot, or the wild card's entrants for its slot
+/** The combatant in a seed slot, or the wild card's entrants for its slot */
 const readSeedSlotNames = async (
   year: number,
   divisionName: string,

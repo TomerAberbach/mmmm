@@ -24,7 +24,7 @@ const stubSession = (setCookies: string[] = []) => {
   } as never)
 }
 
-// Runs the middleware around a handler, which plays the loaders and actions
+/** Runs the middleware around a handler, which plays the loaders and actions */
 const runRequest = async (
   handler: (context: RouterContextProvider) => Promise<Response>,
 ): Promise<Response> => {

@@ -13,7 +13,7 @@ import { readDraftAndSubmission } from '~/player-picks.server.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
-// The diagram needs more room than other pages
+/** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }
 
 export const loader = async ({ context }: Route.LoaderArgs) => {

@@ -2,8 +2,10 @@ import { createHmac } from 'node:crypto'
 
 const BASE32_ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZ234567`
 
-// The code an authenticator app shows now for an otpauth:// URI, per RFC 6238
-// with its defaults: SHA-1, 6 digits, and a 30-second period
+/**
+ * The code an authenticator app shows now for an otpauth:// URI, per RFC 6238
+ * with its defaults: SHA-1, 6 digits, and a 30-second period
+ */
 export const readTotpCode = (totpUri: string, now = Date.now()): string => {
   const secret = new URL(totpUri).searchParams.get(`secret`)
   if (!secret) {

@@ -9,19 +9,25 @@ import { prisma } from '../app/db.server.ts'
 import { readUpcomingYear } from '../app/year.ts'
 import { BRACKET_2025, BRACKET_2026 } from './brackets.ts'
 
-// Staging asks for its own password first, so seeded educators can share an
-// easy one. The seed skips sign-up, so sign-up's minimum length doesn't apply
+/**
+ * Staging asks for its own password first, so seeded educators can share an
+ * easy one. The seed skips sign-up, so sign-up's minimum length doesn't apply
+ */
 const PASSWORD = `password`
 
-// The admin is an admin only while `ADMIN_LIST` names its address, as
-// `.env.example` does
+/**
+ * The admin is an admin only while `ADMIN_LIST` names its address, as
+ * `.env.example` does
+ */
 const EDUCATORS = [
   { name: `Ada Lovelace`, email: `educator@example.com` },
   { name: `Grace Hopper`, email: `admin@example.com` },
 ]
 
-// Creates the educator already confirmed, because signing up would email the
-// address
+/**
+ * Creates the educator already confirmed, because signing up would email the
+ * address
+ */
 const seedEducator = async ({
   name,
   email,

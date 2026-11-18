@@ -5,7 +5,7 @@ import { readCurrentBracketView } from '~/current-bracket.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 import { readUpcomingYear } from '~/year.ts'
 
-// The current bracket's diagram needs more room than other pages
+/** The current bracket's diagram needs more room than other pages */
 export const handle = { fullWidth: true }
 
 export const loader = async ({ context }: Route.LoaderArgs) => {

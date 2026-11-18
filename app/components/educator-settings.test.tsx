@@ -9,7 +9,7 @@ import { freeTextSchema } from '../free-text.ts'
 import type { ConfirmResult } from './confirm-dialog.tsx'
 import { EducatorSettings } from './educator-settings.tsx'
 
-// Renders the page with actions that answer like the server would
+/** Renders the page with actions that answer like the server would */
 const renderSettings = async ({
   passwordErrors = {},
 }: { passwordErrors?: Record<string, string[]> } = {}) => {

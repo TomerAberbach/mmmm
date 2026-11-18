@@ -14,8 +14,10 @@ import type { SavedResult } from '~/form-replies.server.ts'
 
 const PHASE_LABELS: Record<Phase, string> = { SETUP: `Setup`, OPEN: `Open` }
 
-// The year's phase, the one action that moves it on, and the expected lock
-// date
+/**
+ * The year's phase, the one action that moves it on, and the expected lock
+ * date
+ */
 export const PhaseSection = ({
   year,
   summary,

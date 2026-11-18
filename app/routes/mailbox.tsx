@@ -5,7 +5,7 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { readEmailTransport } from '~/email-settings.server.ts'
 import { readMailbox } from '~/mailbox.server.ts'
 
-// Only exists while email goes to the mailbox, in development and tests
+/** Only exists while email goes to the mailbox, in development and tests */
 export const loader = () => {
   if (readEmailTransport() !== `mailbox`) {
     throw data(null, { status: 404 })

@@ -10,7 +10,7 @@ import { freeTextSchema } from '~/free-text.ts'
 
 const CONTEST_NAME_SCHEMA = contestNameSchema(freeTextSchema)
 
-// The form opens for typing, so its field takes focus. Escape cancels
+/** The form opens for typing, so its field takes focus. Escape cancels */
 export const ContestNameForm = ({
   fetcher,
   action,

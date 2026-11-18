@@ -10,16 +10,20 @@ import type { SignedInEducator, SignedInSession } from './session.server.ts'
 
 export type SecondFactorSettingsData = {
   isAdmin: boolean
-  // Whether this session used a second factor, or a setup link before the
-  // first one, so the server allows changes
+  /**
+   * Whether this session used a second factor, or a setup link before the
+   * first one, so the server allows changes
+   */
   canChange: boolean
   passkeys: { id: string; label: string; added: string }[]
-  // Set while the authenticator app is on
+  /** Set while the authenticator app is on */
   recoveryCodesLeft?: number
 }
 
-// Only admins, and former admins who still have a second factor, see the
-// section
+/**
+ * Only admins, and former admins who still have a second factor, see the
+ * section
+ */
 export const readSecondFactorSettings = async (
   educator: SignedInEducator,
   session: SignedInSession,
@@ -46,7 +50,7 @@ export const readSecondFactorSettings = async (
   }
 }
 
-// Better Auth drops each code once it's used
+/** Better Auth drops each code once it's used */
 const countRecoveryCodes = async (
   educatorId: string,
   headers: Headers,

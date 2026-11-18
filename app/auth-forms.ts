@@ -7,7 +7,7 @@ export const MAX_PASSWORD_LENGTH = 128
 export const CONFIRMATION_EXPIRES_IN_DAYS = 3
 export const RESET_EXPIRES_IN_HOURS = 1
 
-// The longest address RFC 5321 allows
+/** The longest address RFC 5321 allows */
 export const MAX_EMAIL_LENGTH = 254
 
 export const INVALID_EMAIL_MESSAGE = `Enter an email address like name@school.org`
@@ -58,7 +58,7 @@ export const changePasswordSchema = z.object({
 const SECURITY_CODE_MESSAGE = `Enter the 6-digit code from your authenticator app`
 export const INCORRECT_CODE_MESSAGE = `That code is incorrect or expired. Enter the code your app shows now`
 
-// Accepts the spaces and hyphens some apps show inside the code
+/** Accepts the spaces and hyphens some apps show inside the code */
 const securityCodeSchema = z
   .string({ error: SECURITY_CODE_MESSAGE })
   .transform(code => code.replaceAll(/[\s-]/gu, ``))

@@ -1,6 +1,8 @@
 import { Notice } from './notice.tsx'
 
-// Goes below the submit button, so the fields above stay put when it appears
+/**
+ * Goes below the submit button, so the fields above stay put when it appears
+ */
 export const FormError = ({
   form,
 }: {

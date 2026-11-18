@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { TOTAL_BATTLES } from './picks.ts'
 
-// Battle keys mapped to combatant IDs
+/** Battle keys mapped to combatant IDs */
 const picksSchema = z
   .record(z.string().max(40), z.string().max(40))
   .refine(picks => Object.keys(picks).length <= TOTAL_BATTLES)

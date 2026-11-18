@@ -39,8 +39,10 @@ const renderBracket = async (
   await document.fonts.ready
 }
 
-// The names cut short by their box. A hidden name has no width, so it never
-// counts
+/**
+ * The names cut short by their box. A hidden name has no width, so it never
+ * counts
+ */
 const readOverflowingNames = (): string[] =>
   [...document.querySelectorAll<HTMLElement>(`[title]`)]
     .filter(name => name.scrollWidth > name.clientWidth)
@@ -103,11 +105,13 @@ test(`a wide screen reads every round under its own heading`, async () => {
   await expectNoAxeViolations()
 })
 
-// Zooming rounds each element's size up. Chromium printed 2025's diagram 0.6%
-// larger than its size times its zoom
+/**
+ * Zooming rounds each element's size up. Chromium printed 2025's diagram 0.6%
+ * larger than its size times its zoom
+ */
 const ROUNDING_GROWTH = 1.01
 
-// The diagram's size once scaled by its print zoom
+/** The diagram's size once scaled by its print zoom */
 const readPrintedDiagramSize = () => {
   const diagram = document.querySelector<HTMLElement>(`[style*="--zoom"]`)!
   const zoom =

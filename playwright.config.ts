@@ -1,9 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 import { ADMIN_LIST } from './e2e/admins.ts'
 
-// The upcoming year's bracket is shared by every test on a server, so tests
-// that publish or change it run on a server and database of their own. Each
-// server runs the tests in one directory under `e2e/`
+/**
+ * The upcoming year's bracket is shared by every test on a server, so tests
+ * that publish or change it run on a server and database of their own. Each
+ * server runs the tests in one directory under `e2e/`
+ */
 const SERVERS = {
   app: 3100,
   bracketLifecycle: 3101,

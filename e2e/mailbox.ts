@@ -1,9 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-// Returns the plain text of each email to the address, newest first. Reloads
-// until one arrives, or until the newest contains `newestContaining`, since
-// some emails send after the response
+/**
+ * Returns the plain text of each email to the address, newest first. Reloads
+ * until one arrives, or until the newest contains `newestContaining`, since
+ * some emails send after the response
+ */
 export const readEmails = async (
   page: Page,
   to: string,
@@ -21,8 +23,10 @@ export const readEmails = async (
   return emails.locator(`pre`).allTextContents()
 }
 
-// Returns the link after `label` in the address's newest email, once the
-// newest email contains it
+/**
+ * Returns the link after `label` in the address's newest email, once the
+ * newest email contains it
+ */
 export const readNewestActionLink = async (
   page: Page,
   to: string,
@@ -32,7 +36,7 @@ export const readNewestActionLink = async (
   return readActionLink(latest, label)
 }
 
-// Returns the link on the line after an email action's label
+/** Returns the link on the line after an email action's label */
 export const readActionLink = (text: string, label: string): string => {
   const link = text.split(`${label}:\n`)[1]?.split(/\s/u)[0]
   if (!link) {

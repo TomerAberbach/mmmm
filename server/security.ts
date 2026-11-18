@@ -2,7 +2,7 @@ import type { Request, RequestHandler } from 'express'
 import helmet from 'helmet'
 import { createNonce, readNonce } from './nonce.ts'
 
-// Every header but the content security policy, which only pages need
+/** Every header but the content security policy, which only pages need */
 export const setSecurityHeaders = (isProduction: boolean): RequestHandler =>
   helmet({
     contentSecurityPolicy: false,
@@ -45,8 +45,10 @@ export const setContentSecurityPolicy = (
 
 const SAFE_METHODS = new Set([`GET`, `HEAD`, `OPTIONS`])
 
-// Rejects requests that change data when a browser sent them from another
-// site, following the checks in Go's `http.CrossOriginProtection`
+/**
+ * Rejects requests that change data when a browser sent them from another
+ * site, following the checks in Go's `http.CrossOriginProtection`
+ */
 export const rejectCrossOriginRequests: RequestHandler = (req, res, next) => {
   if (SAFE_METHODS.has(req.method) || isSameOrigin(req)) {
     next()

@@ -1,6 +1,6 @@
 import { LetterColors } from './letter-colors.tsx'
 
-// The page's heading and its tab title
+/** The page's heading and its tab title */
 export const PageTitle = ({ children }: { children: string }) => (
   <>
     <title>{children}</title>

@@ -13,10 +13,12 @@ import { Prisma } from './generated/prisma/client.ts'
 import { listSeedSlots } from './seeded-bracket.ts'
 import type { Combatant, StoredBracket } from './seeded-bracket.ts'
 
-// Replaces the year's unpublished bracket, keeping its expected lock date, or
-// stores a new one with every seed slot and battle. Returns false and changes
-// nothing when the year's bracket is published. Throws on input
-// `bracketInputSchema` rejects
+/**
+ * Replaces the year's unpublished bracket, keeping its expected lock date, or
+ * stores a new one with every seed slot and battle. Returns false and changes
+ * nothing when the year's bracket is published. Throws on input
+ * `bracketInputSchema` rejects
+ */
 export const saveUnpublishedBracket = async (
   year: number,
   input: BracketInput,
@@ -49,7 +51,7 @@ export const saveUnpublishedBracket = async (
   }
 }
 
-// Returns whether the year had an unpublished bracket to delete
+/** Returns whether the year had an unpublished bracket to delete */
 export const deleteUnpublishedBracket = async (
   year: number,
 ): Promise<boolean> => {
@@ -81,8 +83,10 @@ const buildCreateOperations = (
   ]
 }
 
-// Every row of the year's bracket, linked by IDs made here, so each table
-// takes one insert
+/**
+ * Every row of the year's bracket, linked by IDs made here, so each table
+ * takes one insert
+ */
 const buildBracketRows = (year: number, input: BracketInput) => {
   const combatants: { id: string; year: number; name: string }[] = []
   const addCombatant = (name: string): string => {
@@ -132,13 +136,13 @@ const buildBracketRows = (year: number, input: BracketInput) => {
   }
 }
 
-// The current year's bracket is the newest published one
+/** The current year's bracket is the newest published one */
 const CURRENT_BRACKET = {
   where: { publishedAt: { not: null } },
   orderBy: { year: `desc` },
 } satisfies Prisma.BracketFindFirstArgs
 
-// Null before any bracket is published
+/** Null before any bracket is published */
 export const readCurrentBracket = async (): Promise<{
   year: number
   bracket: StoredBracket
@@ -157,7 +161,7 @@ export const readCurrentBracket = async (): Promise<{
   )
 }
 
-// Null before any bracket is published
+/** Null before any bracket is published */
 export const readCurrentYear = async (
   db: Prisma.TransactionClient = prisma,
 ): Promise<number | null> => {
@@ -168,7 +172,7 @@ export const readCurrentYear = async (
   return bracket?.year ?? null
 }
 
-// The year's bracket, published or not, or null when it has none
+/** The year's bracket, published or not, or null when it has none */
 export const readBracket = async (
   year: number,
 ): Promise<StoredBracket | null> => {
@@ -179,8 +183,10 @@ export const readBracket = async (
   return bracket && readStoredBracket(bracket)
 }
 
-// The year's bracket with its battles' row IDs, keyed by `toBattleKey`, or
-// null when it has none
+/**
+ * The year's bracket with its battles' row IDs, keyed by `toBattleKey`, or
+ * null when it has none
+ */
 type BracketRows = {
   bracket: StoredBracket
   battleIdByKey: ReadonlyMap<string, string>
@@ -210,8 +216,10 @@ export const readBracketRows = async (
   }
 }
 
-// One relation a query, because Prisma loads sibling relations at once, and a
-// transaction's connection runs one query at a time
+/**
+ * One relation a query, because Prisma loads sibling relations at once, and a
+ * transaction's connection runs one query at a time
+ */
 const readBracketInTransaction = async (
   db: Prisma.TransactionClient,
   year: number,
@@ -243,7 +251,7 @@ export type BracketSummary = { expectedLockDate: Date | null } & (
   | { phase: `OPEN`; publishedAt: Date; hasContests: boolean }
 )
 
-// Null when the year has no bracket
+/** Null when the year has no bracket */
 export const readBracketSummary = async (
   year: number,
 ): Promise<BracketSummary | null> => {
@@ -271,9 +279,11 @@ export const readBracketSummary = async (
 
 export type PublicationChange = `CHANGED` | `UNCHANGED` | `HAS_CONTESTS`
 
-// Publishing moves the year from Setup to Open, and unpublishing moves it back
-// until the year has a contest. `UNCHANGED` means the year has no bracket, or
-// its bracket is already in that state
+/**
+ * Publishing moves the year from Setup to Open, and unpublishing moves it back
+ * until the year has a contest. `UNCHANGED` means the year has no bracket, or
+ * its bracket is already in that state
+ */
 export const setBracketPublished = (
   year: number,
   published: boolean,
@@ -296,14 +306,16 @@ export const setBracketPublished = (
     return `CHANGED`
   })
 
-// A current year is published, and no newer year is
+/** A current year is published, and no newer year is */
 export type YearPublication = `UNPUBLISHED` | `PUBLISHED` | `CURRENT`
 
-// Holds which years are published and current until the transaction ends, so
-// neither can change before then. Writes that depend on them take `SHARE`,
-// which lets them run together, and publishing and unpublishing take `UPDATE`.
-// One advisory lock covers every year, including a bracket inserted after the
-// lock is taken
+/**
+ * Holds which years are published and current until the transaction ends, so
+ * neither can change before then. Writes that depend on them take `SHARE`,
+ * which lets them run together, and publishing and unpublishing take `UPDATE`.
+ * One advisory lock covers every year, including a bracket inserted after the
+ * lock is taken
+ */
 export const lockYears = async (
   tx: Prisma.TransactionClient,
   mode: `SHARE` | `UPDATE`,
@@ -313,11 +325,13 @@ export const lockYears = async (
     : tx.$executeRaw`SELECT pg_advisory_xact_lock(${YEARS_LOCK_KEY})`)
 }
 
-// An arbitrary key no other advisory lock in the app uses
+/** An arbitrary key no other advisory lock in the app uses */
 const YEARS_LOCK_KEY = 7_041_903
 
-// Takes `lockYears`, then reads whether the year is published and current.
-// Null when the year has no bracket
+/**
+ * Takes `lockYears`, then reads whether the year is published and current.
+ * Null when the year has no bracket
+ */
 export const lockYear = async (
   tx: Prisma.TransactionClient,
   year: number,
@@ -337,7 +351,7 @@ export const lockYear = async (
   return (await readCurrentYear(tx)) === year ? `CURRENT` : `PUBLISHED`
 }
 
-// Returns whether the year has a bracket. Null clears the date
+/** Returns whether the year has a bracket. Null clears the date */
 export const setExpectedLockDate = async (
   year: number,
   expectedLockDate: Date | null,
@@ -351,8 +365,10 @@ export const setExpectedLockDate = async (
 
 export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
 
-// Each division's combatants in seed order, with the wild card's entrants at
-// its seed
+/**
+ * Each division's combatants in seed order, with the wild card's entrants at
+ * its seed
+ */
 export const readBracketCombatants = async (
   year: number,
 ): Promise<
@@ -380,8 +396,10 @@ export const readBracketCombatants = async (
   }))
 }
 
-// Names the combatant `name`, which the route has checked, unless another
-// combatant in the year's bracket has the same name
+/**
+ * Names the combatant `name`, which the route has checked, unless another
+ * combatant in the year's bracket has the same name
+ */
 export const renameCombatant = async (
   year: number,
   combatantId: string,
@@ -456,7 +474,7 @@ const storedBracketSchema = toBracketSchema(
   ({ name }) => name,
 )
 
-// Parsing checks the stored rows form a whole bracket, and narrows seeds
+/** Parsing checks the stored rows form a whole bracket, and narrows seeds */
 const readStoredBracket = ({
   divisions,
   wildCard,

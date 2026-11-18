@@ -19,8 +19,10 @@ const DIVISIONS: ComponentProps<typeof CombatantRenames>[`divisions`] = [
   },
 ]
 
-// Renders the list with a rename action that refuses every name with `error`,
-// or saves it when there's none
+/**
+ * Renders the list with a rename action that refuses every name with `error`,
+ * or saves it when there's none
+ */
 const renderRenames = async (error?: string) => {
   const Stub = createRoutesStub([
     {

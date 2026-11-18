@@ -5,8 +5,10 @@ import { LetterColors } from './letter-colors.tsx'
 export const SiteHeader = ({
   educator,
 }: {
-  // Null when signed out. Undefined when it couldn't be read, so the header
-  // shows neither
+  /**
+   * Null when signed out. Undefined when it couldn't be read, so the header
+   * shows neither
+   */
   educator?: { name: string } | null
 }) => (
   <header className='border-b-2 border-ink print:hidden'>

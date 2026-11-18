@@ -53,7 +53,7 @@ test(`a bracket with a contest stays published`, async ({ page, browser }) => {
   ).not.toBeAttached()
 })
 
-// Creates a contest as a new educator, and returns its contest link
+/** Creates a contest as a new educator, and returns its contest link */
 const createContestLink = async (browser: Browser): Promise<string> => {
   const educator = await browser.newPage()
   await signInConfirmed(educator, newEmailAddress())
@@ -71,7 +71,7 @@ const startBracketAsMaya = async (page: Page, link: string): Promise<void> => {
   ).toBeVisible()
 }
 
-// React Router's cookies hold their value as base64-encoded JSON
+/** React Router's cookies hold their value as base64-encoded JSON */
 const readPersonalLinkSecret = async (page: Page): Promise<string> => {
   const cookies = await page.context().cookies()
   const cookie = cookies.find(({ name }) => name.startsWith(`player-`))

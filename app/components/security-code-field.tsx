@@ -1,8 +1,10 @@
 import type { ComponentProps } from 'react'
 import { TextField } from './text-field.tsx'
 
-// Follows GOV.UK's security code pattern: a text input that opens the numeric
-// keypad, so the code keeps a leading zero, and that a phone can fill in
+/**
+ * Follows GOV.UK's security code pattern: a text input that opens the numeric
+ * keypad, so the code keeps a leading zero, and that a phone can fill in
+ */
 export const SecurityCodeField = (
   props: Pick<
     ComponentProps<typeof TextField>,

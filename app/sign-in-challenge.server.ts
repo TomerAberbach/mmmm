@@ -3,11 +3,13 @@ import { APIError } from 'better-auth/api'
 import { href, redirect } from 'react-router'
 import { rejectAuthError, rejectForm } from './form-replies.server.ts'
 
-// Sign-in sends an educator with an authenticator app here with a cookie that
-// lasts 10 minutes and allows 5 codes. Once it runs out, they start over
+/**
+ * Sign-in sends an educator with an authenticator app here with a cookie that
+ * lasts 10 minutes and allows 5 codes. Once it runs out, they start over
+ */
 const SIGN_IN_AGAIN = `${href(`/sign-in`)}?challenge-expired`
 
-// Signs in once `verify` accepts the code, or answers why it didn't
+/** Signs in once `verify` accepts the code, or answers why it didn't */
 export const answerSignInChallenge = async (
   submission: Submission<{ code: string }>,
   verify: (code: string) => Promise<{ headers: Headers }>,
@@ -24,8 +26,10 @@ export const answerSignInChallenge = async (
   }
 }
 
-// Answers a code Better Auth refused: a wrong code, a challenge that ran out,
-// or an account locked after too many wrong codes
+/**
+ * Answers a code Better Auth refused: a wrong code, a challenge that ran out,
+ * or an account locked after too many wrong codes
+ */
 const rejectChallenge = (
   submission: Submission<{ code: string }>,
   error: unknown,

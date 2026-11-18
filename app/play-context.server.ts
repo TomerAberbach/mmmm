@@ -6,8 +6,10 @@ import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 
 const contestContext = createContext<ContestByLink>()
 
-// Answers a link that matches no contest with the not-found page. Routes below
-// it read the contest with `readPlayContest`
+/**
+ * Answers a link that matches no contest with the not-found page. Routes below
+ * it read the contest with `readPlayContest`
+ */
 export const loadPlayContest: MiddlewareFunction<Response> = async (
   { params, context },
   next,
@@ -34,9 +36,11 @@ export type RequiredPlayer = {
 
 const playerContext = createContext<RequiredPlayer>()
 
-// Sends anyone the browser doesn't remember to the contest link. Each response
-// restarts the remembered player's 15 minutes. Nest it after
-// `loadPlayContest`, and read the player with `readRequiredPlayer`
+/**
+ * Sends anyone the browser doesn't remember to the contest link. Each response
+ * restarts the remembered player's 15 minutes. Nest it after
+ * `loadPlayContest`, and read the player with `readRequiredPlayer`
+ */
 export const requirePlayer: MiddlewareFunction<Response> = async (
   { request, params, context },
   next,

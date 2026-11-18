@@ -8,8 +8,10 @@ type SavedFetcher = ReturnType<typeof useFetcher<SavedResult>>
 export const isSaved = (fetcher: SavedFetcher): boolean =>
   fetcher.state === `idle` && fetcher.data?.saved === true
 
-// Below the button, so the fields above stay put when it appears. Hidden once a
-// later submission fails validation
+/**
+ * Below the button, so the fields above stay put when it appears. Hidden once a
+ * later submission fails validation
+ */
 export const SavedNotice = ({
   fetcher,
   isFormValid,
