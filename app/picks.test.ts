@@ -1,19 +1,24 @@
 import { expect, test } from 'vitest'
 import { BRACKET_2025 } from '../prisma/brackets.ts'
+import {
+  CHAMPIONSHIP,
+  findCombatantId,
+  ROUND_1_FIRST,
+  seedTestBracket,
+} from '../test/picks.ts'
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
 import { arePicksConsistent, listContenders, pickWinner } from './picks.ts'
-import { toSeededBracket } from './seeded-bracket.ts'
 
-const BRACKET = toSeededBracket(BRACKET_2025)
+const BRACKET = seedTestBracket(BRACKET_2025)
 
-const ROUND_1_FIRST: BattleRef = { round: `ROUND_1`, index: 0 }
 const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
-const CHAMPIONSHIP: BattleRef = { round: `CHAMPIONSHIP`, index: 0 }
 // 2025's wild card fills seed 14 of the top left division, which plays seed 3
 const WILD_CARD_ROUND_1: BattleRef = { round: `ROUND_1`, index: 5 }
 
-const [SEED_1 = ``, SEED_16 = ``] = listContenders(BRACKET, ROUND_1_FIRST)
+const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST).map(
+  ({ id }) => id,
+) as [string, string]
 
 test(`picking a Round 1 winner picks only that battle`, () => {
   const { picks, cleared } = pickWinner(BRACKET, {}, ROUND_1_FIRST, SEED_1)
@@ -36,7 +41,7 @@ test(`picking a champion also picks every earlier win on its way there`, () => {
 })
 
 test(`picking a wild card entrant past Round 1 also picks the wild card`, () => {
-  const [entrant = ``] = BRACKET.wildCardEntrants
+  const entrant = findCombatantId(BRACKET, `Northern Flying Squirrel`)
 
   const { picks } = pickWinner(BRACKET, {}, WILD_CARD_ROUND_1, entrant)
 
@@ -67,10 +72,7 @@ test(`changing a pick clears the later picks that depended on it`, () => {
 })
 
 test(`changing a pick keeps the later picks that don't depend on it`, () => {
-  const [otherWinner = ``] = listContenders(BRACKET, {
-    round: `ROUND_1`,
-    index: 1,
-  })
+  const otherWinner = findCombatantId(BRACKET, `Gelada`)
   const { picks: before } = pickWinner(BRACKET, {}, ROUND_2_FIRST, otherWinner)
 
   const { picks, cleared } = pickWinner(BRACKET, before, ROUND_1_FIRST, SEED_1)
@@ -80,19 +82,21 @@ test(`changing a pick keeps the later picks that don't depend on it`, () => {
 })
 
 test(`a combatant who can't reach a battle can't be picked to win it`, () => {
-  expect(() =>
-    pickWinner(BRACKET, {}, ROUND_1_FIRST, `Not a combatant`),
-  ).toThrow(`Not a combatant can't reach ROUND_1:0`)
+  const gelada = findCombatantId(BRACKET, `Gelada`)
+
+  expect(() => pickWinner(BRACKET, {}, ROUND_1_FIRST, gelada)).toThrow(
+    `${gelada} can't reach ROUND_1:0`,
+  )
 })
 
 test(`a battle lists every combatant who could win it`, () => {
   const contenders = listContenders(BRACKET, ROUND_2_FIRST)
 
-  expect(contenders).toStrictEqual([
-    SEED_1,
-    SEED_16,
-    `Gelada`,
-    `Eastern Grey Kangaroo`,
+  expect(contenders).toMatchObject([
+    { name: `Thorold’s Deer`, seed: 1 },
+    { name: `Olympic Marmot`, seed: 16 },
+    { name: `Gelada`, seed: 8 },
+    { name: `Eastern Grey Kangaroo`, seed: 9 },
   ])
 })
 
@@ -110,6 +114,11 @@ test.each([
   {
     scenario: `a battle that doesn't exist`,
     picks: { 'ROUND_9:0': SEED_1 },
+    consistent: false,
+  },
+  {
+    scenario: `a winner who isn't a combatant in the bracket`,
+    picks: { 'ROUND_1:0': `another-bracket-combatant` },
     consistent: false,
   },
 ])(`$scenario are consistent: $consistent`, ({ picks, consistent }) => {

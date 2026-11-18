@@ -1,12 +1,12 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
 import { lockYear, readBracketRows } from './brackets.server.ts'
-import type { BracketRows } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
 import type { Picks } from './picks.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
+import type { SeededBracket } from './seeded-bracket.ts'
 
 export type Submission = {
   status: SubmissionStatus
@@ -53,11 +53,11 @@ export const savePlayerDraft = (
   yearId: number,
   picks: Picks,
 ): Promise<{ saved: true } | PicksRefusal> =>
-  withPlayerBracket(playerId, yearId, async (tx, bracket) => {
-    if (!arePicksConsistent(toSeededBracket(bracket.input), picks)) {
+  withPlayerBracket(playerId, yearId, async (tx, bracket, battleIdByKey) => {
+    if (!arePicksConsistent(bracket, picks)) {
       return { refusal: `INCONSISTENT` } as const
     }
-    await writePicks(tx, playerId, `DRAFT`, picks, bracket)
+    await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
     return { saved: true } as const
   })
 
@@ -69,17 +69,17 @@ export const submitPlayerPicks = (
   yearId: number,
   picks: Picks,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
-  withPlayerBracket(playerId, yearId, async (tx, bracket) => {
-    if (!arePicksComplete(toSeededBracket(bracket.input), picks)) {
+  withPlayerBracket(playerId, yearId, async (tx, bracket, battleIdByKey) => {
+    if (!arePicksComplete(bracket, picks)) {
       return { refusal: `INCOMPLETE` } as const
     }
     const isChanged = !arePicksEqual(
       await readPicks(tx, playerId, `SUBMISSION`),
       picks,
     )
-    await writePicks(tx, playerId, `DRAFT`, picks, bracket)
+    await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
     if (isChanged) {
-      await writePicks(tx, playerId, `SUBMISSION`, picks, bracket)
+      await writePicks(tx, playerId, `SUBMISSION`, picks, battleIdByKey)
     }
     // `create` runs only for a first submission, which always changes the
     // submitted picks
@@ -117,7 +117,7 @@ type PickStage = `DRAFT` | `SUBMISSION`
 const PICK_SELECT = {
   stage: true,
   battle: { select: { round: true, index: true } },
-  combatant: { select: { name: true } },
+  combatantId: true,
 } as const
 
 const readPicks = async (
@@ -129,11 +129,9 @@ const readPicks = async (
     await tx.pick.findMany({ where: { playerId, stage }, select: PICK_SELECT }),
   )
 
-const toPicks = (
-  picks: { battle: BattleRef; combatant: { name: string } }[],
-): Picks =>
+const toPicks = (picks: { battle: BattleRef; combatantId: string }[]): Picks =>
   Object.fromEntries(
-    picks.map(({ battle, combatant }) => [toBattleKey(battle), combatant.name]),
+    picks.map(({ battle, combatantId }) => [toBattleKey(battle), combatantId]),
   )
 
 const writePicks = async (
@@ -141,15 +139,15 @@ const writePicks = async (
   playerId: string,
   stage: PickStage,
   picks: Picks,
-  bracket: BracketRows,
+  battleIdByKey: ReadonlyMap<string, string>,
 ): Promise<void> => {
   await tx.pick.deleteMany({ where: { playerId, stage } })
   await tx.pick.createMany({
-    data: Object.entries(picks).map(([key, winner]) => ({
+    data: Object.entries(picks).map(([key, combatantId]) => ({
       playerId,
       stage,
-      battleId: bracket.battleIdByKey.get(key)!,
-      combatantId: bracket.combatantIdByName.get(winner)!,
+      battleId: battleIdByKey.get(key)!,
+      combatantId,
     })),
   })
 }
@@ -169,16 +167,19 @@ const withCurrentPlayer = <Result>(
       : ({ refusal: `NOT_CURRENT_YEAR` } as const)
   })
 
-// Runs `change` as `withCurrentPlayer` does, with the year's bracket rows
+// Runs `change` as `withCurrentPlayer` does, with the year's bracket and its
+// battles' row IDs, keyed by `toBattleKey`
 const withPlayerBracket = <Result>(
   playerId: string,
   yearId: number,
   change: (
     tx: Prisma.TransactionClient,
-    bracket: BracketRows,
+    bracket: SeededBracket,
+    battleIdByKey: ReadonlyMap<string, string>,
   ) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
-  withCurrentPlayer(playerId, yearId, async tx =>
+  withCurrentPlayer(playerId, yearId, async tx => {
     // A current year's bracket is published, so it exists
-    change(tx, (await readBracketRows(yearId, tx))!),
-  )
+    const { bracket, battleIdByKey } = (await readBracketRows(yearId, tx))!
+    return change(tx, toSeededBracket(bracket), battleIdByKey)
+  })

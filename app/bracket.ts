@@ -73,7 +73,8 @@ export type SeedSlotRef = { position: DivisionPosition; seed: Seed }
 
 export type BattleRef = { round: Round; index: number }
 
-// Each decided battle's key, from `toBattleKey`, mapped to its winner's name
+// Each decided battle's key, from `toBattleKey`, mapped to its winner's
+// combatant ID
 export type Winners = Readonly<Record<string, string>>
 
 export const toBattleKey = ({ round, index }: BattleRef): string =>

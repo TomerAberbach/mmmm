@@ -13,7 +13,6 @@ import { PickingContext } from './picking.ts'
 import type { Picking } from './picking.ts'
 import { usePicksRequests } from './picks-requests.ts'
 import type { RequestState } from './picks-requests.ts'
-import type { BracketInput } from '~/bracket-input.ts'
 import {
   buildBracketView,
   readBattleName,
@@ -34,20 +33,21 @@ import {
 import type { Picks } from '~/picks.ts'
 import type { Submission } from '~/player-picks.server.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
+import type { StoredBracket } from '~/seeded-bracket.ts'
 
 // The player's bracket, each battle a control. Every change saves the whole
 // set of picks to the player's draft through `picksPath`, and submitting copies
 // the draft to their submission
 export const PlayerBracket = ({
   year,
-  input,
+  bracket: stored,
   initialDraft,
   submitted,
   picksPath,
   forgetPath,
 }: {
   year: number
-  input: BracketInput
+  bracket: StoredBracket
   initialDraft: Picks
   // Null until the player submits
   submitted: Submitted | null
@@ -55,7 +55,7 @@ export const PlayerBracket = ({
   forgetPath: string
 }) => {
   const submission = submitted?.submission ?? null
-  const bracket = useMemo(() => toSeededBracket(input), [input])
+  const bracket = useMemo(() => toSeededBracket(stored), [stored])
   const [picks, setPicks] = useState(initialDraft)
   // The panel after submitting shows until the player's next change
   const [justSubmitted, setJustSubmitted] = useState<
@@ -78,8 +78,8 @@ export const PlayerBracket = ({
 
   const picking = useMemo(
     (): Picking => ({
-      pick: (battle, winner) => {
-        const next = pickWinner(bracket, picks, battle, winner)
+      pick: (battle, winnerId) => {
+        const next = pickWinner(bracket, picks, battle, winnerId)
         changeCount.current += 1
         setPicks(next.picks)
         setCleared(new Set([...cleared, ...next.cleared.map(toBattleKey)]))

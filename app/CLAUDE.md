@@ -138,13 +138,15 @@ app
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
   links, only a round and an index for results and picks to reference
 - A `BracketInput` skips the wild card's seed in its division's list, so read
-  each seed slot's combatant with `listSeedSlotNames` instead of indexing the
-  list by seed. The setup form keeps one field per seed instead, so a name stays
-  at its seed when the wild card moves. `bracket-form.ts` converts between the
-  two
+  each seed slot's combatant with `listSeedSlots` instead of indexing the list
+  by seed. The setup form keeps one field per seed instead, so a name stays at
+  its seed when the wild card moves. `bracket-form.ts` converts between the two
+- Key winners and picks by combatant ID, and show names only for display, so a
+  rename leaves saved picks as they were. A `BracketInput` and the setup form
+  hold names, because combatants have no IDs until the bracket is saved
 - Fill a battle's sides with `fillSides` from `seeded-bracket.ts`, which reads
   the seed slots, the wild card's entrants, and the winners so far from a
-  `SeededBracket`. Build the `SeededBracket` once per input with
+  `SeededBracket`. Build the `SeededBracket` once per `StoredBracket` with
   `toSeededBracket`, and pass it to both `buildBracketView` and the pick rules
   in `picks.ts`
 - Show a bracket from `buildBracketView` in `bracket-view.ts`. A regular
@@ -185,7 +187,7 @@ app
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
   `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`
-  wouldn't produce
+  wouldn't produce, including a combatant ID from another year's bracket
 - A player edits a draft, and submitting copies it to their submission. Both are
   `Pick` rows, told apart by `stage`. Change them only through
   `player-picks.server.ts`, which locks the player's row so two requests can't

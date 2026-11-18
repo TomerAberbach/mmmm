@@ -16,7 +16,7 @@ import type { BattleView, BracketView } from '~/bracket-view.ts'
 import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { measureWidestName } from '~/name-width.ts'
-import type { Side } from '~/seeded-bracket.ts'
+import type { Combatant, Side } from '~/seeded-bracket.ts'
 
 const SIZE_CLASSES = {
   diagram: {
@@ -36,7 +36,9 @@ export const readNameWidth = ({ battles }: BracketView): number =>
   measureWidestName([
     WILD_CARD_WINNER,
     ...[...battles.WILD_CARD, ...battles.ROUND_1].flatMap(({ sides }) =>
-      sides.filter(side => side.kind === `combatant`).map(({ name }) => name),
+      sides.flatMap(side =>
+        side.kind === `combatant` ? side.combatant.name : [],
+      ),
     ),
   ])
 
@@ -113,18 +115,18 @@ export const BoxSizer = () => {
   )
 }
 
-const readResultClasses = (side: Side, winner: string | undefined) => {
+const readResultClasses = (side: Side, winner: Combatant | undefined) => {
   if (winner === undefined || side.kind === `undecided`) {
     return ``
   }
-  return side.name === winner
+  return side.combatant.id === winner.id
     ? `bg-accent-soft/40 font-extrabold`
     : `text-muted`
 }
 
 const readSideName = (side: Side): string =>
   side.kind === `combatant`
-    ? side.name
+    ? side.combatant.name
     : side.battle.round === `WILD_CARD`
       ? WILD_CARD_WINNER
       : ``
@@ -170,7 +172,7 @@ const WildCardLineBar = ({
 
 const SeedNumber = ({ side }: { side: Side }) => (
   <span className='w-5 shrink-0 text-end text-muted tabular-nums'>
-    {side.kind === `combatant` ? side.seed : null}
+    {side.kind === `combatant` ? side.combatant.seed : null}
   </span>
 )
 
@@ -187,7 +189,7 @@ const PickableBattleBox = ({
 }) => (
   <RadioGroup
     aria-label={readBattleName(battle)}
-    value={battle.winner ?? null}
+    value={battle.winner?.id ?? null}
     onChange={winner => picking.pick(battle, winner)}
     dir='ltr'
     data-battle={toBattleKey(battle)}
@@ -198,7 +200,7 @@ const PickableBattleBox = ({
         <RadioField
           // Sides never reorder
           key={index}
-          value={side.name}
+          value={side.combatant.id}
           className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
         >
           <WildCardLineBar wildCardLine={wildCardLine} side={index} />
@@ -277,10 +279,10 @@ const ContenderList = ({
       onAction={winner => picking.pick(battle, String(winner))}
       className='max-h-80 overflow-y-auto outline-none'
     >
-      {picking.listContenders(battle).map(name => (
+      {picking.listContenders(battle).map(({ id, name }) => (
         <MenuItem
-          key={name}
-          id={name}
+          key={id}
+          id={id}
           className='cursor-pointer px-3 py-2 font-condensed font-bold tracking-wide uppercase outline-none not-last:border-b not-last:border-muted-light data-focused:bg-ink/5'
         >
           {name}

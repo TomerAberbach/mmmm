@@ -1,4 +1,5 @@
 import { parseWithZod } from '@conform-to/zod/v4'
+import type { ComponentProps } from 'react'
 import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
@@ -7,9 +8,9 @@ import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renameSchema } from '../bracket-admin-forms.ts'
 import { CombatantRenames } from './combatant-renames.tsx'
 
-const DIVISIONS = [
+const DIVISIONS: ComponentProps<typeof CombatantRenames>[`divisions`] = [
   {
-    position: `TOP_LEFT` as const,
+    position: `TOP_LEFT`,
     name: `Same & Different`,
     combatants: [
       { id: `deer`, name: `Thorold’s Deer`, seed: 1, isWildCardEntrant: false },

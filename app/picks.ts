@@ -1,7 +1,7 @@
 import { listBattles, toBattleKey } from './bracket.ts'
 import type { BattleRef, Winners } from './bracket.ts'
-import { fillSides, hasCombatant } from './seeded-bracket.ts'
-import type { SeededBracket } from './seeded-bracket.ts'
+import { fillSides, findCombatant } from './seeded-bracket.ts'
+import type { Combatant, SeededBracket } from './seeded-bracket.ts'
 
 export type Picks = Winners
 
@@ -11,23 +11,30 @@ export const TOTAL_BATTLES = listBattles().length
 export const listContenders = (
   bracket: SeededBracket,
   battle: BattleRef,
-): string[] =>
+): Combatant[] =>
   fillSides(bracket, battle, {}).flatMap(side =>
     side.kind === `combatant`
-      ? side.name
+      ? side.combatant
       : listContenders(bracket, side.battle),
   )
 
-// Picks `winner` in the battle, and in every earlier battle on its way there.
-// Clears each later pick that no longer has its winner on one of its battle's
-// sides. Throws when the winner can't reach the battle
+const isContender = (
+  bracket: SeededBracket,
+  battle: BattleRef,
+  combatantId: string,
+): boolean =>
+  listContenders(bracket, battle).some(({ id }) => id === combatantId)
+
+// Picks `winner`, a combatant ID, in the battle, and in every earlier battle on
+// its way there. Clears each later pick that no longer has its winner on one of
+// its battle's sides. Throws when the winner can't reach the battle
 export const pickWinner = (
   bracket: SeededBracket,
   picks: Picks,
   battle: BattleRef,
   winner: string,
 ): { picks: Picks; cleared: BattleRef[] } => {
-  if (!listContenders(bracket, battle).includes(winner)) {
+  if (!isContender(bracket, battle, winner)) {
     throw new Error(`${winner} can't reach ${toBattleKey(battle)}`)
   }
   const picked = { ...picks }
@@ -70,8 +77,8 @@ const listPathTo = (
 ): BattleRef[] => {
   const side = fillSides(bracket, battle, {}).find(candidate =>
     candidate.kind === `combatant`
-      ? candidate.name === winner
-      : listContenders(bracket, candidate.battle).includes(winner),
+      ? candidate.combatant.id === winner
+      : isContender(bracket, candidate.battle, winner),
   )!
   return side.kind === `combatant`
     ? [battle]
@@ -92,7 +99,7 @@ const keepReachablePicks = (
     if (winner === undefined) {
       continue
     }
-    if (hasCombatant(fillSides(bracket, battle, kept), winner)) {
+    if (findCombatant(fillSides(bracket, battle, kept), winner)) {
       kept[key] = winner
     } else {
       cleared.push(battle)

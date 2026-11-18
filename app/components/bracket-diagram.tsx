@@ -450,7 +450,7 @@ const Center = ({ view }: { view: BracketView }) => {
           </p>
           <p className='min-w-48 border-4 border-ink px-3 py-2 text-center font-condensed text-lg font-extrabold uppercase'>
             {/* Keeps its height while empty */}
-            {championship.winner ?? `\u{A0}`}
+            {championship.winner?.name ?? `\u{A0}`}
           </p>
         </div>
         <LabeledBattle label={ROUND_NAMES.CHAMPIONSHIP} battle={championship} />
