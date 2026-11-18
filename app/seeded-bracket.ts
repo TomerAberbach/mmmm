@@ -15,59 +15,72 @@ import type {
   Winners,
 } from './bracket.ts'
 
-// Every seed slot in seed order, with its combatant's name. The wild card's
-// seed slot has none, since the wild card's winner fills it
-export const listSeedSlotNames = ({
+// Every seed slot in seed order, with its combatant. The wild card's seed slot
+// has none, since the wild card's winner fills it
+export const listSeedSlots = <Combatant>({
   divisions,
   wildCard,
-}: BracketInput): (SeedSlotRef & { name?: string })[] =>
+}: BracketInput<Combatant>): (SeedSlotRef & { combatant?: Combatant })[] =>
   DIVISION_POSITIONS.flatMap(position => {
-    const names = [...divisions[position].combatants]
+    const combatants = [...divisions[position].combatants]
     return SEEDS.map(seed =>
       isSameSeedSlot({ position, seed }, wildCard)
         ? { position, seed }
         : // The input schema checks each division's count
-          { position, seed, name: names.shift()! },
+          { position, seed, combatant: combatants.shift()! },
     )
   })
 
-// A bracket input with each seed slot's combatant and each combatant's seed
+type StoredCombatant = { id: string; name: string }
+
+// A saved bracket's names with their combatants' row IDs
+export type StoredBracket = BracketInput<StoredCombatant>
+
+export type Combatant = StoredCombatant & { seed: Seed }
+
+// A stored bracket with each seed slot's combatant and each combatant's seed
 // looked up, for filling battles' sides
 export type SeededBracket = {
   divisionNames: Record<DivisionPosition, string>
   wildCardSlot: SeedSlotRef
-  wildCardEntrants: readonly string[]
+  wildCardEntrants: readonly Combatant[]
   // Keyed by `toSeedSlotKey`. The wild card's seed slot has no combatant
-  nameBySeedSlot: ReadonlyMap<string, string>
-  // Every wild card entrant has the wild card's seed
-  seedByName: ReadonlyMap<string, Seed>
+  combatantBySeedSlot: ReadonlyMap<string, Combatant>
+  combatantById: ReadonlyMap<string, Combatant>
 }
 
-export const toSeededBracket = (input: BracketInput): SeededBracket => {
-  const { divisions, wildCard } = input
-  const seedSlotNames = listSeedSlotNames(input).filter(
-    (slot): slot is SeedSlotRef & { name: string } => slot.name !== undefined,
+export const toSeededBracket = (stored: StoredBracket): SeededBracket => {
+  const { divisions, wildCard } = stored
+  const seedSlots = listSeedSlots(stored).flatMap(({ combatant, ...slot }) =>
+    combatant === undefined
+      ? []
+      : { slot, combatant: { ...combatant, seed: slot.seed } },
   )
+  const wildCardEntrants = wildCard.entrants.map(entrant => ({
+    ...entrant,
+    seed: wildCard.seed,
+  }))
   return {
     divisionNames: Object.fromEntries(
       DIVISION_POSITIONS.map(position => [position, divisions[position].name]),
     ) as Record<DivisionPosition, string>,
     wildCardSlot: { position: wildCard.position, seed: wildCard.seed },
-    wildCardEntrants: wildCard.entrants,
-    nameBySeedSlot: new Map(
-      seedSlotNames.map(({ name, ...slot }) => [toSeedSlotKey(slot), name]),
+    wildCardEntrants,
+    combatantBySeedSlot: new Map(
+      seedSlots.map(({ slot, combatant }) => [toSeedSlotKey(slot), combatant]),
     ),
-    seedByName: new Map([
-      ...seedSlotNames.map(({ name, seed }) => [name, seed] as const),
-      ...wildCard.entrants.map(name => [name, wildCard.seed] as const),
-    ]),
+    combatantById: new Map(
+      [...seedSlots.map(({ combatant }) => combatant), ...wildCardEntrants].map(
+        combatant => [combatant.id, combatant],
+      ),
+    ),
   }
 }
 
 // A battle's side once its combatant is known, or the earlier battle whose
 // winner fills it
 export type Side =
-  | { kind: `combatant`; name: string; seed: Seed }
+  | { kind: `combatant`; combatant: Combatant }
   | { kind: `undecided`; battle: BattleRef }
 
 // The battle's sides, filled from the seed slots, the wild card's entrants,
@@ -78,13 +91,12 @@ export const fillSides = (
   battle: BattleRef,
   winners: Winners,
 ): Side[] => {
-  const toCombatant = (name: string): Side => ({
+  const toSide = (combatant: Combatant): Side => ({
     kind: `combatant`,
-    name,
-    seed: bracket.seedByName.get(name)!,
+    combatant,
   })
   if (battle.round === `WILD_CARD`) {
-    return bracket.wildCardEntrants.map(toCombatant)
+    return bracket.wildCardEntrants.map(toSide)
   }
   return readBattleSides(
     { ...battle, round: battle.round },
@@ -93,16 +105,21 @@ export const fillSides = (
     if (side.kind === `seedSlot`) {
       // Only the wild card's seed slot has no combatant, and its side is the
       // wild card's winner
-      return toCombatant(
-        bracket.nameBySeedSlot.get(toSeedSlotKey(side.seedSlot))!,
+      return toSide(
+        bracket.combatantBySeedSlot.get(toSeedSlotKey(side.seedSlot))!,
       )
     }
     const winner = winners[toBattleKey(side.battle)]
     return winner === undefined
       ? { kind: `undecided`, battle: side.battle }
-      : toCombatant(winner)
+      : toSide(bracket.combatantById.get(winner)!)
   })
 }
 
-export const hasCombatant = (sides: Side[], name: string): boolean =>
-  sides.some(side => side.kind === `combatant` && side.name === name)
+export const findCombatant = (
+  sides: Side[],
+  combatantId: string,
+): Combatant | undefined =>
+  sides
+    .flatMap(side => (side.kind === `combatant` ? side.combatant : []))
+    .find(({ id }) => id === combatantId)

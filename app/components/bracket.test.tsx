@@ -7,12 +7,19 @@ import {
   BRACKET_2026,
 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import type { BracketInput } from '../bracket-input.ts'
+import { ROUND_1_FIRST, seedTestBracket } from '../../test/picks.ts'
 import { buildBracketView } from '../bracket-view.ts'
 import type { Winners } from '../bracket.ts'
-import { toSeededBracket } from '../seeded-bracket.ts'
+import { listContenders } from '../picks.ts'
+import type { Combatant, SeededBracket } from '../seeded-bracket.ts'
 import { PRINTED_PAGE } from './bracket-diagram.tsx'
 import { Bracket } from './bracket.tsx'
+
+const BRACKET = seedTestBracket(BRACKET_2025)
+const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST) as [
+  Combatant,
+  Combatant,
+]
 
 const PHONE = { width: 390, height: 844 }
 const WIDE_SCREEN = { width: 1600, height: 1000 }
@@ -24,15 +31,11 @@ const renderBracket = async (
   {
     winners = {},
     year = 2025,
-    bracket = BRACKET_2025,
-  }: { winners?: Winners; year?: number; bracket?: BracketInput } = {},
+    bracket = BRACKET,
+  }: { winners?: Winners; year?: number; bracket?: SeededBracket } = {},
 ) => {
   await page.viewport(viewport.width, viewport.height)
-  await render(
-    <Bracket
-      view={buildBracketView(year, toSeededBracket(bracket), winners)}
-    />,
-  )
+  await render(<Bracket view={buildBracketView(year, bracket, winners)} />)
   await document.fonts.ready
 }
 
@@ -52,7 +55,7 @@ test(`a phone starts on Round 1`, async () => {
   await expect
     .element(
       tabPanel().getByText(
-        `Round 1, battle 1: Thorold’s Deer vs. Olympic Marmot`,
+        `Round 1, battle 1: ${SEED_1.name} vs. ${SEED_16.name}`,
       ),
     )
     .toBeInTheDocument()
@@ -77,14 +80,12 @@ test(`a phone shows one round at a time`, async () => {
 })
 
 test(`a battle's label names its winner`, async () => {
-  await renderBracket(PHONE, {
-    winners: { 'ROUND_1:0': `Olympic Marmot` },
-  })
+  await renderBracket(PHONE, { winners: { 'ROUND_1:0': SEED_16.id } })
 
   await expect
     .element(
       tabPanel().getByText(
-        `Round 1, battle 1: Thorold’s Deer vs. Olympic Marmot, Olympic Marmot won`,
+        `Round 1, battle 1: ${SEED_1.name} vs. ${SEED_16.name}, ${SEED_16.name} won`,
       ),
     )
     .toBeInTheDocument()
@@ -118,9 +119,9 @@ const readPrintedDiagramSize = () => {
 }
 
 const BRACKETS = [
-  { year: 2017, bracket: BRACKET_2017 },
-  { year: 2025, bracket: BRACKET_2025 },
-  { year: 2026, bracket: BRACKET_2026 },
+  { year: 2017, bracket: seedTestBracket(BRACKET_2017) },
+  { year: 2025, bracket: BRACKET },
+  { year: 2026, bracket: seedTestBracket(BRACKET_2026) },
 ]
 
 test.each(BRACKETS)(

@@ -2,12 +2,14 @@ import { expect, test } from 'vitest'
 import { ZodError } from 'zod'
 import { BRACKET_2017, BRACKET_2025, BRACKET_2026 } from '../prisma/brackets.ts'
 import { createContestInNewYear } from '../test/contests.ts'
+import { findCombatantId } from '../test/picks.ts'
 import {
   addClaimedYear,
   claimYear,
   createClaimedBracket,
   withCurrentYear,
 } from '../test/years.ts'
+import { toNames } from './bracket-input.ts'
 import {
   deleteUnpublishedBracket,
   readBracket,
@@ -20,6 +22,12 @@ import {
   setExpectedLockDate,
 } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
+import { toSeededBracket } from './seeded-bracket.ts'
+
+const readBracketNames = async (year: number) => {
+  const bracket = await readBracket(year)
+  return bracket && toNames(bracket)
+}
 
 // The combatant in a seed slot, or the wild card's entrants for its slot
 const readSeedSlotNames = async (
@@ -165,13 +173,13 @@ test(`the current bracket is the newest published one, read back as entered`, ()
     })
     await addYear({ published: false })
 
-    const current = await readCurrentBracket()
+    const { bracket, ...current } = (await readCurrentBracket())!
 
     expect(current).toStrictEqual({
       year: newestPublishedYear,
-      input: BRACKET_2025,
       expectedLockDate: null,
     })
+    expect(toNames(bracket)).toStrictEqual(BRACKET_2025)
   }))
 
 test(`saving an unpublished bracket replaces it`, async () => {
@@ -180,7 +188,7 @@ test(`saving an unpublished bracket replaces it`, async () => {
 
   await saveUnpublishedBracket(year, BRACKET_2025)
 
-  await expect(readBracket(year)).resolves.toStrictEqual(BRACKET_2025)
+  await expect(readBracketNames(year)).resolves.toStrictEqual(BRACKET_2025)
   await expect(readBracketSummary(year)).resolves.toMatchObject({
     phase: `SETUP`,
   })
@@ -205,7 +213,7 @@ test(`saving over a published bracket changes nothing`, async () => {
   const saved = await saveUnpublishedBracket(year, BRACKET_2025)
 
   expect(saved).toBe(false)
-  await expect(readBracket(year)).resolves.toStrictEqual(BRACKET_2026)
+  await expect(readBracketNames(year)).resolves.toStrictEqual(BRACKET_2026)
   await expect(readBracketSummary(year)).resolves.toMatchObject({
     phase: `OPEN`,
   })
@@ -322,27 +330,26 @@ test(`the wild card's entrants are listed at its seed`, async () => {
   ])
 })
 
-const findCombatant = async (year: number, name: string) => {
-  const divisions = await readBracketCombatants(year)
-  return divisions
-    .flatMap(({ combatants }) => combatants)
-    .find(combatant => combatant.name === name)!
-}
+const readCombatantId = async (year: number, name: string) =>
+  findCombatantId(toSeededBracket((await readBracket(year))!), name)
 
 test(`renaming a combatant changes its name everywhere the bracket shows it`, async () => {
   const year = await addClaimedYear({ published: true, input: BRACKET_2025 })
-  const { id } = await findCombatant(year, `Gelada`)
+  const id = await readCombatantId(year, `Gelada`)
 
   const result = await renameCombatant(year, id, `Gelada Baboon`)
 
   expect(result).toStrictEqual({ ok: true })
   const bracket = await readBracket(year)
-  expect(bracket?.divisions.TOP_LEFT.combatants).toContain(`Gelada Baboon`)
+  expect(bracket?.divisions.TOP_LEFT.combatants).toContainEqual({
+    id,
+    name: `Gelada Baboon`,
+  })
 })
 
 test(`a rename to another combatant's name is refused`, async () => {
   const year = await addClaimedYear({ published: true, input: BRACKET_2025 })
-  const { id } = await findCombatant(year, `Gelada`)
+  const id = await readCombatantId(year, `Gelada`)
 
   const result = await renameCombatant(year, id, `sun bear`)
 
@@ -357,7 +364,7 @@ test(`a combatant from another year can't be renamed`, async () => {
     published: false,
     input: BRACKET_2026,
   })
-  const { id } = await findCombatant(otherYear, `Lions`)
+  const id = await readCombatantId(otherYear, `Lions`)
 
   const result = await renameCombatant(year, id, `Lionesses`)
 

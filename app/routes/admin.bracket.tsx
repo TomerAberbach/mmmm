@@ -6,6 +6,7 @@ import {
   toBracketForm,
   toBracketInput,
 } from '~/bracket-form.ts'
+import { toNames } from '~/bracket-input.ts'
 import {
   readBracket,
   readBracketCombatants,
@@ -32,12 +33,12 @@ export const loader = async () => {
       divisions: await readBracketCombatants(year),
     }
   }
-  const input = summary && (await readBracket(year))
+  const bracket = summary && (await readBracket(year))
   return {
     editor: `setup` as const,
     year,
     summary,
-    defaultValue: input ? toBracketForm(input) : undefined,
+    defaultValue: bracket ? toBracketForm(toNames(bracket)) : undefined,
   }
 }
 

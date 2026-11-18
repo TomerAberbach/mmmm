@@ -13,16 +13,16 @@ export type CurrentBracket = {
 // Null before any bracket is published
 export const readCurrentBracketView =
   async (): Promise<CurrentBracket | null> => {
-    const bracket = await readCurrentBracket()
+    const current = await readCurrentBracket()
     return (
-      bracket && {
+      current && {
         view: buildBracketView(
-          bracket.year,
-          toSeededBracket(bracket.input),
+          current.year,
+          toSeededBracket(current.bracket),
           {},
         ),
         expectedLockDate:
-          bracket.expectedLockDate && formatDate(bracket.expectedLockDate),
+          current.expectedLockDate && formatDate(current.expectedLockDate),
       }
     )
   }

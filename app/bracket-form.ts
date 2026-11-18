@@ -11,7 +11,7 @@ import {
 } from './bracket.ts'
 import type { SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME } from './free-text.ts'
-import { listSeedSlotNames } from './seeded-bracket.ts'
+import { listSeedSlots } from './seeded-bracket.ts'
 
 // Where a combatant's name is entered
 type CombatantPlace =
@@ -236,7 +236,7 @@ export const toBracketInput = (form: BracketForm): BracketInput => {
 }
 
 export const toBracketForm = (input: BracketInput): BracketForm => {
-  const seedSlotNames = listSeedSlotNames(input)
+  const seedSlots = listSeedSlots(input)
   return {
     wildCard: {
       ...input.wildCard,
@@ -248,9 +248,9 @@ export const toBracketForm = (input: BracketInput): BracketForm => {
         position,
         {
           name: input.divisions[position].name,
-          seeds: seedSlotNames
+          seeds: seedSlots
             .filter(seedSlot => seedSlot.position === position)
-            .map(({ name }) => name ?? ``),
+            .map(({ combatant }) => combatant ?? ``),
         },
       ]),
     ) as BracketForm[`divisions`],

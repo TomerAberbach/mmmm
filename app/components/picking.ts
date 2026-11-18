@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react'
 import type { BattleRef } from '~/bracket.ts'
+import type { Combatant } from '~/seeded-bracket.ts'
 
 // Turns the bracket's battle boxes into controls for picking each winner
 export type Picking = {
-  pick: (battle: BattleRef, winner: string) => void
-  listContenders: (battle: BattleRef) => string[]
+  pick: (battle: BattleRef, winnerId: string) => void
+  listContenders: (battle: BattleRef) => Combatant[]
   isCleared: (battle: BattleRef) => boolean
 }
 

@@ -4,28 +4,34 @@ import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import { pickEveryBattle } from '../../test/picks.ts'
+import {
+  CHAMPIONSHIP,
+  pickEveryBattle,
+  ROUND_1_FIRST,
+  storeTestBracket,
+} from '../../test/picks.ts'
 import { formatDateTime } from '../dates.ts'
 import { listContenders, pickWinner } from '../picks.ts'
 import type { Picks } from '../picks.ts'
 import type { Submission } from '../player-picks.server.ts'
 import { toSeededBracket } from '../seeded-bracket.ts'
+import type { Combatant } from '../seeded-bracket.ts'
 import { PlayerBracket } from './player-bracket.tsx'
 import type { Submitted } from './player-bracket.tsx'
 
-const BRACKET = toSeededBracket(BRACKET_2025)
-const [SEED_1 = ``, SEED_16 = ``] = listContenders(BRACKET, {
-  round: `ROUND_1`,
-  index: 0,
-})
+const STORED_BRACKET = storeTestBracket(BRACKET_2025)
+const BRACKET = toSeededBracket(STORED_BRACKET)
+const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST) as [
+  Combatant,
+  Combatant,
+]
 const COMPLETE_PICKS = pickEveryBattle(BRACKET)
 // The complete picks with a different champion from Round 1 on
 const COMPLETE_CHANGED_PICKS = pickWinner(
   BRACKET,
-  pickWinner(BRACKET, COMPLETE_PICKS, { round: `ROUND_1`, index: 0 }, SEED_16)
-    .picks,
-  { round: `CHAMPIONSHIP`, index: 0 },
-  SEED_16,
+  pickWinner(BRACKET, COMPLETE_PICKS, ROUND_1_FIRST, SEED_16.id).picks,
+  CHAMPIONSHIP,
+  SEED_16.id,
 ).picks
 const PERSONAL_LINK = `https://mmmm.test/my-bracket/secret`
 const SUBMISSION: Submission = {
@@ -80,7 +86,7 @@ const renderBracket = async ({
         return (
           <PlayerBracket
             year={2025}
-            input={BRACKET_2025}
+            bracket={STORED_BRACKET}
             initialDraft={data.draft}
             submitted={data.submitted}
             picksPath='/play/contest/bracket/picks'
@@ -109,12 +115,15 @@ test(`picking a winner saves the picks and counts them`, async () => {
   const fetchSpy = answerRequests(Response.json({ ok: true }))
   await renderBracket()
 
-  await firstBattle().getByText(SEED_1).click()
+  await firstBattle().getByText(SEED_1.name).click()
 
   await expect.element(page.getByText(/^Saved at/u)).toBeVisible()
   await expect.element(page.getByText(`1 of 64 picked`)).toBeVisible()
   expect(readSentBodies(fetchSpy)).toStrictEqual([
-    { intent: `save`, picks: { 'ROUND_1:0': SEED_1 } },
+    {
+      intent: `save`,
+      picks: { 'ROUND_1:0': SEED_1.id },
+    },
   ])
 })
 
@@ -122,7 +131,7 @@ test(`a save that fails keeps the picks and offers to try again`, async () => {
   answerRequests(new TypeError(`Failed to fetch`))
   await renderBracket()
 
-  await firstBattle().getByText(SEED_1).click()
+  await firstBattle().getByText(SEED_1.name).click()
 
   await expect
     .element(
@@ -145,7 +154,7 @@ test(`picking who fills an undecided side also picks their earlier wins`, async 
   await page
     .getByRole(`button`, { name: `Pick who wins Round 2, battle 1` })
     .click()
-  await page.getByRole(`menuitem`, { name: SEED_16 }).click()
+  await page.getByRole(`menuitem`, { name: SEED_16.name }).click()
 
   await expect.element(page.getByText(`2 of 64 picked`)).toBeVisible()
 })
@@ -154,7 +163,7 @@ test(`a save the server refuses asks for a reload instead of a retry`, async () 
   answerRequests(Response.json({ error: `` }, { status: 400 }))
   await renderBracket()
 
-  await firstBattle().getByText(SEED_1).click()
+  await firstBattle().getByText(SEED_1.name).click()
 
   await expect
     .element(page.getByText(`Couldn’t save. Reload the page to keep picking`))
@@ -167,15 +176,15 @@ test(`a save the server refuses asks for a reload instead of a retry`, async () 
 test(`changing a pick says which later picks it cleared`, async () => {
   answerRequests(Response.json({ ok: true }))
   await renderBracket()
-  await firstBattle().getByText(SEED_1).click()
+  await firstBattle().getByText(SEED_1.name).click()
   await page.getByRole(`tab`, { name: /^Round 2/u }).click()
   await page
     .getByRole(`radiogroup`, { name: `Round 2, battle 1` })
-    .getByText(SEED_1)
+    .getByText(SEED_1.name)
     .click()
   await page.getByRole(`tab`, { name: /^Round 1/u }).click()
 
-  await firstBattle().getByText(SEED_16).click()
+  await firstBattle().getByText(SEED_16.name).click()
 
   await expect
     .element(
@@ -236,7 +245,7 @@ test(`a failed submit stays shown after a later pick saves`, async () => {
     .toBeVisible()
 
   await page.getByRole(`tab`, { name: /^Round 1/u }).click()
-  await firstBattle().getByText(SEED_16).click()
+  await firstBattle().getByText(SEED_16.name).click()
 
   await expect
     .element(page.getByText(`Couldn’t submit`, { exact: false }))
@@ -263,7 +272,7 @@ test(`changing a submitted bracket offers to submit or discard the changes`, asy
   await renderBracket({ draft: COMPLETE_PICKS, submission: SUBMISSION })
   await page.getByRole(`tab`, { name: /^Round 1/u }).click()
 
-  await firstBattle().getByText(SEED_16).click()
+  await firstBattle().getByText(SEED_16.name).click()
 
   await expect.element(page.getByText(`Changes not submitted`)).toBeVisible()
   await expect
@@ -307,8 +316,8 @@ test(`discarding changes brings back the submitted picks`, async () => {
   const changedPicks = pickWinner(
     BRACKET,
     COMPLETE_PICKS,
-    { round: `ROUND_1`, index: 0 },
-    SEED_16,
+    ROUND_1_FIRST,
+    SEED_16.id,
   ).picks
   const fetchSpy = answerRequests(Response.json({ ok: true }))
   await renderBracket({ draft: changedPicks, submission: SUBMISSION })

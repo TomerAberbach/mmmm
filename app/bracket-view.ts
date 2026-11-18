@@ -13,10 +13,10 @@ import type {
   SeedSlotRef,
   Winners,
 } from './bracket.ts'
-import { fillSides, hasCombatant } from './seeded-bracket.ts'
-import type { SeededBracket, Side } from './seeded-bracket.ts'
+import { fillSides, findCombatant } from './seeded-bracket.ts'
+import type { Combatant, SeededBracket, Side } from './seeded-bracket.ts'
 
-export type BattleView = BattleRef & { sides: Side[]; winner?: string }
+export type BattleView = BattleRef & { sides: Side[]; winner?: Combatant }
 
 export type BracketView = {
   year: number
@@ -36,13 +36,14 @@ export const buildBracketView = (
   // reads it
   const battles = Object.groupBy(
     listBattles().map((battle): BattleView => {
-      const winner = winners[toBattleKey(battle)]
+      const winnerId = winners[toBattleKey(battle)]
       const sides = fillSides(bracket, battle, winners)
-      if (winner === undefined) {
+      if (winnerId === undefined) {
         return { ...battle, sides }
       }
-      if (!hasCombatant(sides, winner)) {
-        throw new Error(`${winner} isn't in ${readBattleName(battle)}`)
+      const winner = findCombatant(sides, winnerId)
+      if (!winner) {
+        throw new Error(`${winnerId} isn't in ${readBattleName(battle)}`)
       }
       return { ...battle, sides, winner }
     }),
@@ -76,13 +77,13 @@ export const describeBattle = ({
   winner,
 }: BattleView): string => {
   const sideNames = sides.map(describeSide).join(` vs. `)
-  const result = winner === undefined ? `` : `, ${winner} won`
+  const result = winner === undefined ? `` : `, ${winner.name} won`
   return `${readBattleName({ round, index })}: ${sideNames}${result}`
 }
 
 const describeSide = (side: Side): string =>
   side.kind === `combatant`
-    ? side.name
+    ? side.combatant.name
     : `winner of ${
         side.battle.round === `WILD_CARD`
           ? `the wild card`
