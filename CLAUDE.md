@@ -22,7 +22,7 @@ mmmm
 ├── server/             # Express middleware: security headers, cross-origin checks, rate limits, the client's IP address, request logs. Has its own CLAUDE.md
 ├── app/                # The React Router app. Has its own CLAUDE.md
 ├── prisma/             # Schema and seed. Has its own CLAUDE.md
-├── test/database.ts    # Creates a throwaway database for each Vitest and Playwright run
+├── test/database.ts    # Creates throwaway databases for each Vitest worker and Playwright run
 ├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins
 └── e2e/                # Playwright tests against the production build. Has its own CLAUDE.md
 ```
@@ -89,8 +89,13 @@ missing variable.
   descriptions. UI copy may use everyday phrasing, as the glossary describes
 - Enforce every rule on the server. Hiding a control never replaces a check
 - Use `jj`, not `git`
+- Document a declaration with a JSDoc comment (`/** */`), and keep `//` for
+  comments inside function bodies
 
 ## Testing
 
 - `*.test.ts` files under `server/` and `test/` run in Node, colocated with the
   code they test
+- Keep `test/database.ts`, `test/global-setup.ts`, and `test/setup.ts` from
+  importing app modules. `app/db.server.ts` connects to `DATABASE_URL` on
+  import, which is the development database until `test/setup.ts` changes it

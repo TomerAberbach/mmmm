@@ -6,6 +6,13 @@ import { DivisionPosition, Round } from './generated/prisma/enums.ts'
  */
 export const DIVISION_POSITIONS = Object.values(DivisionPosition)
 
+export const POSITION_LABELS: Record<DivisionPosition, string> = {
+  TOP_LEFT: `top left`,
+  BOTTOM_LEFT: `bottom left`,
+  TOP_RIGHT: `top right`,
+  BOTTOM_RIGHT: `bottom right`,
+}
+
 export const ROUNDS = Object.values(Round)
 
 /** The rounds whose battles each stay within one division */
@@ -175,5 +182,11 @@ export const isSameSeedSlot = (
   first: SeedSlotRef,
   second: SeedSlotRef,
 ): boolean => first.position === second.position && first.seed === second.seed
+
+/** The division's seeds in order, skipping the wild card's */
+export const readSeedsWithCombatants = (
+  position: DivisionPosition,
+  wildCard: SeedSlotRef,
+): Seed[] => SEEDS.filter(seed => !isSameSeedSlot({ position, seed }, wildCard))
 
 export { DivisionPosition, Round } from './generated/prisma/enums.ts'

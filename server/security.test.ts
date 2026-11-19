@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest'
 import { serve } from '../test/http.ts'
-import { rejectCrossOriginRequests } from './security.ts'
+import {
+  rejectCrossOriginRequests,
+  setContentSecurityPolicy,
+  setSecurityHeaders,
+} from './security.ts'
 
 test.each<{ method: string; headers: Record<string, string>; status: number }>([
   { method: `POST`, headers: { 'sec-fetch-site': `same-origin` }, status: 200 },
@@ -30,4 +34,34 @@ test(`a POST whose Origin matches the host is allowed`, async () => {
   })
 
   expect(response.status).toBe(200)
+})
+
+const serveWithSecurityHeaders = (isServedOverHttps: boolean) =>
+  serve(
+    setSecurityHeaders({ isServedOverHttps }),
+    ...setContentSecurityPolicy({ isDevelopment: false, isServedOverHttps }),
+  )
+
+test(`an app served over HTTPS tells browsers to keep using HTTPS`, async () => {
+  const url = await serveWithSecurityHeaders(true)
+
+  const response = await fetch(url)
+
+  expect(response.headers.get(`strict-transport-security`)).toBe(
+    `max-age=31536000; includeSubDomains`,
+  )
+  expect(response.headers.get(`content-security-policy`)).toContain(
+    `upgrade-insecure-requests`,
+  )
+})
+
+test(`an app served over HTTP leaves browsers on HTTP`, async () => {
+  const url = await serveWithSecurityHeaders(false)
+
+  const response = await fetch(url)
+
+  expect(response.headers.has(`strict-transport-security`)).toBe(false)
+  expect(response.headers.get(`content-security-policy`)).not.toContain(
+    `upgrade-insecure-requests`,
+  )
 })

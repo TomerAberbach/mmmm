@@ -2,8 +2,14 @@ import compression from 'compression'
 import express from 'express'
 import type { Express, RequestHandler } from 'express'
 import { checkEmailSettings } from './app/email-settings.server.ts'
-import { isDevelopment, readAppEnv, requireEnv } from './app/env.server.ts'
+import {
+  isDevelopment,
+  isServedOverHttps,
+  readAppEnv,
+  requireEnv,
+} from './app/env.server.ts'
 import { forwardClientIp } from './server/client-ip.ts'
+import { dropDisconnectedClients } from './server/disconnected-clients.ts'
 import { logRequests } from './server/logging.ts'
 import { limitRequestsPerIp } from './server/rate-limit.ts'
 import {
@@ -15,7 +21,8 @@ import { requireStagingPassword } from './server/staging-password.ts'
 
 const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
-const IS_PRODUCTION = !isDevelopment()
+const IS_DEVELOPMENT = isDevelopment()
+const IS_SERVED_OVER_HTTPS = isServedOverHttps()
 checkEmailSettings()
 /** Staging fails to start without its password, so it's never public */
 const STAGING_PASSWORD =
@@ -57,20 +64,27 @@ const serveProductionApp = async (server: Express): Promise<RequestHandler> => {
 
 const server = express()
 server.disable(`x-powered-by`)
-if (IS_PRODUCTION) {
-  // Fly.io's proxy is the only hop in front of the app
+// Fly.io sets `FLY_APP_NAME` on its machines, whose only hop is Fly's proxy.
+// Anywhere else, trusting `X-Forwarded-For` would let clients forge their IP
+if (process.env.FLY_APP_NAME) {
   server.set(`trust proxy`, 1)
 }
 server.use(compression())
-server.use(setSecurityHeaders(IS_PRODUCTION))
-const app = isDevelopment()
+server.use(setSecurityHeaders({ isServedOverHttps: IS_SERVED_OVER_HTTPS }))
+const app = IS_DEVELOPMENT
   ? await serveDevelopmentApp(server)
   : await serveProductionApp(server)
 // React Router needs every page's nonce, the health check's included
-server.use(setContentSecurityPolicy(IS_PRODUCTION))
+server.use(
+  setContentSecurityPolicy({
+    isDevelopment: IS_DEVELOPMENT,
+    isServedOverHttps: IS_SERVED_OVER_HTTPS,
+  }),
+)
 // Fly.io's health checks skip logging, rate limits, and the staging password
 server.get(`/healthz`, app)
 server.use(
+  dropDisconnectedClients,
   logRequests,
   rejectCrossOriginRequests,
   // Generous, because a whole school can share one IP address

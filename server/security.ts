@@ -3,15 +3,23 @@ import helmet from 'helmet'
 import { createNonce, readNonce } from './nonce.ts'
 
 /** Every header but the content security policy, which only pages need */
-export const setSecurityHeaders = (isProduction: boolean): RequestHandler =>
+export const setSecurityHeaders = ({
+  isServedOverHttps,
+}: {
+  isServedOverHttps: boolean
+}): RequestHandler =>
   helmet({
     contentSecurityPolicy: false,
-    strictTransportSecurity: isProduction,
+    strictTransportSecurity: isServedOverHttps,
   })
 
-export const setContentSecurityPolicy = (
-  isProduction: boolean,
-): RequestHandler[] => [
+export const setContentSecurityPolicy = ({
+  isDevelopment,
+  isServedOverHttps,
+}: {
+  isDevelopment: boolean
+  isServedOverHttps: boolean
+}): RequestHandler[] => [
   createNonce,
   helmet.contentSecurityPolicy({
     useDefaults: false,
@@ -19,7 +27,7 @@ export const setContentSecurityPolicy = (
       defaultSrc: [`'self'`],
       baseUri: [`'none'`],
       // Vite's client connects over a WebSocket in development
-      connectSrc: [`'self'`, ...(isProduction ? [] : [`ws:`])],
+      connectSrc: [`'self'`, ...(isDevelopment ? [`ws:`] : [])],
       formAction: [`'self'`],
       frameAncestors: [`'none'`],
       imgSrc: [`'self'`, `data:`],
@@ -31,14 +39,14 @@ export const setContentSecurityPolicy = (
       // development omits the hash
       styleSrc: [
         `'self'`,
-        isProduction
-          ? `'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o='`
-          : `'unsafe-inline'`,
+        isDevelopment
+          ? `'unsafe-inline'`
+          : `'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o='`,
       ],
       // React Aria positions and hides elements with style attributes. Those
       // can't run scripts, and other <style> elements stay blocked
       styleSrcAttr: [`'unsafe-inline'`],
-      upgradeInsecureRequests: isProduction ? [] : null,
+      upgradeInsecureRequests: isServedOverHttps ? [] : null,
     },
   }),
 ]

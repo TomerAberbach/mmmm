@@ -31,7 +31,6 @@ import { useValidatedForm } from './use-validated-form.ts'
 import {
   bracketFormSchema,
   countCombatantPlaces,
-  POSITION_LABELS,
   readDivisionNameField,
   readFieldName,
   readPastedNames,
@@ -42,6 +41,7 @@ import {
   isSameSeedSlot,
   MAX_WILD_CARD_ENTRANTS,
   MIN_WILD_CARD_ENTRANTS,
+  POSITION_LABELS,
   ROUND_NAMES,
   SEEDS,
 } from '~/bracket.ts'

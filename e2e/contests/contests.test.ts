@@ -78,6 +78,19 @@ const readPersonalLinkSecret = async (page: Page): Promise<string> => {
   return JSON.parse(atob(decodeURIComponent(cookie!.value))) as string
 }
 
+test(`opening the address the picker saves to shows the player's bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const bracketUrl = page.url()
+
+  await page.goto(`${bracketUrl}/picks`)
+
+  expect(page.url()).toBe(bracketUrl)
+})
+
 test(`a player who returns to the contest link continues as themselves`, async ({
   page,
   browser,

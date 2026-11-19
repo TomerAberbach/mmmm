@@ -1,8 +1,11 @@
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/resend-confirmation.ts'
 import { emailSchema } from '~/auth-forms.ts'
 import { isTooManyAttempts } from '~/auth-limits.server.ts'
 import { auth } from '~/auth.server.ts'
 import type { ResendResult } from '~/components/check-email.tsx'
+
+export const loader = (): Response => redirect(href(`/sign-in`))
 
 /**
  * Answers the same whether or not the address has an unconfirmed educator.

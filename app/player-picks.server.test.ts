@@ -6,8 +6,7 @@ import {
   pickEveryBattle,
   ROUND_1_FIRST,
 } from '../test/picks.ts'
-import { addClaimedYear, withCurrentYear } from '../test/years.ts'
-import type { AddYear } from '../test/years.ts'
+import { addYear } from '../test/years.ts'
 import { buildBracketView } from './bracket-view.ts'
 import { readBracket, renameCombatant } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
@@ -61,63 +60,59 @@ const makeTestPicks = async (year: number): Promise<TestPicks> => {
 }
 
 /** Creates a player in a new current year, with picks in its bracket */
-const createPlayerWithPicks = async (addYear: AddYear) => {
-  const { playerId, year } = await createPlayerInNewYear(addYear)
+const createPlayerWithPicks = async () => {
+  const { playerId, year } = await createPlayerInNewYear()
   return { playerId, year, picks: await makeTestPicks(year) }
 }
 
-test(`a saved draft reads back, with no submission`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
+test(`a saved draft reads back, with no submission`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
 
-    const saved = await savePlayerDraft(playerId, year, picks.changed)
+  const saved = await savePlayerDraft(playerId, year, picks.changed)
 
-    expect(saved).toStrictEqual({ saved: true })
-    await expect(readDraftAndSubmission(playerId)).resolves.toStrictEqual({
-      draft: picks.changed,
-      submission: null,
-    })
-  }))
+  expect(saved).toStrictEqual({ saved: true })
+  await expect(readDraftAndSubmission(playerId)).resolves.toStrictEqual({
+    draft: picks.changed,
+    submission: null,
+  })
+})
 
-test(`saving a draft replaces the earlier one`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await savePlayerDraft(playerId, year, picks.complete)
-    const fewerPicks = { 'ROUND_1:0': picks.nileCrocodile }
+test(`saving a draft replaces the earlier one`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await savePlayerDraft(playerId, year, picks.complete)
+  const fewerPicks = { 'ROUND_1:0': picks.nileCrocodile }
 
-    await savePlayerDraft(playerId, year, fewerPicks)
+  await savePlayerDraft(playerId, year, fewerPicks)
 
-    const { draft } = await readDraftAndSubmission(playerId)
-    expect(draft).toStrictEqual(fewerPicks)
-  }))
+  const { draft } = await readDraftAndSubmission(playerId)
+  expect(draft).toStrictEqual(fewerPicks)
+})
 
-test(`a draft that doesn't fit the bracket isn't saved`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
+test(`a draft that doesn't fit the bracket isn't saved`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
 
-    const saved = await savePlayerDraft(playerId, year, {
-      'ROUND_2:0': picks.nileCrocodile,
-    })
+  const saved = await savePlayerDraft(playerId, year, {
+    'ROUND_2:0': picks.nileCrocodile,
+  })
 
-    expect(saved).toStrictEqual({ refusal: `INCONSISTENT` })
-    const { draft } = await readDraftAndSubmission(playerId)
-    expect(draft).toStrictEqual({})
-  }))
+  expect(saved).toStrictEqual({ refusal: `INCONSISTENT` })
+  const { draft } = await readDraftAndSubmission(playerId)
+  expect(draft).toStrictEqual({})
+})
 
-test(`submitting complete picks makes a pending submission of them`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
+test(`submitting complete picks makes a pending submission of them`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
 
-    const submitted = await submitPlayerPicks(playerId, year, picks.complete)
+  const submitted = await submitPlayerPicks(playerId, year, picks.complete)
 
-    expect(submitted).toMatchObject({
-      submission: { status: `PENDING`, picks: picks.complete },
-    })
-    await expect(readDraftAndSubmission(playerId)).resolves.toMatchObject({
-      draft: picks.complete,
-      submission: { status: `PENDING`, picks: picks.complete },
-    })
-  }))
+  expect(submitted).toMatchObject({
+    submission: { status: `PENDING`, picks: picks.complete },
+  })
+  await expect(readDraftAndSubmission(playerId)).resolves.toMatchObject({
+    draft: picks.complete,
+    submission: { status: `PENDING`, picks: picks.complete },
+  })
+})
 
 test.each([
   { scenario: `incomplete`, choosePicks: (picks: TestPicks) => picks.changed },
@@ -128,92 +123,77 @@ test.each([
       'ROUND_2:0': `not-a-combatant`,
     }),
   },
-])(`$scenario picks aren't submitted`, ({ choosePicks }) =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
+])(`$scenario picks aren't submitted`, async ({ choosePicks }) => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
 
-    const submitted = await submitPlayerPicks(
-      playerId,
-      year,
-      choosePicks(picks),
-    )
+  const submitted = await submitPlayerPicks(playerId, year, choosePicks(picks))
 
-    expect(submitted).toStrictEqual({ refusal: `INCOMPLETE` })
-    const { submission: stored } = await readDraftAndSubmission(playerId)
-    expect(stored).toBeNull()
-  }),
-)
+  expect(submitted).toStrictEqual({ refusal: `INCOMPLETE` })
+  const { submission: stored } = await readDraftAndSubmission(playerId)
+  expect(stored).toBeNull()
+})
 
-test(`saving a draft after submitting leaves the submission as it was`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await submitPlayerPicks(playerId, year, picks.complete)
+test(`saving a draft after submitting leaves the submission as it was`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await submitPlayerPicks(playerId, year, picks.complete)
 
-    await savePlayerDraft(playerId, year, picks.changed)
+  await savePlayerDraft(playerId, year, picks.changed)
 
-    await expect(readDraftAndSubmission(playerId)).resolves.toMatchObject({
-      draft: picks.changed,
-      submission: { picks: picks.complete },
-    })
-  }))
+  await expect(readDraftAndSubmission(playerId)).resolves.toMatchObject({
+    draft: picks.changed,
+    submission: { picks: picks.complete },
+  })
+})
 
-test(`submitting changes keeps the submission's approval and records when its picks changed`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    const first = await submitPlayerPicks(playerId, year, picks.complete)
-    await prisma.submission.update({
-      where: { playerId },
-      data: { status: `APPROVED` },
-    })
+test(`submitting changes keeps the submission's approval and records when its picks changed`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  const first = await submitPlayerPicks(playerId, year, picks.complete)
+  await prisma.submission.update({
+    where: { playerId },
+    data: { status: `APPROVED` },
+  })
 
-    const second = await submitPlayerPicks(
-      playerId,
-      year,
-      picks.completeChanged,
-    )
+  const second = await submitPlayerPicks(playerId, year, picks.completeChanged)
 
-    expect(second).toMatchObject({
-      submission: { status: `APPROVED`, picks: picks.completeChanged },
-    })
-    expect(readPicksChangedAt(second).getTime()).toBeGreaterThan(
-      readPicksChangedAt(first).getTime(),
-    )
-  }))
+  expect(second).toMatchObject({
+    submission: { status: `APPROVED`, picks: picks.completeChanged },
+  })
+  expect(readPicksChangedAt(second).getTime()).toBeGreaterThan(
+    readPicksChangedAt(first).getTime(),
+  )
+})
 
-test(`submitting unchanged picks keeps when the picks last changed`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    const first = await submitPlayerPicks(playerId, year, picks.complete)
+test(`submitting unchanged picks keeps when the picks last changed`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  const first = await submitPlayerPicks(playerId, year, picks.complete)
 
-    const second = await submitPlayerPicks(playerId, year, picks.complete)
+  const second = await submitPlayerPicks(playerId, year, picks.complete)
 
-    expect(readPicksChangedAt(second)).toStrictEqual(readPicksChangedAt(first))
-  }))
+  expect(readPicksChangedAt(second)).toStrictEqual(readPicksChangedAt(first))
+})
 
-test(`discarding the draft brings back the submitted picks`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await submitPlayerPicks(playerId, year, picks.complete)
-    await savePlayerDraft(playerId, year, picks.changed)
+test(`discarding the draft brings back the submitted picks`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await submitPlayerPicks(playerId, year, picks.complete)
+  await savePlayerDraft(playerId, year, picks.changed)
 
-    const discarded = await discardPlayerDraft(playerId, year)
+  const discarded = await discardPlayerDraft(playerId, year)
 
-    expect(discarded).toStrictEqual({ discarded: true })
-    const { draft } = await readDraftAndSubmission(playerId)
-    expect(draft).toStrictEqual(picks.complete)
-  }))
+  expect(discarded).toStrictEqual({ discarded: true })
+  const { draft } = await readDraftAndSubmission(playerId)
+  expect(draft).toStrictEqual(picks.complete)
+})
 
-test(`discarding a draft that was never submitted changes nothing`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await savePlayerDraft(playerId, year, picks.changed)
+test(`discarding a draft that was never submitted changes nothing`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await savePlayerDraft(playerId, year, picks.changed)
 
-    const discarded = await discardPlayerDraft(playerId, year)
+  const discarded = await discardPlayerDraft(playerId, year)
 
-    expect(discarded).toStrictEqual({ refusal: `NOT_SUBMITTED` })
-    const { draft } = await readDraftAndSubmission(playerId)
-    expect(draft).toStrictEqual(picks.changed)
-  }))
+  expect(discarded).toStrictEqual({ refusal: `NOT_SUBMITTED` })
+  const { draft } = await readDraftAndSubmission(playerId)
+  expect(draft).toStrictEqual(picks.changed)
+})
 
 test.each([
   {
@@ -231,9 +211,10 @@ test.each([
     write: (playerId: string, year: number) =>
       discardPlayerDraft(playerId, year),
   },
-])(`$scenario changes nothing once a newer year is published`, ({ write }) =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
+])(
+  `$scenario changes nothing once a newer year is published`,
+  async ({ write }) => {
+    const { playerId, year, picks } = await createPlayerWithPicks()
     await submitPlayerPicks(playerId, year, picks.complete)
     await savePlayerDraft(playerId, year, picks.changed)
     await addYear({ published: true })
@@ -245,42 +226,39 @@ test.each([
       draft: picks.changed,
       submission: { picks: picks.complete },
     })
-  }),
+  },
 )
 
-test(`a draft picking another year's combatant isn't saved`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year } = await createPlayerInNewYear(addYear)
-    const otherBracket = await readSeededBracket(
-      await addClaimedYear({ published: true }),
-    )
-    const otherNileCrocodile = findCombatantId(otherBracket, `Nile Crocodile`)
+test(`a draft picking another year's combatant isn't saved`, async () => {
+  const otherBracket = await readSeededBracket(
+    await addYear({ published: true }),
+  )
+  const { playerId, year } = await createPlayerInNewYear()
+  const otherNileCrocodile = findCombatantId(otherBracket, `Nile Crocodile`)
 
-    const saved = await savePlayerDraft(playerId, year, {
-      'ROUND_1:0': otherNileCrocodile,
-    })
+  const saved = await savePlayerDraft(playerId, year, {
+    'ROUND_1:0': otherNileCrocodile,
+  })
 
-    expect(saved).toStrictEqual({ refusal: `INCONSISTENT` })
-  }))
+  expect(saved).toStrictEqual({ refusal: `INCONSISTENT` })
+})
 
-test(`picks made before a combatant's rename still save`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await renameCombatant(year, picks.nileCrocodile, `Nile Croc`)
+test(`picks made before a combatant's rename still save`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await renameCombatant(year, picks.nileCrocodile, `Nile Croc`)
 
-    const saved = await savePlayerDraft(playerId, year, picks.complete)
+  const saved = await savePlayerDraft(playerId, year, picks.complete)
 
-    expect(saved).toStrictEqual({ saved: true })
-  }))
+  expect(saved).toStrictEqual({ saved: true })
+})
 
-test(`a renamed combatant's picks show the new name`, () =>
-  withCurrentYear(async addYear => {
-    const { playerId, year, picks } = await createPlayerWithPicks(addYear)
-    await savePlayerDraft(playerId, year, picks.complete)
+test(`a renamed combatant's picks show the new name`, async () => {
+  const { playerId, year, picks } = await createPlayerWithPicks()
+  await savePlayerDraft(playerId, year, picks.complete)
 
-    await renameCombatant(year, picks.nileCrocodile, `Nile Croc`)
+  await renameCombatant(year, picks.nileCrocodile, `Nile Croc`)
 
-    const { draft } = await readDraftAndSubmission(playerId)
-    const view = buildBracketView(year, await readSeededBracket(year), draft)
-    expect(view.battles.ROUND_1[0]?.winner?.name).toBe(`Nile Croc`)
-  }))
+  const { draft } = await readDraftAndSubmission(playerId)
+  const view = buildBracketView(year, await readSeededBracket(year), draft)
+  expect(view.battles.ROUND_1[0]?.winner?.name).toBe(`Nile Croc`)
+})

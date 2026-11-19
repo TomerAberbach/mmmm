@@ -17,38 +17,49 @@ import type { Combatant, StoredBracket } from './seeded-bracket.ts'
  * Replaces the year's unpublished bracket, keeping its expected lock date, or
  * stores a new one with every seed slot and battle. Returns false and changes
  * nothing when the year's bracket is published. Throws on input
- * `bracketInputSchema` rejects
+ * `bracketInputSchema` rejects. Takes `lockYears` in `SHARE` mode, so
+ * publishing waits for it, and a lock on the year, so concurrent saves of the
+ * year run one at a time
  */
 export const saveUnpublishedBracket = async (
   year: number,
   input: BracketInput,
 ): Promise<boolean> => {
-  const existing = await prisma.bracket.findUnique({
-    where: { year },
-    select: { expectedLockDate: true },
-  })
-  const operations = buildCreateOperations(
-    year,
-    input,
-    existing?.expectedLockDate,
-  )
-  try {
-    await prisma.$transaction([
-      prisma.bracket.deleteMany({ where: { year, publishedAt: null } }),
-      ...operations,
-    ])
-    return true
-  } catch (error) {
-    // A published bracket survives the delete, so the new one's year
-    // collides with it. Validated names can't collide with each other
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === `P2002`
-    ) {
+  const rows = buildBracketRows(year, bracketInputSchema.parse(input))
+  return prisma.$transaction(async tx => {
+    await lockYears(tx, `SHARE`)
+    await lockYearForSaving(tx, year)
+    const existing = await tx.bracket.findUnique({
+      where: { year },
+      select: { publishedAt: true, expectedLockDate: true },
+    })
+    if (existing?.publishedAt) {
       return false
     }
-    throw error
-  }
+    await tx.bracket.deleteMany({ where: { year, publishedAt: null } })
+    await insertBracketRows(tx, year, rows, existing?.expectedLockDate ?? null)
+    return true
+  })
+}
+
+const insertBracketRows = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  rows: ReturnType<typeof buildBracketRows>,
+  expectedLockDate: Date | null,
+): Promise<void> => {
+  await tx.bracket.create({
+    data: {
+      year,
+      expectedLockDate,
+      battles: { createMany: { data: rows.battles } },
+    },
+  })
+  await tx.combatant.createMany({ data: rows.combatants })
+  await tx.division.createMany({ data: rows.divisions })
+  await tx.seedSlot.createMany({ data: rows.seedSlots })
+  await tx.wildCard.create({ data: rows.wildCard })
+  await tx.wildCardEntrant.createMany({ data: rows.wildCardEntrants })
 }
 
 /** Returns whether the year had an unpublished bracket to delete */
@@ -59,28 +70,6 @@ export const deleteUnpublishedBracket = async (
     where: { year, publishedAt: null },
   })
   return count > 0
-}
-
-const buildCreateOperations = (
-  year: number,
-  input: BracketInput,
-  expectedLockDate?: Date | null,
-) => {
-  const rows = buildBracketRows(year, bracketInputSchema.parse(input))
-  return [
-    prisma.bracket.create({
-      data: {
-        year,
-        expectedLockDate,
-        battles: { createMany: { data: rows.battles } },
-      },
-    }),
-    prisma.combatant.createMany({ data: rows.combatants }),
-    prisma.division.createMany({ data: rows.divisions }),
-    prisma.seedSlot.createMany({ data: rows.seedSlots }),
-    prisma.wildCard.create({ data: rows.wildCard }),
-    prisma.wildCardEntrant.createMany({ data: rows.wildCardEntrants }),
-  ]
 }
 
 /**
@@ -327,6 +316,18 @@ export const lockYears = async (
 
 /** An arbitrary key no other advisory lock in the app uses */
 const YEARS_LOCK_KEY = 7_041_903
+
+/**
+ * Locks one year's bracket against other saves until the transaction ends.
+ * Postgres keeps two-key advisory locks apart from one-key ones, so it never
+ * waits on `lockYears`
+ */
+const lockYearForSaving = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+): Promise<void> => {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${YEARS_LOCK_KEY}::int, ${year}::int)`
+}
 
 /**
  * Takes `lockYears`, then reads whether the year is published and current.
