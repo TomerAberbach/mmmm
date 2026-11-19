@@ -3,6 +3,7 @@ import { href, Link } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
+import { ContestPlayers } from './contest-players.tsx'
 import { CopyButton } from './copy-button.tsx'
 import { Notice } from './notice.tsx'
 import { PageHeader } from './page-header.tsx'
@@ -10,16 +11,24 @@ import { QrCode } from './qr-code.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
+import type { ContestPlayer } from '~/contest-players.server.ts'
 import type { Contest } from '~/contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 
-export const ContestDetails = ({ contest }: { contest: Contest }) => (
+export const ContestDetails = ({
+  contest,
+  players,
+}: {
+  contest: Contest
+  players: ContestPlayer[]
+}) => (
   <div className='flex max-w-3xl flex-col gap-8'>
-    <Link to={href(`/contests`)} className='self-start'>
+    <Link to={href(`/contests`)} className='self-start print:hidden'>
       All contests
     </Link>
     <ContestName contest={contest} />
     <ContestLink link={contest.link} />
+    <ContestPlayers contestId={contest.id} players={players} />
   </div>
 )
 

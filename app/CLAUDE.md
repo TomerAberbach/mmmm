@@ -196,6 +196,9 @@ app
   `Pick` rows, told apart by `stage`. Change them only through
   `player-picks.server.ts`, which locks the player's row so two requests can't
   interleave. Pass the year of the player's contest from `readPlayContest`
+- Approve, reject, and rename a contest's players only through
+  `contest-players.server.ts`, whose writes match a player by its contest and
+  the signed-in educator's ID, so another educator's request changes nothing
 - Send the picker's requests through `usePicksRequests` in
   `components/picks-requests.ts`, which sends one at a time so the server
   applies them in order. React Router's fetchers cancel an earlier request in
@@ -211,8 +214,8 @@ app
   which returns a newer year on each call, so a test's newest published year is
   current until the test ends. Create a contest or a player in a new current
   year with `createContestInNewYear` or `createPlayerInNewYear` from
-  `test/contests.ts`, and educators with `createEducator` from
-  `test/educators.ts`
+  `test/contests.ts`, a submission with a status and no picks with
+  `addSubmission`, and educators with `createEducator` from `test/educators.ts`
 - Browser tests load `app.css` and check accessibility, including contrast, with
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching

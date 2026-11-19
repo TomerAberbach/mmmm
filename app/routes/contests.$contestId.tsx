@@ -1,6 +1,7 @@
 import { data } from 'react-router'
 import type { Route } from './+types/contests.$contestId.ts'
 import { ContestDetails } from '~/components/contest-details.tsx'
+import { readContestPlayers } from '~/contest-players.server.ts'
 import { readEducatorContest } from '~/contests.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
@@ -8,17 +9,19 @@ import { readRequiredEducator } from '~/session.server.ts'
  * Another educator's contest gets the not-found page, so its ID reveals nothing
  */
 export const loader = async ({ context, params }: Route.LoaderArgs) => {
-  const contest = await readEducatorContest(
-    readRequiredEducator(context).id,
-    params.contestId,
-  )
+  // Read together, and the players stay on the server unless the contest is
+  // the educator's
+  const [contest, players] = await Promise.all([
+    readEducatorContest(readRequiredEducator(context).id, params.contestId),
+    readContestPlayers(params.contestId),
+  ])
   if (!contest) {
     throw data(null, { status: 404 })
   }
-  return contest
+  return { contest, players }
 }
 
 const ContestPage = ({ loaderData }: Route.ComponentProps) => (
-  <ContestDetails contest={loaderData} />
+  <ContestDetails contest={loaderData.contest} players={loaderData.players} />
 )
 export default ContestPage
