@@ -9,7 +9,7 @@ const requestFrom = (ip: string): Request =>
     headers: { [CLIENT_IP_HEADER]: ip },
   })
 
-// Resolves to the last attempt's refusal, if any
+/** Resolves to the last attempt's refusal, if any */
 const startBrackets = async (
   times: number,
   contestId: string,

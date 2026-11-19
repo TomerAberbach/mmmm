@@ -1,4 +1,4 @@
-// The admin's expected lock date, which locks nothing itself
+/** The admin's expected lock date, which locks nothing itself */
 export const LockHeadsUp = ({
   expectedLockDate,
 }: {

@@ -31,7 +31,7 @@ const SIZE_CLASSES = {
 
 const WILD_CARD_WINNER = `Wild card winner`
 
-// The width in em that fits every name a diagram box in the view can show
+/** The width in em that fits every name a diagram box in the view can show */
 export const readNameWidth = ({ battles }: BracketView): number =>
   measureWidestName([
     WILD_CARD_WINNER,
@@ -42,12 +42,14 @@ export const readNameWidth = ({ battles }: BracketView): number =>
     ),
   ])
 
-// One battle's sides, with the winner shaded and the loser muted. Screen
-// readers skip the boxes, so a regular box adds `describeBattle`'s text for
-// them. A diagram box adds none, since a list of the battles beside the diagram
-// describes them. Inside a `PickingContext`, each side is a radio button
-// instead, and a side not yet decided opens a menu of the combatants who could
-// fill it. A regular box fills its container and truncates long names
+/**
+ * One battle's sides, with the winner shaded and the loser muted. Screen
+ * readers skip the boxes, so a regular box adds `describeBattle`'s text for
+ * them. A diagram box adds none, since a list of the battles beside the diagram
+ * describes them. Inside a `PickingContext`, each side is a radio button
+ * instead, and a side not yet decided opens a menu of the combatants who could
+ * fill it. A regular box fills its container and truncates long names
+ */
 export const BattleBox = ({
   battle,
   size,
@@ -91,17 +93,21 @@ export const BattleBox = ({
   )
 }
 
-// The end of the wild card's line on the side its winner fills: an accent bar
-// on the edge the line arrives at, and `content`, the line's last turn,
-// positioned against the side's row
+/**
+ * The end of the wild card's line on the side its winner fills: an accent bar
+ * on the edge the line arrives at, and `content`, the line's last turn,
+ * positioned against the side's row
+ */
 export type WildCardLine = {
   side: 0 | 1
   edge: `left` | `right`
   content: ReactNode
 }
 
-// An empty row as wide as a diagram box, for lining labels up with a column of
-// boxes
+/**
+ * An empty row as wide as a diagram box, for lining labels up with a column of
+ * boxes
+ */
 export const BoxSizer = () => {
   const classes = SIZE_CLASSES.diagram
   return (
@@ -131,7 +137,9 @@ const readSideName = (side: Side): string =>
       ? WILD_CARD_WINNER
       : ``
 
-// An undecided side stays empty, except the one the wild card's winner fills
+/**
+ * An undecided side stays empty, except the one the wild card's winner fills
+ */
 const SideName = ({ side, className }: { side: Side; className: string }) => {
   const name = readSideName(side)
   return (
@@ -225,8 +233,10 @@ const PickableBattleBox = ({
   </RadioGroup>
 )
 
-// A side not yet decided. Picking one of its contenders picks them to win the
-// battle that fills the side, and their earlier wins
+/**
+ * A side not yet decided. Picking one of its contenders picks them to win the
+ * battle that fills the side, and their earlier wins
+ */
 const ContenderMenu = ({
   side,
   className,
@@ -262,7 +272,7 @@ const ContenderMenu = ({
   </MenuTrigger>
 )
 
-// Rendered only while the menu is open, so closed menus list nothing
+/** Rendered only while the menu is open, so closed menus list nothing */
 const ContenderList = ({
   battle,
   picking,

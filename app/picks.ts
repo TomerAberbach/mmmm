@@ -7,7 +7,7 @@ export type Picks = Winners
 
 export const TOTAL_BATTLES = listBattles().length
 
-// Every combatant who could win the battle, whatever the picks
+/** Every combatant who could win the battle, whatever the picks */
 export const listContenders = (
   bracket: SeededBracket,
   battle: BattleRef,
@@ -25,9 +25,11 @@ const isContender = (
 ): boolean =>
   listContenders(bracket, battle).some(({ id }) => id === combatantId)
 
-// Picks `winner`, a combatant ID, in the battle, and in every earlier battle on
-// its way there. Clears each later pick that no longer has its winner on one of
-// its battle's sides. Throws when the winner can't reach the battle
+/**
+ * Picks `winner`, a combatant ID, in the battle, and in every earlier battle on
+ * its way there. Clears each later pick that no longer has its winner on one of
+ * its battle's sides. Throws when the winner can't reach the battle
+ */
 export const pickWinner = (
   bracket: SeededBracket,
   picks: Picks,
@@ -44,8 +46,10 @@ export const pickWinner = (
   return keepReachablePicks(bracket, picked)
 }
 
-// Whether every pick is of a battle in the bracket, with a winner on one of its
-// sides
+/**
+ * Whether every pick is of a battle in the bracket, with a winner on one of its
+ * sides
+ */
 export const arePicksConsistent = (
   bracket: SeededBracket,
   picks: Picks,
@@ -57,7 +61,9 @@ export const arePicksConsistent = (
   )
 }
 
-// Whether the picks are consistent and pick every battle, as a submission must
+/**
+ * Whether the picks are consistent and pick every battle, as a submission must
+ */
 export const arePicksComplete = (
   bracket: SeededBracket,
   picks: Picks,
@@ -69,7 +75,7 @@ export const arePicksEqual = (picks: Picks, otherPicks: Picks): boolean =>
   Object.keys(picks).length === Object.keys(otherPicks).length &&
   Object.entries(picks).every(([key, winner]) => otherPicks[key] === winner)
 
-// The battle, then each earlier battle the winner wins on its way there
+/** The battle, then each earlier battle the winner wins on its way there */
 const listPathTo = (
   bracket: SeededBracket,
   battle: BattleRef,
@@ -85,8 +91,10 @@ const listPathTo = (
     : [battle, ...listPathTo(bracket, side.battle, winner)]
 }
 
-// Keeps, in play order, each pick whose winner is on one of its battle's sides,
-// so a cleared pick also clears the picks that depended on it
+/**
+ * Keeps, in play order, each pick whose winner is on one of its battle's sides,
+ * so a cleared pick also clears the picks that depended on it
+ */
 const keepReachablePicks = (
   bracket: SeededBracket,
   picks: Picks,

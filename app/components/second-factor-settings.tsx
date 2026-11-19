@@ -128,8 +128,10 @@ const PasskeyItem = ({
   </li>
 )
 
-// Better Auth asks for the password to turn the app off or to replace the
-// recovery codes, so both share one password field
+/**
+ * Better Auth asks for the password to turn the app off or to replace the
+ * recovery codes, so both share one password field
+ */
 const AuthenticatorAppSettings = ({
   recoveryCodesLeft,
   canChange,

@@ -14,14 +14,14 @@ export const requireEnv = (name: string): string => {
   return value
 }
 
-// True only under `pnpm dev`, which serves the app through Vite
+/** True only under `pnpm dev`, which serves the app through Vite */
 export const isDevelopment = (): boolean =>
   process.env.NODE_ENV === `development`
 
 export const toAppUrl = (path: string): URL =>
   new URL(path, requireEnv(`BETTER_AUTH_URL`))
 
-// Better Auth marks its cookies `Secure` by the same check
+/** Better Auth marks its cookies `Secure` by the same check */
 export const isServedOverHttps = (): boolean =>
   toAppUrl(`/`).protocol === `https:`
 

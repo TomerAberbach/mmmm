@@ -15,8 +15,10 @@ import type {
   Winners,
 } from './bracket.ts'
 
-// Every seed slot in seed order, with its combatant. The wild card's seed slot
-// has none, since the wild card's winner fills it
+/**
+ * Every seed slot in seed order, with its combatant. The wild card's seed slot
+ * has none, since the wild card's winner fills it
+ */
 export const listSeedSlots = <Combatant>({
   divisions,
   wildCard,
@@ -33,18 +35,20 @@ export const listSeedSlots = <Combatant>({
 
 type StoredCombatant = { id: string; name: string }
 
-// A saved bracket's names with their combatants' row IDs
+/** A saved bracket's names with their combatants' row IDs */
 export type StoredBracket = BracketInput<StoredCombatant>
 
 export type Combatant = StoredCombatant & { seed: Seed }
 
-// A stored bracket with each seed slot's combatant and each combatant's seed
-// looked up, for filling battles' sides
+/**
+ * A stored bracket with each seed slot's combatant and each combatant's seed
+ * looked up, for filling battles' sides
+ */
 export type SeededBracket = {
   divisionNames: Record<DivisionPosition, string>
   wildCardSlot: SeedSlotRef
   wildCardEntrants: readonly Combatant[]
-  // Keyed by `toSeedSlotKey`. The wild card's seed slot has no combatant
+  /** Keyed by `toSeedSlotKey`. The wild card's seed slot has no combatant */
   combatantBySeedSlot: ReadonlyMap<string, Combatant>
   combatantById: ReadonlyMap<string, Combatant>
 }
@@ -77,15 +81,19 @@ export const toSeededBracket = (stored: StoredBracket): SeededBracket => {
   }
 }
 
-// A battle's side once its combatant is known, or the earlier battle whose
-// winner fills it
+/**
+ * A battle's side once its combatant is known, or the earlier battle whose
+ * winner fills it
+ */
 export type Side =
   | { kind: `combatant`; combatant: Combatant }
   | { kind: `undecided`; battle: BattleRef }
 
-// The battle's sides, filled from the seed slots, the wild card's entrants,
-// and the earlier battles' winners. Each winner must be a combatant in the
-// bracket
+/**
+ * The battle's sides, filled from the seed slots, the wild card's entrants,
+ * and the earlier battles' winners. Each winner must be a combatant in the
+ * bracket
+ */
 export const fillSides = (
   bracket: SeededBracket,
   battle: BattleRef,

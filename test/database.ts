@@ -9,8 +9,10 @@ type TestDatabase = {
   drop: () => Promise<void>
 }
 
-// Creates an empty database with the schema and the sequences that
-// `test/years.ts` reads, on the server that `DATABASE_URL` points to
+/**
+ * Creates an empty database with the schema and the sequences that
+ * `test/years.ts` reads, on the server that `DATABASE_URL` points to
+ */
 export const createTestDatabase = async (): Promise<TestDatabase> => {
   const serverUrl = new URL(requireEnv(`DATABASE_URL`))
   const name = `mmmm_test_${randomUUID().replaceAll(`-`, ``)}`

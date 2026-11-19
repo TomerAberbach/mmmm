@@ -9,8 +9,10 @@ import {
 } from './bracket-view.ts'
 import type { Winners } from './bracket.ts'
 
-// 2025's wild card fills seed 14 of SAME & DIFFERENT, which plays seed 3 in its
-// division's sixth Round 1 battle
+/**
+ * 2025's wild card fills seed 14 of SAME & DIFFERENT, which plays seed 3 in its
+ * division's sixth Round 1 battle
+ */
 const WILD_CARD_ROUND_1_INDEX = 5
 
 const NO_WINNERS: Winners = {}

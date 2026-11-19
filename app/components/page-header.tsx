@@ -3,8 +3,10 @@ import { PageTitle } from './page-title.tsx'
 
 export const PAGE_LABEL_CLASS_NAME = `font-condensed text-lg font-bold tracking-widest text-muted uppercase`
 
-// The page's title under a small label, such as its year, with the page's main
-// action beside them
+/**
+ * The page's title under a small label, such as its year, with the page's main
+ * action beside them
+ */
 export const PageHeader = ({
   label,
   title,

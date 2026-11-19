@@ -17,11 +17,11 @@ const PORT = Number.parseInt(process.env.PORT ?? `3000`, 10)
 const BUILD_PATH = `./build/server/index.js`
 const IS_PRODUCTION = !isDevelopment()
 checkEmailSettings()
-// Staging fails to start without its password, so it's never public
+/** Staging fails to start without its password, so it's never public */
 const STAGING_PASSWORD =
   readAppEnv() === `staging` ? requireEnv(`STAGING_PASSWORD`) : null
 
-// Each serves its assets and returns the app's request handler
+/** Each serves its assets and returns the app's request handler */
 const serveDevelopmentApp = async (
   server: Express,
 ): Promise<RequestHandler> => {

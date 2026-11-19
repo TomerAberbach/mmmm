@@ -18,8 +18,10 @@ import { displayNameSchema } from '~/player-forms.ts'
 import { limitNewPlayer } from '~/player-limits.server.ts'
 import { createPlayer } from '~/players.server.ts'
 
-// The prompt leaves the player's cookie as it is, because the next person on
-// a shared computer may be the one who sees it
+/**
+ * The prompt leaves the player's cookie as it is, because the next person on
+ * a shared computer may be the one who sees it
+ */
 export const loader = async ({
   request,
   params,

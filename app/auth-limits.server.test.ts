@@ -7,7 +7,9 @@ import {
 } from './auth-limits.server.ts'
 import { CLIENT_IP_HEADER } from './client-ip.ts'
 
-// Each test uses its own addresses, since the limits count across the process
+/**
+ * Each test uses its own addresses, since the limits count across the process
+ */
 const uniqueEmail = (): string => `educator-${crypto.randomUUID()}@example.com`
 
 const uniqueIp = (): string =>
@@ -20,7 +22,7 @@ const fromIp = (ip: string): Headers => new Headers({ [CLIENT_IP_HEADER]: ip })
 const attempt = (path: string, email: string, ip: string) =>
   limitAuthRequest({ path, email, headers: fromIp(ip) })
 
-// Takes a function for a value that changes on each attempt
+/** Takes a function for a value that changes on each attempt */
 const attemptTimes = async (
   times: number,
   path: string,

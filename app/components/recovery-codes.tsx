@@ -3,8 +3,10 @@ import { Button, ButtonLink } from './button.tsx'
 import { Checkbox } from './checkbox.tsx'
 import { PageTitle } from './page-title.tsx'
 
-// Shown once, right after the codes are made. Continuing needs the educator to
-// say they saved them, since nothing shows them again
+/**
+ * Shown once, right after the codes are made. Continuing needs the educator to
+ * say they saved them, since nothing shows them again
+ */
 export const RecoveryCodes = ({
   codes,
   continueTo,

@@ -8,7 +8,9 @@ type Form<Schema extends z.ZodObject> = ReturnType<
   typeof useForm<z.input<Schema>, z.output<Schema>>
 >
 
-// Validates only once the form is first submitted, then again on each keystroke
+/**
+ * Validates only once the form is first submitted, then again on each keystroke
+ */
 export const useValidatedForm = <Schema extends z.ZodObject>(
   schema: Schema,
   lastResult: SubmissionResult | undefined,

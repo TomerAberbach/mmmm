@@ -2,8 +2,10 @@ import type { ReactNode } from 'react'
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components'
 import type { DialogProps } from 'react-aria-components'
 
-// The overlay, the box, and the title every modal dialog shares. Place it in a
-// DialogTrigger after the trigger
+/**
+ * The overlay, the box, and the title every modal dialog shares. Place it in a
+ * DialogTrigger after the trigger
+ */
 export const ModalFrame = ({
   title,
   children,

@@ -12,8 +12,10 @@ import {
 } from '../auth.ts'
 import { readEmails, readNewestActionLink } from '../mailbox.ts'
 
-// Adds signing the educator in from a second browser, with its own cookies,
-// which closes after the test
+/**
+ * Adds signing the educator in from a second browser, with its own cookies,
+ * which closes after the test
+ */
 const test = base.extend<{
   signInElsewhere: (email: string) => Promise<Page>
 }>({

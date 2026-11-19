@@ -9,7 +9,7 @@ import { freeTextSchema } from '../free-text.ts'
 import { ContestDetails } from './contest-details.tsx'
 import type { Contest } from '~/contests.server.ts'
 
-// The action saves the name, and the loader reads it back
+/** The action saves the name, and the loader reads it back */
 const renderContest = async () => {
   let contest: Contest = {
     id: `period-2`,

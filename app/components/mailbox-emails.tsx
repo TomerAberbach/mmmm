@@ -39,8 +39,10 @@ export const MailboxEmails = ({
   </ul>
 )
 
-// The app refuses to load inside a frame, so the email's links open in a new
-// tab. The <base> goes inside <head>, because markup before the doctype
-// switches to quirks mode
+/**
+ * The app refuses to load inside a frame, so the email's links open in a new
+ * tab. The <base> goes inside <head>, because markup before the doctype
+ * switches to quirks mode
+ */
 const openLinksInNewTab = (html: string): string =>
   html.replace(/<head\b[^>]*>/iu, match => `${match}<base target="_blank">`)

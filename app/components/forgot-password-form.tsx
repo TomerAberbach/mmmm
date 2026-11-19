@@ -14,7 +14,7 @@ export const ForgotPasswordForm = ({
   linkInvalid = false,
 }: {
   lastResult?: SubmissionResult
-  // Set when a reset link that expired or was used sent the educator here
+  /** Set when a reset link that expired or was used sent the educator here */
   linkInvalid?: boolean
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
@@ -61,8 +61,10 @@ export const ForgotPasswordForm = ({
   )
 }
 
-// Every address gets this same answer, so it never reveals which belong to
-// educators
+/**
+ * Every address gets this same answer, so it never reveals which belong to
+ * educators
+ */
 export const ResetLinkSent = ({ email }: { email: string }) => (
   <div className='flex max-w-xl flex-col gap-4'>
     <PageTitle>Check your email</PageTitle>

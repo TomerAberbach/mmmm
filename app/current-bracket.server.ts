@@ -6,11 +6,11 @@ import { toSeededBracket } from './seeded-bracket.ts'
 
 export type CurrentBracket = {
   view: BracketView
-  // Such as "March 19, 2027"
+  /** Such as "March 19, 2027" */
   expectedLockDate: string | null
 }
 
-// Null before any bracket is published
+/** Null before any bracket is published */
 export const readCurrentBracketView =
   async (): Promise<CurrentBracket | null> => {
     const current = await readCurrentBracket()

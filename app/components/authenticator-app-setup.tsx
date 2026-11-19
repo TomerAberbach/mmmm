@@ -18,7 +18,7 @@ import { useValidatedForm } from './use-validated-form.ts'
 
 const TITLE = `Set up your authenticator app`
 
-// Better Auth asks for the password before it makes the app's secret
+/** Better Auth asks for the password before it makes the app's secret */
 export const ConfirmPasswordStep = ({
   lastResult,
 }: {
@@ -112,6 +112,6 @@ export const ScanStep = ({
 const readSecret = (totpUri: string): string =>
   new URL(totpUri).searchParams.get(`secret`) ?? ``
 
-// Groups of 4, as apps show their own keys
+/** Groups of 4, as apps show their own keys */
 const formatKey = (secret: string): string =>
   secret.match(/.{1,4}/gu)?.join(` `) ?? secret

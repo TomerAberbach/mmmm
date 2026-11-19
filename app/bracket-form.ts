@@ -13,7 +13,7 @@ import type { SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME } from './free-text.ts'
 import { listSeedSlots } from './seeded-bracket.ts'
 
-// Where a combatant's name is entered
+/** Where a combatant's name is entered */
 type CombatantPlace =
   | { kind: `seedSlot`; seedSlot: SeedSlotRef }
   | { kind: `entrant`; index: number }
@@ -27,9 +27,11 @@ export const POSITION_LABELS: Record<DivisionPosition, string> = {
 
 const optionalName = z.string().optional()
 
-// One field per seed, so each name keeps its seed when the admin moves the
-// wild card. The wild card's seed has no field of its own, and only the first
-// `entrantCount` entrants count
+/**
+ * One field per seed, so each name keeps its seed when the admin moves the
+ * wild card. The wild card's seed has no field of its own, and only the first
+ * `entrantCount` entrants count
+ */
 export const bracketFormSchema = z
   .object({
     wildCard: z.object({
@@ -66,8 +68,10 @@ type Path = (string | number)[]
 
 type Problem = { path: Path; message: string }
 
-// A field holding a name. `label` names it in messages, such as "seed 9 in
-// Tuxedo Style"
+/**
+ * A field holding a name. `label` names it in messages, such as "seed 9 in
+ * Tuxedo Style"
+ */
 type NameField = {
   kind: `division` | `combatant`
   path: Path
@@ -92,7 +96,7 @@ const RULES = {
   },
 }
 
-// At most one problem per field, in the order the form shows the fields
+/** At most one problem per field, in the order the form shows the fields */
 const listProblems = (form: BracketForm): Problem[] => {
   const fields = listNameFields(form)
   const findDuplicates = (kind: NameField[`kind`]) =>
@@ -127,8 +131,10 @@ const readMessage = (
     : other && rule.duplicate(field, other)
 }
 
-// Each division's name, then its seeds, with the wild card's entrants at its
-// seed
+/**
+ * Each division's name, then its seeds, with the wild card's entrants at its
+ * seed
+ */
 const listNameFields = (form: BracketForm): NameField[] =>
   DIVISION_POSITIONS.flatMap(position => {
     const divisionName = form.divisions[position].name?.trim() ?? ``
@@ -173,7 +179,7 @@ const readPath = (place: CombatantPlace): Path =>
     ? [`divisions`, place.seedSlot.position, `seeds`, place.seedSlot.seed - 1]
     : [`wildCard`, `entrants`, place.index]
 
-// A path as Conform names the field, such as `divisions.TOP_LEFT.seeds[0]`
+/** A path as Conform names the field, such as `divisions.TOP_LEFT.seeds[0]` */
 const formatFieldName = (path: Path): string =>
   path
     .map((part, index) => {
@@ -190,8 +196,10 @@ export const readFieldName = (place: CombatantPlace): string =>
 export const readDivisionNameField = (position: DivisionPosition): string =>
   formatFieldName([`divisions`, position, `name`])
 
-// Every place a combatant's name goes, in paste order: each division's seeds
-// but the wild card's, division by division, then the wild card's entrants
+/**
+ * Every place a combatant's name goes, in paste order: each division's seeds
+ * but the wild card's, division by division, then the wild card's entrants
+ */
 const listCombatantPlaces = (wildCard: WildCardChoice): CombatantPlace[] => [
   ...DIVISION_POSITIONS.flatMap(position =>
     readSeedsWithCombatants(position, wildCard).map(seed => ({
@@ -210,7 +218,7 @@ const readSeedsWithCombatants = (
   wildCard: SeedSlotRef,
 ) => SEEDS.filter(seed => !isSameSeedSlot({ position, seed }, wildCard))
 
-// Assumes `bracketFormSchema` accepted the form, so every name is present
+/** Assumes `bracketFormSchema` accepted the form, so every name is present */
 export const toBracketInput = (form: BracketForm): BracketInput => {
   const { wildCard, divisions } = form
   return {
@@ -260,8 +268,10 @@ export const toBracketForm = (input: BracketInput): BracketForm => {
 export const countCombatantPlaces = (wildCard: WildCardChoice): number =>
   listCombatantPlaces(wildCard).length
 
-// The field each pasted name fills, in the order `listCombatantPlaces` gives.
-// Blank lines don't count
+/**
+ * The field each pasted name fills, in the order `listCombatantPlaces` gives.
+ * Blank lines don't count
+ */
 export const readPastedNames = (
   text: string,
   wildCard: WildCardChoice,

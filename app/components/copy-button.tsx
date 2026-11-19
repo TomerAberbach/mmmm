@@ -16,8 +16,10 @@ const ANNOUNCEMENTS: Record<CopyState, string> = {
   failed: `Couldn’t copy the link`,
 }
 
-// Copies `text`, then shows the result for 2 seconds, as Primer's copy pattern
-// does. Screen readers hear the result, since they don't read a label change
+/**
+ * Copies `text`, then shows the result for 2 seconds, as Primer's copy pattern
+ * does. Screen readers hear the result, since they don't read a label change
+ */
 export const CopyButton = ({
   text,
   variant = `primary`,
@@ -54,8 +56,10 @@ export const CopyButton = ({
   )
 }
 
-// A state that returns to `resting` once `durationMs` passes. Each `show`
-// restarts the wait, even when the value repeats
+/**
+ * A state that returns to `resting` once `durationMs` passes. Each `show`
+ * restarts the wait, even when the value repeats
+ */
 const useTemporaryState = <State,>(
   resting: State,
   durationMs: number,

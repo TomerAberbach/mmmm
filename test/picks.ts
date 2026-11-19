@@ -10,14 +10,14 @@ import type { SeededBracket, StoredBracket } from '../app/seeded-bracket.ts'
 export const ROUND_1_FIRST: BattleRef = { round: `ROUND_1`, index: 0 }
 export const CHAMPIONSHIP: BattleRef = { round: `CHAMPIONSHIP`, index: 0 }
 
-// The input with a made-up row ID for each combatant
+/** The input with a made-up row ID for each combatant */
 export const storeTestBracket = (input: BracketInput): StoredBracket =>
   mapCombatants(input, name => ({ id: `id-${name}`, name }))
 
 export const seedTestBracket = (input: BracketInput): SeededBracket =>
   toSeededBracket(storeTestBracket(input))
 
-// Throws when the bracket has no combatant named `name`
+/** Throws when the bracket has no combatant named `name` */
 export const findCombatantId = (
   bracket: SeededBracket,
   name: string,
@@ -31,7 +31,7 @@ export const findCombatantId = (
   return combatant.id
 }
 
-// Picks the first contender of every battle, in play order
+/** Picks the first contender of every battle, in play order */
 export const pickEveryBattle = (bracket: SeededBracket): Picks =>
   listBattles().reduce(
     (picks, battle) =>

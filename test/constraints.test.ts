@@ -3,7 +3,7 @@ import { prisma } from '../app/db.server.ts'
 import { BRACKET_2026 } from '../prisma/brackets.ts'
 import { addClaimedYear } from './years.ts'
 
-// Every write here is refused, so the tests share one bracket
+/** Every write here is refused, so the tests share one bracket */
 const createTestBracket = async () =>
   prisma.bracket.findUniqueOrThrow({
     where: {

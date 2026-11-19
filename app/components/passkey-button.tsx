@@ -5,8 +5,10 @@ import type { PasskeyCeremony } from '../passkeys.ts'
 import { Button } from './button.tsx'
 import { Notice } from './notice.tsx'
 
-// Opens `successTo` once the ceremony succeeds, which loads the session the
-// ceremony changed
+/**
+ * Opens `successTo` once the ceremony succeeds, which loads the session the
+ * ceremony changed
+ */
 export const PasskeyButton = ({
   ceremony,
   successTo,

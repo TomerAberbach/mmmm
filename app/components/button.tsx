@@ -28,7 +28,7 @@ export const Button = ({ variant = `primary`, ...props }: ButtonProps) => (
 
 type ButtonLinkProps = Omit<AriaLinkProps, `className`> & { variant?: Variant }
 
-// For navigation. Use Button for an action
+/** For navigation. Use Button for an action */
 export const ButtonLink = ({
   variant = `primary`,
   ...props

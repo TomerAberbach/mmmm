@@ -4,8 +4,10 @@ import type { RateLimiterMemory } from 'rate-limiter-flexible'
 import { MAX_EMAIL_LENGTH } from './auth-forms.ts'
 import { CLIENT_IP_HEADER } from './client-ip.ts'
 
-// Resolves to the refusal once the key has used up its points. The limiter
-// throws its refusal, so this turns it into a value
+/**
+ * Resolves to the refusal once the key has used up its points. The limiter
+ * throws its refusal, so this turns it into a value
+ */
 export const tryConsume = async (
   limiter: RateLimiterMemory,
   key: string,
@@ -21,17 +23,21 @@ export const tryConsume = async (
   }
 }
 
-// Counts each address the same way in every limit. Better Auth accepts longer
-// addresses than RFC 5321 allows, so a longer one counts by its first
-// `MAX_EMAIL_LENGTH` characters, which bounds the counters' keys
+/**
+ * Counts each address the same way in every limit. Better Auth accepts longer
+ * addresses than RFC 5321 allows, so a longer one counts by its first
+ * `MAX_EMAIL_LENGTH` characters, which bounds the counters' keys
+ */
 export const normalizeEmail = (email: string): string =>
   email.trim().toLowerCase().slice(0, MAX_EMAIL_LENGTH)
 
 export type Counted = { limiter: RateLimiterMemory; key: string }
 
-// Counts the request in each limit, in order, and resolves to the first
-// refusal. A refused request costs no limit an attempt, so the limits counted
-// before the refusal get theirs back
+/**
+ * Counts the request in each limit, in order, and resolves to the first
+ * refusal. A refused request costs no limit an attempt, so the limits counted
+ * before the refusal get theirs back
+ */
 export const consumeAll = async (
   entries: Counted[],
 ): Promise<RateLimiterRes | undefined> => {
@@ -47,8 +53,10 @@ export const consumeAll = async (
   return undefined
 }
 
-// Rewarding a key whose window has ended would start a new window with an
-// extra attempt
+/**
+ * Rewarding a key whose window has ended would start a new window with an
+ * extra attempt
+ */
 export const refund = async ({ limiter, key }: Counted): Promise<void> => {
   const counts = await limiter.get(key)
   if (counts && counts.consumedPoints > 0) {
@@ -56,9 +64,11 @@ export const refund = async ({ limiter, key }: Counted): Promise<void> => {
   }
 }
 
-// Without the header, every request would share one IP address's count, so a
-// request without it fails instead. IPv6 addresses count per /56 network, as
-// the app-wide limit does
+/**
+ * Without the header, every request would share one IP address's count, so a
+ * request without it fails instead. IPv6 addresses count per /56 network, as
+ * the app-wide limit does
+ */
 export const readClientIp = (headers: Headers | undefined): string => {
   const ip = headers?.get(CLIENT_IP_HEADER)
   if (!ip) {
@@ -74,7 +84,7 @@ export type LimitRefusal = {
   headers: { 'Retry-After': string }
 }
 
-// `toMessage` receives the wait, such as "Try again in 5 minutes"
+/** `toMessage` receives the wait, such as "Try again in 5 minutes" */
 export const toRefusal = (
   { msBeforeNext }: RateLimiterRes,
   toMessage: (wait: string) => string,

@@ -13,7 +13,9 @@ import { arePicksConsistent, listContenders, pickWinner } from './picks.ts'
 const BRACKET = seedTestBracket(BRACKET_2025)
 
 const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
-// 2025's wild card fills seed 14 of the top left division, which plays seed 3
+/**
+ * 2025's wild card fills seed 14 of the top left division, which plays seed 3
+ */
 const WILD_CARD_ROUND_1: BattleRef = { round: `ROUND_1`, index: 5 }
 
 const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST).map(

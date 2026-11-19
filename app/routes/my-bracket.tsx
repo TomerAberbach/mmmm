@@ -4,8 +4,10 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { rememberPlayer } from '~/player-cookie.server.ts'
 import { readPlayerByLink } from '~/players.server.ts'
 
-// A personal link moves its secret into the player's cookie and redirects, so
-// the secret appears in only this one request
+/**
+ * A personal link moves its secret into the player's cookie and redirects, so
+ * the secret appears in only this one request
+ */
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const player = await readPlayerByLink(params.secret)
   if (!player) {

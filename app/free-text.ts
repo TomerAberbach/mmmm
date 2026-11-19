@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export type FreeTextField = {
-  // How error messages name the field, such as "your full name"
+  /** How error messages name the field, such as "your full name" */
   label: string
   maxLength: number
   offensiveMessage?: string
@@ -34,13 +34,17 @@ export const DISPLAY_NAME: FreeTextField = {
   offensiveMessage: `Use a different name. This one has a word MMMM doesn’t allow`,
 }
 
-// Builds a form's free-text fields. The server passes `serverFreeTextSchema`,
-// which adds the offensive word filter that the browser bundle leaves out, and
-// the browser passes `freeTextSchema`
+/**
+ * Builds a form's free-text fields. The server passes `serverFreeTextSchema`,
+ * which adds the offensive word filter that the browser bundle leaves out, and
+ * the browser passes `freeTextSchema`
+ */
 export type FreeTextSchema = (field: FreeTextField) => z.ZodString
 
-// The checks the browser can run too. The server adds the offensive word
-// filter
+/**
+ * The checks the browser can run too. The server adds the offensive word
+ * filter
+ */
 export const freeTextSchema: FreeTextSchema = ({ label, maxLength }) =>
   z
     .string({ error: `Enter ${label}` })

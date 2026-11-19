@@ -4,7 +4,9 @@ import { ContestDetails } from '~/components/contest-details.tsx'
 import { readEducatorContest } from '~/contests.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
-// Another educator's contest gets the not-found page, so its ID reveals nothing
+/**
+ * Another educator's contest gets the not-found page, so its ID reveals nothing
+ */
 export const loader = async ({ context, params }: Route.LoaderArgs) => {
   const contest = await readEducatorContest(
     readRequiredEducator(context).id,

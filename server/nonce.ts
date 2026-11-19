@@ -2,8 +2,10 @@ import { randomBytes } from 'node:crypto'
 import type { ServerResponse } from 'node:http'
 import type { RequestHandler } from 'express'
 
-// Stored on the response, not in module state, because the server build
-// bundles its own copy of this module
+/**
+ * Stored on the response, not in module state, because the server build
+ * bundles its own copy of this module
+ */
 type ResponseWithNonce = ServerResponse & { locals?: { nonce?: string } }
 
 export const createNonce: RequestHandler = (_req, res, next) => {

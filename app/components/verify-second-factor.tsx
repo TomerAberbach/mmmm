@@ -4,8 +4,10 @@ import { Button } from './button.tsx'
 import { PageTitle } from './page-title.tsx'
 import { PasskeyButton } from './passkey-button.tsx'
 
-// For an admin whose session used only a password. A passkey signs in again
-// here. An authenticator app's code is asked for only at sign-in
+/**
+ * For an admin whose session used only a password. A passkey signs in again
+ * here. An authenticator app's code is asked for only at sign-in
+ */
 export const VerifySecondFactor = ({ hasPasskey }: { hasPasskey: boolean }) => (
   <div className='flex max-w-md flex-col gap-6'>
     <PageTitle>Use your second factor</PageTitle>

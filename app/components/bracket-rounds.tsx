@@ -15,15 +15,17 @@ import {
 } from '~/bracket.ts'
 import type { Round } from '~/bracket.ts'
 
-// The tab to show, for tabs that another control also switches
+/** The tab to show, for tabs that another control also switches */
 export type RoundSelection = {
   round: Round
   onSelect: (round: Round) => void
 }
 
-// One round at a time, for screens too narrow for the diagram. Without a
-// selection, it starts on the earliest round left to decide. While the bracket
-// is being picked, each tab counts the round's battles left
+/**
+ * One round at a time, for screens too narrow for the diagram. Without a
+ * selection, it starts on the earliest round left to decide. While the bracket
+ * is being picked, each tab counts the round's battles left
+ */
 export const BracketRoundTabs = ({
   view,
   selection,
@@ -79,7 +81,7 @@ const BattlesLeft = ({ battles }: { battles: BattleView[] }) => {
   )
 }
 
-// Every round, each with a heading, for screen readers beside the diagram
+/** Every round, each with a heading, for screen readers beside the diagram */
 export const BracketRoundList = ({ view }: { view: BracketView }) => (
   <div className='flex flex-col gap-8'>
     {ROUNDS.map(round => (
@@ -88,8 +90,10 @@ export const BracketRoundList = ({ view }: { view: BracketView }) => (
   </div>
 )
 
-// The heading is for screen readers. On screen, a tab names the round, and the
-// list beside the diagram is hidden
+/**
+ * The heading is for screen readers. On screen, a tab names the round, and the
+ * list beside the diagram is hidden
+ */
 const RoundBattles = ({
   view,
   round,

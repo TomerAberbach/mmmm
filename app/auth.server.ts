@@ -38,12 +38,16 @@ const CONFIRMATION_EXPIRES_IN_SECONDS =
 const SIGN_IN_URL = toAppUrl(href(`/sign-in`))
 const SETTINGS_URL = toAppUrl(href(`/settings`))
 const FORGOT_PASSWORD_URL = toAppUrl(href(`/forgot-password`))
-// Every confirmation link returns to sign-in, whatever the request asked for.
-// Sign-in shows whether the link worked
+/**
+ * Every confirmation link returns to sign-in, whatever the request asked for.
+ * Sign-in shows whether the link worked
+ */
 const CONFIRMED_CALLBACK_URL = `${SIGN_IN_URL.pathname}?confirmed`
 
-// Clients can't choose where emailed links return, or keep their other
-// sessions through a password change
+/**
+ * Clients can't choose where emailed links return, or keep their other
+ * sessions through a password change
+ */
 const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
   '/sign-up/email': { callbackURL: CONFIRMED_CALLBACK_URL },
   '/sign-in/email': { callbackURL: CONFIRMED_CALLBACK_URL },
@@ -95,9 +99,11 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
 
-// A confirmation link contains only the address, so without this check a link
-// sent before sign-up started over would confirm the new educator's password.
-// Remove once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
+/**
+ * A confirmation link contains only the address, so without this check a link
+ * sent before sign-up started over would confirm the new educator's password.
+ * Remove once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
+ */
 const isOlderThanEducator = async (
   context: AuthContext,
   token: unknown,
@@ -115,8 +121,10 @@ const isOlderThanEducator = async (
   )
 }
 
-// Returns nothing for a token that fails verification. The issue time is in
-// seconds
+/**
+ * Returns nothing for a token that fails verification. The issue time is in
+ * seconds
+ */
 const readConfirmationToken = async (
   token: unknown,
   secret: string,
@@ -143,10 +151,12 @@ const parseName = async (name: unknown): Promise<string> => {
   return parsed.data
 }
 
-// An unconfirmed educator belongs to no one yet, so a new sign-up starts over
-// with its own name and password. Otherwise the new link would confirm the
-// password of whoever signed up first, who may not own the address. Remove
-// once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
+/**
+ * An unconfirmed educator belongs to no one yet, so a new sign-up starts over
+ * with its own name and password. Otherwise the new link would confirm the
+ * password of whoever signed up first, who may not own the address. Remove
+ * once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
+ */
 const deleteUnconfirmedEducator = async (
   internalAdapter: AuthContext[`internalAdapter`],
   email: string,
@@ -157,9 +167,11 @@ const deleteUnconfirmedEducator = async (
   }
 }
 
-// Refunds the attempts of a request that made a session. Notifies the owner
-// however the password or a passkey changed, so a stolen session can't change
-// either quietly
+/**
+ * Refunds the attempts of a request that made a session. Notifies the owner
+ * however the password or a passkey changed, so a stolen session can't change
+ * either quietly
+ */
 const afterAuthRequest = createAuthMiddleware(async ctx => {
   if (ctx.context.returned instanceof APIError) {
     return
@@ -188,10 +200,12 @@ const afterAuthRequest = createAuthMiddleware(async ctx => {
   }
 })
 
-// The session that adds a passkey counts as having used it, so setting up the
-// first one opens the admin area without signing in again. Better Auth makes a
-// new session when an authenticator app turns on, which the session hook
-// marks
+/**
+ * The session that adds a passkey counts as having used it, so setting up the
+ * first one opens the admin area without signing in again. Better Auth makes a
+ * new session when an authenticator app turns on, which the session hook
+ * marks
+ */
 const markPasskeyUsed = async (ctx: GenericEndpointContext): Promise<void> => {
   const session = ctx.context.session?.session
   if (session) {
@@ -208,8 +222,10 @@ const notifySecondFactorChanged = (
   )
 }
 
-// Better Auth updates `twoFactorEnabled` only when an authenticator app turns
-// on or off
+/**
+ * Better Auth updates `twoFactorEnabled` only when an authenticator app turns
+ * on or off
+ */
 const AUTHENTICATOR_APP_CHANGES: Record<string, SecondFactorChange> = {
   '/two-factor/verify-totp': `authenticator-app-added`,
   '/two-factor/disable': `authenticator-app-removed`,
@@ -217,7 +233,7 @@ const AUTHENTICATOR_APP_CHANGES: Record<string, SecondFactorChange> = {
 
 const BASE_ORIGIN = new URL(BASE_URL)
 
-// Doesn't wait for the email, which can't undo the change
+/** Doesn't wait for the email, which can't undo the change */
 const notifyPasswordChanged = (to: string): void => {
   void sendNoticeOrLog(
     passwordChangedEmail({ to, resetUrl: FORGOT_PASSWORD_URL.href }),

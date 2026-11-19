@@ -5,7 +5,7 @@ import { LockHeadsUp } from '~/components/lock-heads-up.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { readCurrentBracketView } from '~/current-bracket.server.ts'
 
-// The diagram needs more room than other pages
+/** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }
 
 export const loader = async () => {

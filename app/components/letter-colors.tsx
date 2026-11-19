@@ -1,4 +1,4 @@
-// Each passes 3:1 on white, the WCAG minimum for large text
+/** Each passes 3:1 on white, the WCAG minimum for large text */
 export const LETTER_COLORS = [
   `text-accent-strong`,
   `text-muted`,
@@ -9,8 +9,10 @@ export const LETTER_COLORS = [
 
 const graphemes = new Intl.Segmenter(`en`, { granularity: `grapheme` })
 
-// Colors each letter in turn, as the March Mammal Madness logo does. Screen
-// readers read the text as a whole, not letter by letter
+/**
+ * Colors each letter in turn, as the March Mammal Madness logo does. Screen
+ * readers read the text as a whole, not letter by letter
+ */
 export const LetterColors = ({ text }: { text: string }) => {
   let colorIndex = 0
   const letters = [...graphemes.segment(text)].map(

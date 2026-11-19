@@ -10,8 +10,10 @@ const listTestDatabases = async (): Promise<string[]> => {
   return rows.map(row => row.datname).sort()
 }
 
-// The server first creates its database and pushes the schema, which takes
-// several seconds on a busy CI runner
+/**
+ * The server first creates its database and pushes the schema, which takes
+ * several seconds on a busy CI runner
+ */
 const SERVER_START_TIMEOUT_MS = 30_000
 
 test(

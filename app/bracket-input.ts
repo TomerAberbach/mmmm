@@ -10,20 +10,26 @@ import {
 import type { Seed } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME, freeTextSchema } from './free-text.ts'
 
-// Admins enter these names from ASU's published bracket, so they skip the
-// offensive word filter, which flags real combatants such as the Great Tit
+/**
+ * Admins enter these names from ASU's published bracket, so they skip the
+ * offensive word filter, which flags real combatants such as the Great Tit
+ */
 const divisionNameSchema = freeTextSchema(DIVISION_NAME)
 const combatantNameSchema = freeTextSchema(COMBATANT_NAME)
 
-// Each division lists its combatants in seed order. The wild card's division
-// skips the wild card's seed, which its winner fills
+/**
+ * Each division lists its combatants in seed order. The wild card's division
+ * skips the wild card's seed, which its winner fills
+ */
 export type BracketInput<Combatant = string> = {
   divisions: Record<DivisionPosition, { name: string; combatants: Combatant[] }>
   wildCard: { position: DivisionPosition; seed: Seed; entrants: Combatant[] }
 }
 
-// Checks a bracket whose combatants match `combatantSchema`, comparing the
-// names `readName` reads
+/**
+ * Checks a bracket whose combatants match `combatantSchema`, comparing the
+ * names `readName` reads
+ */
 export const toBracketSchema = <Combatant>(
   combatantSchema: z.ZodType<Combatant>,
   readName: (combatant: Combatant) => string,
@@ -75,8 +81,10 @@ export const toNames = (
   bracket: BracketInput<{ name: string }>,
 ): BracketInput => mapCombatants(bracket, ({ name }) => name)
 
-// Division and combatant names must each be unique, and every seed slot needs
-// one combatant except the wild card's
+/**
+ * Division and combatant names must each be unique, and every seed slot needs
+ * one combatant except the wild card's
+ */
 const checkNamesAndCounts = (
   input: BracketInput,
   ctx: z.RefinementCtx,
@@ -110,14 +118,18 @@ const checkNamesAndCounts = (
   }
 }
 
-// Whether any two names count as the same, by the rule `findDuplicateNames`
-// uses
+/**
+ * Whether any two names count as the same, by the rule `findDuplicateNames`
+ * uses
+ */
 const hasDuplicateNames = (names: string[]): boolean =>
   new Set(names.map(normalizeName)).size < names.length
 
-// Each place whose name another place shares, with the first other place that
-// shares it. Names differing only in case, spacing, or the style of
-// apostrophe count as the same
+/**
+ * Each place whose name another place shares, with the first other place that
+ * shares it. Names differing only in case, spacing, or the style of
+ * apostrophe count as the same
+ */
 export const findDuplicateNames = <Place>(
   entries: { place: Place; name: string }[],
 ): { place: Place; other: Place }[] => {

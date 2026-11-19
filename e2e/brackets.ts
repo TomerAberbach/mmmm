@@ -6,8 +6,10 @@ export const YEAR = readUpcomingYear(new Date())
 
 const DIVISION_NAMES = [`Bad Bunch`, `Fur Real`, `Nighty Night`, `Flight Club`]
 
-// Names for the default wild card, at seed 16 of the top left division with 2
-// entrants: 63 seeds, then the entrants
+/**
+ * Names for the default wild card, at seed 16 of the top left division with 2
+ * entrants: 63 seeds, then the entrants
+ */
 export const PASTED_NAMES = Array.from(
   { length: 65 },
   (_, index) => `Combatant ${index + 1}`,
@@ -32,8 +34,10 @@ export const setUpAndPublishBracket = async (page: Page): Promise<void> => {
   ).toBeVisible()
 }
 
-// Presses `trigger`, then the dialog's `action`, which defaults to the same
-// label
+/**
+ * Presses `trigger`, then the dialog's `action`, which defaults to the same
+ * label
+ */
 export const confirmDialog = async (
   page: Page,
   trigger: string,
@@ -46,7 +50,7 @@ export const confirmDialog = async (
     .click()
 }
 
-// Returns the new contest's contest link
+/** Returns the new contest's contest link */
 export const createContest = async (
   page: Page,
   name: string,

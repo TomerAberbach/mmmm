@@ -10,15 +10,17 @@ import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 
 const WHY = `Admins sign in with a second step, so a stolen password alone can't change results.`
 
-// Setting up the first second factor starts with an emailed link, so a stolen
-// password alone can't add one
+/**
+ * Setting up the first second factor starts with an emailed link, so a stolen
+ * password alone can't add one
+ */
 export const SetupLinkRequest = ({
   email,
   linkInvalid,
   isSent,
 }: {
   email: string
-  // Whether the page opened from a link that expired or was used
+  /** Whether the page opened from a link that expired or was used */
   linkInvalid: boolean
   isSent: boolean
 }) => {

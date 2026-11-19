@@ -14,7 +14,7 @@ export type Submission = {
   picks: Picks
 }
 
-// The player's draft, and their submission once they've submitted
+/** The player's draft, and their submission once they've submitted */
 export const readDraftAndSubmission = async (
   playerId: string,
 ): Promise<{ draft: Picks; submission: Submission | null }> => {
@@ -41,13 +41,15 @@ export const readDraftAndSubmission = async (
   }
 }
 
-// Only the current year's contests take picks
+/** Only the current year's contests take picks */
 export type PicksRefusal = {
   refusal: `NOT_CURRENT_YEAR` | `INCONSISTENT` | `INCOMPLETE` | `NOT_SUBMITTED`
 }
 
-// Replaces the player's draft, unless the picks aren't consistent with the
-// bracket
+/**
+ * Replaces the player's draft, unless the picks aren't consistent with the
+ * bracket
+ */
 export const savePlayerDraft = (
   playerId: string,
   year: number,
@@ -61,9 +63,11 @@ export const savePlayerDraft = (
     return { saved: true } as const
   })
 
-// Saves the picks as the player's draft and submits them, unless they're
-// incomplete. A first submission waits for approval, and a later one keeps the
-// submission's status
+/**
+ * Saves the picks as the player's draft and submits them, unless they're
+ * incomplete. A first submission waits for approval, and a later one keeps the
+ * submission's status
+ */
 export const submitPlayerPicks = (
   playerId: string,
   year: number,
@@ -93,8 +97,10 @@ export const submitPlayerPicks = (
     return { submission: { ...submission, picks } }
   })
 
-// Replaces the player's draft with their submission's picks, unless the player
-// hasn't submitted
+/**
+ * Replaces the player's draft with their submission's picks, unless the player
+ * hasn't submitted
+ */
 export const discardPlayerDraft = (
   playerId: string,
   year: number,
@@ -152,9 +158,11 @@ const writePicks = async (
   })
 }
 
-// Runs `change` in a transaction once it holds the player's row and the year,
-// refusing unless the year is current. The player must be in one of the year's
-// contests
+/**
+ * Runs `change` in a transaction once it holds the player's row and the year,
+ * refusing unless the year is current. The player must be in one of the year's
+ * contests
+ */
 const withCurrentPlayer = <Result>(
   playerId: string,
   year: number,
@@ -167,8 +175,10 @@ const withCurrentPlayer = <Result>(
       : ({ refusal: `NOT_CURRENT_YEAR` } as const)
   })
 
-// Runs `change` as `withCurrentPlayer` does, with the year's bracket and its
-// battles' row IDs, keyed by `toBattleKey`
+/**
+ * Runs `change` as `withCurrentPlayer` does, with the year's bracket and its
+ * battles' row IDs, keyed by `toBattleKey`
+ */
 const withPlayerBracket = <Result>(
   playerId: string,
   year: number,

@@ -35,9 +35,11 @@ import type { Submission } from '~/player-picks.server.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
 
-// The player's bracket, each battle a control. Every change saves the whole
-// set of picks to the player's draft through `picksPath`, and submitting copies
-// the draft to their submission
+/**
+ * The player's bracket, each battle a control. Every change saves the whole
+ * set of picks to the player's draft through `picksPath`, and submitting copies
+ * the draft to their submission
+ */
 export const PlayerBracket = ({
   year,
   bracket: stored,
@@ -49,7 +51,7 @@ export const PlayerBracket = ({
   year: number
   bracket: StoredBracket
   initialDraft: Picks
-  // Null until the player submits
+  /** Null until the player submits */
   submitted: Submitted | null
   picksPath: string
   forgetPath: string
@@ -183,7 +185,7 @@ export const PlayerBracket = ({
   )
 }
 
-// A player's submission, and the personal link they see once they submit
+/** A player's submission, and the personal link they see once they submit */
 export type Submitted = { submission: Submission; personalLink: string }
 
 const BarLabel = ({ children }: { children: string }) => (
@@ -206,7 +208,7 @@ const describeUnpicked = (
     : `Pick the last ${battles} to submit. ${next}`
 }
 
-// Submitting changes keeps the submission's status
+/** Submitting changes keeps the submission's status */
 const STATUS_TEXT: Record<SubmissionStatus, { label: string; note: string }> = {
   PENDING: {
     label: `waiting for approval`,
@@ -340,8 +342,10 @@ const PicksChanged = ({ at }: { at: Date }) => (
   </p>
 )
 
-// The round the tabs show, and a way to show and focus any battle, switching
-// tabs when it's in another round
+/**
+ * The round the tabs show, and a way to show and focus any battle, switching
+ * tabs when it's in another round
+ */
 const useShownRound = (view: BracketView) => {
   const [round, setRound] = useState<Round>(() => readStartingRound(view))
   const battleToFocus = useRef<BattleRef>(undefined)
@@ -385,7 +389,7 @@ const PickProgress = ({
   )
 }
 
-// The live region stays in place, so its first message is announced
+/** The live region stays in place, so its first message is announced */
 const ClearedNotice = ({ cleared }: { cleared: BattleRef[] }) => (
   <output
     className={
@@ -445,7 +449,7 @@ const INTENT_TEXT: Record<
   discard: { sending: `Discarding…`, failed: `Couldn’t discard your changes` },
 }
 
-// Focuses the battle's first control in whichever layout is showing
+/** Focuses the battle's first control in whichever layout is showing */
 const focusBattle = (battle: BattleRef): void => {
   const boxes = document.querySelectorAll<HTMLElement>(
     `[data-battle="${CSS.escape(toBattleKey(battle))}"]`,

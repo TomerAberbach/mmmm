@@ -11,7 +11,7 @@ import type { Counted } from './limits.server.ts'
 
 export const TOO_MANY_ATTEMPTS = `TOO_MANY_ATTEMPTS`
 
-// Matches the error `limitAuthRequest` throws
+/** Matches the error `limitAuthRequest` throws */
 export const isTooManyAttempts = (
   error: unknown,
 ): error is APIError & { body: { message: string } } =>
@@ -23,17 +23,21 @@ const HOUR = 60 * MINUTE
 type Key = `ip` | `emailAndIp`
 type Rule = { key: Key; points: number; duration: number }
 
-// Addresses count per IP address too, never alone, so strangers can't lock an
-// educator out from their own IP addresses. IP addresses get many attempts,
-// because a whole school can share one. `sendEmail` caps the email each
-// address receives, however many IP addresses ask
+/**
+ * Addresses count per IP address too, never alone, so strangers can't lock an
+ * educator out from their own IP addresses. IP addresses get many attempts,
+ * because a whole school can share one. `sendEmail` caps the email each
+ * address receives, however many IP addresses ask
+ */
 const EMAIL_SENDING_RULES: Rule[] = [
   { key: `emailAndIp`, points: 3, duration: HOUR },
   { key: `ip`, points: 100, duration: HOUR },
 ]
 
-// `refundsSuccess` gives a successful request its attempts back, so only
-// failures count and a school signing in together never runs out
+/**
+ * `refundsSuccess` gives a successful request its attempts back, so only
+ * failures count and a school signing in together never runs out
+ */
 const RULES: Record<string, { rules: Rule[]; refundsSuccess?: true }> = {
   '/sign-in/email': {
     rules: [
@@ -47,7 +51,7 @@ const RULES: Record<string, { rules: Rule[]; refundsSuccess?: true }> = {
   '/send-verification-email': { rules: EMAIL_SENDING_RULES },
 }
 
-// Counts stay in memory only, so no IP address is ever stored
+/** Counts stay in memory only, so no IP address is ever stored */
 const LIMITERS = new Map(
   Object.entries(RULES).map(([path, { rules, refundsSuccess = false }]) => [
     path,
@@ -71,9 +75,11 @@ type AuthRequest = {
   headers: Headers | undefined
 }
 
-// Throws once the address or the client's IP address has used up its attempts
-// on the path, and then counts nothing, so a refused request costs no rule an
-// attempt. A path without limits passes
+/**
+ * Throws once the address or the client's IP address has used up its attempts
+ * on the path, and then counts nothing, so a refused request costs no rule an
+ * attempt. A path without limits passes
+ */
 export const limitAuthRequest = async (request: AuthRequest): Promise<void> => {
   const refusal = await consumeAll(readCounted(request))
   if (refusal) {
@@ -89,8 +95,10 @@ export const limitAuthRequest = async (request: AuthRequest): Promise<void> => {
   }
 }
 
-// Gives back the attempts a successful request spent, on the paths whose
-// rules refund success
+/**
+ * Gives back the attempts a successful request spent, on the paths whose
+ * rules refund success
+ */
 export const refundAuthRequest = async (
   request: AuthRequest,
 ): Promise<void> => {

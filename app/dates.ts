@@ -13,7 +13,7 @@ const LONG_DATE = new Intl.DateTimeFormat(`en-US`, {
   timeZone: `UTC`,
 })
 
-// Such as "March 19, 2027"
+/** Such as "March 19, 2027" */
 export const formatDate = (date: Date): string => LONG_DATE.format(date)
 
 export const ARIZONA_TIME_ZONE = `America/Phoenix`
@@ -23,14 +23,14 @@ const ARIZONA_LONG_DATE = new Intl.DateTimeFormat(`en-US`, {
   timeZone: ARIZONA_TIME_ZONE,
 })
 
-// The day in Arizona, such as "March 2, 2027"
+/** The day in Arizona, such as "March 2, 2027" */
 export const formatArizonaDate = (date: Date): string =>
   ARIZONA_LONG_DATE.format(date)
 
-// The time on the reader's clock, such as "2:41 PM"
+/** The time on the reader's clock, such as "2:41 PM" */
 export const formatTime = (date: Date): string =>
   date.toLocaleTimeString([], { hour: `numeric`, minute: `2-digit` })
 
-// The day and time on the reader's clock, such as "Nov 2, 2026, 2:41 PM"
+/** The day and time on the reader's clock, such as "Nov 2, 2026, 2:41 PM" */
 export const formatDateTime = (date: Date): string =>
   date.toLocaleString([], { dateStyle: `medium`, timeStyle: `short` })

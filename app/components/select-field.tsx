@@ -11,8 +11,10 @@ import {
 
 export type SelectOption<Id extends Key> = { id: Id; label: string }
 
-// A choice from a short list. `name` submits the chosen option's id with the
-// form
+/**
+ * A choice from a short list. `name` submits the chosen option's id with the
+ * form
+ */
 export const SelectField = <Id extends Key>({
   label,
   name,

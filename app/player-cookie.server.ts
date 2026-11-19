@@ -2,12 +2,14 @@ import { createCookie } from 'react-router'
 import { isServedOverHttps } from './env.server.ts'
 import { readContestPlayer } from './players.server.ts'
 
-// The player stays recognized for 15 minutes after their last request, so a
-// player who closes the browser by accident can continue, while the next
-// player on a shared computer usually starts fresh
+/**
+ * The player stays recognized for 15 minutes after their last request, so a
+ * player who closes the browser by accident can continue, while the next
+ * player on a shared computer usually starts fresh
+ */
 const MAX_AGE_SECONDS = 15 * 60
 
-// One cookie per contest, holding the player's personal link secret
+/** One cookie per contest, holding the player's personal link secret */
 const playerCookie = (contestId: string) =>
   createCookie(`player-${contestId}`, {
     httpOnly: true,
@@ -27,8 +29,10 @@ const readPlayerSecret = async (
   return typeof secret === `string` ? secret : null
 }
 
-// The player this browser remembers in the contest, or null when the cookie
-// is missing or matches no player there
+/**
+ * The player this browser remembers in the contest, or null when the cookie
+ * is missing or matches no player there
+ */
 export const readRememberedPlayer = async (
   request: Request,
   contestId: string,
@@ -38,7 +42,7 @@ export const readRememberedPlayer = async (
   return player ? { secret, ...player } : null
 }
 
-// Also restarts the 15 minutes
+/** Also restarts the 15 minutes */
 export const rememberPlayer = (
   contestId: string,
   secret: string,

@@ -1,5 +1,7 @@
-// Shows one of `labels`. Every label shares one grid cell, so the element keeps
-// the widest one's width as the shown label changes
+/**
+ * Shows one of `labels`. Every label shares one grid cell, so the element keeps
+ * the widest one's width as the shown label changes
+ */
 export const StableLabel = ({
   labels,
   shown,

@@ -14,8 +14,10 @@ import { LAST_SECOND_FACTOR, SECOND_FACTOR_REQUIRED } from './second-factor.ts'
 
 const PASSWORD = `correct-horse-battery`
 
-// Each test uses its own IP address, since the auth limits count across the
-// process
+/**
+ * Each test uses its own IP address, since the auth limits count across the
+ * process
+ */
 const randomIp = (): string =>
   `10.${Array.from({ length: 3 }, () => Math.floor(Math.random() * 256)).join(`.`)}`
 
@@ -46,7 +48,7 @@ const signInAdmin = async (): Promise<SignedIn> => {
   return signedIn
 }
 
-// The request headers of a browser holding the cookies a response set
+/** The request headers of a browser holding the cookies a response set */
 const withCookies = (response: Headers, ip: string): Headers =>
   new Headers({
     cookie: response

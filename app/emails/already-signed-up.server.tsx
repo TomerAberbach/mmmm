@@ -6,8 +6,10 @@ import {
   EmailParagraph,
 } from './layout.server.tsx'
 
-// Sign-up answers an existing address as if it were new, so its owner learns
-// of the attempt here
+/**
+ * Sign-up answers an existing address as if it were new, so its owner learns
+ * of the attempt here
+ */
 export const alreadySignedUpEmail = ({
   to,
   signInUrl,

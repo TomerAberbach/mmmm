@@ -1,5 +1,7 @@
-// The codes of the refusals the app adds to Better Auth's second-factor
-// endpoints. Their messages are written for educators
+/**
+ * The codes of the refusals the app adds to Better Auth's second-factor
+ * endpoints. Their messages are written for educators
+ */
 export const SECOND_FACTOR_REQUIRED = `SECOND_FACTOR_REQUIRED`
 export const LAST_SECOND_FACTOR = `LAST_SECOND_FACTOR`
 

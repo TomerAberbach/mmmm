@@ -13,8 +13,10 @@ import { displayNameSchema } from '~/player-forms.ts'
 
 type PlayContest = Omit<ContestByLink, `id`>
 
-// What the contest link shows: the name question, the prompt for a player
-// this browser remembers, or that the contest no longer takes players
+/**
+ * What the contest link shows: the name question, the prompt for a player
+ * this browser remembers, or that the contest no longer takes players
+ */
 export type PlayView =
   | { state: `askName` }
   | { state: `returning`; displayName: string; bracketPath: string }

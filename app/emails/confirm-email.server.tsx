@@ -2,8 +2,10 @@ import { CONFIRMATION_EXPIRES_IN_DAYS } from '../auth-forms.ts'
 import type { Email } from '../email.server.ts'
 import { EmailAction, EmailLayout, EmailParagraph } from './layout.server.tsx'
 
-// Greets no one by name, because whoever signed up chose the name and may not
-// own the address
+/**
+ * Greets no one by name, because whoever signed up chose the name and may not
+ * own the address
+ */
 export const confirmEmail = ({
   to,
   url,

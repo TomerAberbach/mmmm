@@ -5,7 +5,7 @@ import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { SignInCodeForm } from './sign-in-code-form.tsx'
 
-// Records each code the action receives
+/** Records each code the action receives */
 const renderForm = async (received: unknown[] = []) => {
   const Stub = createRoutesStub([
     { path: `/`, Component: () => <SignInCodeForm /> },

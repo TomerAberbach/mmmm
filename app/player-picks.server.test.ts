@@ -30,21 +30,23 @@ const readPicksChangedAt = (
   return submitted.submission.picksChangedAt
 }
 
-// The year's stored bracket, which `addYear` fills with 2026's
+/** The year's stored bracket, which `addYear` fills with 2026's */
 const readSeededBracket = async (year: number) =>
   toSeededBracket((await readBracket(year))!)
 
 type TestPicks = {
-  // Round 1's first battle's seed 1, picked in `complete`
+  /** Round 1's first battle's seed 1, picked in `complete` */
   nileCrocodile: string
   complete: Picks
-  // The complete picks with Round 1's first battle changed, which clears the
-  // later picks of its first winner
+  /**
+   * The complete picks with Round 1's first battle changed, which clears the
+   * later picks of its first winner
+   */
   changed: Picks
   completeChanged: Picks
 }
 
-// Picks in the year's bracket, with its stored combatants' IDs
+/** Picks in the year's bracket, with its stored combatants' IDs */
 const makeTestPicks = async (year: number): Promise<TestPicks> => {
   const bracket = await readSeededBracket(year)
   const papyrus = findCombatantId(bracket, `Papyrus`)
@@ -58,7 +60,7 @@ const makeTestPicks = async (year: number): Promise<TestPicks> => {
   }
 }
 
-// Creates a player in a new current year, with picks in its bracket
+/** Creates a player in a new current year, with picks in its bracket */
 const createPlayerWithPicks = async (addYear: AddYear) => {
   const { playerId, year } = await createPlayerInNewYear(addYear)
   return { playerId, year, picks: await makeTestPicks(year) }
