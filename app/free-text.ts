@@ -34,6 +34,12 @@ export const DISPLAY_NAME: FreeTextField = {
   offensiveMessage: `Use a different name. This one has a word MMMM doesn’t allow`,
 }
 
+/** The display name an educator gives a player in their contest */
+export const PLAYER_NAME: FreeTextField = {
+  label: `the player's name`,
+  maxLength: DISPLAY_NAME.maxLength,
+}
+
 /**
  * Builds a form's free-text fields. The server passes `serverFreeTextSchema`,
  * which adds the offensive word filter that the browser bundle leaves out, and

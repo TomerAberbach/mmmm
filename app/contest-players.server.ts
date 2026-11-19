@@ -1,0 +1,93 @@
+import { prisma } from './db.server.ts'
+import type { SubmissionStatus } from './generated/prisma/client.ts'
+import type { Decision } from './player-forms.ts'
+
+/** A player in an educator's contest. `status` is null for a draft */
+export type ContestPlayer = {
+  id: string
+  displayName: string
+  startedAt: Date
+  status: SubmissionStatus | null
+}
+
+/** Oldest first */
+export const readContestPlayers = async (
+  contestId: string,
+): Promise<ContestPlayer[]> => {
+  const players = await prisma.player.findMany({
+    where: { contestId },
+    orderBy: [{ createdAt: `asc` }, { id: `asc` }],
+    select: {
+      id: true,
+      displayName: true,
+      createdAt: true,
+      submission: { select: { status: true } },
+    },
+  })
+  return players.map(({ id, displayName, createdAt, submission }) => ({
+    id,
+    displayName,
+    startedAt: createdAt,
+    status: submission?.status ?? null,
+  }))
+}
+
+/** Matches players only in a contest the educator runs */
+const educatorPlayers = (educatorId: string, contestId: string) => ({
+  contestId,
+  contest: { educatorId },
+})
+
+/**
+ * Returns whether the player has a submission in a contest the educator runs.
+ * An educator can change a submission's status at any time
+ */
+export const setSubmissionStatus = async (
+  educatorId: string,
+  contestId: string,
+  playerId: string,
+  status: Decision,
+): Promise<boolean> => {
+  const { count } = await prisma.submission.updateMany({
+    where: {
+      player: { id: playerId, ...educatorPlayers(educatorId, contestId) },
+    },
+    data: { status },
+  })
+  return count > 0
+}
+
+/**
+ * Approves those of the players whose submissions are still pending, so a
+ * submission that arrives after the educator read the list waits for them.
+ * Returns how many it approved
+ */
+export const approvePendingSubmissions = async (
+  educatorId: string,
+  contestId: string,
+  playerIds: string[],
+): Promise<number> => {
+  const { count } = await prisma.submission.updateMany({
+    where: {
+      status: `PENDING`,
+      playerId: { in: playerIds },
+      player: educatorPlayers(educatorId, contestId),
+    },
+    data: { status: `APPROVED` },
+  })
+  return count
+}
+
+/** Returns whether the player is in a contest the educator runs */
+export const renamePlayer = async (
+  educatorId: string,
+  contestId: string,
+  playerId: string,
+  displayName: string,
+): Promise<boolean> => {
+  const { count } = await prisma.player.updateMany({
+    where: { id: playerId, ...educatorPlayers(educatorId, contestId) },
+    data: { displayName },
+  })
+  return count > 0
+}

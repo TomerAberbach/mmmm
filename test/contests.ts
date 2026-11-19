@@ -1,4 +1,6 @@
 import { createContest } from '../app/contests.server.ts'
+import { prisma } from '../app/db.server.ts'
+import type { SubmissionStatus } from '../app/generated/prisma/client.ts'
 import { createPlayer, readContestPlayer } from '../app/players.server.ts'
 import { createEducator } from './educators.ts'
 import { addYear } from './years.ts'
@@ -26,13 +28,14 @@ export const createContestInNewYear = async (): Promise<{
 }
 
 /**
- * Creates a player named Maya R. in the contest, and returns the player's ID
- * and personal link's secret
+ * Creates a player in the contest, and returns the player's ID and personal
+ * link's secret
  */
 export const addPlayer = async (
   contestId: string,
+  displayName = `Maya R.`,
 ): Promise<{ id: string; secret: string }> => {
-  const player = await createPlayer(contestId, `Maya R.`, () =>
+  const player = await createPlayer(contestId, displayName, () =>
     Promise.resolve(undefined),
   )
   if (!(`secret` in player)) {
@@ -53,4 +56,17 @@ export const createPlayerInNewYear = async (): Promise<{
   const { contestId, year } = await createContestInNewYear()
   const { id } = await addPlayer(contestId)
   return { playerId: id, year }
+}
+
+/**
+ * Gives the player a submission with the status, without picks, for tests of
+ * what an educator sees and changes
+ */
+export const addSubmission = async (
+  playerId: string,
+  status: SubmissionStatus = `PENDING`,
+): Promise<void> => {
+  await prisma.submission.create({
+    data: { playerId, status, picksChangedAt: new Date() },
+  })
 }

@@ -27,6 +27,18 @@ export default [
     route(`new`, `routes/contests.new.ts`),
     route(`:contestId`, `routes/contests.$contestId.tsx`),
     route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
+    route(
+      `:contestId/approve-pending`,
+      `routes/contests.$contestId.approve-pending.ts`,
+    ),
+    route(
+      `:contestId/players/:playerId/status`,
+      `routes/contests.$contestId.players.$playerId.status.ts`,
+    ),
+    route(
+      `:contestId/players/:playerId/name`,
+      `routes/contests.$contestId.players.$playerId.name.ts`,
+    ),
   ]),
   route(`play/:linkSecret`, `routes/play.tsx`, [
     index(`routes/play._index.tsx`),
