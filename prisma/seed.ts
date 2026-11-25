@@ -124,6 +124,7 @@ const seedPlayers = async (contestId: string): Promise<void> => {
     [`Jonah K.`, `PENDING`],
     [`Priya S.`, `PENDING`],
     [`Ninja Cat`, `REJECTED`],
+    [`maya r`, `PENDING`],
     [`Leo M.`, null],
   ]
   for (const [displayName, status] of players) {

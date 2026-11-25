@@ -39,22 +39,23 @@ const educatorPlayers = (educatorId: string, contestId: string) => ({
 })
 
 /**
- * Returns whether the player has a submission in a contest the educator runs.
- * An educator can change a submission's status at any time
+ * Returns how many of the players have a submission in a contest the educator
+ * runs. An educator can change a submission's status at any time
  */
 export const setSubmissionStatus = async (
   educatorId: string,
   contestId: string,
-  playerId: string,
+  playerIds: string[],
   status: Decision,
-): Promise<boolean> => {
+): Promise<number> => {
   const { count } = await prisma.submission.updateMany({
     where: {
-      player: { id: playerId, ...educatorPlayers(educatorId, contestId) },
+      playerId: { in: playerIds },
+      player: educatorPlayers(educatorId, contestId),
     },
     data: { status },
   })
-  return count > 0
+  return count
 }
 
 /**
