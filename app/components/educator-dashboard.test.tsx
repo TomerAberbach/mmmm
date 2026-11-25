@@ -45,7 +45,9 @@ test(`before any bracket is published, the educator dashboard says when contests
 })
 
 test(`an educator without contests is offered one way to create the first`, async () => {
-  await renderDashboard({ current: { year: 2027, contests: [] } })
+  await renderDashboard({
+    current: { year: 2027, contests: [], deletedCount: 0 },
+  })
 
   await expect
     .element(page.getByRole(`heading`, { name: `Start your first contest` }))
@@ -57,7 +59,9 @@ test(`an educator without contests is offered one way to create the first`, asyn
 })
 
 test(`each contest links to its page and offers its contest link`, async () => {
-  await renderDashboard({ current: { year: 2027, contests: CONTESTS } })
+  await renderDashboard({
+    current: { year: 2027, contests: CONTESTS, deletedCount: 0 },
+  })
 
   await page.getByRole(`link`, { name: `Period 5 Biology` }).click()
 
@@ -65,7 +69,9 @@ test(`each contest links to its page and offers its contest link`, async () => {
 })
 
 test(`the contest list passes accessibility checks`, async () => {
-  await renderDashboard({ current: { year: 2027, contests: CONTESTS } })
+  await renderDashboard({
+    current: { year: 2027, contests: CONTESTS, deletedCount: 0 },
+  })
 
   await expect
     .element(
@@ -78,7 +84,9 @@ test(`the contest list passes accessibility checks`, async () => {
 })
 
 test(`creating a contest opens its page`, async () => {
-  await renderDashboard({ current: { year: 2027, contests: CONTESTS } })
+  await renderDashboard({
+    current: { year: 2027, contests: CONTESTS, deletedCount: 0 },
+  })
   await page.getByRole(`button`, { name: `Create contest` }).click()
 
   await userEvent.fill(
@@ -94,7 +102,9 @@ test(`creating a contest opens its page`, async () => {
 })
 
 test(`a contest without a name isn't created`, async () => {
-  await renderDashboard({ current: { year: 2027, contests: CONTESTS } })
+  await renderDashboard({
+    current: { year: 2027, contests: CONTESTS, deletedCount: 0 },
+  })
   await page.getByRole(`button`, { name: `Create contest` }).click()
 
   await page
@@ -104,4 +114,27 @@ test(`a contest without a name isn't created`, async () => {
 
   await expect.element(page.getByText(`Enter the contest's name`)).toBeVisible()
   await expectNoAxeViolations()
+})
+
+test(`the educator dashboard links deleted contests once there are some`, async () => {
+  await renderDashboard({
+    current: { year: 2027, contests: [], deletedCount: 1 },
+  })
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Deleted contests (1)` }))
+    .toHaveAttribute(`href`, `/contests/trash`)
+})
+
+test(`the educator dashboard leaves out deleted contests without any`, async () => {
+  await renderDashboard({
+    current: { year: 2027, contests: CONTESTS, deletedCount: 0 },
+  })
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Period 2 Biology`, exact: true }))
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`link`, { name: /^Deleted contests/u }))
+    .not.toBeInTheDocument()
 })

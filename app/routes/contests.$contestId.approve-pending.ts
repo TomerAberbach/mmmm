@@ -2,7 +2,7 @@ import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.approve-pending.ts'
 import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { approvePendingSubmissions } from '~/contest-players.server.ts'
-import { approvePendingSchema } from '~/player-forms.ts'
+import { idsSchema } from '~/id-list.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
@@ -13,7 +13,7 @@ export const action = async ({
   context,
   params,
 }: Route.ActionArgs): Promise<ConfirmResult> => {
-  const parsed = approvePendingSchema.safeParse(
+  const parsed = idsSchema.safeParse(
     Object.fromEntries(await request.formData()),
   )
   if (!parsed.success) {
@@ -22,7 +22,7 @@ export const action = async ({
   await approvePendingSubmissions(
     readRequiredEducator(context).id,
     params.contestId,
-    parsed.data.playerIds,
+    parsed.data.ids,
   )
   return { ok: true }
 }

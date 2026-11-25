@@ -51,6 +51,7 @@ test(`a contest's link shows the contest and its educator`, async () => {
   expect(contest).toStrictEqual({
     id: contestId,
     name: `Period 6 Biology`,
+    isDeleted: false,
     year,
     educatorName: `Ms. Rivera`,
   })

@@ -7,7 +7,20 @@ import { expectNoAxeViolations } from '../../test/axe.ts'
 import { contestNameSchema } from '../contest-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { ContestDetails } from './contest-details.tsx'
+import type { ContestPlayer } from '~/contest-players.server.ts'
 import type { Contest } from '~/contests.server.ts'
+
+const STARTED_AT = new Date(`2027-03-14T16:05:00Z`)
+
+const PLAYERS: ContestPlayer[] = [
+  {
+    id: `maya`,
+    displayName: `Maya R.`,
+    startedAt: STARTED_AT,
+    status: `PENDING`,
+  },
+  { id: `leo`, displayName: `Leo M.`, startedAt: STARTED_AT, status: null },
+]
 
 /** The action saves the name, and the loader reads it back */
 const renderContest = async () => {
@@ -23,7 +36,11 @@ const renderContest = async () => {
       loader: () => contest,
       HydrateFallback: () => null,
       Component: () => (
-        <ContestDetails contest={useLoaderData<Contest>()} players={[]} />
+        <ContestDetails
+          contest={useLoaderData<Contest>()}
+          players={PLAYERS}
+          deletedCount={2}
+        />
       ),
     },
     {
@@ -91,4 +108,24 @@ test(`Escape closes the contest's name without saving`, async () => {
   await expect
     .element(page.getByRole(`heading`, { name: `Period 2 Biology` }))
     .toBeVisible()
+})
+
+test(`deleting a contest asks first, counting its submissions and drafts`, async () => {
+  await renderContest()
+
+  await page.getByRole(`button`, { name: `Delete contest` }).click()
+
+  await expect
+    .element(page.getByRole(`alertdialog`))
+    .toHaveTextContent(
+      `Delete Period 2 Biology?Its 1 submission and 1 draft go with it, and its contest link and personal links stop working. You can restore it until next year’s bracket is published.CancelDelete contest`,
+    )
+})
+
+test(`the contest page links its trash`, async () => {
+  await renderContest()
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Trash (2)` }))
+    .toHaveAttribute(`href`, `/contests/period-2/trash`)
 })

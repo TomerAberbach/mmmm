@@ -4,11 +4,15 @@ import { readContestByLink } from './contests.server.ts'
 import type { ContestByLink } from './contests.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 
-const contestContext = createContext<ContestByLink>()
+/** A contest outside the trash, which its contest link opened */
+export type PlayContest = Omit<ContestByLink, `isDeleted`>
+
+const contestContext = createContext<PlayContest>()
 
 /**
- * Answers a link that matches no contest with the not-found page. Routes below
- * it read the contest with `readPlayContest`
+ * Answers a link that matches no contest with the not-found page, and sends a
+ * deleted contest's players to a page that says so. Routes below it read the
+ * contest with `readPlayContest`
  */
 export const loadPlayContest: MiddlewareFunction<Response> = async (
   { params, context },
@@ -20,13 +24,17 @@ export const loadPlayContest: MiddlewareFunction<Response> = async (
     // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw data(null, { status: 404 })
   }
-  context.set(contestContext, contest)
+  const { isDeleted, ...playContest } = contest
+  if (isDeleted) {
+    return redirect(href(`/contest-removed`))
+  }
+  context.set(contestContext, playContest)
   return next()
 }
 
 export const readPlayContest = (
   context: Readonly<RouterContextProvider>,
-): ContestByLink => context.get(contestContext)
+): PlayContest => context.get(contestContext)
 
 export type RequiredPlayer = {
   id: string

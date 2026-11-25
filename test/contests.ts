@@ -70,3 +70,11 @@ export const addSubmission = async (
     data: { playerId, status, picksChangedAt: new Date() },
   })
 }
+
+export const readEducatorId = async (contestId: string): Promise<string> =>
+  (
+    await prisma.contest.findUniqueOrThrow({
+      where: { id: contestId },
+      select: { educatorId: true },
+    })
+  ).educatorId

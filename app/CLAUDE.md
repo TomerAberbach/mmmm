@@ -24,8 +24,9 @@ app
   `components/button.tsx`. Style a link as a button with `ButtonLink`
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its route
   action returns a `ConfirmResult`, and the dialog shows any `error`. Pass
-  `onConfirm` instead for a change the page makes itself. Build any other modal
-  dialog on `ModalFrame` from `components/modal-frame.tsx`
+  `onConfirm` instead for a change the page makes itself, and `isOpen` and
+  `onOpenChange` instead of `trigger` to open it from a menu. Build any other
+  modal dialog on `ModalFrame` from `components/modal-frame.tsx`
 - Show an instant in the reader's time zone with `LocalTime` from
   `components/local-time.tsx`. Formatting it during the server render shows the
   server's time zone and fails hydration
@@ -199,6 +200,13 @@ app
 - Approve, reject, and rename a contest's players only through
   `contest-players.server.ts`, whose writes match a player by its contest and
   the signed-in educator's ID, so another educator's request changes nothing
+- Deleting a contest or player sets `deletedAt`, which moves it to the trash.
+  Filter each query of either with `CONTEST_OUTSIDE_TRASH`,
+  `PLAYER_OUTSIDE_TRASH`, or `educatorPlayers` from `outside-trash.server.ts`,
+  unless it reads the trash, and recheck `deletedAt` inside a transaction that
+  adds to them. Delete, restore, and erase only through `trash.server.ts`
+- Answer a link that can work again, such as a deleted player's, with a 404.
+  Chromium caches a 410 forever
 - Send the picker's requests through `usePicksRequests` in
   `components/picks-requests.ts`, which sends one at a time so the server
   applies them in order. React Router's fetchers cancel an earlier request in

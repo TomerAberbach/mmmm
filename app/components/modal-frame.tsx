@@ -4,17 +4,26 @@ import type { DialogProps } from 'react-aria-components'
 
 /**
  * The overlay, the box, and the title every modal dialog shares. Place it in a
- * DialogTrigger after the trigger
+ * DialogTrigger after the trigger, or pass `isOpen` and `onOpenChange` for a
+ * dialog without one
  */
 export const ModalFrame = ({
   title,
+  isOpen,
+  onOpenChange,
   children,
   ...props
 }: Omit<DialogProps, `className` | `children`> & {
   title: string
+  isOpen?: boolean
+  onOpenChange?: (isOpen: boolean) => void
   children: ReactNode
 }) => (
-  <ModalOverlay className='fixed inset-0 z-10 flex items-center justify-center bg-ink/40 p-4'>
+  <ModalOverlay
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    className='fixed inset-0 z-10 flex items-center justify-center bg-ink/40 p-4'
+  >
     <Modal className='w-full max-w-lg'>
       <Dialog
         {...props}

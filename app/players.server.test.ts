@@ -11,16 +11,16 @@ import type { LimitRefusal } from './limits.server.ts'
 import {
   createPlayer,
   readContestPlayer,
-  readPlayerByLink,
+  readPersonalLink,
 } from './players.server.ts'
 
 test(`a player's personal link finds their contest`, async () => {
   const { contestId } = await createContestInNewYear()
   const { secret } = await addPlayer(contestId)
 
-  const player = await readPlayerByLink(secret)
+  const player = await readPersonalLink(secret)
 
-  expect(player).toMatchObject({ contestId })
+  expect(player).toMatchObject({ state: `active`, contestId })
 })
 
 test(`a personal link finds the player only in their own contest`, async () => {
@@ -39,7 +39,7 @@ test(`a personal link finds the player only in their own contest`, async () => {
 })
 
 test(`a link that matches no player finds nothing`, async () => {
-  await expect(readPlayerByLink(`not-a-personal-link`)).resolves.toBeNull()
+  await expect(readPersonalLink(`not-a-personal-link`)).resolves.toBeNull()
 })
 
 test(`the database stores no working personal link`, async () => {

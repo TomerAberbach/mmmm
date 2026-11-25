@@ -22,7 +22,7 @@ export const action = async ({
   const count = await setSubmissionStatus(
     readRequiredEducator(context).id,
     params.contestId,
-    parsed.data.playerIds,
+    parsed.data.ids,
     parsed.data.status,
   )
   if (count > 0) {
@@ -30,7 +30,7 @@ export const action = async ({
   }
   return {
     error:
-      parsed.data.playerIds.length === 1
+      parsed.data.ids.length === 1
         ? `This bracket is gone or not submitted. Reload the page`
         : `These brackets are gone or not submitted. Reload the page`,
   }

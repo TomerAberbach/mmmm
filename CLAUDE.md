@@ -41,6 +41,7 @@ pnpm typecheck  # Generate route types, then run tsc
 pnpm knip       # Find unused files, dependencies, and exports
 pnpm db:reset   # Push the schema to an empty database, regenerate the client, and reseed
 pnpm db:seed
+pnpm job:daily  # Run the daily job by hand. It also runs at startup and each night
 fly deploy --ha=false   # Deploy staging. See docs/operations.md
 
 # Run one test file

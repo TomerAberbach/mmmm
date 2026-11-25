@@ -2,6 +2,8 @@
 
 `app.ts` hands requests to React Router with the request's CSP nonce.
 
+- Export what `server.ts` runs against the database, such as the daily job, from
+  `app.ts`. Importing it in `server.ts` opens a second connection pool
 - Logs drop query strings. Add each path segment that holds a secret to
   `SECRET_PATH` in `logging.ts`
 - The content security policy blocks `<style>` elements, except ones whose hash

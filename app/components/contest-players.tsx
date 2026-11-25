@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import { useId, useState } from 'react'
-import type { KeyboardEvent, MouseEvent } from 'react'
+import type { KeyboardEvent, MouseEvent, ReactElement } from 'react'
 import { Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components'
 import { href, useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
@@ -8,6 +8,7 @@ import { Button } from './button.tsx'
 import { Checkbox } from './checkbox.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import type { ConfirmResult } from './confirm-dialog.tsx'
+import { FetcherError } from './fetcher-error.tsx'
 import { FormError } from './form-error.tsx'
 import { LocalTime } from './local-time.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
@@ -17,18 +18,21 @@ import { useValidatedForm } from './use-validated-form.ts'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
+import { formatCount } from '~/format-count.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import type { SubmissionStatus } from '~/generated/prisma/browser.ts'
-import { joinPlayerIds, playerNameSchema } from '~/player-forms.ts'
+import { joinIds } from '~/id-list.ts'
+import { playerNameSchema } from '~/player-forms.ts'
 import type { Decision } from '~/player-forms.ts'
 import { findPossibleDuplicates } from '~/possible-duplicates.ts'
+import { describeStatus } from '~/submission-status.ts'
 
 /** Each section's players, by submission status, or null for drafts */
-const SECTIONS: { status: SubmissionStatus | null; title: string }[] = [
-  { status: `PENDING`, title: `Pending` },
-  { status: `APPROVED`, title: `Approved` },
-  { status: `REJECTED`, title: `Rejected` },
-  { status: null, title: `Started, not submitted` },
+const SECTIONS: (SubmissionStatus | null)[] = [
+  `PENDING`,
+  `APPROVED`,
+  `REJECTED`,
+  null,
 ]
 
 /** Each decision's button, and what a screen reader hears once it's made */
@@ -46,11 +50,15 @@ const CHANGES: Record<SubmissionStatus, Decision[]> = {
   REJECTED: [`APPROVED`],
 }
 
+/** A draft can't be approved or rejected */
+const listChanges = ({ status }: ContestPlayer): Decision[] =>
+  status ? CHANGES[status] : []
+
 /**
  * Lists a contest's players in sections by status. Approving or rejecting
  * moves a row to its new section, so focus moves to the next row in the
  * section it left, and a screen reader hears the change. Selecting rows, in
- * any sections, opens a bar that approves or rejects them together
+ * any sections, opens a bar that approves, rejects, or deletes them together
  */
 export const ContestPlayers = ({
   contestId,
@@ -64,18 +72,6 @@ export const ContestPlayers = ({
   const [moving, setMoving] = useState<Moving>()
   const selection = useSelection(players)
 
-  if (players.length === 0) {
-    return (
-      <section className='flex flex-col gap-3'>
-        <h2 className={SECTION_HEADING_CLASS_NAME}>Players</h2>
-        <p className='max-w-prose text-muted'>
-          No one has started a bracket yet. Share the contest link with your
-          players.
-        </p>
-      </section>
-    )
-  }
-
   const isSelecting = selection.players.length > 0
   const clearOnEscape = (event: KeyboardEvent) => {
     if (event.key === `Escape` && !event.defaultPrevented && isSelecting) {
@@ -83,21 +79,31 @@ export const ContestPlayers = ({
     }
   }
 
-  const startMove = (move: Omit<Moving, `selectedIds`>) => {
+  const startMove = (move: Moving) => {
     // A saved rename leaves its row's editor open in state, and the row's new
     // section would show it again
     setEditingId(id =>
       id !== undefined && move.playerIds.includes(id) ? undefined : id,
     )
     setAnnouncement(``)
-    setMoving({ ...move, selectedIds: selection.ids })
+    setMoving(move)
   }
   const startGroupMove = (movingPlayers: ContestPlayer[], status: Decision) =>
     startMove({
       playerIds: movingPlayers.map(({ id }) => id),
+      selectedIds: selection.ids,
       status,
       focusTargetId: status,
       announcement: `${DECISIONS[status].done} ${formatCount(movingPlayers.length, `bracket`)}`,
+    })
+
+  const startGroupDelete = (deletedPlayers: ContestPlayer[]) =>
+    startMove({
+      playerIds: deletedPlayers.map(({ id }) => id),
+      selectedIds: selection.ids,
+      status: `DELETED`,
+      focusTargetId: LIST_TARGET,
+      announcement: `Deleted ${formatCount(deletedPlayers.length, `bracket`)}`,
     })
 
   const duplicates = findPossibleDuplicates(players)
@@ -114,20 +120,27 @@ export const ContestPlayers = ({
       setMoving(undefined)
       selection.remove(moving.selectedIds)
       setAnnouncement(moving.announcement)
-      ;(element.querySelector<HTMLElement>(`button:enabled`) ?? element).focus()
+      const target = targetId === LIST_TARGET ? `h2` : `button:enabled`
+      ;(element.querySelector<HTMLElement>(target) ?? element).focus()
     }
 
   return (
     // Escape clears the selection from any of the list's controls
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div className='flex flex-col gap-8' onKeyDown={clearOnEscape}>
+    <div
+      ref={focusAfterMove(LIST_TARGET)}
+      className='flex flex-col gap-8'
+      onKeyDown={clearOnEscape}
+    >
       <p className='sr-only' aria-live='polite'>
         {announcement}
       </p>
       <p className='sr-only' aria-live='polite'>
         {isSelecting ? `${selection.players.length} selected` : ``}
       </p>
-      {SECTIONS.map(({ status, title }) => {
+      {players.length === 0 ? <NoPlayers /> : null}
+      {SECTIONS.map(status => {
+        const title = describeStatus(status)
         const sectionPlayers = players.filter(
           player => player.status === status,
         )
@@ -139,21 +152,17 @@ export const ContestPlayers = ({
             key={title}
             title={title}
             headingRef={focusAfterMove(status)}
-            selection={
-              status === null
-                ? null
-                : {
-                    label: `Select all ${title.toLowerCase()}`,
-                    selectedCount: sectionPlayers.filter(({ id }) =>
-                      selection.ids.has(id),
-                    ).length,
-                    onChange: isSelected =>
-                      selection.change(
-                        sectionPlayers.map(({ id }) => id),
-                        isSelected,
-                      ),
-                  }
-            }
+            selection={{
+              label: `Select all ${title.toLowerCase()}`,
+              selectedCount: sectionPlayers.filter(({ id }) =>
+                selection.ids.has(id),
+              ).length,
+              onChange: isSelected =>
+                selection.change(
+                  sectionPlayers.map(({ id }) => id),
+                  isSelected,
+                ),
+            }}
             action={
               status === `PENDING` ? (
                 <ApprovePendingButton
@@ -184,10 +193,21 @@ export const ContestPlayers = ({
                 onDeciding={decision =>
                   startMove({
                     playerIds: [player.id],
+                    selectedIds: new Set([player.id]),
                     status: decision,
                     focusTargetId:
                       findNeighborId(sectionPlayers, player.id) ?? player.id,
                     announcement: `${DECISIONS[decision].done} ${player.displayName}`,
+                  })
+                }
+                onDeleting={() =>
+                  startMove({
+                    playerIds: [player.id],
+                    selectedIds: new Set([player.id]),
+                    status: `DELETED`,
+                    focusTargetId:
+                      findNeighborId(sectionPlayers, player.id) ?? LIST_TARGET,
+                    announcement: `Deleted ${player.displayName}`,
                   })
                 }
               />
@@ -201,6 +221,7 @@ export const ContestPlayers = ({
           players={selection.players}
           fetcher={selection.fetcher}
           onDeciding={startGroupMove}
+          onDeleting={startGroupDelete}
           onClear={selection.clear}
         />
       ) : null}
@@ -208,10 +229,22 @@ export const ContestPlayers = ({
   )
 }
 
-const NO_IDS: ReadonlySet<string> = new Set()
+const NoPlayers = () => (
+  <section className='flex flex-col gap-3'>
+    <h2 tabIndex={-1} className={SECTION_HEADING_CLASS_NAME}>
+      Players
+    </h2>
+    <p className='max-w-prose text-muted'>
+      No one has started a bracket yet. Share the contest link with your
+      players.
+    </p>
+  </section>
+)
 
-/** Drafts can't be approved or rejected, so only submitted players are selected */
-type SubmittedPlayer = ContestPlayer & { status: SubmissionStatus }
+/** Focuses the list's first heading, for a move that leaves no row to focus */
+const LIST_TARGET = `LIST`
+
+const NO_IDS: ReadonlySet<string> = new Set()
 
 /** The selected players, across sections, and the request that decides them */
 const useSelection = (players: ContestPlayer[]) => {
@@ -245,10 +278,7 @@ const useSelection = (players: ContestPlayer[]) => {
 
   return {
     ids,
-    players: players.filter(
-      (player): player is SubmittedPlayer =>
-        player.status !== null && ids.has(player.id),
-    ),
+    players: players.filter(({ id }) => ids.has(id)),
     fetcher,
     change,
     remove: (removedIds: ReadonlySet<string>) =>
@@ -259,22 +289,56 @@ const useSelection = (players: ContestPlayer[]) => {
 
 const playerRowId = (playerId: string): string => `player-${playerId}`
 
-/** Rows waiting to move to another section once the page reloads them */
+/**
+ * Rows waiting to move to another section, or to the trash, once the page
+ * reloads them
+ */
 type Moving = {
   playerIds: string[]
-  status: Decision
-  /** The ID of the player whose row takes focus, or a section's status */
+  status: Decision | `DELETED`
+  /** A row's player ID, a section's status, or LIST_TARGET */
   focusTargetId: string
-  /** The selection when the move began, which clears once it's done */
+  /** The players to unselect once the move is done */
   selectedIds: ReadonlySet<string>
   announcement: string
 }
 
 const isShowingMove = (moving: Moving, players: ContestPlayer[]): boolean =>
-  players.some(
-    ({ id, status }) =>
-      moving.playerIds.includes(id) && status === moving.status,
+  moving.status === `DELETED`
+    ? !players.some(({ id }) => moving.playerIds.includes(id))
+    : players.some(
+        ({ id, status }) =>
+          moving.playerIds.includes(id) && status === moving.status,
+      )
+
+const submitStatus = (
+  fetcher: FetcherWithComponents<ConfirmResult>,
+  contestId: string,
+  players: ContestPlayer[],
+  status: Decision,
+) => {
+  void fetcher.submit(
+    { status, ids: joinIds(players) },
+    {
+      method: `post`,
+      action: href(`/contests/:contestId/players/status`, { contestId }),
+    },
   )
+}
+
+const submitDelete = (
+  fetcher: FetcherWithComponents<ConfirmResult>,
+  contestId: string,
+  players: ContestPlayer[],
+) => {
+  void fetcher.submit(
+    { ids: joinIds(players) },
+    {
+      method: `post`,
+      action: href(`/contests/:contestId/players/delete`, { contestId }),
+    },
+  )
+}
 
 /** Stays at the window's bottom while the list scrolls under it */
 const SelectionBar = ({
@@ -282,23 +346,23 @@ const SelectionBar = ({
   players,
   fetcher,
   onDeciding,
+  onDeleting,
   onClear,
 }: {
   contestId: string
-  players: SubmittedPlayer[]
+  players: ContestPlayer[]
   fetcher: FetcherWithComponents<ConfirmResult>
-  onDeciding: (players: SubmittedPlayer[], status: Decision) => void
+  onDeciding: (players: ContestPlayer[], status: Decision) => void
+  onDeleting: (players: ContestPlayer[]) => void
   onClear: () => void
 }) => {
-  const decide = (changedPlayers: SubmittedPlayer[], status: Decision) => {
+  const decide = (changedPlayers: ContestPlayer[], status: Decision) => {
     onDeciding(changedPlayers, status)
-    void fetcher.submit(
-      { status, playerIds: joinPlayerIds(changedPlayers) },
-      {
-        method: `post`,
-        action: href(`/contests/:contestId/players/status`, { contestId }),
-      },
-    )
+    submitStatus(fetcher, contestId, changedPlayers, status)
+  }
+  const deleteAll = () => {
+    onDeleting(players)
+    submitDelete(fetcher, contestId, players)
   }
   return (
     <fieldset
@@ -319,7 +383,7 @@ const SelectionBar = ({
       <div className='flex flex-wrap gap-3'>
         {DECISION_ORDER.map(status => {
           const changedPlayers = players.filter(player =>
-            CHANGES[player.status].includes(status),
+            listChanges(player).includes(status),
           )
           return changedPlayers.length > 0 ? (
             <Button
@@ -332,27 +396,56 @@ const SelectionBar = ({
             </Button>
           ) : null
         })}
+        <DeletePlayersDialog
+          players={players}
+          onConfirm={deleteAll}
+          trigger={
+            <Button variant='secondary' isPending={fetcher.state !== `idle`}>
+              Delete {players.length}
+            </Button>
+          }
+        />
       </div>
       <FetcherError fetcher={fetcher} />
     </fieldset>
   )
 }
 
-/** Such as "1 bracket" or "3 pending brackets" */
-const formatCount = (count: number, noun: string): string =>
-  count === 1 ? `1 ${noun}` : `${count} ${noun}s`
-
-/** A ConfirmResult's error, once its request finishes */
-const FetcherError = ({
-  fetcher,
+const DeletePlayersDialog = ({
+  players,
+  ...props
 }: {
-  fetcher: FetcherWithComponents<ConfirmResult>
-}) =>
-  fetcher.state === `idle` && fetcher.data && `error` in fetcher.data ? (
-    <p role='alert' className='mt-1 font-semibold text-danger'>
-      {fetcher.data.error}
-    </p>
-  ) : null
+  players: ContestPlayer[]
+  onConfirm: () => void
+} & (
+  | { trigger: ReactElement }
+  | { isOpen: boolean; onOpenChange: (isOpen: boolean) => void }
+)) => {
+  const [first] = players
+  const only = players.length === 1 ? first : undefined
+  const count = formatCount(players.length, `bracket`)
+  return (
+    <ConfirmDialog
+      {...props}
+      title={
+        only ? `Delete ${only.displayName}’s bracket?` : `Delete ${count}?`
+      }
+      confirmLabel={only ? `Delete bracket` : `Delete ${count}`}
+    >
+      <p>
+        {only
+          ? `It moves to this contest’s trash, and ${only.displayName}’s personal link stops working. You can restore it until next year’s bracket is published.`
+          : `${listNames(players) ?? `The ${count}`} move to this contest’s trash, and their personal links stop working. You can restore them until next year’s bracket is published.`}
+      </p>
+    </ConfirmDialog>
+  )
+}
+
+/** Null for too many to name */
+const listNames = (players: ContestPlayer[]): string | null =>
+  players.length <= 3
+    ? LIST_FORMAT.format(players.map(({ displayName }) => displayName))
+    : null
 
 /** The next row, or the previous one for the last row */
 const findNeighborId = (
@@ -372,17 +465,16 @@ const PlayerSection = ({
 }: {
   title: string
   headingRef: (element: HTMLHeadingElement | null) => void
-  /** Null for players who can't be selected */
   selection: {
     label: string
     selectedCount: number
     onChange: (isSelected: boolean) => void
-  } | null
+  }
   action: React.ReactNode
   children: React.ReactNode[]
 }) => {
   const headingId = useId()
-  const isAllSelected = selection?.selectedCount === children.length
+  const isAllSelected = selection.selectedCount === children.length
   return (
     <section aria-labelledby={headingId} className='flex flex-col gap-3'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
@@ -401,18 +493,16 @@ const PlayerSection = ({
       <table className='w-full table-fixed border-collapse max-sm:block'>
         <thead className='max-sm:block'>
           <tr className='border-b-2 border-ink text-start font-condensed text-sm font-bold tracking-wider text-muted uppercase max-sm:block'>
+            {/* The rule misses the label inside the checkbox */}
+            {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
             <td className='w-10 px-2 py-1.5 max-sm:block max-sm:w-auto max-sm:px-0 print:hidden'>
-              {selection ? (
-                <Checkbox
-                  isSelected={isAllSelected}
-                  isIndeterminate={
-                    selection.selectedCount > 0 && !isAllSelected
-                  }
-                  onChange={selection.onChange}
-                >
-                  <span className='sm:sr-only'>{selection.label}</span>
-                </Checkbox>
-              ) : null}
+              <Checkbox
+                isSelected={isAllSelected}
+                isIndeterminate={selection.selectedCount > 0 && !isAllSelected}
+                onChange={selection.onChange}
+              >
+                <span className='sm:sr-only'>{selection.label}</span>
+              </Checkbox>
             </td>
             <th className='px-2 py-1.5 text-start max-sm:hidden'>Name</th>
             <th className='w-44 px-2 py-1.5 text-start max-sm:hidden'>
@@ -446,7 +536,7 @@ const ApprovePendingButton = ({
   const approve = () => {
     onApproving()
     void fetcher.submit(
-      { playerIds: joinPlayerIds(players) },
+      { ids: joinIds(players) },
       {
         method: `post`,
         action: href(`/contests/:contestId/approve-pending`, { contestId }),
@@ -467,9 +557,7 @@ const ApprovePendingButton = ({
         onConfirm={approve}
       >
         <p>
-          {count <= 3
-            ? `${LIST_FORMAT.format(players.map(({ displayName }) => displayName))} will be approved.`
-            : `The ${formatCount(count, `pending bracket`)} will be approved.`}
+          {`${listNames(players) ?? `The ${formatCount(count, `pending bracket`)}`} will be approved.`}
           {` `}
           You can reject any of them later.
         </p>
@@ -492,6 +580,7 @@ const PlayerRow = ({
   isEditing,
   setIsEditing,
   onDeciding,
+  onDeleting,
 }: {
   contestId: string
   player: ContestPlayer
@@ -504,19 +593,19 @@ const PlayerRow = ({
   isEditing: boolean
   setIsEditing: (isEditing: boolean) => void
   onDeciding: (status: Decision) => void
+  onDeleting: () => void
 }) => {
   const rename = useInlineEdit(isEditing, setIsEditing)
-  const statusFetcher = useFetcher<ConfirmResult>()
+  const rowFetcher = useFetcher<ConfirmResult>()
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
   const decide = (status: Decision) => {
     onDeciding(status)
-    void statusFetcher.submit(
-      { status, playerIds: joinPlayerIds([player]) },
-      {
-        method: `post`,
-        action: href(`/contests/:contestId/players/status`, { contestId }),
-      },
-    )
+    submitStatus(rowFetcher, contestId, [player], status)
+  }
+  const deletePlayer = () => {
+    onDeleting()
+    submitDelete(rowFetcher, contestId, [player])
   }
 
   return (
@@ -527,11 +616,9 @@ const PlayerRow = ({
       className={`border-b border-muted-light max-sm:relative max-sm:grid max-sm:gap-1 max-sm:py-3 max-sm:ps-9 ${isSelected ? `bg-accent-soft/20 print:bg-transparent` : ``}`}
     >
       <td className='px-2 py-2 max-sm:absolute max-sm:start-0 max-sm:top-3 max-sm:p-0 print:hidden'>
-        {player.status ? (
-          <Checkbox isSelected={isSelected} onChange={onSelect} hideLabel>
-            {`Select ${player.displayName}`}
-          </Checkbox>
-        ) : null}
+        <Checkbox isSelected={isSelected} onChange={onSelect} hideLabel>
+          {`Select ${player.displayName}`}
+        </Checkbox>
       </td>
       <td className='px-2 py-2 font-semibold wrap-break-word max-sm:p-0'>
         {rename.isOpen ? (
@@ -560,24 +647,32 @@ const PlayerRow = ({
       <td className='px-2 py-2 text-end max-sm:p-0 max-sm:pt-1 max-sm:text-start print:hidden'>
         {rename.isOpen ? null : (
           <div className='inline-flex flex-wrap justify-end gap-2 max-sm:justify-start'>
-            {player.status
-              ? CHANGES[player.status].map(status => (
-                  <Button
-                    key={status}
-                    variant={status === `APPROVED` ? `primary` : `secondary`}
-                    isDisabled={isSelecting}
-                    isPending={statusFetcher.state !== `idle`}
-                    aria-label={`${DECISIONS[status].label} ${player.displayName}`}
-                    onPress={() => decide(status)}
-                  >
-                    {DECISIONS[status].label}
-                  </Button>
-                ))
-              : null}
-            <PlayerMenu player={player} onRename={rename.open} />
+            {listChanges(player).map(status => (
+              <Button
+                key={status}
+                variant={status === `APPROVED` ? `primary` : `secondary`}
+                isDisabled={isSelecting}
+                isPending={rowFetcher.state !== `idle`}
+                aria-label={`${DECISIONS[status].label} ${player.displayName}`}
+                onPress={() => decide(status)}
+              >
+                {DECISIONS[status].label}
+              </Button>
+            ))}
+            <PlayerMenu
+              player={player}
+              onRename={rename.open}
+              onDelete={() => setIsConfirmingDelete(true)}
+            />
+            <DeletePlayersDialog
+              players={[player]}
+              isOpen={isConfirmingDelete}
+              onOpenChange={setIsConfirmingDelete}
+              onConfirm={deletePlayer}
+            />
           </div>
         )}
-        <FetcherError fetcher={statusFetcher} />
+        <FetcherError fetcher={rowFetcher} />
       </td>
     </tr>
   )
@@ -620,9 +715,11 @@ const DuplicatesNote = ({ duplicates }: { duplicates: ContestPlayer[] }) =>
 const PlayerMenu = ({
   player,
   onRename,
+  onDelete,
 }: {
   player: ContestPlayer
   onRename: () => void
+  onDelete: () => void
 }) => (
   <MenuTrigger>
     <Button variant='secondary' aria-label={`More for ${player.displayName}`}>
@@ -634,22 +731,20 @@ const PlayerMenu = ({
     >
       <Menu
         className='outline-none'
-        onAction={key => {
-          if (key === `rename`) {
-            onRename()
-          }
-        }}
+        onAction={key => (key === `rename` ? onRename() : onDelete())}
       >
-        <MenuItem
-          id='rename'
-          className='cursor-pointer px-4 py-1.5 font-semibold outline-none data-focused:bg-accent-soft/40'
-        >
+        <MenuItem id='rename' className={MENU_ITEM_CLASS_NAME}>
           Rename
+        </MenuItem>
+        <MenuItem id='delete' className={MENU_ITEM_CLASS_NAME}>
+          Delete
         </MenuItem>
       </Menu>
     </Popover>
   </MenuTrigger>
 )
+
+const MENU_ITEM_CLASS_NAME = `cursor-pointer px-4 py-1.5 font-semibold outline-none data-focused:bg-accent-soft/40`
 
 const PLAYER_NAME_SCHEMA = playerNameSchema(freeTextSchema)
 

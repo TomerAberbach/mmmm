@@ -93,6 +93,8 @@ const renderBracket = async ({
             submitted={data.submitted}
             picksPath='/play/contest/bracket/picks'
             forgetPath='/forgotten'
+            deletePath='/deleted'
+            playerId='maya'
           />
         )
       },
@@ -104,6 +106,11 @@ const renderBracket = async ({
         return redirect(`/forgotten`)
       },
       Component: () => <p>Forgotten</p>,
+    },
+    {
+      path: `/deleted`,
+      action: () => redirect(`/deleted`),
+      Component: () => <p>Deleted</p>,
     },
   ])
   await render(<Stub />)
@@ -379,4 +386,21 @@ test(`the picker passes accessibility checks`, async () => {
 
   await expect.element(firstBattle()).toBeVisible()
   await expectNoAxeViolations()
+})
+
+test(`a player deletes their bracket after confirming`, async () => {
+  await renderBracket()
+  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
+  await expect
+    .element(page.getByRole(`alertdialog`))
+    .toHaveTextContent(
+      `Delete your bracket?Your personal link stops working. If you change your mind, ask your educator to restore it within 7 days. After that it’s erased for good.CancelDelete my bracket`,
+    )
+
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete my bracket` })
+    .click()
+
+  await expect.element(page.getByText(`Deleted`, { exact: true })).toBeVisible()
 })

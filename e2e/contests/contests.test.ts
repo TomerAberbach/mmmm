@@ -247,3 +247,118 @@ test(`a player whose educator rejects their bracket sees why at their personal l
     ),
   ).toBeVisible()
 })
+
+test(`a player whose educator deletes their bracket starts a new one, until it's restored`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, link)
+  const secret = await readPersonalLinkSecret(page)
+  await educator.reload()
+  await educator.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await educator.getByRole(`menuitem`, { name: `Delete` }).click()
+  await educator.getByRole(`button`, { name: `Delete bracket` }).click()
+  await expect(educator.getByRole(`link`, { name: `Trash (1)` })).toBeVisible()
+
+  await page.goto(`/my-bracket/${secret}`)
+  await page.getByRole(`link`, { name: `Start a new bracket` }).click()
+  await expect(
+    page.getByRole(`button`, { name: `Start my bracket` }),
+  ).toBeVisible()
+  await educator.getByRole(`link`, { name: `Trash (1)` }).click()
+  await educator.getByRole(`button`, { name: `Restore Maya R.` }).click()
+  await expect(educator.getByText(`The trash is empty`)).toBeFocused()
+  await page.goto(`/my-bracket/${secret}`)
+
+  await expect(
+    page.getByRole(`heading`, { name: `Maya R.’s bracket` }),
+  ).toBeVisible()
+})
+
+test(`a player deletes their own bracket, which the contest's trash marks`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, link)
+  const secret = await readPersonalLinkSecret(page)
+
+  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete my bracket` })
+    .click()
+
+  await expect(
+    page.getByRole(`heading`, { name: `Your bracket is deleted` }),
+  ).toBeVisible()
+  const response = await page.goto(`/my-bracket/${secret}`)
+  expect(response?.status()).toBe(404)
+  await expect(
+    page.getByRole(`heading`, { name: `This bracket was deleted` }),
+  ).toBeVisible()
+  await educator.reload()
+  await educator.getByRole(`link`, { name: `Trash (1)` }).click()
+  await expect(educator.getByText(/^Deleted by player/u)).toBeVisible()
+})
+
+test(`a deleted contest turns off its links until it's restored`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await educator.getByRole(`button`, { name: `Delete contest` }).click()
+  await educator
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete contest` })
+    .click()
+  await educator.getByRole(`link`, { name: `Deleted contests (1)` }).click()
+
+  await page.goto(link)
+  await expect(
+    page.getByRole(`heading`, { name: `Your educator removed this contest` }),
+  ).toBeVisible()
+  await educator
+    .getByRole(`button`, { name: `Restore Period 4 Biology` })
+    .click()
+  await expect(educator.getByText(`The trash is empty`)).toBeFocused()
+  await page.goto(link)
+
+  await expect(
+    page.getByRole(`button`, { name: `Start my bracket` }),
+  ).toBeVisible()
+})
+
+test(`deleting from a page left open by another player deletes neither bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const nextPlayer = await page.context().newPage()
+  await nextPlayer.goto(link)
+  await nextPlayer
+    .getByRole(`button`, { name: `Not you? Start a new bracket` })
+    .click()
+  await expect(
+    nextPlayer.getByRole(`button`, { name: `Start my bracket` }),
+  ).toBeVisible()
+  await startBracketAsMaya(nextPlayer, link)
+
+  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete my bracket` })
+    .click()
+
+  await expect(
+    page.getByText(
+      `Your bracket wasn’t deleted. Open your personal link and try again`,
+    ),
+  ).toBeVisible()
+  await nextPlayer.reload()
+  await expect(
+    nextPlayer.getByRole(`heading`, { name: `Maya R.’s bracket` }),
+  ).toBeVisible()
+})

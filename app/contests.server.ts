@@ -3,6 +3,7 @@ import { href } from 'react-router'
 import { lockYears, readCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
+import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret } from './secrets.server.ts'
 
 /** `link` is the contest link, which players open */
@@ -53,7 +54,7 @@ export const readEducatorContests = async (
   year: number,
 ): Promise<ContestSummary[]> => {
   const contests = await prisma.contest.findMany({
-    where: { educatorId, year },
+    where: { educatorId, year, ...CONTEST_OUTSIDE_TRASH },
     orderBy: [{ createdAt: `asc` }, { id: `asc` }],
     select: { id: true, name: true, linkSecret: true },
   })
@@ -66,7 +67,7 @@ export const readEducatorContest = async (
   contestId: string,
 ): Promise<Contest | null> => {
   const contest = await prisma.contest.findFirst({
-    where: { id: contestId, educatorId },
+    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
     select: { id: true, name: true, year: true, linkSecret: true },
   })
   return contest && withLink(contest)
@@ -79,7 +80,7 @@ export const renameContest = async (
   name: string,
 ): Promise<boolean> => {
   const { count } = await prisma.contest.updateMany({
-    where: { id: contestId, educatorId },
+    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
     data: { name },
   })
   return count > 0
@@ -93,6 +94,7 @@ export type ContestByLink = {
   name: string
   year: number
   educatorName: string
+  isDeleted: boolean
 }
 
 export const readContestByLink = async (
@@ -104,6 +106,7 @@ export const readContestByLink = async (
       id: true,
       name: true,
       year: true,
+      deletedAt: true,
       educator: { select: { name: true } },
     },
   })
@@ -113,6 +116,7 @@ export const readContestByLink = async (
       name: contest.name,
       year: contest.year,
       educatorName: contest.educator.name,
+      isDeleted: contest.deletedAt !== null,
     }
   )
 }

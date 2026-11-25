@@ -28,38 +28,44 @@ checkEmailSettings()
 const STAGING_PASSWORD =
   readAppEnv() === `staging` ? requireEnv(`STAGING_PASSWORD`) : null
 
-/** Each serves its assets and returns the app's request handler */
-const serveDevelopmentApp = async (
-  server: Express,
-): Promise<RequestHandler> => {
+type AppModule = { app: RequestHandler; scheduleDailyJob: () => void }
+
+/**
+ * Each serves its assets, and returns the app's request handler and a function
+ * that schedules its daily job
+ */
+const serveDevelopmentApp = async (server: Express): Promise<AppModule> => {
   const vite = await import(`vite`)
   const viteDevServer = await vite.createServer({
     server: { middlewareMode: true },
   })
   server.use(viteDevServer.middlewares)
-  return async (req, res, next) => {
-    try {
-      const { app } = (await viteDevServer.ssrLoadModule(
-        `./server/app.ts`,
-      )) as { app: RequestHandler }
-      await app(req, res, next)
-    } catch (error) {
-      if (error instanceof Error) {
-        viteDevServer.ssrFixStacktrace(error)
+  const loadApp = async () =>
+    (await viteDevServer.ssrLoadModule(`./server/app.ts`)) as AppModule
+  const { scheduleDailyJob } = await loadApp()
+  return {
+    scheduleDailyJob,
+    app: async (req, res, next) => {
+      try {
+        const { app } = await loadApp()
+        await app(req, res, next)
+      } catch (error) {
+        if (error instanceof Error) {
+          viteDevServer.ssrFixStacktrace(error)
+        }
+        next(error)
       }
-      next(error)
-    }
+    },
   }
 }
 
-const serveProductionApp = async (server: Express): Promise<RequestHandler> => {
+const serveProductionApp = async (server: Express): Promise<AppModule> => {
   server.use(
     `/assets`,
     express.static(`build/client/assets`, { immutable: true, maxAge: `1y` }),
   )
   server.use(express.static(`build/client`, { maxAge: `1h` }))
-  const { app } = (await import(BUILD_PATH)) as { app: RequestHandler }
-  return app
+  return (await import(BUILD_PATH)) as AppModule
 }
 
 const server = express()
@@ -71,7 +77,7 @@ if (process.env.FLY_APP_NAME) {
 }
 server.use(compression())
 server.use(setSecurityHeaders({ isServedOverHttps: IS_SERVED_OVER_HTTPS }))
-const app = IS_DEVELOPMENT
+const { app, scheduleDailyJob } = IS_DEVELOPMENT
   ? await serveDevelopmentApp(server)
   : await serveProductionApp(server)
 // React Router needs every page's nonce, the health check's included
@@ -95,4 +101,5 @@ server.use(
 )
 server.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`)
+  scheduleDailyJob()
 })

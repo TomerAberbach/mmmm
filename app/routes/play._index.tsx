@@ -2,7 +2,7 @@ import type { Submission } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
-import { readCurrentYear } from '~/brackets.server.ts'
+import { isCurrentYear } from '~/brackets.server.ts'
 import { CONTEST_CLOSED, PlayContestPage } from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
@@ -37,7 +37,7 @@ export const loader = async ({
     }
   }
   return {
-    state: (await readCurrentYear()) === contest.year ? `askName` : `closed`,
+    state: (await isCurrentYear(contest.year)) ? `askName` : `closed`,
   }
 }
 
@@ -66,6 +66,9 @@ export const action = async ({
     () => limitNewPlayer(request, contest.id),
   )
   if (`refusal` in player) {
+    if (player.refusal === `CONTEST_DELETED`) {
+      return redirect(href(`/contest-removed`))
+    }
     return player.refusal === `LIMITED`
       ? rejectTooManyNewPlayers(submission, player.limit)
       : rejectForm(submission, { formErrors: [CONTEST_CLOSED] })

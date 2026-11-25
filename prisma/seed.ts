@@ -8,13 +8,17 @@ import {
 } from '../app/brackets.server.ts'
 import { createContest } from '../app/contests.server.ts'
 import { prisma } from '../app/db.server.ts'
-import type { SubmissionStatus } from '../app/generated/prisma/client.ts'
+import type {
+  PlayerDeleter,
+  SubmissionStatus,
+} from '../app/generated/prisma/client.ts'
 import { listContenders, pickWinner } from '../app/picks.ts'
 import type { Picks } from '../app/picks.ts'
 import { submitPlayerPicks } from '../app/player-picks.server.ts'
 import { createPlayer, readContestPlayer } from '../app/players.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket } from '../app/seeded-bracket.ts'
+import { deleteContest } from '../app/trash.server.ts'
 import { readUpcomingYear } from '../app/year.ts'
 import { BRACKET_2025, BRACKET_2026 } from './brackets.ts'
 
@@ -117,7 +121,7 @@ const seedPlayers = async (contestId: string): Promise<void> => {
     select: { year: true },
   })
   const picks = pickFirstContenders(toSeededBracket((await readBracket(year))!))
-  const players: [string, SubmissionStatus | null][] = [
+  const players: [string, SubmissionStatus | null, PlayerDeleter?][] = [
     [`Ava L.`, `APPROVED`],
     [`Ben T.`, `APPROVED`],
     [`Maya R.`, `PENDING`],
@@ -126,8 +130,10 @@ const seedPlayers = async (contestId: string): Promise<void> => {
     [`Ninja Cat`, `REJECTED`],
     [`maya r`, `PENDING`],
     [`Leo M.`, null],
+    [`Sam T.`, `APPROVED`, `EDUCATOR`],
+    [`Zoe B.`, null, `PLAYER`],
   ]
-  for (const [displayName, status] of players) {
+  for (const [displayName, status, deletedBy] of players) {
     const id = await seedPlayer(contestId, displayName)
     if (status) {
       const submitted = await submitPlayerPicks(id, year, picks)
@@ -141,6 +147,12 @@ const seedPlayers = async (contestId: string): Promise<void> => {
         data: { status },
       })
     }
+    if (deletedBy) {
+      await prisma.player.update({
+        where: { id },
+        data: { deletedAt: new Date(), deletedBy },
+      })
+    }
   }
 }
 
@@ -152,9 +164,11 @@ const educator = await prisma.educator.findUniqueOrThrow({
 if (educator._count.contests === 0) {
   const period2Id = await createContest(educator.id, `Period 2 Biology`)
   await createContest(educator.id, `Period 5 Biology`)
-  if (!period2Id) {
+  const deletedId = await createContest(educator.id, `Period 7 Biology`)
+  if (!period2Id || !deletedId) {
     throw new Error(`No current year takes contests`)
   }
   await seedPlayers(period2Id)
+  await deleteContest(educator.id, deletedId)
 }
 await prisma.$disconnect()
