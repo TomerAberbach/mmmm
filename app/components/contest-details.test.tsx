@@ -22,7 +22,9 @@ const renderContest = async () => {
       path: `/contests/period-2`,
       loader: () => contest,
       HydrateFallback: () => null,
-      Component: () => <ContestDetails contest={useLoaderData<Contest>()} />,
+      Component: () => (
+        <ContestDetails contest={useLoaderData<Contest>()} players={[]} />
+      ),
     },
     {
       path: `/contests/period-2/name`,

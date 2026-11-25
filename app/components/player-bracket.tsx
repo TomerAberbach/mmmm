@@ -139,6 +139,11 @@ export const PlayerBracket = ({
           forgetPath={forgetPath}
         />
       ) : null}
+      {submission?.status === `REJECTED` && outcome?.kind !== `submitted` ? (
+        <div className='max-w-prose'>
+          <Notice kind='alert'>{STATUS_TEXT.REJECTED.note}</Notice>
+        </div>
+      ) : null}
       {submission ? <PicksChanged at={submission.picksChangedAt} /> : null}
       <div className='sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-ink bg-white py-3 print:hidden'>
         {submitted && !hasChanges ? (
