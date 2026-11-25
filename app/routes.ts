@@ -32,8 +32,8 @@ export default [
       `routes/contests.$contestId.approve-pending.ts`,
     ),
     route(
-      `:contestId/players/:playerId/status`,
-      `routes/contests.$contestId.players.$playerId.status.ts`,
+      `:contestId/players/status`,
+      `routes/contests.$contestId.players.status.ts`,
     ),
     route(
       `:contestId/players/:playerId/name`,

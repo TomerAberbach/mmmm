@@ -48,15 +48,17 @@ const renderPlayers = async (
       ),
     },
     {
-      path: `/contests/period-2/players/:playerId/status`,
-      action: async ({ request, params }) => {
+      path: `/contests/period-2/players/status`,
+      action: async ({ request }) => {
         if (refuseStatus) {
           return { error: `This bracket is gone or not submitted` }
         }
-        const { status } = submissionStatusSchema.parse(
+        const { playerIds, status } = submissionStatusSchema.parse(
           Object.fromEntries(await request.formData()),
         )
-        update(params.playerId!, { status })
+        for (const id of playerIds) {
+          update(id, { status })
+        }
         return { ok: true }
       },
     },
@@ -240,6 +242,187 @@ test(`a renamed player's editor stays closed after approving all`, async () => {
   await expect
     .element(page.getByLabelText(/^New name for/u))
     .not.toBeInTheDocument()
+})
+
+// `user-event` writes keys in braces
+// eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation
+const ESCAPE = `{Escape}`
+
+const selectPlayer = (name: string) =>
+  page.getByRole(`checkbox`, { name: `Select ${name}` }).click({ force: true })
+
+const selectionBar = page.getByRole(`group`, { name: `Selected brackets` })
+
+const readBarLabels = () =>
+  selectionBar
+    .getByRole(`button`)
+    .elements()
+    .map(button => button.textContent)
+
+test(`selecting players across sections counts what each decision changes`, async () => {
+  await renderPlayers([MAYA, JONAH, AVA])
+
+  await selectPlayer(`Maya R.`)
+  await selectPlayer(`Jonah K.`)
+  await selectPlayer(`Ava L.`)
+
+  await expect
+    .poll(readBarLabels)
+    .toStrictEqual([`Clear`, `Approve 2`, `Reject 3`])
+  await expectNoAxeViolations()
+})
+
+test(`a decision that changes none of the selection is left out`, async () => {
+  await renderPlayers([MAYA, AVA])
+
+  await selectPlayer(`Ava L.`)
+
+  await expect.poll(readBarLabels).toStrictEqual([`Clear`, `Reject 1`])
+})
+
+test(`a draft can't be selected`, async () => {
+  await renderPlayers([LEO])
+
+  await expect.element(page.getByText(`Leo M.`)).toBeVisible()
+  await expect.element(page.getByRole(`checkbox`)).not.toBeInTheDocument()
+})
+
+test(`a section's checkbox selects only that section`, async () => {
+  await renderPlayers([MAYA, JONAH, AVA])
+
+  await page
+    .getByRole(`checkbox`, { name: `Select all pending` })
+    .click({ force: true })
+
+  await expect.element(selectionBar.getByText(`2 selected`)).toBeVisible()
+  await expect
+    .element(page.getByRole(`checkbox`, { name: `Select Ava L.` }))
+    .not.toBeChecked()
+})
+
+test(`approving a selection moves it, clears it, and focuses the section it moved to`, async () => {
+  await renderPlayers([MAYA, JONAH, AVA])
+  await selectPlayer(`Maya R.`)
+  await selectPlayer(`Ava L.`)
+
+  await selectionBar.getByRole(`button`, { name: `Approve 1` }).click()
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Approved (2)` }))
+    .toHaveFocus()
+  await expect.element(page.getByText(`Approved 1 bracket`)).toBeInTheDocument()
+  await expect.element(selectionBar).not.toBeInTheDocument()
+})
+
+test(`a refused decision keeps the selection and says why`, async () => {
+  await renderPlayers([MAYA], { refuseStatus: true })
+  await selectPlayer(`Maya R.`)
+
+  await selectionBar.getByRole(`button`, { name: `Reject 1` }).click()
+
+  await expect
+    .element(selectionBar.getByRole(`alert`))
+    .toHaveTextContent(`This bracket is gone or not submitted`)
+  await expect.element(selectionBar.getByText(`1 selected`)).toBeVisible()
+})
+
+test(`a refused decision's error goes once the selection changes`, async () => {
+  await renderPlayers([MAYA, JONAH], { refuseStatus: true })
+  await selectPlayer(`Maya R.`)
+  await selectionBar.getByRole(`button`, { name: `Reject 1` }).click()
+  await expect.element(selectionBar.getByRole(`alert`)).toBeVisible()
+
+  await selectPlayer(`Jonah K.`)
+
+  await expect.element(selectionBar.getByRole(`alert`)).not.toBeInTheDocument()
+})
+
+test(`rows' own decisions are off while any row is selected`, async () => {
+  await renderPlayers([MAYA, JONAH])
+
+  await selectPlayer(`Maya R.`)
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Approve Jonah K.` }))
+    .toBeDisabled()
+  await expect
+    .element(page.getByRole(`button`, { name: `Approve all 2` }))
+    .toBeDisabled()
+})
+
+test(`Escape clears the selection`, async () => {
+  await renderPlayers([MAYA])
+  await selectPlayer(`Maya R.`)
+
+  await userEvent.keyboard(ESCAPE)
+
+  await expect.element(selectionBar).not.toBeInTheDocument()
+})
+
+test(`Escape in a rename cancels it and keeps the selection`, async () => {
+  await renderPlayers([MAYA])
+  await selectPlayer(`Maya R.`)
+  await page.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await page.getByRole(`menuitem`, { name: `Rename` }).click()
+  await expect
+    .element(page.getByLabelText(`New name for Maya R.`))
+    .toHaveFocus()
+
+  await userEvent.keyboard(ESCAPE)
+
+  await expect
+    .element(page.getByLabelText(`New name for Maya R.`))
+    .not.toBeInTheDocument()
+  await expect.element(selectionBar).toBeVisible()
+})
+
+test(`Escape in a menu closes it and keeps the selection`, async () => {
+  await renderPlayers([MAYA])
+  await selectPlayer(`Maya R.`)
+  await page.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await expect.element(page.getByRole(`menu`)).toBeVisible()
+
+  await userEvent.keyboard(ESCAPE)
+
+  await expect.element(page.getByRole(`menu`)).not.toBeInTheDocument()
+  await expect.element(selectionBar).toBeVisible()
+})
+
+test(`clearing the selection focuses its first player's checkbox`, async () => {
+  await renderPlayers([AVA, JONAH])
+  await selectPlayer(`Ava L.`)
+  await selectPlayer(`Jonah K.`)
+
+  await selectionBar.getByRole(`button`, { name: `Clear` }).click()
+
+  await expect
+    .element(page.getByRole(`checkbox`, { name: `Select Jonah K.` }))
+    .toHaveFocus()
+})
+
+test(`a possible duplicate's note links to the other player`, async () => {
+  await renderPlayers([MAYA, player(`maya-2`, `maya r`, `APPROVED`)])
+
+  await page
+    .getByRole(`row`, { name: /Maya R\./u })
+    .getByRole(`link`, { name: `maya r` })
+    .click()
+
+  await expect
+    .element(section(/^Approved/u).getByRole(`row`, { name: /maya r/u }))
+    .toHaveFocus()
+})
+
+test(`a note names every possible duplicate`, async () => {
+  await renderPlayers([
+    MAYA,
+    player(`maya-2`, `maya r`, `PENDING`),
+    player(`maya-3`, `MayaR`, `PENDING`),
+  ])
+
+  await expect
+    .element(page.getByText(`This might be the same as maya r and MayaR`))
+    .toBeVisible()
 })
 
 test(`a contest without players says to share its link`, async () => {

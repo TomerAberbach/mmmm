@@ -58,14 +58,14 @@ test.each([
   const { id } = await addPlayer(contestId)
   await addSubmission(id, from)
 
-  const changed = await setSubmissionStatus(
+  const count = await setSubmissionStatus(
     await readEducatorId(contestId),
     contestId,
-    id,
+    [id],
     to,
   )
 
-  expect(changed).toBe(true)
+  expect(count).toBe(1)
   await expect(readStatuses(contestId)).resolves.toStrictEqual({
     'Maya R.': to,
   })
@@ -75,14 +75,14 @@ test(`a draft has no status to change`, async () => {
   const { contestId } = await createContestInNewYear()
   const { id } = await addPlayer(contestId)
 
-  const changed = await setSubmissionStatus(
+  const count = await setSubmissionStatus(
     await readEducatorId(contestId),
     contestId,
-    id,
+    [id],
     `APPROVED`,
   )
 
-  expect(changed).toBe(false)
+  expect(count).toBe(0)
   await expect(readStatuses(contestId)).resolves.toStrictEqual({
     'Maya R.': null,
   })
@@ -94,15 +94,15 @@ test(`another educator can't change a submission's status or rename its player`,
   await addSubmission(id)
   const otherEducatorId = await createEducator()
 
-  const changed = await setSubmissionStatus(
+  const count = await setSubmissionStatus(
     otherEducatorId,
     contestId,
-    id,
+    [id],
     `REJECTED`,
   )
   const renamed = await renamePlayer(otherEducatorId, contestId, id, `Bo`)
 
-  expect([changed, renamed]).toStrictEqual([false, false])
+  expect([count, renamed]).toStrictEqual([0, false])
   await expect(readStatuses(contestId)).resolves.toStrictEqual({
     'Maya R.': `PENDING`,
   })
@@ -115,14 +115,14 @@ test(`a player is changed only through their own contest`, async () => {
   const { id } = await addPlayer(contestId)
   await addSubmission(id)
 
-  const changed = await setSubmissionStatus(
+  const count = await setSubmissionStatus(
     educatorId,
     otherContestId,
-    id,
+    [id],
     `REJECTED`,
   )
 
-  expect(changed).toBe(false)
+  expect(count).toBe(0)
 })
 
 test(`approving all pending approves only the listed pending submissions`, async () => {
@@ -160,6 +160,32 @@ test(`another educator can't approve a contest's pending submissions`, async () 
   )
 
   expect(count).toBe(0)
+})
+
+test(`an educator sets several submissions' statuses, leaving out drafts and other players`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const pending = await addPlayer(contestId, `Maya R.`)
+  await addSubmission(pending.id)
+  const approved = await addPlayer(contestId, `Ava L.`)
+  await addSubmission(approved.id, `APPROVED`)
+  const draft = await addPlayer(contestId, `Leo M.`)
+  const unlisted = await addPlayer(contestId, `Priya S.`)
+  await addSubmission(unlisted.id)
+
+  const count = await setSubmissionStatus(
+    await readEducatorId(contestId),
+    contestId,
+    [pending.id, approved.id, draft.id],
+    `REJECTED`,
+  )
+
+  expect(count).toBe(2)
+  await expect(readStatuses(contestId)).resolves.toStrictEqual({
+    'Maya R.': `REJECTED`,
+    'Ava L.': `REJECTED`,
+    'Leo M.': null,
+    'Priya S.': `PENDING`,
+  })
 })
 
 test(`an educator renames a player in their contest`, async () => {
