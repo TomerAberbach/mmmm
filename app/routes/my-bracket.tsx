@@ -1,6 +1,5 @@
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/my-bracket.ts'
-import { isCurrentYear } from '~/brackets.server.ts'
 import { BrokenLink, DeletedBracket } from '~/components/removed.tsx'
 import { rememberPlayer } from '~/player-cookie.server.ts'
 import { readPersonalLink } from '~/players.server.ts'
@@ -18,22 +17,23 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
   if (target.state === `contestDeleted`) {
     throw redirect(href(`/contest-removed`))
   }
-  const contestLink = { linkSecret: target.contestLinkSecret }
   if (target.state === `deleted`) {
-    const canStart = await isCurrentYear(target.year)
+    const { startLinkSecret: linkSecret } = target
     return data(
       {
         restoreBy: readEraseTime(target),
-        contestPath: canStart ? href(`/play/:linkSecret`, contestLink) : null,
+        contestPath:
+          linkSecret === null
+            ? null
+            : href(`/play/:linkSecret`, { linkSecret }),
       },
       // Browsers cache a 410 forever, and the educator may restore the player
       { status: 404 },
     )
   }
-  throw redirect(href(`/play/:linkSecret/bracket`, contestLink), {
-    headers: {
-      'Set-Cookie': await rememberPlayer(target.contestId, params.secret),
-    },
+  const { contestId } = target
+  throw redirect(href(`/player/:contestId/bracket`, { contestId }), {
+    headers: { 'Set-Cookie': await rememberPlayer(contestId, params.secret) },
   })
 }
 

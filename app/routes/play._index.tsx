@@ -3,6 +3,7 @@ import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
 import { isCurrentYear } from '~/brackets.server.ts'
+import { brokenLink } from '~/broken-link.ts'
 import { CONTEST_CLOSED, PlayContestPage } from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
@@ -24,7 +25,6 @@ import { createPlayer } from '~/players.server.ts'
  */
 export const loader = async ({
   request,
-  params,
   context,
 }: Route.LoaderArgs): Promise<PlayView> => {
   const contest = readPlayContest(context)
@@ -33,7 +33,9 @@ export const loader = async ({
     return {
       state: `returning`,
       displayName: player.displayName,
-      bracketPath: href(`/play/:linkSecret/bracket`, params),
+      bracketPath: href(`/player/:contestId/bracket`, {
+        contestId: contest.id,
+      }),
     }
   }
   return {
@@ -61,11 +63,14 @@ export const action = async ({
     return rejectForm(submission)
   }
   const player = await createPlayer(
-    contest.id,
+    params.linkSecret,
     submission.value.displayName,
     () => limitNewPlayer(request, contest.id),
   )
   if (`refusal` in player) {
+    if (player.refusal === `BROKEN_LINK`) {
+      throw brokenLink()
+    }
     if (player.refusal === `CONTEST_DELETED`) {
       return redirect(href(`/contest-removed`))
     }
@@ -73,9 +78,14 @@ export const action = async ({
       ? rejectTooManyNewPlayers(submission, player.limit)
       : rejectForm(submission, { formErrors: [CONTEST_CLOSED] })
   }
-  return redirect(href(`/play/:linkSecret/bracket`, params), {
-    headers: { 'Set-Cookie': await rememberPlayer(contest.id, player.secret) },
-  })
+  return redirect(
+    href(`/player/:contestId/bracket`, { contestId: contest.id }),
+    {
+      headers: {
+        'Set-Cookie': await rememberPlayer(contest.id, player.secret),
+      },
+    },
+  )
 }
 
 const rejectTooManyNewPlayers = (

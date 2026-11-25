@@ -5,6 +5,7 @@ import {
   addSubmission,
   createContestInNewYear,
   readEducatorId,
+  readLinkSecret,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import {
@@ -286,8 +287,10 @@ test(`a deleted contest takes no players or picks`, async () => {
     await createContestWithPlayer()
   await deleteContest(educatorId, contestId)
 
-  const created = await createPlayer(contestId, `Jonah K.`, () =>
-    Promise.resolve(undefined),
+  const created = await createPlayer(
+    await readLinkSecret(contestId),
+    `Jonah K.`,
+    () => Promise.resolve(undefined),
   )
   const saved = await savePlayerDraft(playerId, year, {})
 

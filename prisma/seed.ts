@@ -102,7 +102,11 @@ const seedPlayer = async (
   contestId: string,
   displayName: string,
 ): Promise<string> => {
-  const player = await createPlayer(contestId, displayName, () =>
+  const { linkSecret } = await prisma.contest.findUniqueOrThrow({
+    where: { id: contestId },
+    select: { linkSecret: true },
+  })
+  const player = await createPlayer(linkSecret, displayName, () =>
     Promise.resolve(undefined),
   )
   if (!(`secret` in player)) {

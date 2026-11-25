@@ -1,15 +1,15 @@
 import { href } from 'react-router'
-import type { Route } from './+types/play.bracket.ts'
+import type { Route } from './+types/player.bracket.ts'
 import { readBracket } from '~/brackets.server.ts'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
-import { toAppUrl } from '~/env.server.ts'
 import {
   readPlayContest,
   readRequiredPlayer,
   requirePlayer,
 } from '~/play-context.server.ts'
 import { readDraftAndSubmission } from '~/player-picks.server.ts'
+import { toPersonalLink } from '~/players.server.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
@@ -33,9 +33,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     // A player sees their personal link once they submit
     submitted: submission && {
       submission,
-      personalLink: toAppUrl(
-        href(`/my-bracket/:secret`, { secret: player.personalLinkSecret }),
-      ).href,
+      personalLink: toPersonalLink(player.personalLinkSecret),
     },
   }
 }
@@ -48,10 +46,10 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => (
       bracket={loaderData.bracket}
       initialDraft={loaderData.draft}
       submitted={loaderData.submitted}
-      picksPath={href(`/play/:linkSecret/bracket/picks`, params)}
-      forgetPath={href(`/play/:linkSecret/forgotten`, params)}
+      picksPath={href(`/player/:contestId/bracket/picks`, params)}
+      forgetPath={href(`/player/:contestId/forgotten`, params)}
       playerId={loaderData.playerId}
-      deletePath={href(`/play/:linkSecret/deleted`, params)}
+      deletePath={href(`/player/:contestId/delete`, params)}
     />
   </div>
 )

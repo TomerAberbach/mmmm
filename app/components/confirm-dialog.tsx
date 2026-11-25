@@ -4,7 +4,7 @@ import { DialogTrigger } from 'react-aria-components'
 import { useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { FetcherError } from './fetcher-error.tsx'
-import { ModalFrame } from './modal-frame.tsx'
+import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
 
 type ConfirmDialogProps = {
   /** A question that names the change, such as "Delete Period 5 Biology?" */
@@ -140,5 +140,3 @@ export const ConfirmDialog = ({
     frame
   )
 }
-
-const BUTTONS_CLASS_NAME = `mt-2 flex flex-wrap justify-end gap-3`

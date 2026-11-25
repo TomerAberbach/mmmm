@@ -31,7 +31,7 @@ export const RemovedContest = () => (
 )
 
 export const BrokenLink = () => (
-  <Removed title='This link doesn’t work'>
+  <Removed title='This link no longer works'>
     Ask your educator for a new one.
   </Removed>
 )

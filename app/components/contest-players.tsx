@@ -11,6 +11,7 @@ import type { ConfirmResult } from './confirm-dialog.tsx'
 import { FetcherError } from './fetcher-error.tsx'
 import { FormError } from './form-error.tsx'
 import { LocalTime } from './local-time.tsx'
+import { NewPersonalLink } from './new-personal-link.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
@@ -70,6 +71,7 @@ export const ContestPlayers = ({
   const [editingId, setEditingId] = useState<string>()
   const [announcement, setAnnouncement] = useState(``)
   const [moving, setMoving] = useState<Moving>()
+  const [newLinkPlayer, setNewLinkPlayer] = useState<ContestPlayer | null>(null)
   const selection = useSelection(players)
 
   const isSelecting = selection.players.length > 0
@@ -200,6 +202,7 @@ export const ContestPlayers = ({
                     announcement: `${DECISIONS[decision].done} ${player.displayName}`,
                   })
                 }
+                onNewLink={() => setNewLinkPlayer(player)}
                 onDeleting={() =>
                   startMove({
                     playerIds: [player.id],
@@ -215,6 +218,11 @@ export const ContestPlayers = ({
           </PlayerSection>
         )
       })}
+      <NewPersonalLink
+        contestId={contestId}
+        player={newLinkPlayer}
+        onClose={() => setNewLinkPlayer(null)}
+      />
       {isSelecting ? (
         <SelectionBar
           contestId={contestId}
@@ -580,6 +588,7 @@ const PlayerRow = ({
   isEditing,
   setIsEditing,
   onDeciding,
+  onNewLink,
   onDeleting,
 }: {
   contestId: string
@@ -593,6 +602,7 @@ const PlayerRow = ({
   isEditing: boolean
   setIsEditing: (isEditing: boolean) => void
   onDeciding: (status: Decision) => void
+  onNewLink: () => void
   onDeleting: () => void
 }) => {
   const rename = useInlineEdit(isEditing, setIsEditing)
@@ -662,6 +672,7 @@ const PlayerRow = ({
             <PlayerMenu
               player={player}
               onRename={rename.open}
+              onNewLink={onNewLink}
               onDelete={() => setIsConfirmingDelete(true)}
             />
             <DeletePlayersDialog
@@ -715,10 +726,12 @@ const DuplicatesNote = ({ duplicates }: { duplicates: ContestPlayer[] }) =>
 const PlayerMenu = ({
   player,
   onRename,
+  onNewLink,
   onDelete,
 }: {
   player: ContestPlayer
   onRename: () => void
+  onNewLink: () => void
   onDelete: () => void
 }) => (
   <MenuTrigger>
@@ -729,14 +742,14 @@ const PlayerMenu = ({
       placement='bottom end'
       className='min-w-36 border-2 border-ink bg-white py-1 shadow-offset'
     >
-      <Menu
-        className='outline-none'
-        onAction={key => (key === `rename` ? onRename() : onDelete())}
-      >
-        <MenuItem id='rename' className={MENU_ITEM_CLASS_NAME}>
+      <Menu className='outline-none'>
+        <MenuItem onAction={onRename} className={MENU_ITEM_CLASS_NAME}>
           Rename
         </MenuItem>
-        <MenuItem id='delete' className={MENU_ITEM_CLASS_NAME}>
+        <MenuItem onAction={onNewLink} className={MENU_ITEM_CLASS_NAME}>
+          New personal link
+        </MenuItem>
+        <MenuItem onAction={onDelete} className={MENU_ITEM_CLASS_NAME}>
           Delete
         </MenuItem>
       </Menu>

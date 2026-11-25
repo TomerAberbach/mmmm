@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { href, Link } from 'react-router'
+import { href, Link, useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
+import type { ConfirmResult } from './confirm-dialog.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ContestPlayers } from './contest-players.tsx'
 import { CopyButton } from './copy-button.tsx'
@@ -32,7 +33,7 @@ export const ContestDetails = ({
       All contests
     </Link>
     <ContestName contest={contest} />
-    <ContestLink link={contest.link} />
+    <ContestLink contest={contest} />
     <ContestPlayers contestId={contest.id} players={players} />
     <div className='flex flex-wrap items-center justify-between gap-4 border-t-2 border-ink pt-4 print:hidden'>
       <Link to={href(`/contests/:contestId/trash`, { contestId: contest.id })}>
@@ -113,7 +114,7 @@ const DeleteContestButton = ({
   )
 }
 
-const ContestLink = ({ link }: { link: string }) => (
+const ContestLink = ({ contest: { id, link } }: { contest: Contest }) => (
   <SettingsSection title='Contest link'>
     <p className='max-w-prose'>
       Share this link with your players. Anyone with it can fill out a bracket,
@@ -140,5 +141,33 @@ const ContestLink = ({ link }: { link: string }) => (
         </p>
       </div>
     </details>
+    <NewContestLink contestId={id} />
   </SettingsSection>
 )
+
+const NewContestLink = ({ contestId }: { contestId: string }) => {
+  const fetcherKey = `new-contest-link-${contestId}`
+  const { state, data } = useFetcher<ConfirmResult>({ key: fetcherKey })
+  return (
+    <div className='flex flex-col items-start gap-3'>
+      <ConfirmDialog
+        trigger={<Button variant='secondary'>New contest link</Button>}
+        title='Replace the contest link?'
+        confirmLabel='Create new link'
+        action={href(`/contests/:contestId/link`, { contestId })}
+        fetcherKey={fetcherKey}
+      >
+        <p>
+          The old link stops working, so share the new one with your players.
+          Players who already started keep their personal links.
+        </p>
+      </ConfirmDialog>
+      {/* Idle once the page shows the new link */}
+      {state === `idle` && data && `ok` in data ? (
+        <Notice kind='status'>
+          Created a new contest link. The old one no longer works
+        </Notice>
+      ) : null}
+    </div>
+  )
+}
