@@ -1,33 +1,46 @@
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/my-bracket.ts'
-import { PageTitle } from '~/components/page-title.tsx'
+import { isCurrentYear } from '~/brackets.server.ts'
+import { BrokenLink, DeletedBracket } from '~/components/removed.tsx'
 import { rememberPlayer } from '~/player-cookie.server.ts'
-import { readPlayerByLink } from '~/players.server.ts'
+import { readPersonalLink } from '~/players.server.ts'
+import { readEraseTime } from '~/trash.ts'
 
 /**
  * A personal link moves its secret into the player's cookie and redirects, so
  * the secret appears in only this one request
  */
 export const loader = async ({ params }: Route.LoaderArgs) => {
-  const player = await readPlayerByLink(params.secret)
-  if (!player) {
+  const target = await readPersonalLink(params.secret)
+  if (!target) {
     return data(null, { status: 404 })
   }
-  throw redirect(
-    href(`/play/:linkSecret/bracket`, { linkSecret: player.contestLinkSecret }),
-    {
-      headers: {
-        'Set-Cookie': await rememberPlayer(player.contestId, params.secret),
+  if (target.state === `contestDeleted`) {
+    throw redirect(href(`/contest-removed`))
+  }
+  const contestLink = { linkSecret: target.contestLinkSecret }
+  if (target.state === `deleted`) {
+    const canStart = await isCurrentYear(target.year)
+    return data(
+      {
+        restoreBy: readEraseTime(target),
+        contestPath: canStart ? href(`/play/:linkSecret`, contestLink) : null,
       },
+      // Browsers cache a 410 forever, and the educator may restore the player
+      { status: 404 },
+    )
+  }
+  throw redirect(href(`/play/:linkSecret/bracket`, contestLink), {
+    headers: {
+      'Set-Cookie': await rememberPlayer(target.contestId, params.secret),
     },
-  )
+  })
 }
 
-const BrokenLinkPage = () => (
-  <div className='flex max-w-xl flex-col gap-3'>
+const PersonalLinkPage = ({ loaderData }: Route.ComponentProps) => (
+  <>
     <meta name='robots' content='noindex' />
-    <PageTitle>This link doesn’t work</PageTitle>
-    <p>Ask your educator for a new one.</p>
-  </div>
+    {loaderData ? <DeletedBracket {...loaderData} /> : <BrokenLink />}
+  </>
 )
-export default BrokenLinkPage
+export default PersonalLinkPage

@@ -31,6 +31,10 @@ export const formatArizonaDate = (date: Date): string =>
 export const formatTime = (date: Date): string =>
   date.toLocaleTimeString([], { hour: `numeric`, minute: `2-digit` })
 
+/** The day on the reader's clock, such as "Nov 2, 2026" */
+export const formatLocalDate = (date: Date): string =>
+  date.toLocaleDateString([], { dateStyle: `medium` })
+
 /** The day and time on the reader's clock, such as "Nov 2, 2026, 2:41 PM" */
 export const formatDateTime = (date: Date): string =>
   date.toLocaleString([], { dateStyle: `medium`, timeStyle: `short` })

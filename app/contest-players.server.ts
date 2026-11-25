@@ -1,5 +1,9 @@
 import { prisma } from './db.server.ts'
 import type { SubmissionStatus } from './generated/prisma/client.ts'
+import {
+  educatorPlayers,
+  PLAYER_OUTSIDE_TRASH,
+} from './outside-trash.server.ts'
 import type { Decision } from './player-forms.ts'
 
 /** A player in an educator's contest. `status` is null for a draft */
@@ -15,7 +19,7 @@ export const readContestPlayers = async (
   contestId: string,
 ): Promise<ContestPlayer[]> => {
   const players = await prisma.player.findMany({
-    where: { contestId },
+    where: { contestId, ...PLAYER_OUTSIDE_TRASH },
     orderBy: [{ createdAt: `asc` }, { id: `asc` }],
     select: {
       id: true,
@@ -31,12 +35,6 @@ export const readContestPlayers = async (
     status: submission?.status ?? null,
   }))
 }
-
-/** Matches players only in a contest the educator runs */
-const educatorPlayers = (educatorId: string, contestId: string) => ({
-  contestId,
-  contest: { educatorId },
-})
 
 /**
  * Returns how many of the players have a submission in a contest the educator

@@ -34,6 +34,7 @@ import type { Picks } from '~/picks.ts'
 import type { Submission } from '~/player-picks.server.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
+import { PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 /**
  * The player's bracket, each battle a control. Every change saves the whole
@@ -47,6 +48,8 @@ export const PlayerBracket = ({
   submitted,
   picksPath,
   forgetPath,
+  deletePath,
+  playerId,
 }: {
   year: number
   bracket: StoredBracket
@@ -55,6 +58,8 @@ export const PlayerBracket = ({
   submitted: Submitted | null
   picksPath: string
   forgetPath: string
+  deletePath: string
+  playerId: string
 }) => {
   const submission = submitted?.submission ?? null
   const bracket = useMemo(() => toSeededBracket(stored), [stored])
@@ -187,6 +192,9 @@ export const PlayerBracket = ({
         cleared={outcome?.kind === `cleared` ? outcome.battles : []}
       />
       <Bracket view={view} selection={{ round, onSelect: setRound }} />
+      <div className='print:hidden'>
+        <DeleteButton deletePath={deletePath} playerId={playerId} />
+      </div>
     </PickingContext>
   )
 }
@@ -347,6 +355,27 @@ const DiscardButton = ({ onDiscard }: { onDiscard: () => void }) => (
     <p>
       Your picks go back to the bracket you submitted. The changes can’t be
       brought back.
+    </p>
+  </ConfirmDialog>
+)
+
+const DeleteButton = ({
+  deletePath,
+  playerId,
+}: {
+  deletePath: string
+  playerId: string
+}) => (
+  <ConfirmDialog
+    trigger={<Button variant='quiet'>Delete my bracket</Button>}
+    title='Delete your bracket?'
+    confirmLabel='Delete my bracket'
+    action={deletePath}
+    // The browser may have remembered another player since the page loaded
+    fields={{ playerId }}
+  >
+    <p>
+      {`Your personal link stops working. If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days. After that it’s erased for good.`}
     </p>
   </ConfirmDialog>
 )

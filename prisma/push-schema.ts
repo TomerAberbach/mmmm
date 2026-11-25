@@ -45,6 +45,11 @@ const readConstraintsSql = (): string =>
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
     checkName(`Contest`, CONTEST_NAME.maxLength),
     checkName(`Player`, DISPLAY_NAME.maxLength, `displayName`),
+    check(
+      `Player`,
+      `deletedBy`,
+      `("deletedAt" IS NULL) = ("deletedBy" IS NULL)`,
+    ),
   ].join(`\n`)
 
 /** The battle's round's count, or 0 for a round the app doesn't know */

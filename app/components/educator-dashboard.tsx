@@ -11,7 +11,13 @@ import type { ContestSummary } from '~/contests.server.ts'
  */
 export type EducatorDashboardView =
   | { current: null; upcomingYear: number }
-  | { current: { year: number; contests: ContestSummary[] } }
+  | {
+      current: {
+        year: number
+        contests: ContestSummary[]
+        deletedCount: number
+      }
+    }
 
 export const EducatorDashboard = ({
   view,
@@ -36,6 +42,11 @@ export const EducatorDashboard = ({
       ) : (
         <BracketNotReady upcomingYear={view.upcomingYear} />
       )}
+      {current && current.deletedCount > 0 ? (
+        <Link to={href(`/contests/trash`)} className='self-start print:hidden'>
+          {`Deleted contests (${current.deletedCount})`}
+        </Link>
+      ) : null}
     </div>
   )
 }

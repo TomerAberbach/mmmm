@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { href, Link } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
+import { ConfirmDialog } from './confirm-dialog.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ContestPlayers } from './contest-players.tsx'
 import { CopyButton } from './copy-button.tsx'
@@ -14,13 +15,17 @@ import { useInlineEdit } from './use-inline-edit.ts'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import type { Contest } from '~/contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
+import { formatCount } from '~/format-count.ts'
 
 export const ContestDetails = ({
   contest,
   players,
+  deletedCount,
 }: {
   contest: Contest
   players: ContestPlayer[]
+  /** How many players are in the contest's trash */
+  deletedCount: number
 }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
     <Link to={href(`/contests`)} className='self-start print:hidden'>
@@ -29,6 +34,12 @@ export const ContestDetails = ({
     <ContestName contest={contest} />
     <ContestLink link={contest.link} />
     <ContestPlayers contestId={contest.id} players={players} />
+    <div className='flex flex-wrap items-center justify-between gap-4 border-t-2 border-ink pt-4 print:hidden'>
+      <Link to={href(`/contests/:contestId/trash`, { contestId: contest.id })}>
+        {`Trash (${deletedCount})`}
+      </Link>
+      <DeleteContestButton contest={contest} players={players} />
+    </div>
   </div>
 )
 
@@ -78,6 +89,29 @@ const RenameForm = ({
     onCancel={onCancel}
   />
 )
+
+const DeleteContestButton = ({
+  contest: { id, name },
+  players,
+}: {
+  contest: Contest
+  players: ContestPlayer[]
+}) => {
+  const submissionCount = players.filter(({ status }) => status !== null).length
+  const draftCount = players.length - submissionCount
+  return (
+    <ConfirmDialog
+      trigger={<Button variant='secondary'>Delete contest</Button>}
+      title={`Delete ${name}?`}
+      confirmLabel='Delete contest'
+      action={href(`/contests/:contestId/delete`, { contestId: id })}
+    >
+      <p>
+        {`Its ${formatCount(submissionCount, `submission`)} and ${formatCount(draftCount, `draft`)} go with it, and its contest link and personal links stop working. You can restore it until next year’s bracket is published.`}
+      </p>
+    </ConfirmDialog>
+  )
+}
 
 const ContestLink = ({ link }: { link: string }) => (
   <SettingsSection title='Contest link'>

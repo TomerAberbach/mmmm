@@ -11,7 +11,7 @@ import type { ContestByLink } from '~/contests.server.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import { displayNameSchema } from '~/player-forms.ts'
 
-type PlayContest = Omit<ContestByLink, `id`>
+type PlayContest = Omit<ContestByLink, `id` | `isDeleted`>
 
 /**
  * What the contest link shows: the name question, the prompt for a player

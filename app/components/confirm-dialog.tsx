@@ -3,11 +3,10 @@ import type { ReactElement, ReactNode } from 'react'
 import { DialogTrigger } from 'react-aria-components'
 import { useFetcher } from 'react-router'
 import { Button } from './button.tsx'
+import { FetcherError } from './fetcher-error.tsx'
 import { ModalFrame } from './modal-frame.tsx'
 
 type ConfirmDialogProps = {
-  /** The button that opens the dialog */
-  trigger: ReactElement
   /** A question that names the change, such as "Delete Period 5 Biology?" */
   title: string
   /** What will change, and whether it can be undone */
@@ -31,7 +30,15 @@ type ConfirmDialogProps = {
     }
   // Makes the change in the page. The dialog closes when it's called
   | { onConfirm: () => void }
-)
+) &
+  (
+    | {
+        /** The button that opens the dialog */
+        trigger: ReactElement
+      }
+    // Opens the dialog from elsewhere, such as a menu
+    | { isOpen: boolean; onOpenChange: (isOpen: boolean) => void }
+  )
 
 export type ConfirmResult = { ok: true } | { error: string }
 
@@ -43,16 +50,19 @@ const NO_FIELDS: Record<string, string> = {}
  * dialog stays open to show an error the route action returns
  */
 export const ConfirmDialog = ({
-  trigger,
   title,
   children,
   confirmLabel,
   confirmVariant = `danger`,
-  ...change
+  ...props
 }: ConfirmDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isTriggerOpen, setIsTriggerOpen] = useState(false)
+  const [isOpen, setIsOpen] =
+    `trigger` in props
+      ? [isTriggerOpen, setIsTriggerOpen]
+      : [props.isOpen, props.onOpenChange]
   const fetcher = useFetcher<ConfirmResult>({
-    key: `fetcherKey` in change ? change.fetcherKey : undefined,
+    key: `fetcherKey` in props ? props.fetcherKey : undefined,
   })
   const result = fetcher.state === `idle` ? fetcher.data : undefined
   const descriptionId = useId()
@@ -76,57 +86,58 @@ export const ConfirmDialog = ({
       {confirmButton}
     </>
   )
-  return (
-    <DialogTrigger
-      isOpen={isOpen && !(result && `ok` in result)}
+  const isShown = isOpen && !(result && `ok` in result)
+  const frame = (
+    <ModalFrame
+      isOpen={isShown}
       onOpenChange={changeOpen}
+      role='alertdialog'
+      aria-describedby={descriptionId}
+      title={title}
     >
-      {trigger}
-      <ModalFrame
-        role='alertdialog'
-        aria-describedby={descriptionId}
-        title={title}
-      >
-        <div id={descriptionId}>{children}</div>
-        {result && `error` in result ? (
-          <p role='alert' className='font-semibold text-danger'>
-            {result.error}
-          </p>
-        ) : null}
-        {`onConfirm` in change ? (
-          <div className={BUTTONS_CLASS_NAME}>
-            {buttons(
-              <Button
-                slot='close'
-                variant={confirmVariant}
-                onPress={change.onConfirm}
-              >
-                {confirmLabel}
-              </Button>,
-            )}
-          </div>
-        ) : (
-          <fetcher.Form
-            method='post'
-            action={change.action}
-            className={BUTTONS_CLASS_NAME}
-          >
-            {Object.entries(change.fields ?? NO_FIELDS).map(([name, value]) => (
-              <input key={name} type='hidden' name={name} value={value} />
-            ))}
-            {buttons(
-              <Button
-                type='submit'
-                variant={confirmVariant}
-                isPending={fetcher.state !== `idle`}
-              >
-                {confirmLabel}
-              </Button>,
-            )}
-          </fetcher.Form>
-        )}
-      </ModalFrame>
+      <div id={descriptionId}>{children}</div>
+      <FetcherError fetcher={fetcher} />
+      {`onConfirm` in props ? (
+        <div className={BUTTONS_CLASS_NAME}>
+          {buttons(
+            <Button
+              slot='close'
+              variant={confirmVariant}
+              onPress={props.onConfirm}
+            >
+              {confirmLabel}
+            </Button>,
+          )}
+        </div>
+      ) : (
+        <fetcher.Form
+          method='post'
+          action={props.action}
+          className={BUTTONS_CLASS_NAME}
+        >
+          {Object.entries(props.fields ?? NO_FIELDS).map(([name, value]) => (
+            <input key={name} type='hidden' name={name} value={value} />
+          ))}
+          {buttons(
+            <Button
+              type='submit'
+              variant={confirmVariant}
+              isPending={fetcher.state !== `idle`}
+            >
+              {confirmLabel}
+            </Button>,
+          )}
+        </fetcher.Form>
+      )}
+    </ModalFrame>
+  )
+  return `trigger` in props ? (
+    <DialogTrigger isOpen={isShown} onOpenChange={changeOpen}>
+      {props.trigger}
+      {frame}
     </DialogTrigger>
+  ) : (
+    frame
   )
 }
 

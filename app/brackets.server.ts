@@ -295,6 +295,10 @@ export const setBracketPublished = (
     return `CHANGED`
   })
 
+/** Only the current year takes new players */
+export const isCurrentYear = async (year: number): Promise<boolean> =>
+  (await readCurrentYear()) === year
+
 /** A current year is published, and no newer year is */
 export type YearPublication = `UNPUBLISHED` | `PUBLISHED` | `CURRENT`
 

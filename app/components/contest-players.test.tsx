@@ -6,11 +6,8 @@ import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import type { ContestPlayer } from '../contest-players.server.ts'
 import { freeTextSchema } from '../free-text.ts'
-import {
-  approvePendingSchema,
-  playerNameSchema,
-  submissionStatusSchema,
-} from '../player-forms.ts'
+import { idsSchema } from '../id-list.ts'
+import { playerNameSchema, submissionStatusSchema } from '../player-forms.ts'
 import { ContestPlayers } from './contest-players.tsx'
 
 const STARTED_AT = new Date(`2027-03-14T16:05:00Z`)
@@ -23,11 +20,11 @@ const player = (
 
 /**
  * Renders the list with actions that change the players in memory, as the
- * routes do, unless `refuseStatus` is set
+ * routes do, unless a refusal is set
  */
 const renderPlayers = async (
   initialPlayers: ContestPlayer[],
-  { refuseStatus = false } = {},
+  { refuseStatus = false, refuseDelete = false } = {},
 ) => {
   let players = initialPlayers
   const update = (id: string, change: Partial<ContestPlayer>) => {
@@ -53,12 +50,25 @@ const renderPlayers = async (
         if (refuseStatus) {
           return { error: `This bracket is gone or not submitted` }
         }
-        const { playerIds, status } = submissionStatusSchema.parse(
+        const { ids, status } = submissionStatusSchema.parse(
           Object.fromEntries(await request.formData()),
         )
-        for (const id of playerIds) {
+        for (const id of ids) {
           update(id, { status })
         }
+        return { ok: true }
+      },
+    },
+    {
+      path: `/contests/period-2/players/delete`,
+      action: async ({ request }) => {
+        const { ids } = idsSchema.parse(
+          Object.fromEntries(await request.formData()),
+        )
+        if (refuseDelete) {
+          return { error: `Nothing was deleted` }
+        }
+        players = players.filter(({ id }) => !ids.includes(id))
         return { ok: true }
       },
     },
@@ -79,10 +89,10 @@ const renderPlayers = async (
     {
       path: `/contests/period-2/approve-pending`,
       action: async ({ request }) => {
-        const { playerIds } = approvePendingSchema.parse(
+        const { ids } = idsSchema.parse(
           Object.fromEntries(await request.formData()),
         )
-        for (const id of playerIds) {
+        for (const id of ids) {
           update(id, { status: `APPROVED` })
         }
         return { ok: true }
@@ -268,7 +278,7 @@ test(`selecting players across sections counts what each decision changes`, asyn
 
   await expect
     .poll(readBarLabels)
-    .toStrictEqual([`Clear`, `Approve 2`, `Reject 3`])
+    .toStrictEqual([`Clear`, `Approve 2`, `Reject 3`, `Delete 3`])
   await expectNoAxeViolations()
 })
 
@@ -277,14 +287,17 @@ test(`a decision that changes none of the selection is left out`, async () => {
 
   await selectPlayer(`Ava L.`)
 
-  await expect.poll(readBarLabels).toStrictEqual([`Clear`, `Reject 1`])
+  await expect
+    .poll(readBarLabels)
+    .toStrictEqual([`Clear`, `Reject 1`, `Delete 1`])
 })
 
-test(`a draft can't be selected`, async () => {
+test(`a selected draft can only be deleted`, async () => {
   await renderPlayers([LEO])
 
-  await expect.element(page.getByText(`Leo M.`)).toBeVisible()
-  await expect.element(page.getByRole(`checkbox`)).not.toBeInTheDocument()
+  await selectPlayer(`Leo M.`)
+
+  await expect.poll(readBarLabels).toStrictEqual([`Clear`, `Delete 1`])
 })
 
 test(`a section's checkbox selects only that section`, async () => {
@@ -398,6 +411,143 @@ test(`clearing the selection focuses its first player's checkbox`, async () => {
   await expect
     .element(page.getByRole(`checkbox`, { name: `Select Jonah K.` }))
     .toHaveFocus()
+})
+
+const deleteFromMenu = async (name: string) => {
+  await page.getByRole(`button`, { name: `More for ${name}` }).click()
+  await page.getByRole(`menuitem`, { name: `Delete` }).click()
+}
+
+const confirmDelete = (label: string) =>
+  page.getByRole(`alertdialog`).getByRole(`button`, { name: label }).click()
+
+test(`deleting a player asks first, naming them`, async () => {
+  await renderPlayers([MAYA])
+
+  await deleteFromMenu(`Maya R.`)
+
+  await expect
+    .element(page.getByRole(`alertdialog`))
+    .toHaveTextContent(
+      `Delete Maya R.’s bracket?It moves to this contest’s trash, and Maya R.’s personal link stops working. You can restore it until next year’s bracket is published.CancelDelete bracket`,
+    )
+  await expectNoAxeViolations()
+})
+
+test(`canceling a delete returns focus to the player's menu`, async () => {
+  await renderPlayers([MAYA])
+  await deleteFromMenu(`Maya R.`)
+  await expect
+    .element(page.getByRole(`button`, { name: `Cancel` }))
+    .toHaveFocus()
+
+  await userEvent.keyboard(ESCAPE)
+
+  await expect
+    .element(page.getByRole(`button`, { name: `More for Maya R.` }))
+    .toHaveFocus()
+})
+
+test(`deleting a player removes their row and focuses the next one`, async () => {
+  await renderPlayers([MAYA, JONAH])
+  await deleteFromMenu(`Maya R.`)
+
+  await confirmDelete(`Delete bracket`)
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Approve Jonah K.` }))
+    .toHaveFocus()
+  await expect.element(page.getByText(`Deleted Maya R.`)).toBeInTheDocument()
+  await expect
+    .element(page.getByRole(`row`, { name: /Maya R\./u }))
+    .not.toBeInTheDocument()
+})
+
+test(`deleting a section's last player focuses the list's first heading`, async () => {
+  await renderPlayers([AVA, LEO])
+  await deleteFromMenu(`Leo M.`)
+
+  await confirmDelete(`Delete bracket`)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Approved (1)` }))
+    .toHaveFocus()
+})
+
+test(`deleting the last player focuses and shows the empty list`, async () => {
+  await renderPlayers([MAYA])
+  await deleteFromMenu(`Maya R.`)
+
+  await confirmDelete(`Delete bracket`)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Players` }))
+    .toHaveFocus()
+  await expect.element(page.getByText(`Deleted Maya R.`)).toBeInTheDocument()
+})
+
+test(`deleting a selection asks once, naming the players`, async () => {
+  await renderPlayers([MAYA, LEO])
+  await selectPlayer(`Maya R.`)
+  await selectPlayer(`Leo M.`)
+
+  await selectionBar.getByRole(`button`, { name: `Delete 2` }).click()
+
+  await expect
+    .element(page.getByRole(`alertdialog`))
+    .toHaveTextContent(
+      `Delete 2 brackets?Maya R. and Leo M. move to this contest’s trash, and their personal links stop working. You can restore them until next year’s bracket is published.CancelDelete 2 brackets`,
+    )
+})
+
+test(`deleting a selection removes its rows and clears it`, async () => {
+  await renderPlayers([MAYA, AVA, LEO])
+  await selectPlayer(`Maya R.`)
+  await selectPlayer(`Leo M.`)
+  await selectionBar.getByRole(`button`, { name: `Delete 2` }).click()
+
+  await confirmDelete(`Delete 2 brackets`)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Approved (1)` }))
+    .toHaveFocus()
+  await expect.element(page.getByText(`Deleted 2 brackets`)).toBeInTheDocument()
+  await expect.element(selectionBar).not.toBeInTheDocument()
+})
+
+test(`a refused delete leaves the row and says why`, async () => {
+  await renderPlayers([MAYA], { refuseDelete: true })
+  await deleteFromMenu(`Maya R.`)
+
+  await confirmDelete(`Delete bracket`)
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`Nothing was deleted`)
+  await expect.element(section(/^Pending/u).getByText(`Maya R.`)).toBeVisible()
+})
+
+test(`deleting a player from their menu keeps the other rows selected`, async () => {
+  await renderPlayers([MAYA, JONAH])
+  await selectPlayer(`Jonah K.`)
+  await deleteFromMenu(`Maya R.`)
+
+  await confirmDelete(`Delete bracket`)
+
+  await expect.element(page.getByText(`Deleted Maya R.`)).toBeInTheDocument()
+  await expect.element(selectionBar.getByText(`1 selected`)).toBeVisible()
+})
+
+test(`Escape in a delete's dialog keeps the selection`, async () => {
+  await renderPlayers([MAYA])
+  await selectPlayer(`Maya R.`)
+  await selectionBar.getByRole(`button`, { name: `Delete 1` }).click()
+  await expect.element(page.getByRole(`alertdialog`)).toBeVisible()
+
+  await userEvent.keyboard(ESCAPE)
+
+  await expect.element(page.getByRole(`alertdialog`)).not.toBeInTheDocument()
+  await expect.element(selectionBar).toBeVisible()
 })
 
 test(`a possible duplicate's note links to the other player`, async () => {

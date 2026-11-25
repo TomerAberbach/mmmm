@@ -227,16 +227,18 @@ model Battle {
 // A year's contests exist only while its bracket is published. Deleting the
 // educator or the bracket fails while either has a contest
 model Contest {
-  id         String   @id
+  id         String    @id
   year       Int
   educatorId String
   name       String
   // The contest link's secret. Stored as is, since the educator copies it
-  linkSecret String   @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  bracket    Bracket  @relation(fields: [year], references: [year], onDelete: Restrict)
-  educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Restrict)
+  linkSecret String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  // Set while the contest is in the trash
+  deletedAt  DateTime?
+  bracket    Bracket   @relation(fields: [year], references: [year], onDelete: Restrict)
+  educator   Educator  @relation(fields: [educatorId], references: [id], onDelete: Restrict)
   players    Player[]
 
   @@index([educatorId, year])
@@ -245,18 +247,27 @@ model Contest {
 
 // One person's bracket in one contest: a draft until it's submitted
 model Player {
-  id               String      @id
+  id               String         @id
   contestId        String
   displayName      String
   // A SHA-256 hash of the personal link's secret, so a database leak reveals
   // no working link
-  personalLinkHash String      @unique
-  createdAt        DateTime    @default(now())
-  contest          Contest     @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  personalLinkHash String         @unique
+  createdAt        DateTime       @default(now())
+  // Both set while the player is in the trash, which a CHECK constraint ensures
+  deletedAt        DateTime?
+  deletedBy        PlayerDeleter?
+  contest          Contest        @relation(fields: [contestId], references: [id], onDelete: Cascade)
   picks            Pick[]
   submission       Submission?
 
   @@index([contestId])
+}
+
+// Whoever moved a player to the trash
+enum PlayerDeleter {
+  EDUCATOR
+  PLAYER
 }
 
 // The set of picks a pick belongs to. A player edits their draft, and submitting

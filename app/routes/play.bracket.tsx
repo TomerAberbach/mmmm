@@ -25,6 +25,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     readDraftAndSubmission(player.id),
   ])
   return {
+    playerId: player.id,
     displayName: player.displayName,
     year,
     bracket: bracket!,
@@ -49,6 +50,8 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => (
       submitted={loaderData.submitted}
       picksPath={href(`/play/:linkSecret/bracket/picks`, params)}
       forgetPath={href(`/play/:linkSecret/forgotten`, params)}
+      playerId={loaderData.playerId}
+      deletePath={href(`/play/:linkSecret/deleted`, params)}
     />
   </div>
 )

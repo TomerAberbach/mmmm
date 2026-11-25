@@ -25,8 +25,25 @@ export default [
   route(`contests`, `routes/contests.tsx`, [
     index(`routes/contests._index.tsx`),
     route(`new`, `routes/contests.new.ts`),
+    route(`trash`, `routes/contests.trash.tsx`),
+    route(`trash/restore`, `routes/contests.trash.restore.ts`),
+    route(`trash/erase`, `routes/contests.trash.erase.ts`),
     route(`:contestId`, `routes/contests.$contestId.tsx`),
     route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
+    route(`:contestId/delete`, `routes/contests.$contestId.delete.ts`),
+    route(`:contestId/trash`, `routes/contests.$contestId.trash.tsx`),
+    route(
+      `:contestId/trash/restore`,
+      `routes/contests.$contestId.trash.restore.ts`,
+    ),
+    route(
+      `:contestId/trash/erase`,
+      `routes/contests.$contestId.trash.erase.ts`,
+    ),
+    route(
+      `:contestId/players/delete`,
+      `routes/contests.$contestId.players.delete.ts`,
+    ),
     route(
       `:contestId/approve-pending`,
       `routes/contests.$contestId.approve-pending.ts`,
@@ -45,7 +62,9 @@ export default [
     route(`bracket`, `routes/play.bracket.tsx`),
     route(`bracket/picks`, `routes/play.bracket.picks.ts`),
     route(`forgotten`, `routes/play.forgotten.tsx`),
+    route(`deleted`, `routes/play.deleted.tsx`),
   ]),
+  route(`contest-removed`, `routes/contest-removed.tsx`),
   route(`my-bracket/:secret`, `routes/my-bracket.tsx`),
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [

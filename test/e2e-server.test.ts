@@ -3,9 +3,13 @@ import { promisify } from 'node:util'
 import { expect, test } from 'vitest'
 import { prisma } from '../app/db.server.ts'
 
+/**
+ * Leaves out Vitest workers' databases, whose names end in the worker's number,
+ * since other workers create theirs while this test runs
+ */
 const listTestDatabases = async (): Promise<string[]> => {
   const rows = await prisma.$queryRaw<{ datname: string }[]>`
-    SELECT datname FROM pg_database WHERE datname LIKE 'mmmm_test_%'
+    SELECT datname FROM pg_database WHERE datname ~ '^mmmm_test_[0-9a-f]+$'
   `
   return rows.map(row => row.datname).sort()
 }

@@ -43,7 +43,12 @@ export const readDraftAndSubmission = async (
 
 /** Only the current year's contests take picks */
 export type PicksRefusal = {
-  refusal: `NOT_CURRENT_YEAR` | `INCONSISTENT` | `INCOMPLETE` | `NOT_SUBMITTED`
+  refusal:
+    | `NOT_CURRENT_YEAR`
+    | `DELETED`
+    | `INCONSISTENT`
+    | `INCOMPLETE`
+    | `NOT_SUBMITTED`
 }
 
 /**
@@ -160,8 +165,8 @@ const writePicks = async (
 
 /**
  * Runs `change` in a transaction once it holds the player's row and the year,
- * refusing unless the year is current. The player must be in one of the year's
- * contests
+ * refusing unless the year is current and the player and their contest are
+ * outside the trash. The player must be in one of the year's contests
  */
 const withCurrentPlayer = <Result>(
   playerId: string,
@@ -169,7 +174,20 @@ const withCurrentPlayer = <Result>(
   change: (tx: Prisma.TransactionClient) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
   prisma.$transaction(async tx => {
-    await tx.$queryRaw`SELECT 1 FROM "Player" WHERE "id" = ${playerId} FOR UPDATE`
+    // The request may have read the player before another deleted them or
+    // their contest
+    const [player] = await tx.$queryRaw<{ isDeleted: boolean }[]>`
+      SELECT
+        "Player"."deletedAt" IS NOT NULL
+          OR "Contest"."deletedAt" IS NOT NULL AS "isDeleted"
+      FROM "Player"
+      JOIN "Contest" ON "Contest"."id" = "Player"."contestId"
+      WHERE "Player"."id" = ${playerId}
+      FOR UPDATE OF "Player"
+    `
+    if (!player || player.isDeleted) {
+      return { refusal: `DELETED` } as const
+    }
     return (await lockYear(tx, year, `SHARE`)) === `CURRENT`
       ? change(tx)
       : ({ refusal: `NOT_CURRENT_YEAR` } as const)

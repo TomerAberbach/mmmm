@@ -4,6 +4,7 @@ import {
   addPlayer,
   addSubmission,
   createContestInNewYear,
+  readEducatorId,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import {
@@ -12,15 +13,6 @@ import {
   renamePlayer,
   setSubmissionStatus,
 } from './contest-players.server.ts'
-import { prisma } from './db.server.ts'
-
-const readEducatorId = async (contestId: string): Promise<string> =>
-  (
-    await prisma.contest.findUniqueOrThrow({
-      where: { id: contestId },
-      select: { educatorId: true },
-    })
-  ).educatorId
 
 const readStatuses = async (
   contestId: string,
