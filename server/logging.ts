@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express'
 
 /**
- * Reset links, contest links, and personal links. React Router matches paths in
- * any case
+ * Reset links, contest links, personal links, and links that confirm a new
+ * address. React Router matches paths in any case
  */
 const SECRET_PATH =
   /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket|confirm-address)\/)[^/]+/iu

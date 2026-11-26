@@ -37,7 +37,6 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
     if (domain === educator.organizationDomain) {
       return
     }
-    await endShares(educatorId, tx)
     if (domain !== null) {
       await tx.organization.createMany({
         data: { domain },
@@ -48,6 +47,8 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
       where: { id: educatorId },
       data: { organizationDomain: domain },
     })
+    // After the educator, which deleting one locks before their shares
+    await endShares(educatorId, tx)
   })
 
 /** Null for an educator without an organization */

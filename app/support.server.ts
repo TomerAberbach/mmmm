@@ -1,4 +1,4 @@
-import { withCurrentYear } from './brackets.server.ts'
+import { withCurrentYear, withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
@@ -52,7 +52,11 @@ export const handOverContest = (
   contestId: string,
   educatorId: string,
 ): Promise<boolean> =>
-  prisma.$transaction(async tx => {
+  withCurrentYear(async tx => {
+    // An educator deleted meanwhile would fail the update
+    await tx.$queryRaw`
+      SELECT 1 FROM "Educator" WHERE "id" = ${educatorId} FOR KEY SHARE
+    `
     const educator = await tx.educator.findUnique({
       where: { id: educatorId, emailVerified: true },
       select: { id: true },
@@ -76,8 +80,8 @@ export const deleteOrganization = (
   domain: string,
   adminId: string,
 ): Promise<`DELETED` | `GONE` | `OWN`> =>
-  // Takes the year lock before any row, as every other change does
-  withCurrentYear(async tx => {
+  // Alone, since changes to one contest lock its rows in another order
+  withCurrentYearAlone(async tx => {
     await lockPlayers(tx)
     // A contest created or orphaned meanwhile would keep the organization
     await tx.$queryRaw`

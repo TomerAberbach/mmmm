@@ -8,6 +8,7 @@ import { sendEmail, sendNoticeOrLog } from './email.server.ts'
 import { addressChangedEmail } from './emails/address-changed.server.tsx'
 import { confirmAddressEmail } from './emails/confirm-address.server.tsx'
 import { toAppUrl } from './env.server.ts'
+import { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
 import { joinOrganization } from './organizations.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
@@ -87,39 +88,70 @@ export const readAddressChange = async (
 export const confirmAddressChange = async (
   secret: string,
 ): Promise<boolean> => {
-  const changed = await prisma.$transaction(async tx => {
-    // Deleting it first lets only one request use the link
-    const [verification] = await tx.$queryRaw<{ value: string }[]>`
+  const changed = await changeAddress(secret)
+  if (!changed) {
+    return false
+  }
+  await sendNoticeOrLog(addressChangedEmail({ to: changed.oldEmail }))
+  try {
+    await joinOrganization(changed.educatorId)
+  } catch (error) {
+    // The address has changed, and the next sign-in joins again
+    console.error(`Joining an organization failed`, error)
+  }
+  return true
+}
+
+type AddressChange = { educatorId: string; oldEmail: string }
+
+/**
+ * Null when the link stopped working, or the address was taken or the educator
+ * deleted, also meanwhile
+ */
+const changeAddress = async (secret: string): Promise<AddressChange | null> => {
+  try {
+    return await prisma.$transaction(tx => spendLink(secret, tx))
+  } catch (error) {
+    if (isLostRace(error)) {
+      return null
+    }
+    throw error
+  }
+}
+
+/** The address now has another educator, or the educator is gone */
+const isLostRace = (error: unknown): boolean =>
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  (error.code === `P2002` || error.code === `P2025`)
+
+const spendLink = async (
+  secret: string,
+  tx: Prisma.TransactionClient,
+): Promise<AddressChange | null> => {
+  // Deleting it first lets only one request use the link
+  const [verification] = await tx.$queryRaw<{ value: string }[]>`
       DELETE FROM "Verification"
       WHERE "identifier" = ${toIdentifier(secret)} AND "expiresAt" > ${new Date()}
       RETURNING "value"
     `
-    if (!verification) {
-      return null
-    }
-    const { educatorId, email } = parseChange(verification.value)
-    const educator = await tx.educator.findUnique({
-      where: { id: educatorId, emailVerified: true },
-      select: { email: true },
-    })
-    if (!educator || !(await freeAddress(email, tx))) {
-      return null
-    }
-    await tx.educator.update({ where: { id: educatorId }, data: { email } })
-    await tx.session.deleteMany({ where: { educatorId } })
-    // Reset links and address changes already sent
-    await tx.verification.deleteMany({
-      where: {
-        value: { contains: educatorId },
-      },
-    })
-    return { educatorId, oldEmail: educator.email }
-  })
-  if (!changed) {
-    return false
+  if (!verification) {
+    return null
   }
-  // First, so a failure to join can't hide the change from the old address
-  await sendNoticeOrLog(addressChangedEmail({ to: changed.oldEmail }))
-  await joinOrganization(changed.educatorId)
-  return true
+  const { educatorId, email } = parseChange(verification.value)
+  const educator = await tx.educator.findUnique({
+    where: { id: educatorId, emailVerified: true },
+    select: { email: true },
+  })
+  if (!educator || !(await freeAddress(email, tx))) {
+    return null
+  }
+  await tx.educator.update({ where: { id: educatorId }, data: { email } })
+  await tx.session.deleteMany({ where: { educatorId } })
+  // Reset links and address changes already sent
+  await tx.verification.deleteMany({
+    where: {
+      value: { contains: educatorId },
+    },
+  })
+  return { educatorId, oldEmail: educator.email }
 }

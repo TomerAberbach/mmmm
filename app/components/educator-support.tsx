@@ -1,9 +1,14 @@
 import { getFormProps } from '@conform-to/react'
+import { useState } from 'react'
+import { DialogTrigger } from 'react-aria-components'
 import { href, useFetcher } from 'react-router'
+import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { DeleteAccountDialog } from './delete-account-dialog.tsx'
 import { FormError } from './form-error.tsx'
-import { SavedNotice } from './saved-notice.tsx'
+import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
+import { Notice } from './notice.tsx'
+import { isSaved } from './saved-notice.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
@@ -54,44 +59,76 @@ const listFacts = ({
   [`Signed up`, formatArizonaDate(createdAt)],
 ]
 
-const ChangeAddress = ({ educator: { id } }: { educator: FoundEducator }) => {
+const ChangeAddress = ({ educator }: { educator: FoundEducator }) => {
   const fetcher = useFetcher<SavedResult>()
-  const { form, fields } = useValidatedForm(addressSchema, fetcher.data?.result)
+  const [isOpen, setIsOpen] = useState(false)
+  const isSent = isSaved(fetcher)
   return (
     <SettingsSection title='Change address'>
       <p className='text-muted'>
         The new address gets a link. The educator keeps the old address until
         they use it.
       </p>
-      <fetcher.Form
-        method='post'
-        action={href(`/admin/educators/:educatorId/address`, {
-          educatorId: id,
-        })}
-        {...getFormProps(form)}
-        className='flex flex-col gap-4'
-      >
-        <TextField
-          key={fields.email.key}
-          {...fieldProps(fields.email)}
-          type='email'
-          label='New email address'
-          autoComplete='off'
-        />
-        <div>
-          <Button
-            type='submit'
-            variant='secondary'
-            isPending={fetcher.state !== `idle`}
-          >
-            Change address
-          </Button>
-        </div>
-        <SavedNotice fetcher={fetcher} isFormValid={form.valid}>
+      <div>
+        <DialogTrigger
+          isOpen={isOpen && !isSent}
+          onOpenChange={open => {
+            if (open) {
+              fetcher.reset()
+            }
+            setIsOpen(open)
+          }}
+        >
+          <Button variant='secondary'>Change address</Button>
+          <ModalFrame title={`Change ${educator.name}’s address?`}>
+            <ChangeAddressForm educator={educator} fetcher={fetcher} />
+          </ModalFrame>
+        </DialogTrigger>
+      </div>
+      {isSent ? (
+        <Notice kind='status'>
           We emailed the new address. It changes once they confirm it.
-        </SavedNotice>
-        <FormError form={form} />
-      </fetcher.Form>
+        </Notice>
+      ) : null}
     </SettingsSection>
+  )
+}
+
+const ChangeAddressForm = ({
+  educator: { id, email },
+  fetcher,
+}: {
+  educator: FoundEducator
+  fetcher: FetcherWithComponents<SavedResult>
+}) => {
+  const { form, fields } = useValidatedForm(addressSchema, fetcher.data?.result)
+  return (
+    <fetcher.Form
+      method='post'
+      action={href(`/admin/educators/:educatorId/address`, {
+        educatorId: id,
+      })}
+      {...getFormProps(form)}
+      className='flex flex-col gap-4'
+    >
+      <p className='wrap-anywhere'>
+        {`Once confirmed, it replaces ${email} and signs them out. An address at another domain moves them and their contests to its organization, and ends their shares.`}
+      </p>
+      <TextField
+        {...fieldProps(fields.email)}
+        type='email'
+        label='New email address'
+        autoComplete='off'
+      />
+      <div className={BUTTONS_CLASS_NAME}>
+        <Button slot='close' variant='secondary'>
+          Cancel
+        </Button>
+        <Button type='submit' isPending={fetcher.state !== `idle`}>
+          Send the link
+        </Button>
+      </div>
+      <FormError form={form} />
+    </fetcher.Form>
   )
 }
