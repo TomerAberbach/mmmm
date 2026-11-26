@@ -27,6 +27,7 @@ mmmm
 ├── test/database.ts    # Creates throwaway databases for each Vitest worker and Playwright run
 ├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins
 ├── docs/cutover.md     # The runbook for replacing mmmm-old
+├── docs/qa.md          # The manual QA run
 └── e2e/                # Playwright tests against the production build. Has its own CLAUDE.md
 ```
 
