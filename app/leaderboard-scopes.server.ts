@@ -24,6 +24,20 @@ import { readRequiredEducator } from './session.server.ts'
 /** A leaderboard, and what its ranks are in, such as a contest's name */
 export type NamedScope = { scope: LeaderboardScope; name: string }
 
+type LeaderboardKind = LeaderboardScope[`kind`]
+
+export const LEADERBOARD_TITLES: Record<LeaderboardKind, string> = {
+  contest: `Leaderboard`,
+  organization: `Organization leaderboard`,
+  global: `Global leaderboard`,
+}
+
+/** The scope whose kind is in the address, or null when the viewer has none */
+export const findScope = (
+  scopes: NamedScope[],
+  kind: string,
+): NamedScope | null => scopes.find(({ scope }) => scope.kind === kind) ?? null
+
 export const toContestScope = ({
   id,
   name,
@@ -37,14 +51,14 @@ export const toContestScope = ({
   name,
 })
 
-export const toGlobalScope = (year: number): NamedScope => ({
+const toGlobalScope = (year: number): NamedScope => ({
   scope: { kind: `global`, year },
   name: `Everyone`,
 })
 
 /** A player's rank in one scope. Null where its leaderboard leaves them out */
 export type ScopeRank = {
-  kind: LeaderboardScope[`kind`]
+  kind: LeaderboardKind
   name: string
   rank: PlayerRank | null
 }
@@ -106,7 +120,7 @@ export const findRankedContestId = async (
 }
 
 /** Null without an organization */
-export const readEducatorOrganizationScope = async (
+const readEducatorOrganizationScope = async (
   educatorId: string,
   year: number,
 ): Promise<NamedScope | null> => {
@@ -115,7 +129,7 @@ export const readEducatorOrganizationScope = async (
 }
 
 /** Null when the contest counts toward no organization */
-export const readContestOrganizationScope = async (contest: {
+const readContestOrganizationScope = async (contest: {
   id: string
   year: number
 }): Promise<NamedScope | null> => {
@@ -145,7 +159,12 @@ export const readRequiredLeaderboard = async (
   named: NamedScope | null,
   viewer: LeaderboardViewer,
   fallback: string,
-): Promise<{ name: string; year: number; leaderboard: LeaderboardPage }> => {
+): Promise<{
+  kind: LeaderboardKind
+  name: string
+  year: number
+  leaderboard: LeaderboardPage
+}> => {
   const leaderboard =
     named &&
     (await readLeaderboard(named.scope, viewer, readPageNumber(request)))
@@ -154,7 +173,8 @@ export const readRequiredLeaderboard = async (
     // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw redirect(fallback)
   }
-  return { name: named.name, year: named.scope.year, leaderboard }
+  const { kind, year } = named.scope
+  return { kind, name: named.name, year, leaderboard }
 }
 
 /** Throws the not-found page for a player without a row */

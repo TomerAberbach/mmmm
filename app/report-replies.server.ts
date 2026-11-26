@@ -1,6 +1,7 @@
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 import type { ConfirmResult } from './form-replies.server.ts'
+import { readClientIp, toRefusal, tryConsume } from './limits.server.ts'
 import { CONTEST_TARGET, reportSchema } from './report-forms.ts'
-import { limitReport } from './report-limits.server.ts'
 import { dismissReport, saveReport } from './reports.server.ts'
 import type { ReportReader } from './reports.server.ts'
 
@@ -32,6 +33,25 @@ export const answerReport = async (
   return isSaved
     ? { ok: true }
     : { error: `That isn’t here anymore. Reload the page` }
+}
+
+/** A whole school can share one IP address */
+const REPORTS_PER_IP = new RateLimiterMemory({
+  keyPrefix: `report:ip`,
+  points: 100,
+  duration: 60 * 60,
+})
+
+/** Resolves to why the report is refused, if it is */
+const limitReport = async (request: Request): Promise<string | undefined> => {
+  const refusal = await tryConsume(
+    REPORTS_PER_IP,
+    readClientIp(request.headers),
+  )
+  return (
+    refusal &&
+    toRefusal(refusal, wait => `Too many reports right now. ${wait}`).message
+  )
 }
 
 /** Answers Dismiss */
