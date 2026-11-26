@@ -65,12 +65,19 @@ export const readSharedContestIds = async (
   return new Set(contests.map(({ id }) => id))
 }
 
-/** By name */
+/** The colleagues who can open the contest, by name */
 export const readColleagues = async (
   contestId: string,
 ): Promise<Colleague[]> => {
   const shares = await prisma.share.findMany({
-    where: { contestId },
+    where: {
+      contestId,
+      educator: {
+        organization: {
+          educators: { some: { contests: { some: { id: contestId } } } },
+        },
+      },
+    },
     orderBy: [{ educator: { name: `asc` } }, { educatorId: `asc` }],
     select: { educator: { select: { id: true, name: true, email: true } } },
   })

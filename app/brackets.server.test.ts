@@ -417,3 +417,19 @@ test(`a bracket whose combatants share a name still reads`, async () => {
 
   await expect(readBracket(year)).resolves.not.toBeNull()
 })
+
+test.each([true, false])(
+  `a past year's publication doesn't change (to published: %s)`,
+  async published => {
+    const year = await addYear({ published: !published })
+    await addYear({ published: true })
+
+    const result = await setBracketPublished(year, published)
+
+    expect(result).toBe(`PAST`)
+    const { publishedAt } = await prisma.bracket.findUniqueOrThrow({
+      where: { year },
+    })
+    expect(publishedAt !== null).toBe(!published)
+  },
+)

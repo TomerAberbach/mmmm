@@ -19,6 +19,7 @@ export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
             <p className='wrap-anywhere text-muted'>
               {[
                 contest.isHidden ? `Hidden` : null,
+                contest.year,
                 contest.educatorName,
                 contest.organizationName,
                 `${contest.approvedCount} approved`,
