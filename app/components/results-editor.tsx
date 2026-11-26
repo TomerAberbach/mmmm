@@ -139,8 +139,8 @@ export const ResultsEditor = ({
       <div className='mx-auto flex w-full max-w-6xl flex-col gap-2'>
         <h2 className={SECTION_HEADING_CLASS_NAME}>Results</h2>
         <p className='max-w-prose text-muted'>
-          Press a battle’s winner to record its result. Press them again to
-          clear it.
+          Press a battle’s winner to record its result. Press the same winner
+          again to clear the result.
         </p>
       </div>
       <div className='sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-ink bg-white py-3 print:hidden'>
@@ -174,7 +174,7 @@ export const ResultsEditor = ({
       <ClearedNotice
         message={
           cleared.length > 0
-            ? `Also cleared ${formatCount(cleared.length, `later result`)}: ${cleared.map(readBattleName).join(`, `)}.`
+            ? `Also cleared ${formatCount(cleared.length, `later result`)}: ${cleared.map(readBattleName).join(`; `)}`
             : null
         }
       />

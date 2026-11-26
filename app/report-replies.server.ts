@@ -32,7 +32,7 @@ export const answerReport = async (
     (await saveReport({ contestId, playerId, reason: data.reason }))
   return isSaved
     ? { ok: true }
-    : { error: `That isn’t here anymore. Reload the page` }
+    : { error: `This name is gone. Reload the page` }
 }
 
 /** A whole school can share one IP address */
@@ -62,5 +62,5 @@ export const answerDismissal = async (
   const id = (await request.formData()).get(`id`)
   return typeof id === `string` && (await dismissReport(reader, id))
     ? { ok: true }
-    : { error: `That report is gone. Reload the page` }
+    : { error: `This report is gone. Reload the page` }
 }

@@ -22,7 +22,7 @@ export const OrganizationNameCard = ({ domain }: { domain: string }) => {
     <section className='flex flex-col gap-3 border-2 border-ink p-5'>
       <h2 className={SECTION_HEADING_CLASS_NAME}>Name your organization</h2>
       <p className='max-w-prose'>
-        {`You’re with everyone whose email ends in `}
+        {`You’re with everyone whose email address ends in `}
         <strong>{domain}</strong>, and your contests share a leaderboard. No one
         has named it yet.
       </p>

@@ -45,8 +45,8 @@ export const ContestDetails = ({
     ) : (
       <>
         <SubmissionsClosed>
-          The contest link no longer starts brackets. You can still approve,
-          reject, and rename.
+          The contest link no longer starts brackets. You can still manage the
+          players below.
         </SubmissionsClosed>
         <Link
           to={href(`/contests/:contestId/leaderboard`, {
@@ -124,22 +124,25 @@ const DeleteContestButton = ({
 }: {
   contest: Contest
   players: ContestPlayer[]
-}) => {
-  const submissionCount = players.filter(({ status }) => status !== null).length
-  const draftCount = players.length - submissionCount
-  return (
-    <ConfirmDialog
-      trigger={<Button variant='secondary'>Delete contest</Button>}
-      title={`Delete ${name}?`}
-      confirmLabel='Delete contest'
-      action={href(`/contests/:contestId/delete`, { contestId: id })}
-    >
-      <p>
-        {`Its ${formatCount(submissionCount, `submission`)} and ${formatCount(draftCount, `draft`)} go with it, and its contest link and personal links stop working. You can restore it until next year’s bracket is published.`}
-      </p>
-    </ConfirmDialog>
-  )
-}
+}) => (
+  <ConfirmDialog
+    trigger={<Button variant='secondary'>Delete contest</Button>}
+    title={`Delete ${name}?`}
+    confirmLabel='Delete contest'
+    action={href(`/contests/:contestId/delete`, { contestId: id })}
+  >
+    <p>
+      {describeDeletion(players.length)}
+      {` `}
+      You can restore it until next year’s bracket is published.
+    </p>
+  </ConfirmDialog>
+)
+
+const describeDeletion = (count: number): string =>
+  count === 0
+    ? `Its contest link stops working.`
+    : `Its ${formatCount(count, `bracket`)} ${count === 1 ? `goes` : `go`} with it, and its contest link and personal links stop working.`
 
 const ContestLink = ({ contest: { id, link } }: { contest: Contest }) => (
   <SettingsSection title='Contest link'>
@@ -175,11 +178,11 @@ const ContestLink = ({ contest: { id, link } }: { contest: Contest }) => (
 const NewContestLink = ({ contestId }: { contestId: string }) => (
   <div className='flex flex-col items-start gap-3'>
     <ConfirmDialog
-      trigger={<Button variant='secondary'>New contest link</Button>}
+      trigger={<Button variant='secondary'>Replace contest link</Button>}
       title='Replace the contest link?'
-      confirmLabel='Create new link'
+      confirmLabel='Replace contest link'
       action={href(`/contests/:contestId/link`, { contestId })}
-      successNotice='Created a new contest link. The old one no longer works'
+      successNotice='Replaced the contest link. The old one no longer works'
     >
       <p>
         The old link stops working, so share the new one with your players.

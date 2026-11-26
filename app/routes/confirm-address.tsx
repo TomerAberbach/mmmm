@@ -56,9 +56,10 @@ const ConfirmAddress = ({ loaderData, actionData }: Route.ComponentProps) => (
       </>
     ) : (
       <>
-        <PageTitle>This link no longer works</PageTitle>
+        <PageTitle>This link doesn’t work</PageTitle>
         <p>
-          It expired or was already used. Email <SupportLink /> for a new one.
+          It expired, was already used, or was replaced by a newer link. Check
+          your email for a newer one, or email <SupportLink />.
         </p>
         <HomeLink />
       </>

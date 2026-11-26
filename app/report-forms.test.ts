@@ -10,3 +10,12 @@ test.each([
 
   expect(success).toBe(true)
 })
+
+test.each([
+  [`a player`, `0b0b7d2e-6a52-4d0c-9a5c-0f0d4b1c2a3e`, true],
+  [`the contest's name`, `contest`, false],
+])(`whether %s can be reported as not a real player`, (_, target, expected) => {
+  const { success } = reportSchema.safeParse({ target, reason: `NOT_REAL` })
+
+  expect(success).toBe(expected)
+})

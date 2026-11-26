@@ -19,7 +19,7 @@ export const DeleteOrganizationDialog = ({ domain }: { domain: string }) => (
     <Button variant='quiet' aria-label={`Delete data from ${domain}`}>
       Delete data
     </Button>
-    <ModalFrame title={`Delete everything from ${domain}?`} role='alertdialog'>
+    <ModalFrame title={`Delete all data from ${domain}?`} role='alertdialog'>
       <DeleteOrganizationForm domain={domain} />
     </ModalFrame>
   </DialogTrigger>

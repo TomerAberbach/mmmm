@@ -115,7 +115,7 @@ test(`changing a result names the later results it clears`, async () => {
     )
   await confirm(`Change result`)
   await expect
-    .element(page.getByText(`Also cleared 1 later result: Round 2, battle 1.`))
+    .element(page.getByText(`Also cleared 1 later result: Round 2, battle 1`))
     .toBeVisible()
   expect(readRequests()).toMatchObject([
     {

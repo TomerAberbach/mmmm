@@ -545,7 +545,7 @@ test(`removing a passkey that another tab removed says to reload`, async () => {
   )
 
   expect(reply).toStrictEqual({
-    error: `That passkey wasn’t found. Reload the page`,
+    error: `This passkey is gone. Reload the page`,
   })
 })
 

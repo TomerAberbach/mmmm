@@ -13,12 +13,12 @@ export const EDUCATOR_NAME: FreeTextField = {
 }
 
 export const DIVISION_NAME: FreeTextField = {
-  label: `each division’s name`,
+  label: `the division’s name`,
   maxLength: 80,
 }
 
 export const COMBATANT_NAME: FreeTextField = {
-  label: `each combatant’s name`,
+  label: `the combatant’s name`,
   maxLength: 80,
 }
 

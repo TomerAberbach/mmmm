@@ -606,7 +606,9 @@ export const renameCombatant = (
       select: { id: true, name: true },
     })
     if (!combatants.some(({ id }) => id === combatantId)) {
-      return { error: `That combatant isn’t in the ${year} bracket` }
+      return {
+        error: `This combatant isn’t in the ${year} bracket. Reload the page`,
+      }
     }
     const others = combatants.filter(({ id }) => id !== combatantId)
     const taken = others.find(other => isSameName(other.name, name))

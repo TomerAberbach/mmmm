@@ -75,7 +75,10 @@ const DeleteAccountForm = ({
             </li>
           </>
         ) : null}
-        <li>Sharing contests to and from the account ends.</li>
+        <li>
+          The contests this account shares stop being shared, and it loses those
+          shared with it.
+        </li>
       </ul>
       <TextField
         {...fieldProps(fields.email)}

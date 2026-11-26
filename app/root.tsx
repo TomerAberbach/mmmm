@@ -25,6 +25,7 @@ import { PageTitle } from './components/page-title.tsx'
 import { BrokenLink } from './components/removed.tsx'
 import { SiteFooter } from './components/site-footer.tsx'
 import { SiteHeader } from './components/site-header.tsx'
+import { SupportLink } from './components/support-link.tsx'
 import { requireEnv } from './env.server.ts'
 import { countReports } from './reports.server.ts'
 import { loadSignedInEducator, readSignedInEducator } from './session.server.ts'
@@ -115,13 +116,22 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   if (isBrokenLink(error)) {
     return <BrokenLink />
   }
-  const heading =
-    isRouteErrorResponse(error) && error.status === 404
-      ? `Page not found`
-      : `Something went wrong`
+  const isNotFound = isRouteErrorResponse(error) && error.status === 404
   return (
     <div className='flex flex-col gap-4'>
-      <PageTitle>{heading}</PageTitle>
+      <PageTitle>
+        {isNotFound ? `Page not found` : `Something went wrong`}
+      </PageTitle>
+      <p>
+        {isNotFound ? (
+          `Check the address for typos, or ask whoever sent you the link for a new one.`
+        ) : (
+          <>
+            Reload the page to try again. If it keeps happening, email{` `}
+            <SupportLink />.
+          </>
+        )}
+      </p>
       <Link to={href(`/`)} className='font-semibold'>
         Go to the home page
       </Link>

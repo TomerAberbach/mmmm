@@ -48,7 +48,7 @@ const renderNewLink = async (
 }
 
 const createLink = () =>
-  page.getByRole(`button`, { name: `Create new link` }).click()
+  page.getByRole(`button`, { name: `Replace personal link` }).click()
 
 test(`replacing a personal link asks first`, async () => {
   await renderNewLink(Response.json({ link: LINK }))
@@ -56,7 +56,7 @@ test(`replacing a personal link asks first`, async () => {
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Replace Maya R.’s personal link?The old link stops working, also in any browser that has it open. Give Maya R. the new one, and no one else.CancelCreate new link`,
+      `Replace Maya R.’s personal link?The old link stops working, also in any browser that has it open. Give Maya R. the new one, and no one else.CancelReplace personal link`,
     )
 })
 
@@ -104,7 +104,7 @@ test(`a refused replacement says the old link may or may not work`, async () => 
   await expect
     .element(page.getByRole(`dialog`))
     .toHaveTextContent(
-      `No new link for Maya R.Something went wrong, so the old link may or may not still work. Reload the page and try again.Close`,
+      `Couldn’t replace Maya R.’s personal linkSomething went wrong, so the old link may or may not still work. Reload the page and try again.Close`,
     )
 })
 

@@ -61,8 +61,8 @@ const Intro = ({
     </p>
     {isUpcomingCurrent ? null : (
       <p className='font-condensed text-xl font-bold tracking-wide text-muted'>
-        MMMM adds the {upcomingYear} bracket once ASU publishes it, usually in
-        late February.
+        MMMM adds the {upcomingYear} bracket once ASU publishes it in late
+        February.
       </p>
     )}
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>

@@ -172,7 +172,7 @@ test(`a removed name can't be reported, unlike a hidden one`, async () => {
     HIDDEN,
     { ...JONAH, label: `Player`, isNameRemoved: true },
   ])
-  await page.getByRole(`button`, { name: `Report` }).click()
+  await page.getByRole(`button`, { name: `Report a name` }).click()
 
   await page.getByRole(`dialog`).getByRole(`button`, { name: /^1st/u }).click()
 
@@ -189,6 +189,6 @@ test(`a leaderboard whose every name was removed has nothing to report`, async (
 
   await expect.element(podium()).toBeVisible()
   await expect
-    .element(page.getByRole(`button`, { name: `Report` }))
+    .element(page.getByRole(`button`, { name: `Report a name` }))
     .not.toBeInTheDocument()
 })

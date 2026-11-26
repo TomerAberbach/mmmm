@@ -32,7 +32,7 @@ test(`once the link is sent, the page says so and offers to send it again`, asyn
 
   await expect
     .element(page.getByRole(`status`))
-    .toHaveTextContent(`We emailed you a setup link. It expires in 1 hour.`)
+    .toHaveTextContent(`We emailed you a setup link. It expires in 1 hour`)
   await expect
     .element(page.getByRole(`button`, { name: `Send again` }))
     .toBeVisible()
@@ -53,7 +53,7 @@ test(`a used or expired link asks for a new one`, async () => {
   await expect
     .element(page.getByRole(`alert`))
     .toHaveTextContent(
-      `That setup link has expired or was already used. Email yourself a new one.`,
+      `That setup link has expired or was already used. Email yourself a new one`,
     )
   await expectNoAxeViolations()
 })

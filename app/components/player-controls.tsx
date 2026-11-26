@@ -21,7 +21,7 @@ export const PersonalLink = ({
 }) => (
   <>
     <p>
-      It opens your bracket on any device, now and after this computer forgets
+      It opens your bracket on any device, now and after this device forgets
       you. Paste it somewhere you’ll find it, such as a note or an email to
       yourself. Anyone with it can {isOpen ? `change` : `see`} your picks, so
       keep it to yourself.
@@ -60,24 +60,24 @@ export const ForgetButton = ({
   forgetPath: string
   playerId: string
   variant: `quiet` | `secondary`
-  /** A response still in flight would make this computer remember again */
+  /** A response still in flight would make this device remember again */
   isSending: boolean
 }) => (
   <ConfirmDialog
     trigger={
       <Button variant={variant} isDisabled={isSending}>
-        Done, forget this computer
+        Done, forget my bracket here
       </Button>
     }
-    title='Forget this computer?'
-    confirmLabel='Forget this computer'
+    title='Forget your bracket on this device?'
+    confirmLabel='Forget my bracket'
     confirmVariant='primary'
     action={forgetPath}
     // The browser may have remembered another player since the page loaded
     fields={{ playerId }}
   >
     <p>
-      This computer will stop opening your bracket. To come back to it, you’ll
+      This device will stop opening your bracket. To come back to it, you’ll
       need your personal link.
     </p>
   </ConfirmDialog>
@@ -118,7 +118,7 @@ export const DeleteButton = ({
         `Your personal link stops working${isOpen ? `` : `, and submissions are closed, so you can’t submit again`}.`,
         isOrphaned
           ? `Your educator left MMMM, so this can’t be undone.`
-          : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days${isPast ? `` : OR_BEFORE_ARCHIVE}. After that it’s erased for good.`,
+          : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days${isPast ? `` : OR_BEFORE_ARCHIVE}. After that it’s deleted forever.`,
       ].join(` `)}
     </p>
   </ConfirmDialog>

@@ -11,11 +11,14 @@ export const ContestTrash = ({
   contest: { id: contestId, name },
   players,
   isOpen,
+  isPast,
 }: {
   contest: Contest
   players: DeletedPlayer[]
   /** Whether the contest's year takes players and picks */
   isOpen: boolean
+  /** Whether a newer year is current */
+  isPast: boolean
 }) => (
   <div className='flex max-w-3xl flex-col gap-6'>
     <Link
@@ -37,8 +40,9 @@ export const ContestTrash = ({
       erasePath={href(`/contests/:contestId/trash/erase`, { contestId })}
       eraseTitle={item => `Delete ${item.name}’s bracket forever?`}
     >
-      You can restore these until next year’s bracket is published, unless a row
-      says sooner.
+      {isPast
+        ? `You can restore each bracket until the date beside it.`
+        : `You can restore these until next year’s bracket is published, unless a row says sooner.`}
     </TrashList>
   </div>
 )
@@ -53,7 +57,7 @@ const Deletion = ({ player }: { player: DeletedPlayer }) => {
       <LocalTime date={player.deletedAt} format={formatDateTime} />
       {eraseTime ? (
         <>
-          . Erased for good{` `}
+          . Restore it by{` `}
           <LocalTime date={eraseTime} format={formatLocalDate} />
         </>
       ) : null}

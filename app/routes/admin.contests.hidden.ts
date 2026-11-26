@@ -19,5 +19,5 @@ export const action = async ({
   )
   return data && (await setContestHidden(data.contestId, data.isHidden))
     ? { ok: true }
-    : { error: `That contest was deleted. Reload the page` }
+    : { error: `This contest can’t be hidden or shown now. Reload the page` }
 }

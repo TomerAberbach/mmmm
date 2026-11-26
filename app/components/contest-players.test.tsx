@@ -299,7 +299,7 @@ test(`approving all asks first, naming the pending players`, async () => {
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Approve 2 pending brackets?Maya R. and Jonah K. will be approved. You can reject any of them later.CancelApprove all 2`,
+      `Approve 2 pending brackets?Maya R. and Jonah K. will be approved. You can still reject them later.CancelApprove all 2`,
     )
 })
 
@@ -678,7 +678,9 @@ test(`a note names every possible duplicate`, async () => {
   ])
 
   await expect
-    .element(page.getByText(`This might be the same as maya r and MayaR`))
+    .element(
+      page.getByText(`This might be the same player as maya r and MayaR`),
+    )
     .toBeVisible()
 })
 

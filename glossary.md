@@ -2,7 +2,8 @@
 
 Identifiers, tests, docs, and commit descriptions use these terms exactly. UI
 copy may use everyday phrasing where players expect it, such as "your bracket"
-for a **Player**'s **Draft** or **Submission**.
+for a **Player**'s **Draft** or **Submission**. It says "Delete forever" for
+**Erase**.
 
 ## Tournament
 

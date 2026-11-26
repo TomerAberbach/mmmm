@@ -98,7 +98,7 @@ export const TrashList = ({
                 </Button>
               }
               title='Empty the trash?'
-              confirmLabel={`Delete ${count} forever`}
+              confirmLabel='Empty trash'
               onConfirm={() => submit(erasePath, items, `Emptied the trash`)}
             >
               <p>{`${count} will be deleted forever. ${FOREVER_NOTE}`}</p>
@@ -113,7 +113,7 @@ export const TrashList = ({
           tabIndex={-1}
           className='text-muted outline-none'
         >
-          The trash is empty
+          The trash is empty.
         </p>
       ) : (
         <>
@@ -196,7 +196,7 @@ const TrashRow = ({
   </li>
 )
 
-const FOREVER_NOTE = `You can’t undo this. Backups keep deleted data for up to 30 days.`
+const FOREVER_NOTE = `This can’t be undone, though backups keep the data for up to 30 days.`
 
 /** Items waiting to leave the list once the page reloads it */
 type Leaving = {

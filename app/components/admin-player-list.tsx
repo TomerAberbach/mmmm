@@ -26,12 +26,15 @@ export const AdminPlayerList = ({
           </div>
           <ConfirmDialog
             trigger={
-              <Button variant='quiet' aria-label={`Erase ${displayName}`}>
-                Erase
+              <Button
+                variant='quiet'
+                aria-label={`Delete forever: ${displayName}`}
+              >
+                Delete forever
               </Button>
             }
-            title={`Erase ${displayName}?`}
-            confirmLabel='Erase player'
+            title={`Delete ${displayName}’s bracket forever?`}
+            confirmLabel='Delete forever'
             action={action}
             fields={{ playerId: id }}
           >

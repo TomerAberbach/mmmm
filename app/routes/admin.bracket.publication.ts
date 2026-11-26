@@ -37,7 +37,7 @@ export const action = async ({
       return redirect(href(published ? `/admin/results` : `/admin/bracket`))
     case `UNCHANGED`:
       return {
-        error: `The ${year} bracket is already ${published ? `published` : `unpublished`} or deleted`,
+        error: `The ${year} bracket is already ${published ? `published` : `unpublished`} or deleted. Reload the page`,
       }
     case `STALE`:
       return {
@@ -47,7 +47,7 @@ export const action = async ({
       return { error: `The ${year} bracket is archived. Reload the page` }
     case `HAS_CONTESTS`:
       return {
-        error: `Educators have created ${year} contests, so the bracket stays published`,
+        error: `Educators have created ${year} contests, so the bracket stays published. Reload the page`,
       }
     case `NO_CHAMPION`:
       return {
@@ -55,7 +55,7 @@ export const action = async ({
       }
     case `LOCKED`:
       return {
-        error: `Submissions are locked, so the ${year} bracket stays published`,
+        error: `Submissions are locked, so the ${year} bracket stays published. Reload the page`,
       }
   }
 }

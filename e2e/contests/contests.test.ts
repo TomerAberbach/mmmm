@@ -63,7 +63,7 @@ test(`an admin opens a reported contest and hides it`, async ({
   const link = await createContestLink(browser)
   const visitor = await browser.newPage()
   await visitor.goto(link)
-  await visitor.getByRole(`button`, { name: `Report` }).click()
+  await visitor.getByRole(`button`, { name: `Report a name` }).click()
   await visitor.getByText(`Rude or hurtful`).click()
   await visitor.getByRole(`button`, { name: `Send report` }).click()
   await expect(visitor.getByRole(`dialog`)).not.toBeVisible()
@@ -251,7 +251,7 @@ test(`a player who returns to the contest link continues as themselves`, async (
   ).toBeVisible()
 })
 
-test(`"Not you?" lets the next player on the computer start their own bracket`, async ({
+test(`"Not you?" lets the next player on the device start their own bracket`, async ({
   page,
   browser,
 }) => {
@@ -317,7 +317,7 @@ test(`a player's picks save and follow their personal link`, async ({
   ).toBeChecked()
 })
 
-test(`a player submits by keyboard, forgets this computer, and returns with their personal link`, async ({
+test(`a player submits by keyboard, forgets their bracket on a device, and returns with their personal link`, async ({
   page,
   browser,
 }) => {
@@ -328,14 +328,14 @@ test(`a player submits by keyboard, forgets this computer, and returns with thei
   const secret = await readPersonalLinkSecret(page)
   await expect(page.getByText(`/my-bracket/${secret}`)).toBeVisible()
   await page
-    .getByRole(`button`, { name: `Done, forget this computer` })
+    .getByRole(`button`, { name: `Done, forget my bracket here` })
     .first()
     .click()
   await page
-    .getByRole(`button`, { name: `Forget this computer`, exact: true })
+    .getByRole(`button`, { name: `Forget my bracket`, exact: true })
     .click()
   await expect(
-    page.getByRole(`heading`, { name: `This computer forgot your bracket` }),
+    page.getByRole(`heading`, { name: `This device forgot your bracket` }),
   ).toBeVisible()
   await page.goto(link)
   await expect(
@@ -366,7 +366,7 @@ test(`a player whose educator rejects their bracket sees why at their personal l
 
   await expect(
     page.getByText(
-      `Your educator didn’t approve your bracket. You can ask them about it.`,
+      `Your educator didn’t approve your bracket. You can ask them about it`,
     ),
   ).toBeVisible()
 })
@@ -432,7 +432,7 @@ test(`a deleted contest turns off its links until it's restored`, async ({
 
   await page.goto(link)
   await expect(
-    page.getByRole(`heading`, { name: `Your educator removed this contest` }),
+    page.getByRole(`heading`, { name: `Your educator deleted this contest` }),
   ).toBeVisible()
   await educator
     .getByRole(`button`, { name: `Restore Period 4 Biology` })
@@ -547,11 +547,7 @@ test(`forgetting from a page left open by another player keeps the next player's
   await page.reload()
   const nextPlayer = await startNextPlayer(page, link)
 
-  await confirmDialog(
-    page,
-    `Done, forget this computer`,
-    `Forget this computer`,
-  )
+  await confirmDialog(page, `Done, forget my bracket here`, `Forget my bracket`)
 
   await expect(
     page.getByText(
@@ -586,12 +582,12 @@ test(`forgetting and deleting from a page that names no player ask for a reload`
 
   await confirmWithoutPlayer(
     page,
-    `Done, forget this computer`,
-    `Forget this computer`,
+    `Done, forget my bracket here`,
+    `Forget my bracket`,
   )
   await expect(
     page.getByText(
-      `This device wasn’t forgotten. Reload the page and try again`,
+      `Your bracket wasn’t forgotten. Reload the page and try again`,
     ),
   ).toBeVisible()
   await page.getByRole(`button`, { name: `Cancel` }).click()
@@ -616,8 +612,10 @@ test(`a page that stays open through a new personal link keeps saving once the l
   await startBracketAsMaya(page, link)
   await educator.reload()
   await educator.getByRole(`button`, { name: `More for Maya R.` }).click()
-  await educator.getByRole(`menuitem`, { name: `New personal link` }).click()
-  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await educator
+    .getByRole(`menuitem`, { name: `Replace personal link` })
+    .click()
+  await educator.getByRole(`button`, { name: `Replace personal link` }).click()
   const newLink = await educator
     .getByRole(`dialog`)
     .getByText(/\/my-bracket\//u)
@@ -664,8 +662,10 @@ test(`a replaced personal link stops working, also in a browser that has it open
   const oldSecret = await readPersonalLinkSecret(page)
   await educator.reload()
   await educator.getByRole(`button`, { name: `More for Maya R.` }).click()
-  await educator.getByRole(`menuitem`, { name: `New personal link` }).click()
-  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await educator
+    .getByRole(`menuitem`, { name: `Replace personal link` })
+    .click()
+  await educator.getByRole(`button`, { name: `Replace personal link` }).click()
   const newLink = await educator
     .getByRole(`dialog`)
     .getByText(/\/my-bracket\//u)
@@ -673,11 +673,11 @@ test(`a replaced personal link stops working, also in a browser that has it open
 
   await page.reload()
   await expect(
-    page.getByRole(`heading`, { name: `This computer forgot your bracket` }),
+    page.getByRole(`heading`, { name: `This device forgot your bracket` }),
   ).toBeVisible()
   await page.goto(`/my-bracket/${oldSecret}`)
   await expect(
-    page.getByRole(`heading`, { name: `This link no longer works` }),
+    page.getByRole(`heading`, { name: `This link doesn’t work` }),
   ).toBeVisible()
   await page.goto(newLink!)
 
@@ -693,10 +693,10 @@ test(`replacing the contest link keeps players' brackets without showing them th
   const { educator, link: oldLink } = await createContestAsEducator(browser)
   await startBracketAsMaya(page, oldLink)
   const secret = await readPersonalLinkSecret(page)
-  await confirmDialog(educator, `New contest link`, `Create new link`)
+  await confirmDialog(educator, `Replace contest link`, `Replace contest link`)
   await expect(
     educator.getByText(
-      `Created a new contest link. The old one no longer works`,
+      `Replaced the contest link. The old one no longer works`,
     ),
   ).toBeVisible()
   const newLink = await educator
@@ -718,7 +718,7 @@ test(`replacing the contest link keeps players' brackets without showing them th
 
   expect(response?.status()).toBe(404)
   await expect(
-    page.getByRole(`heading`, { name: `This link no longer works` }),
+    page.getByRole(`heading`, { name: `This link doesn’t work` }),
   ).toBeVisible()
 })
 
@@ -729,8 +729,8 @@ test(`a player who started with a replaced contest link gets no new one by delet
   const { educator, link } = await createContestAsEducator(browser)
   await startBracketAsMaya(page, link)
   const secret = await readPersonalLinkSecret(page)
-  await confirmDialog(educator, `New contest link`, `Create new link`)
-  await expect(educator.getByText(/^Created a new contest link/u)).toBeVisible()
+  await confirmDialog(educator, `Replace contest link`, `Replace contest link`)
+  await expect(educator.getByText(/^Replaced the contest link/u)).toBeVisible()
 
   await confirmDialog(page, `Delete my bracket`)
   await expect(
@@ -781,7 +781,7 @@ test(`an educator's dashboard and a player's bracket show the expected lock date
   browser,
 }) => {
   const { educator, link } = await createContestAsEducator(browser)
-  const heading = `Expected to lock March 19, ${YEAR}`
+  const heading = `expected to lock on March 19, ${YEAR}`
   await startBracketAsMaya(page, link)
   await educator.goto(`/contests`)
 
@@ -801,7 +801,7 @@ test(`a player's bare address opens their bracket`, async ({
   await expect(page).toHaveURL(bracketUrl)
 })
 
-test(`the page that says the computer forgot opens the bracket of a player it remembers`, async ({
+test(`the page that says the device forgot opens the bracket of a player it remembers`, async ({
   page,
   browser,
 }) => {
@@ -813,7 +813,7 @@ test(`the page that says the computer forgot opens the bracket of a player it re
   await expect(page).toHaveURL(bracketUrl)
 })
 
-test(`a player the computer forgot can ask for a personal link to a bracket they started`, async ({
+test(`a player the device forgot can ask for a personal link to a bracket they started`, async ({
   page,
   browser,
 }) => {

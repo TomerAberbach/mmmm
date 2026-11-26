@@ -107,8 +107,8 @@ const YearCard = ({
     </div>
     {summary ? null : (
       <p className='text-muted'>
-        ASU publishes its bracket in March. Enter it here, check it, then
-        publish it.
+        ASU publishes its bracket in late February. Enter it here, check it,
+        then publish it.
       </p>
     )}
     {summary?.phase === `COMPLETE` ? (
@@ -116,7 +116,7 @@ const YearCard = ({
     ) : null}
     {expectedLockDate ? (
       <p className='text-muted'>
-        Expected to lock {formatDate(expectedLockDate)}
+        Expected to lock on {formatDate(expectedLockDate)}
       </p>
     ) : null}
     <div>{children}</div>

@@ -129,7 +129,7 @@ test(`Escape closes the contest's name without saving`, async () => {
     .toBeVisible()
 })
 
-test(`deleting a contest asks first, counting its submissions and drafts`, async () => {
+test(`deleting a contest asks first, counting its brackets`, async () => {
   await renderContest()
 
   await page.getByRole(`button`, { name: `Delete contest` }).click()
@@ -137,7 +137,7 @@ test(`deleting a contest asks first, counting its submissions and drafts`, async
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Delete Period 2 Biology?Its 1 submission and 1 draft go with it, and its contest link and personal links stop working. You can restore it until next year’s bracket is published.CancelDelete contest`,
+      `Delete Period 2 Biology?Its 2 brackets go with it, and its contest link and personal links stop working. You can restore it until next year’s bracket is published.CancelDelete contest`,
     )
 })
 
@@ -151,21 +151,24 @@ test(`the contest page links its trash`, async () => {
 
 test(`a new contest link shows in place of the old one after confirming`, async () => {
   await renderContest()
-  await page.getByRole(`button`, { name: `New contest link` }).click()
+  await page.getByRole(`button`, { name: `Replace contest link` }).click()
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Replace the contest link?The old link stops working, so share the new one with your players. Players who already started keep their personal links.CancelCreate new link`,
+      `Replace the contest link?The old link stops working, so share the new one with your players. Players who already started keep their personal links.CancelReplace contest link`,
     )
 
-  await page.getByRole(`button`, { name: `Create new link` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Replace contest link` })
+    .click()
 
   await expect
     .element(page.getByRole(`textbox`, { name: `Contest link` }))
     .toHaveValue(`https://mmmm.onl/play/new-secret`)
   await expect
     .element(
-      page.getByText(`Created a new contest link. The old one no longer works`),
+      page.getByText(`Replaced the contest link. The old one no longer works`),
     )
     .toBeVisible()
 })

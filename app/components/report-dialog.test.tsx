@@ -29,7 +29,7 @@ const renderDialog = async (
       },
     },
   ])
-  await page.getByRole(`button`, { name: `Report` }).click()
+  await page.getByRole(`button`, { name: `Report a name` }).click()
   return reports
 }
 
@@ -59,6 +59,15 @@ test(`a report needs a reason`, async () => {
     .element(page.getByText(`Choose what’s wrong with it`))
     .toBeVisible()
   expect(reports).toStrictEqual([])
+})
+
+test(`a report of a contest's name can't say it isn't a player`, async () => {
+  await renderDialog([{ id: `contest`, label: `The contest’s name` }])
+
+  await expect.element(page.getByText(`Rude or hurtful`)).toBeVisible()
+  await expect
+    .element(page.getByText(`Not a real player`))
+    .not.toBeInTheDocument()
 })
 
 test(`a refused report says why`, async () => {

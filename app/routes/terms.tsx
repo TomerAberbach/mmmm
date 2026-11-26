@@ -23,8 +23,13 @@ const Terms = () => (
     </LegalSection>
     <LegalSection title='What MMMM can do'>
       <p>
-        MMMM can hide a contest from shared leaderboards, and delete an account
-        that breaks these terms. The service comes without a warranty.
+        MMMM’s admins can hide a contest from the organization and global
+        leaderboards, rename it, or delete it forever. They can delete any one
+        bracket forever, which also removes its player’s name. They can hand a
+        contest whose educator left to another educator. They can rename an
+        organization or delete its data, change an account’s email address once
+        the new one is confirmed, and delete an account that breaks these terms.
+        The service comes without a warranty.
       </p>
     </LegalSection>
     <p>

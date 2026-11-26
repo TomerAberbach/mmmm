@@ -21,7 +21,9 @@ export const action = async ({
     case `DELETED`:
       return redirect(href(`/admin`))
     case `GONE`:
-      return { error: `This bracket is already published or deleted` }
+      return {
+        error: `This bracket is already published or deleted. Reload the page`,
+      }
     case `STALE`:
       return {
         error: `This bracket changed since the page loaded. Reload the page`,

@@ -29,7 +29,7 @@ export const ForgotPasswordForm = ({
       {linkInvalid && !lastResult ? (
         <Notice kind='alert'>
           That reset link has expired or was already used. Enter your email
-          address to get a new one.
+          address to get a new one
         </Notice>
       ) : (
         <p>

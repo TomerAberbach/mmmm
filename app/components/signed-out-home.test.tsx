@@ -101,7 +101,9 @@ test(`the current bracket's expected lock date shows as a heads-up`, async () =>
 
   await expect
     .element(
-      page.getByText(`Expected to lock March 19, 2027`, { exact: false }),
+      page.getByText(`Brackets are expected to lock on March 19, 2027`, {
+        exact: false,
+      }),
     )
     .toBeVisible()
 })

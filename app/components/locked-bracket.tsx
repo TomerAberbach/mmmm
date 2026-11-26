@@ -129,7 +129,7 @@ const SubmittedBracket = ({
       <div className='max-w-prose'>
         <Notice kind='alert'>
           The bracket changed after submissions closed, so some of your picks
-          were cleared.
+          were cleared
         </Notice>
       </div>
     ) : null}
@@ -193,17 +193,17 @@ const UnsubmittedBracket = ({
 }
 
 const STATUS_NOTES: Record<SubmissionStatus, string> = {
-  PENDING: `Your bracket is in, and your educator will approve it before it counts.`,
-  APPROVED: `Your bracket is in, and your educator approved it.`,
-  REJECTED: `Your educator didn’t approve your bracket. You can ask them about it.`,
+  PENDING: `Your bracket is in, and it counts once your educator approves it`,
+  APPROVED: `Your bracket is in, and your educator approved it`,
+  REJECTED: `Your educator didn’t approve your bracket. You can ask them about it`,
 }
 
-const NEVER_APPROVED = `Your educator didn’t approve your bracket in time, so it doesn’t count.`
+const NEVER_APPROVED = `Your educator didn’t approve your bracket in time, so it doesn’t count`
 
 /** Notes that read otherwise in an orphaned contest */
 const ORPHANED_STATUS_NOTES: Partial<typeof STATUS_NOTES> = {
-  PENDING: `Your educator left MMMM, so no one can approve your bracket.`,
-  REJECTED: `Your educator didn’t approve your bracket.`,
+  PENDING: `Your educator left MMMM, so no one can approve your bracket`,
+  REJECTED: `Your educator didn’t approve your bracket`,
 }
 
 const describeStatus = (

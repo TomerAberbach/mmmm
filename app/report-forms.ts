@@ -10,11 +10,13 @@ export const CONTEST_TARGET: ReportTarget = {
   label: `The contest’s name`,
 }
 
-export const reportSchema = z.object({
-  // An imported player's ID is a CUID, and any other's a UUID
-  target: z.string().regex(/^[\da-z\-]{1,40}$/v),
-  reason: z.enum(ReportReason),
-})
+export const reportSchema = z
+  .object({
+    // An imported player's ID is a CUID, and any other's a UUID
+    target: z.string().regex(/^[\da-z\-]{1,40}$/v),
+    reason: z.enum(ReportReason),
+  })
+  .refine(({ target, reason }) => listReasons(target).includes(reason))
 
 export const REASON_LABELS: Record<ReportReason, string> = {
   RUDE: `Rude or hurtful`,
@@ -22,3 +24,9 @@ export const REASON_LABELS: Record<ReportReason, string> = {
   NOT_REAL: `Not a real player`,
   OTHER: `Something else`,
 }
+
+/** The reasons that fit the target, since only a player can be unreal */
+export const listReasons = (target: string): ReportReason[] =>
+  Object.values(ReportReason).filter(
+    reason => target !== CONTEST_TARGET.id || reason !== ReportReason.NOT_REAL,
+  )

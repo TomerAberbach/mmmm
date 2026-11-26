@@ -1,6 +1,6 @@
-import { href, Link, useRouteLoaderData } from 'react-router'
+import { href, Link } from 'react-router'
 import { LegalPage, LegalSection } from '~/components/legal-page.tsx'
-import type { loader as rootLoader } from '~/root.tsx'
+import { SupportLink } from '~/components/support-link.tsx'
 import { PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 const Privacy = () => (
@@ -12,7 +12,10 @@ const Privacy = () => (
     </p>
     <LegalSection title='What MMMM keeps'>
       <ul className='flex list-disc flex-col gap-1 ps-5'>
-        <li>An educator’s name, email address, and hashed password.</li>
+        <li>
+          An educator’s name, email address, and a scrambled form of their
+          password.
+        </li>
         <li>
           A player’s display name, such as a first name and last initial, and
           their picks and scores. Players have no account and give no email
@@ -22,6 +25,8 @@ const Privacy = () => (
           An educator’s organization, from their email address’s domain, the
           contests they share, and any second factors they set up.
         </li>
+        <li>The names of contests and organizations.</li>
+        <li>Reports of names, without who sent them.</li>
         <li>
           Cookies that sign an educator in and keep them signed in, or remember
           a player’s bracket until 15 minutes after their last visit.
@@ -43,10 +48,10 @@ const Privacy = () => (
           Other players in the same contest, for the top score tiers and once
           submissions close.
         </li>
-        <li>MMMM’s admin, for support and reports.</li>
+        <li>MMMM’s admins, for support and reports.</li>
         <li>
-          Anyone at a computer that still remembers the player. “Done, forget
-          this computer” clears it.
+          Anyone at a device that still remembers the player. “Done, forget my
+          bracket here” clears it.
         </li>
         <li>
           The providers that host MMMM and its database and backups, which
@@ -60,10 +65,10 @@ const Privacy = () => (
     <LegalSection title='Seeing or deleting a player’s data'>
       <p>
         A player can delete their bracket from their personal link. Unless their
-        educator restores it, it’s erased for good after{` `}
+        educator restores it, it’s deleted forever after{` `}
         {PLAYER_DELETION_DAYS} days, or when next year’s bracket is published,
         if that’s sooner, though backups keep it for up to 30 more. A parent can
-        ask the educator, or email <SupportEmail />, to see or delete it.
+        ask the educator, or email <SupportLink />, to see or delete it.
         Requests are handled within 30 days.
       </p>
       <p>
@@ -76,13 +81,3 @@ const Privacy = () => (
   </LegalPage>
 )
 export default Privacy
-
-const SupportEmail = () => {
-  const supportEmail =
-    useRouteLoaderData<typeof rootLoader>(`root`)?.supportEmail
-  return supportEmail === undefined ? (
-    `support`
-  ) : (
-    <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
-  )
-}
