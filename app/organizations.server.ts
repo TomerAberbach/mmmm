@@ -1,5 +1,7 @@
 import freeEmailDomains from 'free-email-domains'
 import { prisma } from './db.server.ts'
+import { Prisma } from './generated/prisma/client.ts'
+import type { Organization } from './organizations.ts'
 
 /** Providers anyone can get an address from, including disposable ones */
 const FREE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
@@ -46,9 +48,6 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
     })
   })
 
-/** The name is null until an educator there gives one */
-export type Organization = { domain: string; name: string | null }
-
 /** Null for an educator without an organization */
 export const readOrganization = async (
   educatorId: string,
@@ -58,6 +57,27 @@ export const readOrganization = async (
     select: { organization: { select: { domain: true, name: true } } },
   })
   return organization
+}
+
+/**
+ * The domain of the organization a contest counts toward, in SQL that joins
+ * `Educator`. `readContestOrganization` follows the same rule
+ */
+export const CONTEST_ORGANIZATION_SQL = Prisma.sql`"Educator"."organizationDomain"`
+
+/** The organization the contest counts toward, if any */
+export const readContestOrganization = async (
+  contestId: string,
+): Promise<Organization | null> => {
+  const { educator } = await prisma.contest.findUniqueOrThrow({
+    where: { id: contestId },
+    select: {
+      educator: {
+        select: { organization: { select: { domain: true, name: true } } },
+      },
+    },
+  })
+  return educator.organization
 }
 
 /**

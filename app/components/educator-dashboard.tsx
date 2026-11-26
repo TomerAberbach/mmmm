@@ -6,7 +6,7 @@ import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { SubmissionsClosed } from './submissions-closed.tsx'
 import type { ContestSummary } from '~/contests.server.ts'
-import type { Organization } from '~/organizations.server.ts'
+import type { Organization } from '~/organizations.ts'
 
 /**
  * Contests open once a bracket is published, so there's no current year yet
@@ -60,6 +60,14 @@ export const EducatorDashboard = ({
       ) : (
         <BracketNotReady upcomingYear={view.upcomingYear} />
       )}
+      {current?.isLocked && organization ? (
+        <Link
+          to={href(`/contests/leaderboard`)}
+          className='self-start print:hidden'
+        >
+          Organization leaderboard
+        </Link>
+      ) : null}
       {current && current.deletedCount > 0 ? (
         <Link to={href(`/contests/trash`)} className='self-start print:hidden'>
           {`Deleted contests (${current.deletedCount})`}

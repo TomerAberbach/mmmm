@@ -10,11 +10,14 @@ export const LeaderboardBracket = ({
     row: { label, rank },
     ...marked
   },
-  contest,
+  year,
+  scopeName,
   leaderboardPath,
 }: {
   submission: LeaderboardSubmission
-  contest: { name: string; year: number }
+  year: number
+  /** What the rank is in, such as a contest's name */
+  scopeName: string
   leaderboardPath: string
 }) => (
   <div className='flex flex-col gap-6'>
@@ -24,8 +27,8 @@ export const LeaderboardBracket = ({
     <PageTitle>{`${label}’s bracket`}</PageTitle>
     <p className='text-lg'>
       <strong>{formatRank(rank)}</strong>
-      {` in ${contest.name}`}
+      {` in ${scopeName}`}
     </p>
-    <MarkedBracket year={contest.year} {...marked} />
+    <MarkedBracket year={year} {...marked} />
   </div>
 )

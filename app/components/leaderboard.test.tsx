@@ -2,15 +2,21 @@ import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
-import type { LeaderboardRow } from '../leaderboard-row.ts'
+import type { LeaderboardPage, LeaderboardRow } from '../leaderboard-row.ts'
 import { Leaderboard } from './leaderboard.tsx'
 
-const renderLeaderboard = (rows: LeaderboardRow[]) =>
+const renderLeaderboard = (
+  rows: LeaderboardRow[],
+  leaderboardPage: LeaderboardPage[`page`] = null,
+) =>
   renderRoutes([
     {
       path: `/`,
       Component: () => (
-        <Leaderboard rows={rows} toBracketPath={id => `/brackets/${id}`} />
+        <Leaderboard
+          leaderboard={{ rows, page: leaderboardPage }}
+          toBracketPath={id => `/brackets/${id}`}
+        />
       ),
     },
     { path: `/brackets/:id`, Component: () => <p>Opened</p> },
@@ -48,4 +54,16 @@ test(`a leaderboard without approved submissions says so`, async () => {
   await expect
     .element(page.getByText(`No approved brackets yet.`))
     .toBeVisible()
+})
+
+test(`a long leaderboard has pages`, async () => {
+  await renderLeaderboard(ROWS, { number: 2, count: 3 })
+
+  await expect.element(page.getByText(`Page 2 of 3`)).toBeVisible()
+  await expect
+    .element(page.getByRole(`link`, { name: `Previous` }))
+    .toHaveAttribute(`href`, `/?page=1`)
+  await expect
+    .element(page.getByRole(`link`, { name: `Next` }))
+    .toHaveAttribute(`href`, `/?page=3`)
 })

@@ -3,15 +3,28 @@ import type { Route } from './+types/contests.$contestId.leaderboard.ts'
 import { Leaderboard } from '~/components/leaderboard.tsx'
 import { PageHeader } from '~/components/page-header.tsx'
 import { readRequiredContest } from '~/contest-context.server.ts'
-import { readContestLeaderboard } from '~/leaderboards.server.ts'
+import { readPageNumber } from '~/leaderboard-row.ts'
+import {
+  readEducatorViewer,
+  toContestScope,
+} from '~/leaderboard-scopes.server.ts'
+import { readLeaderboard } from '~/leaderboards.server.ts'
 
-export const loader = async ({ context, params }: Route.LoaderArgs) => {
-  const contest = readRequiredContest(context)
-  const rows = await readContestLeaderboard(contest, { sees: `everyName` })
-  if (!rows) {
+export const loader = async ({
+  request,
+  context,
+  params,
+}: Route.LoaderArgs) => {
+  const named = toContestScope(readRequiredContest(context))
+  const leaderboard = await readLeaderboard(
+    named.scope,
+    readEducatorViewer(context),
+    readPageNumber(request),
+  )
+  if (!leaderboard) {
     throw redirect(href(`/contests/:contestId`, params))
   }
-  return { name: contest.name, rows }
+  return { name: named.name, leaderboard }
 }
 
 const ContestLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
@@ -24,7 +37,7 @@ const ContestLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
     </Link>
     <PageHeader label={loaderData.name} title='Leaderboard' />
     <Leaderboard
-      rows={loaderData.rows}
+      leaderboard={loaderData.leaderboard}
       toBracketPath={playerId =>
         href(`/contests/:contestId/leaderboard/:playerId`, {
           ...params,

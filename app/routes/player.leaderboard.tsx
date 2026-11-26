@@ -1,32 +1,34 @@
-import { href, Link, redirect } from 'react-router'
+import { href, redirect } from 'react-router'
 import type { Route } from './+types/player.leaderboard.ts'
 import { Leaderboard } from '~/components/leaderboard.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
-import { readContestLeaderboard } from '~/leaderboards.server.ts'
-import { readPlayContest, readRequiredPlayer } from '~/play-context.server.ts'
+import { readPageNumber } from '~/leaderboard-row.ts'
+import { toContestScope } from '~/leaderboard-scopes.server.ts'
+import { readLeaderboard } from '~/leaderboards.server.ts'
+import { readPlayContest, readPlayerViewer } from '~/play-context.server.ts'
 
-export const loader = async ({ context, params }: Route.LoaderArgs) => {
-  const rows = await readContestLeaderboard(readPlayContest(context), {
-    sees: `topNames`,
-    ownPlayerId: readRequiredPlayer(context).id,
-  })
-  if (!rows) {
+export const loader = async ({
+  request,
+  context,
+  params,
+}: Route.LoaderArgs) => {
+  const named = toContestScope(readPlayContest(context))
+  const leaderboard = await readLeaderboard(
+    named.scope,
+    readPlayerViewer(context),
+    readPageNumber(request),
+  )
+  if (!leaderboard) {
     throw redirect(href(`/player/:contestId/bracket`, params))
   }
-  return rows
+  return leaderboard
 }
 
 const PlayerLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
-  <div className='flex flex-col gap-6'>
-    <Link
-      to={href(`/player/:contestId/bracket`, params)}
-      className='self-start print:hidden'
-    >
-      My bracket
-    </Link>
+  <>
     <PageTitle>Leaderboard</PageTitle>
     <Leaderboard
-      rows={loaderData}
+      leaderboard={loaderData}
       toBracketPath={playerId =>
         href(`/player/:contestId/leaderboard/:playerId`, {
           ...params,
@@ -34,6 +36,6 @@ const PlayerLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
         })
       }
     />
-  </div>
+  </>
 )
 export default PlayerLeaderboard

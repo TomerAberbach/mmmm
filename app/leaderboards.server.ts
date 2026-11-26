@@ -4,47 +4,79 @@ import {
   readCurrentYear,
   readSnapshot,
 } from './brackets.server.ts'
-import type { Prisma } from './generated/prisma/client.ts'
-import type { LeaderboardRow } from './leaderboard-row.ts'
+import { Prisma } from './generated/prisma/client.ts'
+import type { LeaderboardPage, LeaderboardRow } from './leaderboard-row.ts'
+import { CONTEST_ORGANIZATION_SQL } from './organizations.server.ts'
 import type { Picks } from './picks.ts'
 import { readSubmissionPicks } from './player-picks.server.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
 
-/** Players see the names in this many of the highest score tiers */
-const NAMED_TIERS = 3
-
-/** An approved submission's place, with its name whoever the viewer is */
-type RankedSubmission = {
-  playerId: string
-  displayName: string
-  score: number
-  rank: number
-  /** 1 for the highest score tier */
-  tier: number
-}
-
-/** A viewer who sees every name, or whose own row and the top tiers have names */
-export type LeaderboardViewer =
-  { sees: `everyName` } | { sees: `topNames`; ownPlayerId: string }
-
-type LeaderboardContest = { id: string; year: number }
+/** Whose approved submissions a leaderboard ranks, in one year */
+export type LeaderboardScope = { year: number } & (
+  | { kind: `contest`; contestId: string }
+  | { kind: `organization`; domain: string }
+)
 
 /**
- * The contest's approved submissions by rank, without the names hidden from the
- * viewer. Null while the year is open, when every score is 0
+ * An educator sees every name in their own contests. A player sees their own
+ * name and the top score tiers' in their own contest. No other name leaves its
+ * contest
  */
-export const readContestLeaderboard = (
-  contest: LeaderboardContest,
+export type LeaderboardViewer =
+  | { kind: `educator`; educatorId: string }
+  | { kind: `player`; contestId: string; playerId: string }
+
+const LEADERBOARD_PAGE_SIZE = 100
+
+/** Players see the names in this many of their contest's highest score tiers */
+const NAMED_TIERS = 3
+
+/**
+ * A page of the scope's approved submissions by rank, without the names hidden
+ * from the viewer. `page` counts from 1. Null while the year is open, when every
+ * score is 0
+ */
+export const readLeaderboard = (
+  scope: LeaderboardScope,
   viewer: LeaderboardViewer,
-): Promise<LeaderboardRow[] | null> =>
+  page: number,
+): Promise<LeaderboardPage | null> =>
   readSnapshot(async tx => {
-    if (isOpen(await readCurrentYear(tx), contest.year)) {
+    if (isOpen(await readCurrentYear(tx), scope.year)) {
       return null
     }
-    const rows = await readRankedSubmissions(contest.id, tx)
-    return rows.map(row => toRow(row, viewer))
+    const pages = isPaged(scope) ? await readPages(tx, scope, page) : null
+    const rows = await tx.$queryRaw<RankedSubmission[]>`
+      SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
+      ORDER BY "rank", "playerId"
+      ${
+        pages
+          ? Prisma.sql`
+              LIMIT ${LEADERBOARD_PAGE_SIZE}
+              OFFSET ${(pages.number - 1) * LEADERBOARD_PAGE_SIZE}
+            `
+          : Prisma.empty
+      }
+    `
+    return { rows: rows.map(row => toRow(row, scope, viewer)), page: pages }
   })
+
+/** A contest's rows all fit on one page, so it prints whole */
+const isPaged = ({ kind }: LeaderboardScope): boolean => kind !== `contest`
+
+/** The page, or the last one for a page past it */
+const readPages = async (
+  tx: Prisma.TransactionClient,
+  scope: LeaderboardScope,
+  page: number,
+): Promise<{ number: number; count: number }> => {
+  const [row] = await tx.$queryRaw<{ total: number }[]>`
+    SELECT count(*)::int AS "total" FROM (${rankedSql(scope)}) AS "Ranked"
+  `
+  const count = Math.max(1, Math.ceil(row!.total / LEADERBOARD_PAGE_SIZE))
+  return { number: Math.min(page, count), count }
+}
 
 export type LeaderboardSubmission = {
   row: LeaderboardRow
@@ -54,42 +86,76 @@ export type LeaderboardSubmission = {
 }
 
 /**
- * The submission behind a row of the contest's leaderboard. Null when the
- * player has no row, and while the year is open, when no one sees another
- * player's picks
+ * The submission behind a row of the scope's leaderboard. Null when the player
+ * has no row, and while the year is open, when no one sees another player's
+ * picks
  */
 export const readLeaderboardSubmission = (
-  contest: LeaderboardContest,
+  scope: LeaderboardScope,
   playerId: string,
   viewer: LeaderboardViewer,
 ): Promise<LeaderboardSubmission | null> =>
   readSnapshot(async tx => {
-    if (isOpen(await readCurrentYear(tx), contest.year)) {
+    if (isOpen(await readCurrentYear(tx), scope.year)) {
       return null
     }
-    const rows = await readRankedSubmissions(contest.id, tx)
-    const row = rows.find(candidate => candidate.playerId === playerId)
+    const [row] = await tx.$queryRaw<RankedSubmission[]>`
+      SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
+      WHERE "playerId" = ${playerId}
+    `
     return row
       ? {
-          row: toRow(row, viewer),
+          row: toRow(row, scope, viewer),
           picks: await readSubmissionPicks(playerId, tx),
-          ...(await readBracketAndResultRows(contest.year, tx)),
+          ...(await readBracketAndResultRows(scope.year, tx)),
         }
       : null
   })
 
+/** An approved submission's place, with its name whoever the viewer is */
+type RankedSubmission = {
+  playerId: string
+  displayName: string
+  contestId: string
+  contestName: string
+  educatorId: string
+  educatorName: string
+  score: number
+  rank: number
+  /** 1 for the highest score tier in its contest */
+  contestTier: number
+}
+
 const toRow = (
-  { playerId, displayName, score, rank, tier }: RankedSubmission,
+  row: RankedSubmission,
+  scope: LeaderboardScope,
   viewer: LeaderboardViewer,
 ): LeaderboardRow => {
-  const isOwn = viewer.sees === `topNames` && viewer.ownPlayerId === playerId
-  const isNamed = viewer.sees === `everyName` || isOwn || tier <= NAMED_TIERS
+  const isOwn = viewer.kind === `player` && viewer.playerId === row.playerId
   return {
-    playerId,
-    label: isNamed ? displayName : `Player`,
-    score,
-    rank,
+    playerId: row.playerId,
+    label: isNamed(row, viewer) ? row.displayName : describeHidden(row, scope),
+    score: row.score,
+    rank: row.rank,
     isOwn,
+  }
+}
+
+const isNamed = (row: RankedSubmission, viewer: LeaderboardViewer): boolean =>
+  viewer.kind === `educator`
+    ? row.educatorId === viewer.educatorId
+    : row.playerId === viewer.playerId ||
+      (row.contestId === viewer.contestId && row.contestTier <= NAMED_TIERS)
+
+const describeHidden = (
+  { contestName, educatorName }: RankedSubmission,
+  scope: LeaderboardScope,
+): string => {
+  switch (scope.kind) {
+    case `contest`:
+      return `Player`
+    case `organization`:
+      return `Player from ${contestName} (${educatorName})`
   }
 }
 
@@ -97,24 +163,37 @@ const toRow = (
  * Ties rank by when the picks last changed, earliest first, so only identical
  * times share a rank
  */
-const readRankedSubmissions = (
-  contestId: string,
-  tx: Prisma.TransactionClient,
-): Promise<RankedSubmission[]> => tx.$queryRaw`
+const rankedSql = (scope: LeaderboardScope): Prisma.Sql => Prisma.sql`
   SELECT
     "Player"."id" AS "playerId",
     "Player"."displayName",
+    "Contest"."id" AS "contestId",
+    "Contest"."name" AS "contestName",
+    "Educator"."id" AS "educatorId",
+    "Educator"."name" AS "educatorName",
     "Submission"."score",
     (rank() OVER (
       ORDER BY "Submission"."score" DESC, "Submission"."picksChangedAt"
     ))::int AS "rank",
-    (dense_rank() OVER (ORDER BY "Submission"."score" DESC))::int AS "tier"
+    (dense_rank() OVER (
+      PARTITION BY "Contest"."id" ORDER BY "Submission"."score" DESC
+    ))::int AS "contestTier"
   FROM "Submission"
   JOIN "Player" ON "Player"."id" = "Submission"."playerId"
   JOIN "Contest" ON "Contest"."id" = "Player"."contestId"
-  WHERE "Player"."contestId" = ${contestId}
+  JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
+  WHERE ${scopeSql(scope)}
+    AND "Contest"."year" = ${scope.year}
     AND "Player"."deletedAt" IS NULL
     AND "Contest"."deletedAt" IS NULL
     AND "Submission"."status" = 'APPROVED'
-  ORDER BY "rank", "Player"."id"
 `
+
+const scopeSql = (scope: LeaderboardScope): Prisma.Sql => {
+  switch (scope.kind) {
+    case `contest`:
+      return Prisma.sql`"Contest"."id" = ${scope.contestId}`
+    case `organization`:
+      return Prisma.sql`${CONTEST_ORGANIZATION_SQL} = ${scope.domain}`
+  }
+}
