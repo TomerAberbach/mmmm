@@ -83,11 +83,14 @@ export const DeleteButton = ({
   deletePath,
   playerId,
   isSending,
+  isOrphaned,
   isOpen = true,
 }: {
   deletePath: string
   playerId: string
   isSending: boolean
+  /** Whether the contest has no educator to restore the bracket */
+  isOrphaned: boolean
   /** Whether the player can still submit another bracket */
   isOpen?: boolean
 }) => (
@@ -104,7 +107,12 @@ export const DeleteButton = ({
     fields={{ playerId }}
   >
     <p>
-      {`Your personal link stops working${isOpen ? `` : `, and submissions are closed, so you can’t submit again`}. If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days. After that it’s erased for good.`}
+      {[
+        `Your personal link stops working${isOpen ? `` : `, and submissions are closed, so you can’t submit again`}.`,
+        isOrphaned
+          ? `Your educator left MMMM, so this can’t be undone.`
+          : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days. After that it’s erased for good.`,
+      ].join(` `)}
     </p>
   </ConfirmDialog>
 )

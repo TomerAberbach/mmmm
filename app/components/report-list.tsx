@@ -85,7 +85,7 @@ const ReportDescription = ({ report }: { report: ReportItem }) => {
         {[
           REASON_LABELS[reason],
           player ? contest.name : CONTEST_TARGET.label,
-          educatorName,
+          educatorName ?? `No educator`,
         ].join(` · `)}
         {` · `}
         <LocalTime date={createdAt} format={formatDate} />

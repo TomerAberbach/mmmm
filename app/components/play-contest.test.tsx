@@ -161,3 +161,20 @@ test(`the start button stays pending until the player's bracket loads`, async ()
   bracketLoad.resolve(null)
   await expect.element(page.getByText(`The bracket`)).toBeVisible()
 })
+
+test(`an orphaned contest says it takes no new players`, async () => {
+  await renderRoutes([
+    {
+      path: `/`,
+      Component: () => (
+        <PlayContestPage reportPath='/report' view={{ state: `orphaned` }} />
+      ),
+    },
+  ])
+
+  await expect
+    .element(
+      page.getByRole(`heading`, { name: `This contest takes no new players` }),
+    )
+    .toBeVisible()
+})

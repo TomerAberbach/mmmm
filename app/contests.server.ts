@@ -92,7 +92,8 @@ export type PlayContest = {
   id: string
   name: string
   year: number
-  educatorName: string
+  /** Null for an orphaned contest, which takes no new players */
+  educatorName: string | null
 }
 
 type FoundPlayContest = { contest: PlayContest; isDeleted: boolean }
@@ -124,7 +125,7 @@ const readPlayedContest = async (
         id: contest.id,
         name: contest.name,
         year: contest.year,
-        educatorName: contest.educator.name,
+        educatorName: contest.educator?.name ?? null,
       },
       isDeleted: contest.deletedAt !== null,
     }

@@ -50,6 +50,7 @@ export const PlayerBracket = ({
   initialDraft,
   submitted,
   hasClearedPicks,
+  isOrphaned,
   picksPath,
   forgetPath,
   deletePath,
@@ -62,6 +63,8 @@ export const PlayerBracket = ({
   submitted: Submitted | null
   /** Whether a move of combatants cleared picks since the player submitted */
   hasClearedPicks: boolean
+  /** Whether the contest has no educator */
+  isOrphaned: boolean
   picksPath: string
   forgetPath: string
   deletePath: string
@@ -247,6 +250,7 @@ export const PlayerBracket = ({
         <DeleteButton
           deletePath={deletePath}
           playerId={playerId}
+          isOrphaned={isOrphaned}
           isSending={isSending}
         />
       </div>

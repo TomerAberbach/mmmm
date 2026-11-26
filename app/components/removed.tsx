@@ -36,7 +36,7 @@ export const BrokenLink = () => (
   </Removed>
 )
 
-const CANNOT_START = `Submissions are closed, so you can’t start a new one.`
+const CANNOT_START = `This contest takes no new players, so you can’t start a new one.`
 
 /** What a deleted player's personal link shows. Nothing of the bracket appears */
 export const DeletedBracket = ({
@@ -47,7 +47,7 @@ export const DeletedBracket = ({
   /** When a bracket its player deleted is erased, or null for an educator's */
   restoreBy: Date | null
   contestPath: string | null
-  /** Whether the contest's year takes new players */
+  /** Whether the contest takes new players */
   isOpen: boolean
 }) =>
   restoreBy ? (

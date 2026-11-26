@@ -45,6 +45,11 @@ const readConstraintsSql = (): string =>
     checkName(`Division`, DIVISION_NAME.maxLength),
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
     checkName(`Contest`, CONTEST_NAME.maxLength),
+    check(
+      `Contest`,
+      `orphanedFromDomain`,
+      `"educatorId" IS NULL OR "orphanedFromDomain" IS NULL`,
+    ),
     checkName(`Organization`, ORGANIZATION_NAME.maxLength),
     checkName(`Player`, DISPLAY_NAME.maxLength, `displayName`),
     check(

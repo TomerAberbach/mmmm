@@ -9,6 +9,8 @@ import { freeTextSchema } from '../free-text.ts'
 import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
+import { DeleteAccountDialog } from './delete-account-dialog.tsx'
+import type { DeletableEducator } from './delete-account-dialog.tsx'
 import { PageTitle } from './page-title.tsx'
 import { SavedNotice } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
@@ -20,10 +22,12 @@ import type { Organization } from '~/organizations.ts'
 
 export const EducatorSettings = ({
   name,
+  account,
   organization,
   secondFactors,
 }: {
   name: string
+  account: DeletableEducator
   /** Null without an organization */
   organization: Organization | null
   /** Only for admins and educators who have a second factor */
@@ -37,6 +41,7 @@ export const EducatorSettings = ({
       <PasswordSettings />
       <SessionSettings />
       {secondFactors ? <SecondFactorSettings {...secondFactors} /> : null}
+      <DeleteAccount account={account} />
     </div>
   </div>
 )
@@ -162,6 +167,20 @@ const SessionSettings = () => (
         Every browser and device signed in to your account, except this one,
         will need to sign in again.
       </ConfirmDialog>
+    </div>
+  </SettingsSection>
+)
+
+const DeleteAccount = ({ account }: { account: DeletableEducator }) => (
+  <SettingsSection title='Delete account'>
+    <p>Deletes your account and leaves your contests to their players.</p>
+    <div>
+      <DeleteAccountDialog
+        trigger={<Button variant='danger'>Delete account</Button>}
+        title='Delete your account?'
+        account={account}
+        action={href(`/settings/delete-account`)}
+      />
     </div>
   </SettingsSection>
 )

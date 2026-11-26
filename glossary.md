@@ -58,6 +58,7 @@ for a **Player**'s **Draft** or **Submission**.
 | Term                   | Definition                                                                                                                           | Aliases to avoid                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
 | **Contest**            | An **Educator**'s group of **Players** for one **Year**                                                                              | Class, group, league, pool                |
+| **Orphaned contest**   | A **Contest** whose **Educator** deleted their account, which keeps its **Players** but takes no new ones                            | Abandoned contest                         |
 | **Contest link**       | The shareable link that opens a **Contest** to its **Players**                                                                       | Class link, invite link, join link        |
 | **Display name**       | The name that identifies a **Player** in a **Contest**, which the **Player** enters and their **Educator** can change                | Username, student name, nickname          |
 | **Possible duplicate** | A **Player** whose **Display name** matches another's in the same **Contest**, ignoring case, spaces, punctuation, and accents       | Similar player, double                    |
@@ -107,7 +108,8 @@ for a **Player**'s **Draft** or **Submission**.
 - A **Battle** after the **Wild card** has exactly 2 **Sides**
 - A **Battle** has 2 or more **Contenders**
 - A **Battle** has exactly one **Result** once decided
-- A **Contest** belongs to exactly one **Educator** and exactly one **Year**
+- A **Contest** belongs to exactly one **Educator**, or none once orphaned, and
+  exactly one **Year**
 - A **Contest** has exactly one active **Contest link**
 - A **Player** belongs to exactly one **Contest** and has exactly one **Personal
   link**

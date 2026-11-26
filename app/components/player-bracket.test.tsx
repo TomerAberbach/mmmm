@@ -101,6 +101,7 @@ const renderBracket = async ({
         const data = useLoaderData<Server>()
         return (
           <PlayerBracket
+            isOrphaned={false}
             hasClearedPicks={hasClearedPicks}
             year={2025}
             bracket={STORED_BRACKET}

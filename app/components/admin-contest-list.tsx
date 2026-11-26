@@ -20,7 +20,7 @@ export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
               {[
                 contest.isHidden ? `Hidden` : null,
                 contest.year,
-                contest.educatorName,
+                contest.educatorName ?? `No educator`,
                 contest.organizationName,
                 `${contest.approvedCount} approved`,
               ]

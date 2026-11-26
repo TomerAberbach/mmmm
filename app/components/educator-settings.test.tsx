@@ -16,7 +16,11 @@ const renderSettings = async ({
     {
       path: `/`,
       Component: () => (
-        <EducatorSettings organization={null} name='Ms. Frizzle' />
+        <EducatorSettings
+          account={{ email: `ada@example.com`, contestCount: 1 }}
+          organization={null}
+          name='Ms. Frizzle'
+        />
       ),
     },
     {

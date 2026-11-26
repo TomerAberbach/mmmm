@@ -50,7 +50,8 @@ const findShared = async (
   })
   return contests.map(({ educator, ...contest }) => ({
     ...contest,
-    educatorName: educator.name,
+    // `sharedWith` matches only contests with an educator
+    educatorName: educator!.name,
   }))
 }
 
@@ -105,7 +106,7 @@ export const shareContest = (
       where: { ...contests, id: contestId, ...CONTEST_OUTSIDE_TRASH },
       select: { educator: { select: { organizationDomain: true } } },
     })
-    if (!contest) {
+    if (!contest?.educator) {
       return `NO_CONTEST`
     }
     const { organizationDomain } = contest.educator

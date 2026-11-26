@@ -142,6 +142,10 @@ app
   a colleague may see the page, then with `readViewableContest`, which leaves
   out the contest link
 
+- An orphaned contest has no educator. `LEFT JOIN` the educator, and read the
+  organization a contest counts toward with `CONTEST_ORGANIZATION_SQL` or
+  `toContestOrganization` from `organizations.server.ts`
+
 ## Brackets
 
 - Store or replace an unpublished bracket with `saveUnpublishedBracket` from

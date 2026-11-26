@@ -84,7 +84,7 @@ export const readLinkSecret = async (contestId: string): Promise<string> =>
 export const readEducatorId = async (contestId: string): Promise<string> =>
   (
     await prisma.contest.findUniqueOrThrow({
-      where: { id: contestId },
+      where: { id: contestId, educatorId: { not: null } },
       select: { educatorId: true },
     })
-  ).educatorId
+  ).educatorId!

@@ -10,15 +10,15 @@ import { readEraseTime } from './trash.ts'
 
 export type NewPlayer =
   | { secret: string }
-  | { refusal: `NOT_OPEN` | `CONTEST_DELETED` | `BROKEN_LINK` }
+  | { refusal: `NOT_OPEN` | `ORPHANED` | `CONTEST_DELETED` | `BROKEN_LINK` }
   | { refusal: `LIMITED`; limit: LimitRefusal }
 
 /**
  * Starts a player's draft in the contest whose contest link has the secret, and
  * returns their personal link's secret, which only the player's cookie and link
- * keep. Only contests outside the trash, in an open year, take new players.
- * `limit` runs once the contest takes the player, so a refused player costs no
- * attempt
+ * keep. Only contests outside the trash, in an open year, with an educator, take
+ * new players. `limit` runs once the contest takes the player, so a refused
+ * player costs no attempt
  */
 export const createPlayer = (
   linkSecret: string,
@@ -34,9 +34,10 @@ export const createPlayer = (
         year: number
         linkVersion: number
         deletedAt: Date | null
+        educatorId: string | null
       }[]
     >`
-      SELECT "id", "year", "linkVersion", "deletedAt" FROM "Contest" WHERE "linkSecret" = ${linkSecret} FOR SHARE
+      SELECT "id", "year", "linkVersion", "deletedAt", "educatorId" FROM "Contest" WHERE "linkSecret" = ${linkSecret} FOR SHARE
     `
     if (!contest) {
       return { refusal: `BROKEN_LINK` }
@@ -46,6 +47,9 @@ export const createPlayer = (
     }
     if (!isOpen(current, contest.year)) {
       return { refusal: `NOT_OPEN` }
+    }
+    if (contest.educatorId === null) {
+      return { refusal: `ORPHANED` }
     }
     const limitRefusal = await limit()
     if (limitRefusal) {
@@ -95,7 +99,7 @@ export type PersonalLinkTarget =
        * player started, since that keeps out whoever started with the old one
        */
       startLinkSecret: string | null
-      /** Whether the contest's year takes new players */
+      /** Whether the contest takes new players */
       isOpen: boolean
     }
 
@@ -116,6 +120,7 @@ export const readPersonalLink = async (
           linkVersion: true,
           year: true,
           deletedAt: true,
+          educatorId: true,
         },
       },
     },
@@ -130,15 +135,16 @@ export const readPersonalLink = async (
   if (!deletedAt || !deletedBy) {
     return { state: `active`, contestId: contest.id }
   }
-  const isYearOpen = await isOpenYear(contest.year)
+  const takesPlayers =
+    contest.educatorId !== null && (await isOpenYear(contest.year))
   return {
     state: `deleted`,
     restoreBy: readEraseTime({ deletedAt, deletedBy }),
     startLinkSecret:
-      isYearOpen && linkVersion === contest.linkVersion
+      takesPlayers && linkVersion === contest.linkVersion
         ? contest.linkSecret
         : null,
-    isOpen: isYearOpen,
+    isOpen: takesPlayers,
   }
 }
 
