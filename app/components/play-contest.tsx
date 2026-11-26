@@ -70,7 +70,7 @@ export const PlayLayout = ({ contest }: { contest: PlayContest }) => (
 
 export const ContestContext = ({ contest }: { contest: PlayContest }) => (
   <div className='flex flex-col items-start gap-2'>
-    <p className='bg-ink px-2 py-0.5 font-condensed font-bold tracking-widest text-white uppercase'>
+    <p className='bg-ink px-2 py-0.5 font-condensed font-bold tracking-widest text-white uppercase print:px-0 print:text-black'>
       {`March Mammal Madness ${contest.year}`}
     </p>
     <p className={PAGE_LABEL_CLASS_NAME}>

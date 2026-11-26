@@ -483,7 +483,7 @@ const PlayerSection = ({
   const isAllSelected = selection.selectedCount === children.length
   return (
     <section aria-labelledby={headingId} className='flex flex-col gap-3'>
-      <div className='flex flex-wrap items-center justify-between gap-3'>
+      <div className='flex flex-wrap items-center justify-between gap-3 print:break-after-avoid'>
         <h2
           id={headingId}
           data-focus-target={status ?? undefined}

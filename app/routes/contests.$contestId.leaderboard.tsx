@@ -34,7 +34,10 @@ const ContestLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
     >
       {loaderData.name}
     </Link>
-    <PageHeader label={loaderData.name} title='Leaderboard' />
+    <PageHeader
+      label={`${loaderData.year} · ${loaderData.name}`}
+      title='Leaderboard'
+    />
     <Leaderboard
       leaderboard={loaderData.leaderboard}
       reportPath={

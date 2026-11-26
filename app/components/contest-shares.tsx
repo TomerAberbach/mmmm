@@ -1,4 +1,6 @@
 import { getFormProps } from '@conform-to/react'
+import { useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { href, useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
@@ -11,7 +13,10 @@ import type { SavedResult } from '~/form-replies.server.ts'
 import { shareSchema } from '~/share-forms.ts'
 import type { Colleague } from '~/shares.server.ts'
 
-/** The colleagues who see the contest, and the form that adds one */
+/**
+ * The colleagues who see the contest, and the form that adds one. Key it by the
+ * contest. Shows nothing for a past contest that isn't shared when it mounts
+ */
 export const ContestShares = ({
   contest,
   colleagues,
@@ -21,37 +26,66 @@ export const ContestShares = ({
   colleagues: readonly Colleague[]
   /** Whether a newer year is current, so only Stop sharing is left */
   isPast?: boolean
-}) => (
-  <div className='print:hidden'>
-    <SettingsSection title='Shared with'>
-      <p className='max-w-prose'>
-        A colleague in your organization can see this contest’s players and
-        scores. They can’t change anything.
-      </p>
-      {colleagues.length > 0 ? (
-        <ul className='border-t-2 border-ink'>
-          {colleagues.map(colleague => (
-            <li
-              key={colleague.id}
-              className='flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-muted-light py-2'
-            >
-              <div className='min-w-0'>
-                <p className='font-semibold wrap-anywhere'>{colleague.name}</p>
-                <p className='wrap-anywhere text-muted'>{colleague.email}</p>
-              </div>
-              <StopSharing
-                contest={contest}
-                colleague={colleague}
-                isPast={isPast}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {isPast ? null : <ShareForm contestId={contest.id} />}
-    </SettingsSection>
-  </div>
-)
+}) => {
+  const section = useFocusAfterRemoval(colleagues.length)
+  // Stopping the last share keeps the section, which takes focus
+  const [wasShared] = useState(colleagues.length > 0)
+  if (isPast && !wasShared) {
+    return null
+  }
+  return (
+    <div className='print:hidden'>
+      <SettingsSection title='Shared with' ref={section}>
+        <p className='max-w-prose'>
+          {isPast && colleagues.length === 0
+            ? `No colleague can see this contest anymore.`
+            : `A colleague in your organization can see this contest’s players and scores. They can’t change anything.`}
+        </p>
+        {colleagues.length > 0 ? (
+          <ul className='border-t-2 border-ink'>
+            {colleagues.map(colleague => (
+              <li
+                key={colleague.id}
+                className='flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-muted-light py-2'
+              >
+                <div className='min-w-0'>
+                  <p className='font-semibold wrap-anywhere'>
+                    {colleague.name}
+                  </p>
+                  <p className='wrap-anywhere text-muted'>{colleague.email}</p>
+                </div>
+                <StopSharing
+                  contest={contest}
+                  colleague={colleague}
+                  isPast={isPast}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {isPast ? null : <ShareForm contestId={contest.id} />}
+      </SettingsSection>
+    </div>
+  )
+}
+
+/**
+ * A ref for the element that takes focus when the count drops, because the
+ * removed row takes focus with it
+ */
+const useFocusAfterRemoval = (count: number): RefObject<HTMLElement | null> => {
+  const element = useRef<HTMLElement>(null)
+  const previousCount = useRef(count)
+  useEffect(() => {
+    // The dialog holds focus until after it unmounts with the row
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+    if (count < previousCount.current) {
+      element.current?.focus()
+    }
+    previousCount.current = count
+  }, [count])
+  return element
+}
 
 const StopSharing = ({
   contest,

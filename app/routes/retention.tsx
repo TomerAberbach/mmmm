@@ -69,7 +69,7 @@ const SCHEDULE: { data: string; why: string; until: string }[] = [
 const Retention = () => (
   <LegalPage title='Retention schedule'>
     <p>What MMMM keeps, why, and for how long.</p>
-    <table className='w-full border-collapse'>
+    <table className='w-full table-fixed border-collapse wrap-anywhere'>
       <thead>
         <tr className='border-b-2 border-ink font-condensed text-sm font-bold tracking-wider text-muted uppercase'>
           <th scope='col' className='py-1.5 pe-3 text-start'>

@@ -16,13 +16,22 @@ export const deleteEducator = async (
 ): Promise<boolean> => {
   const isDeleted = await orphanAndDelete(educatorId, address)
   if (isDeleted) {
-    // Links already sent, which can hold another address. Afterward, since
-    // using one locks it before the educator
-    await prisma.verification.deleteMany({
-      where: { value: { contains: educatorId } },
-    })
+    await deleteEmailedLinks([educatorId])
   }
   return isDeleted
+}
+
+/**
+ * Deletes links already sent to deleted educators, which can hold another
+ * address. Call it after the transaction that deletes them, since using a link
+ * locks it before the educator
+ */
+export const deleteEmailedLinks = async (
+  educatorIds: readonly string[],
+): Promise<void> => {
+  await prisma.verification.deleteMany({
+    where: { OR: educatorIds.map(id => ({ value: { contains: id } })) },
+  })
 }
 
 const orphanAndDelete = (

@@ -73,8 +73,13 @@ const PastContestControls = ({
   colleagues: Colleague[] | null
 }) => (
   <>
-    {colleagues && colleagues.length > 0 ? (
-      <ContestShares contest={contest} colleagues={colleagues} isPast />
+    {colleagues ? (
+      <ContestShares
+        key={contest.id}
+        contest={contest}
+        colleagues={colleagues}
+        isPast
+      />
     ) : null}
     {deletedCount > 0 ? (
       <Link

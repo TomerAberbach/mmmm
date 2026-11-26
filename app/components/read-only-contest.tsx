@@ -87,7 +87,10 @@ const PlayerSection = ({
   const headingId = useId()
   return (
     <section aria-labelledby={headingId} className='flex flex-col gap-3'>
-      <h2 id={headingId} className={SECTION_HEADING_CLASS_NAME}>
+      <h2
+        id={headingId}
+        className={`${SECTION_HEADING_CLASS_NAME} print:break-after-avoid`}
+      >
         {title}
         {` `}
         <span className='text-muted tabular-nums'>({players.length})</span>
