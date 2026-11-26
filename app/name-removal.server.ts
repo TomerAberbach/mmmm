@@ -1,3 +1,4 @@
+import { withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { UNNAMED_PLAYER } from './leaderboard-row.ts'
@@ -21,7 +22,8 @@ export const removeExpiredNames = async (now: Date): Promise<number> => {
   if ((await prisma.player.count({ where: expired })) === 0) {
     return 0
   }
-  return prisma.$transaction(async tx => {
+  // Alone, since a submission locks its rows in another order
+  return withCurrentYearAlone(async tx => {
     await lockPlayers(tx)
     await tx.report.deleteMany({ where: { player: expired } })
     const { count } = await tx.player.updateMany({

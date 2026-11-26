@@ -1,8 +1,10 @@
+import { withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { changeContests, editablePlayers } from './editable-contests.server.ts'
 import type { EditableContests } from './editable-contests.server.ts'
 import type {
   PlayerDeleter,
+  Prisma,
   SubmissionStatus,
 } from './generated/prisma/client.ts'
 import {
@@ -132,10 +134,18 @@ export const deleteOwnPlayer = async (playerId: string): Promise<boolean> => {
  * how many it erased
  */
 export const eraseExpiredPlayers = async (now: Date): Promise<number> => {
-  const { count } = await prisma.player.deleteMany({
-    where: { deletedBy: `PLAYER`, deletedAt: { lte: readEraseCutoff(now) } },
+  const expired = {
+    deletedBy: `PLAYER`,
+    deletedAt: { lte: readEraseCutoff(now) },
+  } satisfies Prisma.PlayerWhereInput
+  if ((await prisma.player.count({ where: expired })) === 0) {
+    return 0
+  }
+  // Alone, since restoring players locks their rows in another order
+  return withCurrentYearAlone(async tx => {
+    const { count } = await tx.player.deleteMany({ where: expired })
+    return count
   })
-  return count
 }
 
 /** Returns whether it moved the contest, with its players, to the trash */

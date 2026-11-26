@@ -252,8 +252,7 @@ export const auth = betterAuth({
     // Sign-up doesn't sign in, and answers an existing address the same as a
     // new one
     requireEmailVerification: true,
-    // Only confirmed educators reach this, since sign-up deletes unconfirmed
-    // ones first
+    // Only educators that `freeAddress` keeps reach this
     onExistingUserSignUp: async ({ user }) => {
       await sendEmail(alreadySignedUpEmail({ to: user.email }))
     },

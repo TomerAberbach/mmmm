@@ -67,6 +67,24 @@ test.each<[string, object, string]>([
   },
 )
 
+test(`a sign-up in other letter case replaces the address's unconfirmed educator`, async () => {
+  const email = `${randomUUID()}@example.com`
+  const body = { name: `Ada Lovelace`, password: `correct-horse-battery` }
+  const headers = new Headers({ [CLIENT_IP_HEADER]: `203.0.113.10` })
+  const first = await auth.api.signUpEmail({
+    body: { ...body, email },
+    headers,
+  })
+
+  await auth.api.signUpEmail({
+    body: { ...body, email: email.toUpperCase() },
+    headers,
+  })
+
+  const educator = await prisma.educator.findUniqueOrThrow({ where: { email } })
+  expect(educator.id).not.toBe(first.user.id)
+})
+
 test(`an educator who confirmed with a reset link joins their organization at sign-in`, async () => {
   const domain = `${randomUUID()}.edu`
   const email = `frizzle@${domain}`
