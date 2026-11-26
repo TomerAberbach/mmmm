@@ -87,6 +87,14 @@
   zoom: var(--zoom);
 }
 
+@utility bg-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-accent-soft) 0 6px,
+    var(--color-white) 6px 12px
+  );
+}
+
 @utility page-landscape {
   page: landscape;
 }

@@ -27,6 +27,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Result**             | The admin's record of who won a **Battle**                                                                                             | Winner announcement, outcome            |
 | **Merge**              | A **Result** where both **Sides** of a **Battle** advance together under a combined name                                               | Tie, Tag Team                           |
 | **Lock**               | The state, set by the first saved **Result**, in which **Players** can't submit or edit                                                | Deadline, close, freeze                 |
+| **Reopen**             | To lift the **Lock** while no **Results** are saved                                                                                    | Unlock                                  |
 | **Expected lock date** | The date an **Admin** expects the **Bracket** to **Lock**, shown to **Educators** and **Players** only as a heads-up                   | Lock date, deadline                     |
 
 ## People
@@ -52,26 +53,26 @@ for a **Player**'s **Draft** or **Submission**.
 
 ## Contests
 
-| Term                   | Definition                                                                                                                     | Aliases to avoid                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| **Contest**            | An **Educator**'s group of **Players** for one **Year**                                                                        | Class, group, league, pool                |
-| **Contest link**       | The shareable link that opens a **Contest** to its **Players**                                                                 | Class link, invite link, join link        |
-| **Display name**       | The name that identifies a **Player** in a **Contest**, which the **Player** enters and their **Educator** can change          | Username, student name, nickname          |
-| **Possible duplicate** | A **Player** whose **Display name** matches another's in the same **Contest**, ignoring case, spaces, punctuation, and accents | Similar player, double                    |
-| **Personal link**      | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                                         | Recovery link, magic link, sign-in token  |
-| **Replace**            | To give a **Player** a new **Personal link**, or a **Contest** a new **Contest link**, which turns off the old one             | Regenerate, rotate, revoke                |
-| **Pick**               | A **Player**'s chosen winner of one **Battle**                                                                                 | Choice, guess, prediction                 |
-| **Clear**              | To remove a **Pick** whose winner can no longer reach its **Battle** after an earlier **Pick** changes                         | Invalidate, reset, drop                   |
-| **Draft**              | A **Player**'s **Picks** that they edit, which become their **Submission** when they submit                                    | Unsubmitted bracket, fill-out, completion |
-| **Discard**            | To replace a **Player**'s **Draft** with their **Submission**'s **Picks**                                                      | Revert, undo                              |
-| **Submission**         | A submitted set of **Picks** in a **Contest**, with a status of pending, approved, or rejected                                 | Entry, fill-out, completion, bracket      |
-| **Approve**            | To mark a **Submission** approved, so it counts on **Leaderboards**                                                            | Accept, allow                             |
-| **Reject**             | To mark a **Submission** rejected, so **Leaderboards** leave it out                                                            | Deny, decline, dismiss                    |
-| **Marked bracket**     | A **Player**'s **Picks**, each shown as right or wrong                                                                         | Graded bracket, scored bracket            |
-| **Share**              | An **Educator**'s grant of one colleague's full view of a **Contest**                                                          | Collaborator, co-teacher                  |
-| **Trash**              | The holding place for deleted **Contests**, **Drafts**, and **Submissions** until they're **Restored** or **Erased**           | Recycle bin, archive                      |
-| **Restore**            | To move a **Contest**, **Draft**, or **Submission** out of the **Trash**, which turns its links back on                        | Undelete, recover                         |
-| **Erase**              | To delete a **Contest**, **Draft**, or **Submission** in the **Trash** for good                                                | Purge, destroy                            |
+| Term                   | Definition                                                                                                                           | Aliases to avoid                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| **Contest**            | An **Educator**'s group of **Players** for one **Year**                                                                              | Class, group, league, pool                |
+| **Contest link**       | The shareable link that opens a **Contest** to its **Players**                                                                       | Class link, invite link, join link        |
+| **Display name**       | The name that identifies a **Player** in a **Contest**, which the **Player** enters and their **Educator** can change                | Username, student name, nickname          |
+| **Possible duplicate** | A **Player** whose **Display name** matches another's in the same **Contest**, ignoring case, spaces, punctuation, and accents       | Similar player, double                    |
+| **Personal link**      | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                                               | Recovery link, magic link, sign-in token  |
+| **Replace**            | To give a **Player** a new **Personal link**, or a **Contest** a new **Contest link**, which turns off the old one                   | Regenerate, rotate, revoke                |
+| **Pick**               | A **Player**'s chosen winner of one **Battle**                                                                                       | Choice, guess, prediction                 |
+| **Clear**              | To remove a **Pick** or **Result**, on request or because its winner can no longer reach its **Battle** after an earlier one changes | Invalidate, reset, drop                   |
+| **Draft**              | A **Player**'s **Picks** that they edit, which become their **Submission** when they submit                                          | Unsubmitted bracket, fill-out, completion |
+| **Discard**            | To replace a **Player**'s **Draft** with their **Submission**'s **Picks**                                                            | Revert, undo                              |
+| **Submission**         | A submitted set of **Picks** in a **Contest**, with a status of pending, approved, or rejected                                       | Entry, fill-out, completion, bracket      |
+| **Approve**            | To mark a **Submission** approved, so it counts on **Leaderboards**                                                                  | Accept, allow                             |
+| **Reject**             | To mark a **Submission** rejected, so **Leaderboards** leave it out                                                                  | Deny, decline, dismiss                    |
+| **Marked bracket**     | A **Player**'s **Picks**, each shown as right or wrong                                                                               | Graded bracket, scored bracket            |
+| **Share**              | An **Educator**'s grant of one colleague's full view of a **Contest**                                                                | Collaborator, co-teacher                  |
+| **Trash**              | The holding place for deleted **Contests**, **Drafts**, and **Submissions** until they're **Restored** or **Erased**                 | Recycle bin, archive                      |
+| **Restore**            | To move a **Contest**, **Draft**, or **Submission** out of the **Trash**, which turns its links back on                              | Undelete, recover                         |
+| **Erase**              | To delete a **Contest**, **Draft**, or **Submission** in the **Trash** for good                                                      | Purge, destroy                            |
 
 ## Leaderboards
 

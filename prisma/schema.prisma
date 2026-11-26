@@ -326,5 +326,7 @@ model Submission {
   // When the submitted picks last changed. Tied scores rank the earliest first,
   // and the player sees it, so an edit they didn't make stands out
   picksChangedAt DateTime
+  // Stored each time a result is saved. 0 until then
+  score          Int              @default(0)
   player         Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }

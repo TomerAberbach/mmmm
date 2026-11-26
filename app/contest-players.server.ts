@@ -1,5 +1,5 @@
 import { prisma } from './db.server.ts'
-import type { SubmissionStatus } from './generated/prisma/client.ts'
+import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
 import {
   educatorPlayers,
   PLAYER_OUTSIDE_TRASH,
@@ -7,26 +7,34 @@ import {
 import type { Decision } from './player-forms.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
-/** A player in an educator's contest. `status` is null for a draft */
+/**
+ * A player in an educator's contest. `status` and `score` are null for a draft
+ */
 export type ContestPlayer = {
   id: string
   displayName: string
   startedAt: Date
   status: SubmissionStatus | null
+  score: number | null
 }
 
-/** Oldest first */
+/** Drafts are oldest first either way. Scores order as leaderboards do */
 export const readContestPlayers = async (
   contestId: string,
+  order: `OLDEST_FIRST` | `HIGHEST_SCORE_FIRST`,
 ): Promise<ContestPlayer[]> => {
   const players = await prisma.player.findMany({
     where: { contestId, ...PLAYER_OUTSIDE_TRASH },
-    orderBy: [{ createdAt: `asc` }, { id: `asc` }],
+    orderBy: [
+      ...(order === `HIGHEST_SCORE_FIRST` ? SCORE_ORDER : []),
+      { createdAt: `asc` },
+      { id: `asc` },
+    ],
     select: {
       id: true,
       displayName: true,
       createdAt: true,
-      submission: { select: { status: true } },
+      submission: { select: { status: true, score: true } },
     },
   })
   return players.map(({ id, displayName, createdAt, submission }) => ({
@@ -34,8 +42,15 @@ export const readContestPlayers = async (
     displayName,
     startedAt: createdAt,
     status: submission?.status ?? null,
+    score: submission?.score ?? null,
   }))
 }
+
+/** Tied scores order by when the picks last changed, earliest first */
+const SCORE_ORDER = [
+  { submission: { score: `desc` } },
+  { submission: { picksChangedAt: `asc` } },
+] satisfies Prisma.PlayerOrderByWithRelationInput[]
 
 /**
  * Returns how many of the players have a submission in a contest the educator

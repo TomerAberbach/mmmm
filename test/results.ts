@@ -4,14 +4,19 @@ import { listContenders } from '../app/picks.ts'
 import type { ResultRequest } from '../app/result-request.ts'
 import { saveResult } from '../app/results.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
+import type { SeededBracket } from '../app/seeded-bracket.ts'
 import { CHAMPIONSHIP, ROUND_1_FIRST } from './picks.ts'
+
+/** The year must have a bracket */
+export const readSeededBracket = async (year: number): Promise<SeededBracket> =>
+  toSeededBracket((await readBracket(year))!)
 
 /** A confirmed request to record the first contender of the battle */
 export const makeFirstResult = async (
   year: number,
   battle = ROUND_1_FIRST,
 ): Promise<ResultRequest> => {
-  const bracket = toSeededBracket((await readBracket(year))!)
+  const bracket = await readSeededBracket(year)
   return {
     year,
     battle,

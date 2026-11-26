@@ -20,25 +20,28 @@ const readStatuses = async (
   contestId: string,
 ): Promise<Record<string, string | null>> =>
   Object.fromEntries(
-    (await readContestPlayers(contestId)).map(({ displayName, status }) => [
-      displayName,
-      status,
-    ]),
+    (await readContestPlayers(contestId, `OLDEST_FIRST`)).map(
+      ({ displayName, status }) => [displayName, status],
+    ),
   )
 
-test(`a contest's players are listed oldest first, drafts without a status`, async () => {
+test(`a contest's players are listed oldest first, drafts without a status or score`, async () => {
   const { contestId } = await createContestInNewYear()
   const maya = await addPlayer(contestId, `Maya R.`)
   await addSubmission(maya.id, `APPROVED`)
   await addPlayer(contestId, `Jonah K.`)
 
-  const players = await readContestPlayers(contestId)
+  const players = await readContestPlayers(contestId, `OLDEST_FIRST`)
 
   expect(
-    players.map(({ displayName, status }) => ({ displayName, status })),
+    players.map(({ displayName, status, score }) => ({
+      displayName,
+      status,
+      score,
+    })),
   ).toStrictEqual([
-    { displayName: `Maya R.`, status: `APPROVED` },
-    { displayName: `Jonah K.`, status: null },
+    { displayName: `Maya R.`, status: `APPROVED`, score: 0 },
+    { displayName: `Jonah K.`, status: null, score: null },
   ])
 })
 

@@ -13,6 +13,7 @@ const MAYA: ContestPlayer = {
   displayName: `Maya R.`,
   startedAt: new Date(`2027-03-14T16:05:00Z`),
   status: `PENDING`,
+  score: 0,
 }
 
 const Page = () => {

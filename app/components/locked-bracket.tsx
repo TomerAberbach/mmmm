@@ -8,19 +8,30 @@ import {
   PicksChanged,
 } from './player-controls.tsx'
 import type { Submitted } from './player-controls.tsx'
-import { buildBracketView } from '~/bracket-view.ts'
+import { Scoreboard } from './scoreboard.tsx'
+import {
+  buildBracketView,
+  buildMarkedBracketView,
+  isMarked,
+} from '~/bracket-view.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import { arePicksEqual } from '~/picks.ts'
 import type { Picks } from '~/picks.ts'
+import type { Results } from '~/results.ts'
+import { readScorecard } from '~/scorecard.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
 
-/** The player's bracket once its year isn't open, read-only */
+/**
+ * The player's bracket once its year isn't open, read-only. A submission is
+ * marked against the results
+ */
 export const LockedBracket = ({
   year,
   bracket,
   draft,
   submitted,
+  results,
   forgetPath,
   deletePath,
   playerId,
@@ -29,15 +40,19 @@ export const LockedBracket = ({
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted | null
+  results: Results
   forgetPath: string
   deletePath: string
   playerId: string
 }) => {
   const picks = submitted ? submitted.submission.picks : draft
-  const view = useMemo(
-    () => buildBracketView(year, toSeededBracket(bracket), picks),
-    [year, bracket, picks],
-  )
+  const view = useMemo(() => {
+    const seededBracket = toSeededBracket(bracket)
+    // A draft never submitted has no score
+    return submitted
+      ? buildMarkedBracketView(year, seededBracket, picks, results)
+      : buildBracketView(year, seededBracket, picks)
+  }, [year, bracket, picks, submitted, results])
   return (
     <>
       <div className='max-w-prose'>
@@ -62,6 +77,9 @@ export const LockedBracket = ({
       </div>
       {submitted ? (
         <>
+          {isMarked(view) ? (
+            <Scoreboard scorecard={readScorecard(view)} />
+          ) : null}
           <PicksChanged at={submitted.submission.picksChangedAt} />
           <div className='flex flex-wrap gap-3 print:hidden'>
             <PersonalLinkButton
@@ -76,7 +94,9 @@ export const LockedBracket = ({
           </div>
         </>
       ) : null}
-      <Bracket view={view} />
+      <div className='print:page-landscape'>
+        <Bracket view={view} />
+      </div>
       <div className='print:hidden'>
         <DeleteButton
           deletePath={deletePath}

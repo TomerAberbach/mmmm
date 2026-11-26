@@ -53,7 +53,9 @@ test(`a deleted player moves to the trash, and their personal link turns off`, a
   const count = await deletePlayers(educatorId, contestId, [playerId])
 
   expect(count).toBe(1)
-  await expect(readContestPlayers(contestId)).resolves.toStrictEqual([])
+  await expect(
+    readContestPlayers(contestId, `OLDEST_FIRST`),
+  ).resolves.toStrictEqual([])
   await expect(readDeletedPlayers(contestId)).resolves.toMatchObject([
     { displayName: `Maya R.`, status: `APPROVED`, deletedBy: `EDUCATOR` },
   ])
@@ -92,9 +94,9 @@ test(`a restored player keeps their status and personal link`, async () => {
   const count = await restorePlayers(educatorId, contestId, [playerId])
 
   expect(count).toBe(1)
-  await expect(readContestPlayers(contestId)).resolves.toMatchObject([
-    { displayName: `Maya R.`, status: `APPROVED` },
-  ])
+  await expect(
+    readContestPlayers(contestId, `OLDEST_FIRST`),
+  ).resolves.toMatchObject([{ displayName: `Maya R.`, status: `APPROVED` }])
   await expect(readPersonalLink(secret)).resolves.toMatchObject({
     state: `active`,
   })
@@ -109,9 +111,9 @@ test(`erasing deletes only the listed players in the trash`, async () => {
   const count = await erasePlayers(educatorId, contestId, [playerId, kept.id])
 
   expect(count).toBe(1)
-  expect(listNames(await readContestPlayers(contestId))).toStrictEqual([
-    `Jonah K.`,
-  ])
+  expect(
+    listNames(await readContestPlayers(contestId, `OLDEST_FIRST`)),
+  ).toStrictEqual([`Jonah K.`])
   expect(listNames(await readDeletedPlayers(contestId))).toStrictEqual([
     `Priya S.`,
   ])
@@ -237,9 +239,9 @@ test(`a restored contest comes back with its players`, async () => {
   await expect(readEducatorContests(educatorId, year)).resolves.toMatchObject([
     { id: contestId },
   ])
-  expect(listNames(await readContestPlayers(contestId))).toStrictEqual([
-    `Maya R.`,
-  ])
+  expect(
+    listNames(await readContestPlayers(contestId, `OLDEST_FIRST`)),
+  ).toStrictEqual([`Maya R.`])
 })
 
 test(`erasing a contest erases its players`, async () => {

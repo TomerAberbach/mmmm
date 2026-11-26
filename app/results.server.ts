@@ -8,15 +8,16 @@ import { isContender } from './picks.ts'
 import type { ResultRequest } from './result-request.ts'
 import { clearResult, recordResult } from './results.ts'
 import type { Results, ResultsChange } from './results.ts'
+import { storeScores } from './scores.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 import type { SeededBracket } from './seeded-bracket.ts'
 
 export type ResultRefusal = { refusal: `NOT_CURRENT_YEAR` | `STALE` }
 
 /**
- * Saves the change and locks submissions, unless the request's year isn't
- * current or the change isn't what the admin saw and confirmed. A repeated
- * request whose change is already saved succeeds
+ * Saves the change with the scores it makes, and locks submissions, unless the
+ * request's year isn't current or the change isn't what the admin saw and
+ * confirmed. A repeated request whose change is already saved succeeds
  */
 export const saveResult = (
   request: ResultRequest,
@@ -52,6 +53,7 @@ export const saveResult = (
         winnerId: id,
       })),
     })
+    await storeScores(tx, year, battleIdByKey, change.results)
     if (!current.isLocked) {
       await tx.bracket.update({
         where: { year },

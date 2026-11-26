@@ -18,8 +18,15 @@ const PLAYERS: ContestPlayer[] = [
     displayName: `Maya R.`,
     startedAt: STARTED_AT,
     status: `PENDING`,
+    score: 0,
   },
-  { id: `leo`, displayName: `Leo M.`, startedAt: STARTED_AT, status: null },
+  {
+    id: `leo`,
+    displayName: `Leo M.`,
+    startedAt: STARTED_AT,
+    status: null,
+    score: null,
+  },
 ]
 
 /** The action saves the name, and the loader reads it back */
