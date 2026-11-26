@@ -33,16 +33,10 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
     if (!educator) {
       return
     }
-    const domain = readEmailDomain(educator.email)
-    if (domain === educator.organizationDomain) {
+    if (readEmailDomain(educator.email) === educator.organizationDomain) {
       return
     }
-    if (domain !== null) {
-      await tx.organization.createMany({
-        data: { domain },
-        skipDuplicates: true,
-      })
-    }
+    const domain = await ensureOrganization(educator.email, tx)
     await tx.educator.update({
       where: { id: educatorId },
       data: { organizationDomain: domain },
@@ -50,6 +44,24 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
     // After the educator, which deleting one locks before their shares
     await endShares(educatorId, tx)
   })
+
+/**
+ * Makes sure the address's organization exists, and returns its domain. Null for
+ * an address at a free email provider
+ */
+export const ensureOrganization = async (
+  email: string,
+  tx: Prisma.TransactionClient,
+): Promise<string | null> => {
+  const domain = readEmailDomain(email)
+  if (domain !== null) {
+    await tx.organization.createMany({
+      data: { domain },
+      skipDuplicates: true,
+    })
+  }
+  return domain
+}
 
 /** Null for an educator without an organization */
 export const readOrganization = async (

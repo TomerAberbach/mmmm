@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { BattleRef } from '../app/bracket.ts'
-import { readBracket } from '../app/brackets.server.ts'
+import { readBracket, readResultRows } from '../app/brackets.server.ts'
 import { readArrangement } from '../app/moves.ts'
 import { listContenders } from '../app/picks.ts'
 import type { ResultRequest } from '../app/result-request.ts'
 import { saveResult } from '../app/results.server.ts'
+import { readMergeMembers } from '../app/results.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket } from '../app/seeded-bracket.ts'
 import { CHAMPIONSHIP, ROUND_1_FIRST } from './picks.ts'
@@ -25,7 +26,7 @@ export const makeFirstResult = async (
     arrangement: readArrangement(stored),
     battle,
     winnerId: listContenders(bracket, battle)[0]!.id,
-    mergeName: null,
+    merge: null,
     previousWinnerId: null,
     cleared: [],
     locks: true,
@@ -35,12 +36,19 @@ export const makeFirstResult = async (
 /** A confirmed request to merge the battle's sides */
 export const makeMerge = async (
   year: number,
-  mergeName = `Ginkgo & Rhizo`,
+  name = `Ginkgo & Rhizo`,
   battle = ROUND_1_FIRST,
 ): Promise<ResultRequest> => ({
   ...(await makeFirstResult(year, battle)),
   winnerId: randomUUID(),
-  mergeName,
+  merge: {
+    name,
+    memberIds: readMergeMembers(
+      await readSeededBracket(year),
+      await readResultRows(year),
+      battle,
+    )!,
+  },
 })
 
 const saveFirstResult = async (

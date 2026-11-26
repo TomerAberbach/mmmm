@@ -12,6 +12,7 @@ import {
   DIVISION_NAME,
   ORGANIZATION_NAME,
 } from '../app/free-text.ts'
+import { requireDisposableDatabase } from './local-database.ts'
 
 /**
  * Pushes schema.prisma, then adds the CHECK constraints it can't declare. Run
@@ -25,9 +26,9 @@ export const pushSchema = async ({
   forceReset?: boolean
   env?: NodeJS.ProcessEnv
 } = {}): Promise<void> => {
-  // Fly sets the name, and `fly deploy --app` takes any app's with this config
-  if (forceReset && env.FLY_APP_NAME && env.FLY_APP_NAME !== `mmmm-staging`) {
-    throw new Error(`Refusing to empty the database of ${env.FLY_APP_NAME}`)
+  // `fly deploy --app` takes any app's name with staging's config
+  if (forceReset) {
+    requireDisposableDatabase(env)
   }
   await runPrisma([`db`, `push`, ...(forceReset ? [`--force-reset`] : [])], env)
   await runPrisma([`db`, `execute`, `--stdin`], env, readConstraintsSql())

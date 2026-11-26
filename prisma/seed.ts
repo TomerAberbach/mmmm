@@ -21,6 +21,10 @@ import type { SeededBracket } from '../app/seeded-bracket.ts'
 import { deleteContest } from '../app/trash.server.ts'
 import { readUpcomingYear } from '../app/year.ts'
 import { BRACKET_2025, BRACKET_2026 } from './brackets.ts'
+import { requireDisposableDatabase } from './local-database.ts'
+
+// Everyone knows the seeded password
+requireDisposableDatabase()
 
 /**
  * Staging asks for its own password first, so seeded educators can share an

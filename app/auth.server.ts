@@ -2,7 +2,11 @@ import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import type { AuthContext, GenericEndpointContext } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { APIError, createAuthMiddleware } from 'better-auth/api'
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from 'better-auth/api'
 import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
@@ -100,7 +104,7 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   }
   await limitAuthRequest({
     path: ctx.path,
-    email: body.email,
+    email: await readLimitedEmail(ctx),
     headers: ctx.headers,
   })
   if (ctx.path === `/update-user`) {
@@ -118,6 +122,14 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   }
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
+
+/** A password change has no address, so it counts for the signed-in educator's */
+const readLimitedEmail = async (
+  ctx: GenericEndpointContext,
+): Promise<unknown> =>
+  ctx.path === `/change-password`
+    ? (await getSessionFromCtx(ctx))?.user.email
+    : (ctx.body as Record<string, unknown> | undefined)?.email
 
 /**
  * A confirmation link contains only the address, so without this check a link
@@ -185,7 +197,7 @@ const afterAuthRequest = createAuthMiddleware(async ctx => {
   if (ctx.context.newSession) {
     await refundAuthRequest({
       path: ctx.path,
-      email: (ctx.body as Record<string, unknown> | undefined)?.email,
+      email: await readLimitedEmail(ctx),
       headers: ctx.headers,
     })
   }

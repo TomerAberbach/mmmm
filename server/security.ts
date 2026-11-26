@@ -75,3 +75,12 @@ const isSameOrigin = (req: Request): boolean => {
   const origin = req.get(`origin`)
   return !origin || URL.parse(origin)?.host === req.get(`host`)
 }
+
+/**
+ * Keeps browsers from storing pages, so the Back button on a shared computer
+ * asks the server again instead of showing the last person's page
+ */
+export const forbidStoring: RequestHandler = (_req, res, next) => {
+  res.setHeader(`Cache-Control`, `no-store`)
+  next()
+}

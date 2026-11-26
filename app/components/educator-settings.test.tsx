@@ -17,7 +17,11 @@ const renderSettings = async ({
       path: `/`,
       Component: () => (
         <EducatorSettings
-          account={{ email: `ada@example.com`, contestCount: 1 }}
+          account={{
+            email: `ada@example.com`,
+            contestCount: 1,
+            isConfirmed: true,
+          }}
           organization={null}
           name='Ms. Frizzle'
         />

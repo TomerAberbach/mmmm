@@ -30,8 +30,8 @@ const readToken = (email: string): string => {
 
 const send = (limit = 1000) => sendLaunchEmails({ limit, pauseMs: 0 })
 
-/** Makes Resend reject every email to the address */
-const rejectEmailsTo = (rejected: string) => {
+/** Makes Resend reject every email to the addresses */
+const rejectEmailsTo = (...rejected: string[]) => {
   vi.stubEnv(`EMAIL_TRANSPORT`, `resend`)
   vi.stubEnv(`RESEND_API_KEY`, `key`)
   vi.stubGlobal(`fetch`, (_url: string, { body }: { body: string }) => {
@@ -39,7 +39,7 @@ const rejectEmailsTo = (rejected: string) => {
     return Promise.resolve(
       Response.json(
         { name: `validation_error` },
-        { status: to === rejected ? 422 : 200 },
+        { status: rejected.includes(to) ? 422 : 200 },
       ),
     )
   })
@@ -174,4 +174,20 @@ test(`a password reset turns off earlier links`, async () => {
   await expect(
     prisma.verification.count({ where: { value: id } }),
   ).resolves.toBe(0)
+})
+
+test(`rejected addresses at the front of the queue never stop a run`, async () => {
+  await send()
+  const rejected = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      addImported(new Date(`2022-01-01T00:00:00Z`)),
+    ),
+  )
+  await addImported(new Date(`2023-01-01T00:00:00Z`))
+  rejectEmailsTo(...rejected.map(({ email }) => email))
+
+  const run = await send(1)
+
+  expect(run.sent).toBe(1)
+  expect(run.failures).toHaveLength(4)
 })

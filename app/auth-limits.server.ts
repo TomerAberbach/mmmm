@@ -43,6 +43,12 @@ const LIMITS: Record<string, Limit> = {
     duration: 15 * MINUTE,
     refundsSuccess: true,
   },
+  '/change-password': {
+    perEmailAndIp: 10,
+    perIp: 100,
+    duration: 15 * MINUTE,
+    refundsSuccess: true,
+  },
   '/sign-up/email': EMAIL_SENDING_LIMIT,
   '/request-password-reset': EMAIL_SENDING_LIMIT,
   '/send-verification-email': EMAIL_SENDING_LIMIT,

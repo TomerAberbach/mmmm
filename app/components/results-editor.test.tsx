@@ -195,7 +195,7 @@ test(`a merge is recorded under a combined name`, async () => {
   expect(readRequests()).toMatchObject([
     {
       battle: { round: `ROUND_1`, index: 0 },
-      mergeName: `Croc & Roll`,
+      merge: { name: `Croc & Roll` },
       previousWinnerId: null,
     },
   ])

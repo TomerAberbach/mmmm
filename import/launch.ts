@@ -7,9 +7,10 @@ import {
 import { isServedOverHttps } from '../app/env.server.ts'
 import { countWaiting, sendLaunchEmails } from './launch-emails.ts'
 
-/** Resend allows 2 requests a second, and 100 emails a day on its free plan */
+/** Resend allows 2 requests a second */
 const PAUSE_MS = 600
-const DEFAULT_LIMIT = `100`
+/** Half of Resend's free plan's day, since the app's own emails share it */
+const DEFAULT_LIMIT = `50`
 const STOP_SIGNALS = [`SIGINT`, `SIGTERM`] as const
 
 /**

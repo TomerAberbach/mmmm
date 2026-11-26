@@ -7,6 +7,7 @@ import { prisma } from './db.server.ts'
 import {
   createSetupLinkToken,
   mayChangeSecondFactors,
+  mayDeleteAccount,
   redeemSetupLink,
   storeSetupLinkToken,
 } from './second-factor.server.ts'
@@ -114,6 +115,20 @@ test.each([
     const secondFactors = { passkeys: [], hasAuthenticatorApp }
 
     expect(mayChangeSecondFactors(assurance, secondFactors)).toBe(mayChange)
+  },
+)
+
+test.each([
+  { assurance: `PASSWORD`, hasAuthenticatorApp: false, mayDelete: true },
+  { assurance: `PASSWORD`, hasAuthenticatorApp: true, mayDelete: false },
+  { assurance: `SETUP_LINK`, hasAuthenticatorApp: true, mayDelete: false },
+  { assurance: `SECOND_FACTOR`, hasAuthenticatorApp: true, mayDelete: true },
+] as const)(
+  `a $assurance session, with an authenticator app: $hasAuthenticatorApp, may delete the account: $mayDelete`,
+  ({ assurance, hasAuthenticatorApp, mayDelete }) => {
+    const secondFactors = { passkeys: [], hasAuthenticatorApp }
+
+    expect(mayDeleteAccount(assurance, secondFactors)).toBe(mayDelete)
   },
 )
 

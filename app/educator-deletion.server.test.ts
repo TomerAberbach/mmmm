@@ -6,7 +6,7 @@ import {
   addSubmission,
   readLinkSecret,
 } from '../test/contests.ts'
-import { createMember } from '../test/educators.ts'
+import { createEducator, createMember } from '../test/educators.ts'
 import { addYear, setLocked } from '../test/years.ts'
 import { prisma } from './db.server.ts'
 import { deleteEducator } from './educator-deletion.server.ts'
@@ -132,5 +132,27 @@ test(`a deleted educator's trash waits in the orphaned contest`, async () => {
   ).resolves.toStrictEqual({
     educatorId: null,
     deletedAt: expect.any(Date) as Date,
+  })
+})
+
+test(`an unconfirmed educator's contest is hidden, and keeps its address's organization`, async () => {
+  const year = await addYear({ published: true })
+  const domain = `${randomUUID()}.edu`
+  const educatorId = await createEducator(undefined, { domain })
+  const contestId = await addContest(educatorId, `Period 2 Biology`)
+  const player = await addPlayer(contestId)
+  await addSubmission(player.id, `APPROVED`)
+  await setLocked(year)
+
+  await deleteEducator(educatorId, `${educatorId}@${domain}`)
+
+  const leaderboard = await readLeaderboard(
+    { kind: `global`, year },
+    { kind: `educator`, educatorId: await createMember(domain) },
+    1,
+  )
+  expect(leaderboard?.rows).toStrictEqual([])
+  await expect(readContestOrganization(contestId)).resolves.toMatchObject({
+    domain,
   })
 })

@@ -3,7 +3,7 @@ import { href } from 'react-router'
 import { CONFIRMATION_EXPIRES_IN_DAYS } from '../app/auth-forms.ts'
 import { auth } from '../app/auth.server.ts'
 import { prisma } from '../app/db.server.ts'
-import { sendEmail } from '../app/email.server.ts'
+import { EmailRejectionError, sendEmail } from '../app/email.server.ts'
 import { launchEmail } from '../app/emails/launch.server.tsx'
 import { toAppUrl } from '../app/env.server.ts'
 import type { Prisma } from '../app/generated/prisma/client.ts'
@@ -25,14 +25,14 @@ export type LaunchRun = {
   failures: { educatorId: string; error: unknown }[]
 }
 
-/** More in a row mean the service is refusing every email */
+/** More in a row, not about an address, mean the service refuses every email */
 const MAX_FAILURES_IN_A_ROW = 3
 
 /**
- * Emails up to `limit` waiting educators a link that sets a password and
+ * Sends up to `limit` waiting educators a link that sets a password and
  * confirms their address, oldest first, pausing between them. Goes on past an
- * address the service rejects, which keeps waiting. Stops between educators once
- * the signal aborts
+ * address the service rejects, which keeps waiting and counts toward no limit.
+ * Stops between educators once the signal aborts
  */
 export const sendLaunchEmails = async ({
   limit,
@@ -46,13 +46,12 @@ export const sendLaunchEmails = async ({
   const educators = await prisma.educator.findMany({
     where: WAITING,
     orderBy: [{ createdAt: `asc` }, { id: `asc` }],
-    take: limit,
     select: { id: true, email: true },
   })
   const run: LaunchRun = { sent: 0, failures: [] }
   let failuresInARow = 0
   for (const { id, email } of educators) {
-    if (signal?.aborted) {
+    if (signal?.aborted || run.sent === limit) {
       break
     }
     // Before sending, since the educator may have set a password or been
@@ -67,7 +66,7 @@ export const sendLaunchEmails = async ({
     } catch (error) {
       await release(id, error)
       run.failures.push({ educatorId: id, error })
-      failuresInARow++
+      failuresInARow = isAboutAddress(error) ? 0 : failuresInARow + 1
       if (failuresInARow === MAX_FAILURES_IN_A_ROW) {
         break
       }
@@ -76,6 +75,9 @@ export const sendLaunchEmails = async ({
   }
   return run
 }
+
+const isAboutAddress = (error: unknown): boolean =>
+  error instanceof EmailRejectionError && error.isAboutEmail
 
 /** Marks a waiting educator as emailed. Returns whether they were waiting */
 const claim = async (id: string, email: string): Promise<boolean> => {

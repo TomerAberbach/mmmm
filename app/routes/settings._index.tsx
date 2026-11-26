@@ -18,7 +18,11 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
   ])
   return {
     name: educator.name,
-    account: { email: educator.email, contestCount },
+    account: {
+      email: educator.email,
+      contestCount,
+      isConfirmed: educator.emailVerified,
+    },
     organization,
     secondFactors,
   }

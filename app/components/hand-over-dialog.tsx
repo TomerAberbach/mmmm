@@ -21,7 +21,7 @@ export type HandOverReply = SavedResult & {
 export const HandOverDialog = ({
   contest,
 }: {
-  contest: { id: string; name: string }
+  contest: { id: string; name: string; isHidden: boolean }
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const fetcher = useFetcher<HandOverReply>()
@@ -47,10 +47,10 @@ export const HandOverDialog = ({
 }
 
 const HandOverForm = ({
-  contest: { id, name },
+  contest: { id, name, isHidden },
   fetcher,
 }: {
-  contest: { id: string; name: string }
+  contest: { id: string; name: string; isHidden: boolean }
   fetcher: FetcherWithComponents<HandOverReply>
 }) => {
   const { form, fields } = useValidatedForm(
@@ -79,6 +79,7 @@ const HandOverForm = ({
           ? `${educator.name} runs ${name} from then on, with its trash and pending brackets.`
           : `The new educator runs it from then on, with its trash and pending brackets.`}
       </p>
+      {isHidden ? <p>It stays hidden until you show it again.</p> : null}
       <TextField
         {...fieldProps(fields.email)}
         type='email'

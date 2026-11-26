@@ -8,7 +8,7 @@ import {
   readAppEnv,
   requireEnv,
 } from './app/env.server.ts'
-import { forwardClientIp } from './server/client-ip.ts'
+import { forwardClientIp, trustFlyProxy } from './server/client-ip.ts'
 import { dropDisconnectedClients } from './server/disconnected-clients.ts'
 import { logRequests } from './server/logging.ts'
 import {
@@ -16,6 +16,7 @@ import {
   limitRequestsPerIp,
 } from './server/rate-limit.ts'
 import {
+  forbidStoring,
   rejectCrossOriginRequests,
   setContentSecurityPolicy,
   setSecurityHeaders,
@@ -73,10 +74,10 @@ const serveProductionApp = async (server: Express): Promise<AppModule> => {
 
 const server = express()
 server.disable(`x-powered-by`)
-// Fly.io sets `FLY_APP_NAME` on its machines, whose only hop is Fly's proxy.
-// Anywhere else, trusting `X-Forwarded-For` would let clients forge their IP
+// Fly.io sets `FLY_APP_NAME` on its machines. Anywhere else, trusting
+// `X-Forwarded-For` would let clients forge their IP
 if (process.env.FLY_APP_NAME) {
-  server.set(`trust proxy`, 1)
+  trustFlyProxy(server)
 }
 server.use(compression())
 server.use(setSecurityHeaders({ isServedOverHttps: IS_SERVED_OVER_HTTPS }))
@@ -100,6 +101,7 @@ server.use(
   // is 500 players who pick every 3 seconds
   limitRequestsPerIp(10_000),
   forwardClientIp,
+  forbidStoring,
   ...(STAGING_PASSWORD
     ? [limitFailedLoginsPerIp(30), requireStagingPassword(STAGING_PASSWORD)]
     : []),

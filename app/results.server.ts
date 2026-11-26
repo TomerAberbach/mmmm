@@ -136,15 +136,15 @@ const replaceResults = async (
 const applyRequest = (
   bracket: SeededBracket,
   results: Results,
-  { battle, winnerId, mergeName }: ResultRequest,
+  { battle, winnerId, merge: requested }: ResultRequest,
 ): AppliedRequest | null => {
   if (winnerId === null) {
     return results[toBattleKey(battle)] === undefined
       ? null
       : { bracket, change: clearResult(bracket, results, battle) }
   }
-  if (mergeName !== null) {
-    const merge = buildMerge(bracket, results, battle, winnerId, mergeName)
+  if (requested !== null) {
+    const merge = buildMerge(bracket, results, battle, winnerId, requested)
     if (!merge) {
       return null
     }
@@ -165,10 +165,11 @@ const buildMerge = (
   results: Results,
   battle: BattleRef,
   id: string,
-  name: string,
+  { name, memberIds: seenMemberIds }: NonNullable<ResultRequest[`merge`]>,
 ): StoredMerge | null => {
   const memberIds = readMergeMembers(bracket, results, battle)
   return memberIds &&
+    hasSameKeys(memberIds, seenMemberIds) &&
     !bracket.combatantById.has(id) &&
     isNameFree(bracket, name)
     ? { id, name, memberIds }

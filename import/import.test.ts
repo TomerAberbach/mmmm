@@ -323,3 +323,15 @@ test(`the import can't rerun once an imported educator confirms their address`, 
 
   await expect(readPlayer(only(data.submissions).id)).resolves.not.toBeNull()
 })
+
+test(`an imported educator's organization exists before they sign in`, async () => {
+  const data = await createOldData()
+  const domain = `${randomUUID()}.edu`
+  only(data.teachers).email = `teacher@${domain}`
+
+  await run(data)
+
+  await expect(prisma.organization.count({ where: { domain } })).resolves.toBe(
+    1,
+  )
+})

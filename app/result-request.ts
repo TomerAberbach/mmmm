@@ -14,8 +14,14 @@ export const resultRequestSchema = z.object({
   battle: z.object({ round: z.enum(Round), index: z.int().min(0) }),
   /** The winner to record. Null clears the result */
   winnerId: idSchema.nullable(),
-  /** The combined name of a merge to record, whose new ID is `winnerId` */
-  mergeName: freeTextSchema(MERGE_NAME).nullable(),
+  /** A merge to record, whose new ID is `winnerId` */
+  merge: z
+    .object({
+      /** The members' combined name */
+      name: freeTextSchema(MERGE_NAME),
+      memberIds: z.array(idSchema).length(2),
+    })
+    .nullable(),
   /** The battle's result before the change */
   previousWinnerId: idSchema.nullable(),
   /** The keys of the later battles whose results the change clears */
