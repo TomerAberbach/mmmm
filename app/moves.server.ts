@@ -1,4 +1,4 @@
-import { toBattleKey } from './bracket.ts'
+import { toBattleId, toBattleKey } from './bracket.ts'
 import {
   readBracketRows,
   readResultRows,
@@ -14,7 +14,8 @@ import {
 } from './moves.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { clearPicks } from './player-picks.server.ts'
-import { clearResults, hasSameKeys } from './results.server.ts'
+import { clearResults } from './results.server.ts'
+import { hasSameKeys } from './results.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
 import { withCurrentYear, withCurrentYearAlone } from './years.server.ts'
@@ -72,7 +73,7 @@ export const moveCombatants = (
   request: MoveRequest,
 ): Promise<{ moved: true } | MoveRefusal> =>
   withMove(request, withCurrentYearAlone, async (tx, move) => {
-    const { year, current, before, after, battleIdByKey, disturbedKeys } = move
+    const { year, current, before, after, disturbedKeys } = move
     const results = await listClearedResults(tx, year, disturbedKeys)
     if (!hasSameKeys(results, request.results)) {
       return { refusal: `STALE` } as const
@@ -80,13 +81,7 @@ export const moveCombatants = (
     await replacePlaces(tx, year, before, after)
     if (disturbedKeys.size > 0) {
       await clearPicks(tx, year, move.disturbedIds, current.isLocked)
-      await clearResults(
-        tx,
-        year,
-        toSeededBracket(after),
-        battleIdByKey,
-        disturbedKeys,
-      )
+      await clearResults(tx, year, toSeededBracket(after), disturbedKeys)
     }
     return { moved: true } as const
   })
@@ -105,7 +100,6 @@ type Move = {
   current: CurrentYear
   before: StoredBracket
   after: StoredBracket
-  battleIdByKey: ReadonlyMap<string, string>
   disturbedKeys: ReadonlySet<string>
   disturbedIds: string[]
 }
@@ -119,7 +113,7 @@ const withMove = <Result>(
     if (current?.year !== year || current.isLocked !== isLocked) {
       return { refusal: `STALE` }
     }
-    const { bracket: before, battleIdByKey } = await readBracketRows(year, tx)
+    const before = await readBracketRows(year, tx)
     const after = swapCombatants(before, swaps)
     if (!after || readArrangement(before) !== arrangement) {
       return { refusal: `STALE` }
@@ -133,8 +127,7 @@ const withMove = <Result>(
       current,
       before,
       after,
-      battleIdByKey,
       disturbedKeys: new Set(keys),
-      disturbedIds: keys.map(key => battleIdByKey.get(key)!),
+      disturbedIds: keys.map(key => toBattleId(year, key)),
     })
   })

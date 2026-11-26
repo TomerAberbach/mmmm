@@ -1,7 +1,7 @@
 import { emailSchema } from '../app/auth-forms.ts'
 import { bracketInputSchema } from '../app/bracket-input.ts'
 import type { BracketInput, CombatantPlace } from '../app/bracket-input.ts'
-import { toSeedSlotKey } from '../app/bracket.ts'
+import { toBattleId, toSeedSlotKey } from '../app/bracket.ts'
 import { insertBracket, readBracketRows } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import { freeAddress } from '../app/educator-deletion.server.ts'
@@ -128,13 +128,7 @@ const importInTransaction = async (
       await importContest(tx, oldClass, educatorId, report)
       await importSubmissions(tx, submissions, year, report, now)
     }
-    await storeScores(
-      tx,
-      bracket.year,
-      year.bracket,
-      year.battleIdByKey,
-      year.results,
-    )
+    await storeScores(tx, bracket.year, year.bracket, year.results)
   }
 }
 
@@ -272,7 +266,6 @@ const findEducator = async (
 type ImportedYear = {
   year: number
   bracket: SeededBracket
-  battleIdByKey: ReadonlyMap<string, string>
   results: Record<string, string>
   /** For finding submissions whose combatants differ */
   combatants: OldWinners
@@ -297,20 +290,20 @@ const importBracket = async (
     note(report.skipped, `bracket of a year that already has one`, String(year))
     return null
   }
-  const imported = await insertImportedBracket(tx, old, input)
+  const bracket = await insertImportedBracket(tx, old, input)
   const { winners: places, unknown } = readOldWinners(winners)
   if (unknown > 0) {
     note(report.changed, `bracket with unknown winners left out`, String(year))
   }
-  const results = toCombatantIds(imported.bracket, places)
+  const results = toCombatantIds(bracket, places)
   await tx.result.createMany({
     data: Object.entries(results).map(([key, winnerId]) => ({
-      battleId: imported.battleIdByKey.get(key)!,
+      battleId: toBattleId(year, key),
       winnerId,
     })),
   })
   report.imported.brackets++
-  return { year, ...imported, results, combatants: winners }
+  return { year, bracket, results, combatants: winners }
 }
 
 const readDivisionNames = ({
@@ -336,8 +329,7 @@ const insertImportedBracket = async (
     where: { year },
     data: { createdAt, publishedAt: createdAt, lockedAt: updatedAt },
   })
-  const { bracket, battleIdByKey } = await readBracketRows(year, tx)
-  return { bracket: toSeededBracket(bracket), battleIdByKey }
+  return toSeededBracket(await readBracketRows(year, tx))
 }
 
 const toCombatantIds = (
@@ -428,7 +420,7 @@ const importSubmissions = async (
 /** Null for a submission it skips */
 const toSubmissionRows = (
   { id, name, approved, winners: json, classId, createdAt }: OldSubmission,
-  { year, bracket, battleIdByKey, combatants }: ImportedYear,
+  { year, bracket, combatants }: ImportedYear,
   report: ImportReport,
   now: Date,
 ) => {
@@ -465,7 +457,7 @@ const toSubmissionRows = (
     },
     picks: Object.entries(toCombatantIds(bracket, places)).map(
       ([key, combatantId]) => ({
-        battleId: battleIdByKey.get(key)!,
+        battleId: toBattleId(year, key),
         combatantId,
       }),
     ),

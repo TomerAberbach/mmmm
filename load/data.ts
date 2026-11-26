@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { listBattles } from '../app/bracket.ts'
+import { listBattles, toBattleId } from '../app/bracket.ts'
 import {
-  readBracketRows,
+  readBracket,
   saveUnpublishedBracket,
   setBracketPublished,
 } from '../app/brackets.server.ts'
@@ -25,8 +25,7 @@ export const toPlayerSecret = (index: number): string => `load-player-${index}`
 export const fillDatabase = async (): Promise<void> => {
   await saveUnpublishedBracket(YEAR, BRACKET_2025)
   await setBracketPublished(YEAR, true)
-  const { bracket: stored, battleIdByKey } = await readBracketRows(YEAR, prisma)
-  const bracket = toSeededBracket(stored)
+  const bracket = toSeededBracket((await readBracket(YEAR))!)
   for (let index = 0; index < CONTEST_COUNT; index++) {
     const domain = `school-${index % 20}.edu`
     await prisma.educator.create({
@@ -51,7 +50,7 @@ export const fillDatabase = async (): Promise<void> => {
   }
   const choices = [0, -1].map(side => pickEvery(bracket, side))
   for (let index = 0; index < CONTEST_COUNT; index++) {
-    await fillContest(index, choices, battleIdByKey)
+    await fillContest(index, choices)
   }
 }
 
@@ -71,7 +70,6 @@ const pickEvery = (bracket: SeededBracket, at: number): Picks =>
 const fillContest = async (
   contestIndex: number,
   choices: Picks[],
-  battleIdByKey: ReadonlyMap<string, string>,
 ): Promise<void> => {
   const players = Array.from({ length: PLAYERS_PER_CONTEST }, (_, index) => {
     const playerIndex = contestIndex * PLAYERS_PER_CONTEST + index
@@ -98,7 +96,7 @@ const fillContest = async (
           ([`DRAFT`, `SUBMISSION`] as const).map(stage => ({
             playerId: id,
             stage,
-            battleId: battleIdByKey.get(key)!,
+            battleId: toBattleId(YEAR, key),
             combatantId,
           })),
       ),

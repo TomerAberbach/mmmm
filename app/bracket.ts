@@ -98,6 +98,10 @@ export type Winners = Readonly<Record<string, string>>
 export const toBattleKey = ({ round, index }: BattleRef): string =>
   `${round}:${index}`
 
+/** The row ID of the year's battle with the key, from `toBattleKey` */
+export const toBattleId = (year: number, key: string): string =>
+  `${year}:${key}`
+
 export const toSeedSlotKey = ({ position, seed }: SeedSlotRef): string =>
   `${position}:${seed}`
 
@@ -175,15 +179,14 @@ export const readWildCardRound1Battle = ({
     PAIR_INDEX_BY_SEED[seed],
 })
 
-const assertBattleExists = ({ round, index }: BattleRef): void => {
-  if (
-    !Number.isSafeInteger(index) ||
-    index < 0 ||
-    index >= BATTLE_COUNTS[round]
-  ) {
-    throw new RangeError(`No battle ${index} in ${round}`)
+const assertBattleExists = (battle: BattleRef): void => {
+  if (!doesBattleExist(battle)) {
+    throw new RangeError(`No battle ${battle.index} in ${battle.round}`)
   }
 }
+
+export const doesBattleExist = ({ round, index }: BattleRef): boolean =>
+  Number.isSafeInteger(index) && index >= 0 && index < BATTLE_COUNTS[round]
 
 export const isSameSeedSlot = (
   first: SeedSlotRef,

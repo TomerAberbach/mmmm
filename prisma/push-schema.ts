@@ -51,6 +51,8 @@ export const readConstraintsSql = (): string =>
       `index BETWEEN 0 AND ${MAX_WILD_CARD_ENTRANTS - 1}`,
     ),
     check(`Battle`, `index`, `index >= 0 AND index < ${readBattleCountSql()}`),
+    // As `toBattleId` makes them
+    check(`Battle`, `id`, `id = year || ':' || round || ':' || index`),
     checkName(`Division`, DIVISION_NAME.maxLength),
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
     checkName(`Contest`, CONTEST_NAME.maxLength),

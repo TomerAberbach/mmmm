@@ -186,7 +186,8 @@ app
   scores
 - Read which seed slots or earlier battles feed a battle, and which Round 1
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
-  links, only a round and an index for results and picks to reference
+  links, only a round and an index for results and picks to reference, by the
+  row ID that `toBattleId` makes of them
 - A `BracketInput` skips the wild card's seed in its division's list, so read
   each seed slot's combatant with `listSeedSlots` or `listDivisionSeedSlots`
   instead of indexing the list by seed. The setup form keeps one field per seed

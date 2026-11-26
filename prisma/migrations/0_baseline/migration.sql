@@ -465,6 +465,7 @@ ALTER TABLE "Submission" ADD CONSTRAINT "Submission_playerId_fkey" FOREIGN KEY (
 ALTER TABLE "SeedSlot" DROP CONSTRAINT IF EXISTS "SeedSlot_seed_check", ADD CONSTRAINT "SeedSlot_seed_check" CHECK (seed BETWEEN 1 AND 16);
 ALTER TABLE "WildCardEntrant" DROP CONSTRAINT IF EXISTS "WildCardEntrant_index_check", ADD CONSTRAINT "WildCardEntrant_index_check" CHECK (index BETWEEN 0 AND 3);
 ALTER TABLE "Battle" DROP CONSTRAINT IF EXISTS "Battle_index_check", ADD CONSTRAINT "Battle_index_check" CHECK (index >= 0 AND index < CASE round WHEN 'WILD_CARD' THEN 1 WHEN 'ROUND_1' THEN 32 WHEN 'ROUND_2' THEN 16 WHEN 'SWEET_16' THEN 8 WHEN 'ELITE_TRAIT' THEN 4 WHEN 'FINAL_ROAR' THEN 2 WHEN 'CHAMPIONSHIP' THEN 1 ELSE 0 END);
+ALTER TABLE "Battle" DROP CONSTRAINT IF EXISTS "Battle_id_check", ADD CONSTRAINT "Battle_id_check" CHECK (id = year || ':' || round || ':' || index);
 ALTER TABLE "Division" DROP CONSTRAINT IF EXISTS "Division_name_check", ADD CONSTRAINT "Division_name_check" CHECK ("name" = btrim("name") AND char_length("name") BETWEEN 1 AND 80);
 ALTER TABLE "Combatant" DROP CONSTRAINT IF EXISTS "Combatant_name_check", ADD CONSTRAINT "Combatant_name_check" CHECK ("name" = btrim("name") AND char_length("name") BETWEEN 1 AND 80);
 ALTER TABLE "Contest" DROP CONSTRAINT IF EXISTS "Contest_name_check", ADD CONSTRAINT "Contest_name_check" CHECK ("name" = btrim("name") AND char_length("name") BETWEEN 1 AND 80);
