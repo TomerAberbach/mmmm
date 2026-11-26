@@ -1,8 +1,8 @@
-import { createRoutesStub, useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { formatDateTime, formatLocalDate } from '../dates.ts'
 import { idsSchema } from '../id-list.ts'
 import { ContestTrash } from './contest-trash.tsx'
@@ -42,33 +42,35 @@ const renderTrash = async (
     players = players.filter(({ id }) => !ids.includes(id))
     return { ok: true }
   }
-  const Stub = createRoutesStub([
-    {
-      path: `/contests/period-2/trash`,
-      loader: () => players,
-      HydrateFallback: () => null,
-      Component: () => (
-        <ContestTrash
-          contest={{
-            id: `period-2`,
-            name: `Period 2 Biology`,
-            year: 2027,
-            link: `https://mmmm.onl/play/secret`,
-          }}
-          players={useLoaderData<DeletedPlayer[]>()}
-        />
-      ),
-    },
-    {
-      path: `/contests/period-2/trash/restore`,
-      action: ({ request }) => remove(request),
-    },
-    {
-      path: `/contests/period-2/trash/erase`,
-      action: ({ request }) => remove(request),
-    },
-  ])
-  await render(<Stub initialEntries={[`/contests/period-2/trash`]} />)
+  await renderRoutes(
+    [
+      {
+        path: `/contests/period-2/trash`,
+        loader: () => players,
+        HydrateFallback: () => null,
+        Component: () => (
+          <ContestTrash
+            contest={{
+              id: `period-2`,
+              name: `Period 2 Biology`,
+              year: 2027,
+              link: `https://mmmm.onl/play/secret`,
+            }}
+            players={useLoaderData<DeletedPlayer[]>()}
+          />
+        ),
+      },
+      {
+        path: `/contests/period-2/trash/restore`,
+        action: ({ request }) => remove(request),
+      },
+      {
+        path: `/contests/period-2/trash/erase`,
+        action: ({ request }) => remove(request),
+      },
+    ],
+    `/contests/period-2/trash`,
+  )
 }
 
 const row = (name: string) =>

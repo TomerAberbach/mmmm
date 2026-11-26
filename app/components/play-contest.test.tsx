@@ -1,10 +1,11 @@
 import type { SubmissionResult } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub, redirect, useActionData } from 'react-router'
+import { redirect, useActionData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { freeTextSchema } from '../free-text.ts'
 import { displayNameSchema } from '../player-forms.ts'
 import { ContestContext, PlayContestPage } from './play-contest.tsx'
@@ -19,28 +20,30 @@ const CONTEST = {
 
 /** The action refuses every name with `error` */
 const renderPlay = async (view: PlayView, error = ``) => {
-  const Stub = createRoutesStub([
-    {
-      path: `/play/secret`,
-      action: async ({ request }) => {
-        const submission = parseWithZod(await request.formData(), {
-          schema: displayNameSchema(freeTextSchema),
-        })
-        return {
-          result: submission.reply({ fieldErrors: { displayName: [error] } }),
-        }
-      },
-      Component: () => (
-        <PlayContestPage
-          view={view}
-          lastResult={
-            useActionData<{ result: SubmissionResult } | undefined>()?.result
+  await renderRoutes(
+    [
+      {
+        path: `/play/secret`,
+        action: async ({ request }) => {
+          const submission = parseWithZod(await request.formData(), {
+            schema: displayNameSchema(freeTextSchema),
+          })
+          return {
+            result: submission.reply({ fieldErrors: { displayName: [error] } }),
           }
-        />
-      ),
-    },
-  ])
-  await render(<Stub initialEntries={[`/play/secret`]} />)
+        },
+        Component: () => (
+          <PlayContestPage
+            view={view}
+            lastResult={
+              useActionData<{ result: SubmissionResult } | undefined>()?.result
+            }
+          />
+        ),
+      },
+    ],
+    `/play/secret`,
+  )
 }
 
 test(`the contest link asks for a first name and last initial`, async () => {
@@ -129,19 +132,21 @@ test(`the contest link names the contest and its educator`, async () => {
 
 test(`the start button stays pending until the player's bracket loads`, async () => {
   const bracketLoad = Promise.withResolvers<null>()
-  const Stub = createRoutesStub([
-    {
-      path: `/play/secret`,
-      action: () => redirect(`/player/bracket`),
-      Component: () => <PlayContestPage view={{ state: `askName` }} />,
-    },
-    {
-      path: `/player/bracket`,
-      loader: () => bracketLoad.promise,
-      Component: () => <p>The bracket</p>,
-    },
-  ])
-  await render(<Stub initialEntries={[`/play/secret`]} />)
+  await renderRoutes(
+    [
+      {
+        path: `/play/secret`,
+        action: () => redirect(`/player/bracket`),
+        Component: () => <PlayContestPage view={{ state: `askName` }} />,
+      },
+      {
+        path: `/player/bracket`,
+        loader: () => bracketLoad.promise,
+        Component: () => <p>The bracket</p>,
+      },
+    ],
+    `/play/secret`,
+  )
   await userEvent.fill(page.getByRole(`textbox`), `Maya R.`)
   const start = page.getByRole(`button`, { name: `Start my bracket` })
 

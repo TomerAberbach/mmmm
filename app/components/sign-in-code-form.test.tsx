@@ -1,13 +1,12 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { SignInCodeForm } from './sign-in-code-form.tsx'
 
 /** Records each code the action receives */
 const renderForm = async (received: unknown[] = []) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     { path: `/`, Component: () => <SignInCodeForm /> },
     {
       path: `/sign-in/code`,
@@ -17,7 +16,6 @@ const renderForm = async (received: unknown[] = []) => {
       },
     },
   ])
-  await render(<Stub />)
 }
 
 test(`a code that isn't 6 digits asks for the app's code`, async () => {

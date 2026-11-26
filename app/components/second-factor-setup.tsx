@@ -9,7 +9,7 @@ import { PasskeyButton } from './passkey-button.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { useIsSubmitting } from './use-validated-form.ts'
 
-const WHY = `Admins sign in with a second step, so a stolen password alone can't change results.`
+const WHY = `Admins sign in with a second step, so a stolen password alone can’t change results.`
 
 /**
  * Setting up the first second factor starts with an emailed link, so a stolen
@@ -34,9 +34,9 @@ export const SetupLinkRequest = ({
       <PageTitle>Set up a second factor</PageTitle>
       <p>{WHY}</p>
       <p>
-        First, we&apos;ll email a setup link to{` `}
-        <strong className='break-all'>{email}</strong>, so we know it&apos;s
-        you. Open it in this browser.
+        First, we’ll email a setup link to{` `}
+        <strong className='break-all'>{email}</strong>, so we know it’s you.
+        Open it in this browser.
       </p>
       {state === `link-invalid` ? (
         <Notice kind='alert'>
@@ -72,7 +72,7 @@ export const SecondFactorChoice = () => (
     <SetupOption
       title='Passkey'
       isRecommended
-      description="Use your fingerprint, face, or device PIN. It can't be phished, and you can sign in with it instead of your password."
+      description='Use your fingerprint, face, or device PIN. It can’t be phished, and you can sign in with it instead of your password.'
     >
       <PasskeyButton ceremony={addPasskey} successTo={href(`/admin`)}>
         Add a passkey

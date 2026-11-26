@@ -55,10 +55,13 @@ app
   them moves when they appear. Forms validate only once first submitted. A form
   too long to see at once also lists its field errors above it with
   `ErrorSummary` from `components/error-summary.tsx`
+- Give a route with only an action a loader that redirects to the page that
+  posts to it, since a GET would otherwise answer with a raw error
 - Answer a form submitted through a fetcher with `saveForm` from
   `form-replies.server.ts`, or with `acceptForm` and `rejectForm` when the reply
   sets headers or Better Auth can refuse it, and show `SavedNotice` from
   `components/saved-notice.tsx`
+- Write apostrophes as ’ in copy, and end an error without a period
 - Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
   UTC, so read it in UTC. Show an instant as its day in Arizona with
   `formatArizonaDate`
@@ -221,6 +224,8 @@ app
 
 ## Testing
 
+- Render a component that needs a router with `renderRoutes` from
+  `test/render-routes.tsx`
 - `*.test.ts` files run in Node, and `*.test.tsx` files run in Chromium through
   Vitest browser mode. Both are colocated with the code they test
 - Each Vitest worker has its own database, and runs its Node test files one

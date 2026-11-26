@@ -1,7 +1,6 @@
-import { createRoutesStub, redirect, useLoaderData } from 'react-router'
+import { redirect, useLoaderData } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import {
@@ -10,6 +9,7 @@ import {
   ROUND_1_FIRST,
   storeTestBracket,
 } from '../../test/picks.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { toBattleKey } from '../bracket.ts'
 import { formatDateTime } from '../dates.ts'
 import { listContenders, pickWinner } from '../picks.ts'
@@ -84,7 +84,7 @@ const renderBracket = async ({
     submitted: submission && { submission, personalLink: PERSONAL_LINK },
   }
   const forgotten: unknown[] = []
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       loader: () => ({ ...server }),
@@ -118,7 +118,6 @@ const renderBracket = async ({
       Component: () => <p>Deleted</p>,
     },
   ])
-  await render(<Stub />)
   return { server, forgotten }
 }
 

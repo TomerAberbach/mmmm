@@ -26,8 +26,8 @@ export const confirmEmail = ({
       </EmailParagraph>
       <EmailAction href={url}>Confirm email address</EmailAction>
       <EmailParagraph>
-        The link expires in {CONFIRMATION_EXPIRES_IN_DAYS} days. If you
-        didn&apos;t sign up, ignore this email.
+        The link expires in {CONFIRMATION_EXPIRES_IN_DAYS} days. If you didn’t
+        sign up, ignore this email.
       </EmailParagraph>
     </EmailLayout>
   ),

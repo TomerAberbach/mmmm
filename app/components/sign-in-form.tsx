@@ -12,13 +12,31 @@ import { PlayerNote } from './player-note.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 
+const NOTICES = {
+  confirmed: {
+    kind: `status`,
+    text: `Your email address is confirmed. Sign in to create your first contest.`,
+  },
+  'password-reset': {
+    kind: `status`,
+    text: `Your password is changed. Sign in with your new password.`,
+  },
+  'challenge-expired': {
+    kind: `alert`,
+    text: `Your sign-in timed out before the code was accepted. Sign in again.`,
+  },
+  'link-invalid': {
+    kind: `alert`,
+    text: `That confirmation link has expired or doesn’t work. Sign in to get a new one.`,
+  },
+} as const
+
 /**
  * Where a link left the educator: confirmed, with a confirmation link that
  * expired or was altered, or with a new password. Or the code page ran out of
  * time or attempts
  */
-export type SignInNotice =
-  `confirmed` | `link-invalid` | `password-reset` | `challenge-expired`
+export type SignInNotice = keyof typeof NOTICES
 
 export const SignInForm = ({
   lastResult,
@@ -33,31 +51,13 @@ export const SignInForm = ({
     lastResult,
   )
   // A submission's result replaces where the link left the educator
-  const shownNotice = lastResult ? undefined : notice
+  const shownNotice = lastResult || !notice ? undefined : NOTICES[notice]
   return (
     <div className='flex max-w-md flex-col gap-6'>
       <PageTitle>Sign in</PageTitle>
       <PlayerNote />
-      {shownNotice === `confirmed` ? (
-        <Notice kind='status'>
-          Your email address is confirmed. Sign in to create your first contest.
-        </Notice>
-      ) : null}
-      {shownNotice === `password-reset` ? (
-        <Notice kind='status'>
-          Your password is changed. Sign in with your new password.
-        </Notice>
-      ) : null}
-      {shownNotice === `challenge-expired` ? (
-        <Notice kind='alert'>
-          Your sign-in timed out before the code was accepted. Sign in again.
-        </Notice>
-      ) : null}
-      {shownNotice === `link-invalid` ? (
-        <Notice kind='alert'>
-          That confirmation link has expired or doesn&apos;t work. Sign in to
-          get a new one.
-        </Notice>
+      {shownNotice ? (
+        <Notice kind={shownNotice.kind}>{shownNotice.text}</Notice>
       ) : null}
       <Form
         method='post'

@@ -398,7 +398,7 @@ export const renameCombatant = async (
     select: { id: true, name: true },
   })
   if (!combatants.some(({ id }) => id === combatantId)) {
-    return { error: `That combatant isn't in the ${year} bracket` }
+    return { error: `That combatant isn’t in the ${year} bracket` }
   }
   const others = combatants.filter(({ id }) => id !== combatantId)
   const duplicate = findDuplicateNames([

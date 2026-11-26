@@ -2,7 +2,11 @@ import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
 import { readBracketRows, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
-import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
+import type {
+  PickStage,
+  Prisma,
+  SubmissionStatus,
+} from './generated/prisma/client.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
 import type { Picks } from './picks.ts'
@@ -120,8 +124,6 @@ export const discardPlayerDraft = (
     `
     return { discarded: true } as const
   })
-
-type PickStage = `DRAFT` | `SUBMISSION`
 
 const PICK_SELECT = {
   stage: true,

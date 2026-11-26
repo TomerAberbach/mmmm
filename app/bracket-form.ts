@@ -15,6 +15,7 @@ import {
   SEEDS,
 } from './bracket.ts'
 import type { SeedSlotRef } from './bracket.ts'
+import { formatCount } from './format-count.ts'
 
 const optionalName = z.string().trim().optional()
 
@@ -28,9 +29,9 @@ export const bracketFormSchema = z
   .object({
     wildCard: z.object({
       position: z.enum(DivisionPosition, {
-        error: `Choose the wild card's division`,
+        error: `Choose the wild card’s division`,
       }),
-      seed: z.literal(SEEDS, { error: `Choose the wild card's seed` }),
+      seed: z.literal(SEEDS, { error: `Choose the wild card’s seed` }),
       entrantCount: z
         .number({ error: `Choose how many entrants the wild card has` })
         .int()
@@ -163,7 +164,7 @@ export const readPastedNames = (
   if (names.length !== fieldNames.length) {
     const seedCount = fieldNames.length - wildCard.entrantCount
     return {
-      error: `Found ${names.length} ${names.length === 1 ? `name` : `names`}. Paste ${fieldNames.length}: the ${seedCount} seeds and the ${wildCard.entrantCount} wild card entrants`,
+      error: `Found ${formatCount(names.length, `name`)}. Paste ${fieldNames.length}: the ${seedCount} seeds and the ${wildCard.entrantCount} wild card entrants`,
     }
   }
   return {

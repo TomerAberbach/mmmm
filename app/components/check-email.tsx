@@ -32,7 +32,7 @@ export const CheckEmail = ({
           {CONFIRMATION_EXPIRES_IN_DAYS} days.
         </p>
       )}
-      <p>Can&apos;t find it? Check your spam folder, or send it again.</p>
+      <p>Can’t find it? Check your spam folder, or send it again.</p>
       <resend.Form
         method='post'
         action={href(`/resend-confirmation`)}

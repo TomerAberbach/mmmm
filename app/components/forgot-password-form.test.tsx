@@ -1,15 +1,14 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { ForgotPasswordForm, ResetLinkSent } from './forgot-password-form.tsx'
 
 const renderAt = async (element: React.ReactElement) => {
-  const Stub = createRoutesStub([
-    { path: `/forgot-password`, Component: () => element },
-  ])
-  await render(<Stub initialEntries={[`/forgot-password`]} />)
+  await renderRoutes(
+    [{ path: `/forgot-password`, Component: () => element }],
+    `/forgot-password`,
+  )
 }
 
 test(`the reset request asks for the email address`, async () => {

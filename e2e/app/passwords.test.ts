@@ -10,6 +10,7 @@ import {
   signUp,
   signUpConfirmed,
 } from '../auth.ts'
+import { confirmDialog } from '../dialogs.ts'
 import { readEmails, readNewestActionLink } from '../mailbox.ts'
 
 /**
@@ -190,11 +191,7 @@ test(`signing out other sessions keeps this one`, async ({
   const elsewhere = await signInElsewhere(email)
   await page.goto(`/settings`)
 
-  await page.getByRole(`button`, { name: `Sign out other sessions` }).click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Sign out other sessions` })
-    .click()
+  await confirmDialog(page, `Sign out other sessions`)
 
   await expect(page.getByRole(`status`)).toContainText(
     `Every other session is signed out`,

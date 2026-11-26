@@ -1,8 +1,8 @@
-import { createRoutesStub, redirect, useParams } from 'react-router'
+import { redirect, useParams } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { EducatorDashboard } from './educator-dashboard.tsx'
 import type { EducatorDashboardView } from './educator-dashboard.tsx'
 
@@ -13,21 +13,23 @@ const CONTESTS = [
 
 /** The action creates the contest under its own name as the ID */
 const renderDashboard = async (view: EducatorDashboardView) => {
-  const Stub = createRoutesStub([
-    { path: `/contests`, Component: () => <EducatorDashboard view={view} /> },
-    {
-      path: `/contests/new`,
-      action: async ({ request }) =>
-        redirect(
-          `/contests/${new URLSearchParams(await request.text()).get(`name`) ?? ``}`,
-        ),
-    },
-    {
-      path: `/contests/:contestId`,
-      Component: () => <p>Opened {useParams().contestId}</p>,
-    },
-  ])
-  await render(<Stub initialEntries={[`/contests`]} />)
+  await renderRoutes(
+    [
+      { path: `/contests`, Component: () => <EducatorDashboard view={view} /> },
+      {
+        path: `/contests/new`,
+        action: async ({ request }) =>
+          redirect(
+            `/contests/${new URLSearchParams(await request.text()).get(`name`) ?? ``}`,
+          ),
+      },
+      {
+        path: `/contests/:contestId`,
+        Component: () => <p>Opened {useParams().contestId}</p>,
+      },
+    ],
+    `/contests`,
+  )
 }
 
 test(`before any bracket is published, the educator dashboard says when contests open`, async () => {
@@ -112,7 +114,7 @@ test(`a contest without a name isn't created`, async () => {
     .getByRole(`button`, { name: `Create contest` })
     .click()
 
-  await expect.element(page.getByText(`Enter the contest's name`)).toBeVisible()
+  await expect.element(page.getByText(`Enter the contest’s name`)).toBeVisible()
   await expectNoAxeViolations()
 })
 

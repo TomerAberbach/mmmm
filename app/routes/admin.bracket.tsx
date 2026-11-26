@@ -56,7 +56,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     ? redirect(href(`/admin`))
     : rejectForm(submission, {
         formErrors: [
-          `The ${year} bracket is published, so it can't change here`,
+          `The ${year} bracket is published, so it can’t change here`,
         ],
       })
 }

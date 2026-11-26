@@ -45,7 +45,7 @@ test(`an address gets 3 sign-ups an hour from one IP address`, async () => {
     statusCode: 429,
     body: {
       code: APP_REFUSAL,
-      message: `Too many attempts. Try again in 60 minutes.`,
+      message: `Too many attempts. Try again in 60 minutes`,
     },
   })
 })

@@ -12,7 +12,7 @@ export const action = async ({
     await auth.api.revokeOtherSessions({ headers: request.headers })
   } catch (error) {
     console.error(`Failed to sign out other sessions`, error)
-    return { error: `Your other sessions weren't signed out. Try again.` }
+    return { error: `Your other sessions weren’t signed out. Try again` }
   }
   return { ok: true }
 }

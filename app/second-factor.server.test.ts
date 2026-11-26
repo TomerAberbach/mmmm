@@ -191,7 +191,7 @@ test(`an admin can't remove their last second factor`, async () => {
 
   await expect(disabling).rejects.toMatchObject({
     body: {
-      message: `Admins keep at least one second factor. Add another before removing this one.`,
+      message: `Admins keep at least one second factor. Add another before removing this one`,
     },
   })
 })

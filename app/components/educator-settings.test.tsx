@@ -1,9 +1,8 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { changePasswordSchema, nameSchema } from '../auth-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { EducatorSettings } from './educator-settings.tsx'
@@ -13,7 +12,7 @@ import type { ConfirmResult } from '~/form-replies.server.ts'
 const renderSettings = async ({
   passwordErrors = {},
 }: { passwordErrors?: Record<string, string[]> } = {}) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     { path: `/`, Component: () => <EducatorSettings name='Ms. Frizzle' /> },
     {
       path: `/settings/name`,
@@ -40,7 +39,6 @@ const renderSettings = async ({
       action: (): ConfirmResult => ({ ok: true }),
     },
   ])
-  await render(<Stub />)
 }
 
 const fillPasswords = async () => {

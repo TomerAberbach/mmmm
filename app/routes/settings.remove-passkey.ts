@@ -11,7 +11,7 @@ export const action = async ({
 }: Route.ActionArgs): Promise<ConfirmResult> => {
   const id = (await request.formData()).get(`id`)
   if (typeof id !== `string`) {
-    return { error: `That passkey wasn't found. Reload the page.` }
+    return { error: `That passkey wasn’t found. Reload the page` }
   }
   try {
     await auth.api.deletePasskey({ body: { id }, headers: request.headers })
@@ -21,7 +21,7 @@ export const action = async ({
       return { error: message }
     }
     console.error(`Failed to remove a passkey`, error)
-    return { error: `The passkey wasn't removed. Try again.` }
+    return { error: `The passkey wasn’t removed. Try again` }
   }
   return { ok: true }
 }

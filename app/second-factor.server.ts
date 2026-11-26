@@ -66,7 +66,7 @@ export const guardSecondFactorChange = async (
   ) {
     throw refuse(
       `BAD_REQUEST`,
-      `Admins keep at least one second factor. Add another before removing this one.`,
+      `Admins keep at least one second factor. Add another before removing this one`,
     )
   }
 }

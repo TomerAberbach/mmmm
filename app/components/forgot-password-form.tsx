@@ -31,8 +31,8 @@ export const ForgotPasswordForm = ({
         </Notice>
       ) : (
         <p>
-          Enter the email address you signed up with, and we&apos;ll send you a
-          link to set a new password.
+          Enter the email address you signed up with, and we’ll send you a link
+          to set a new password.
         </p>
       )}
       <Form

@@ -11,9 +11,9 @@ import {
 } from '../auth.ts'
 import { readNewestActionLink } from '../mailbox.ts'
 
-/** Reads the key under "Can't scan it?", as an educator would type it */
+/** Reads the key under "Can’t scan it?", as an educator would type it */
 const readTotpUri = async (page: Page): Promise<string> => {
-  await page.getByRole(`button`, { name: `Can't scan it?` }).click()
+  await page.getByRole(`button`, { name: `Can’t scan it?` }).click()
   const key = await page
     .getByText(/^[A-Z2-7]{4}(?: [A-Z2-7]{1,4})+$/u)
     .innerText()
@@ -46,7 +46,7 @@ test(`an admin sets up an authenticator app and enters its code at sign-in`, asy
   const totpUri = await readTotpUri(page)
   await enterCode(page, readTotpCode(totpUri))
   await page.getByRole(`button`, { name: `Turn on` }).click()
-  await page.getByText(`I've saved these codes`).click()
+  await page.getByText(`I’ve saved these codes`).click()
   await page.getByRole(`link`, { name: `Continue` }).click()
   await expect(page.getByRole(`heading`, { name: `Admin` })).toBeVisible()
   await signOut(page)

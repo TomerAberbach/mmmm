@@ -1,4 +1,6 @@
+import { formatDateTime } from '../dates.ts'
 import type { MailboxEmail } from '../mailbox.server.ts'
+import { LocalTime } from './local-time.tsx'
 
 export const MailboxEmails = ({
   emails,
@@ -12,13 +14,7 @@ export const MailboxEmails = ({
           <summary className='cursor-pointer px-4 py-3'>
             <span className='font-semibold'>{email.subject}</span> to{` `}
             {email.to},{` `}
-            {/* The server's time zone, which can differ from the browser's */}
-            <time
-              dateTime={email.sentAt.toISOString()}
-              suppressHydrationWarning
-            >
-              {email.sentAt.toLocaleString(`en-US`, { timeZoneName: `short` })}
-            </time>
+            <LocalTime date={email.sentAt} format={formatDateTime} />
           </summary>
           <div className='grid gap-4 border-t-2 border-ink p-4 lg:grid-cols-2'>
             {/* The sandbox stops the email's HTML from running scripts or

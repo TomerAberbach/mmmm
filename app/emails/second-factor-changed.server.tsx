@@ -34,8 +34,8 @@ export const secondFactorChangedEmail = ({
         {SUMMARIES[change]} on the MMMM account with this email address.
       </EmailParagraph>
       <EmailParagraph>
-        If you didn&apos;t make this change, check your second factors and reset
-        your password.
+        If you didn’t make this change, check your second factors and reset your
+        password.
       </EmailParagraph>
       <EmailAction href={toAppUrl(href(`/settings`)).href}>
         Check your second factors

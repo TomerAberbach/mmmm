@@ -60,7 +60,7 @@ test(`a deleted player moves to the trash, and their personal link turns off`, a
   await expect(readContestPlayer(contestId, secret)).resolves.toBeNull()
   await expect(readPersonalLink(secret)).resolves.toMatchObject({
     state: `deleted`,
-    deletedBy: `EDUCATOR`,
+    restoreBy: null,
   })
 })
 

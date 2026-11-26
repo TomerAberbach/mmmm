@@ -1,9 +1,9 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub, useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import type { ContestPlayer } from '../contest-players.server.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { idsSchema } from '../id-list.ts'
@@ -43,64 +43,66 @@ const renderPlayers = async (
       entry.id === id ? { ...entry, ...change } : entry,
     )
   }
-  const Stub = createRoutesStub([
-    {
-      path: `/contests/period-2`,
-      loader: () => players,
-      HydrateFallback: () => null,
-      Component: () => (
-        <ContestPlayers
-          contestId='period-2'
-          players={useLoaderData<ContestPlayer[]>()}
-        />
-      ),
-    },
-    {
-      path: `/contests/period-2/players/status`,
-      action: async ({ request }) => {
-        await statusGate
-        if (refuseStatus) {
-          players = removeOnRefusal ? players.slice(1) : players
-          return { error: `This bracket is gone or not submitted` }
-        }
-        const { ids, status } = submissionStatusSchema.parse(
-          Object.fromEntries(await request.formData()),
-        )
-        for (const id of ids) {
-          update(id, { status })
-        }
-        return { ok: true }
+  await renderRoutes(
+    [
+      {
+        path: `/contests/period-2`,
+        loader: () => players,
+        HydrateFallback: () => null,
+        Component: () => (
+          <ContestPlayers
+            contestId='period-2'
+            players={useLoaderData<ContestPlayer[]>()}
+          />
+        ),
       },
-    },
-    {
-      path: `/contests/period-2/players/delete`,
-      action: async ({ request }) => {
-        const { ids } = idsSchema.parse(
-          Object.fromEntries(await request.formData()),
-        )
-        if (refuseDelete) {
-          return { error: `Nothing was deleted` }
-        }
-        players = players.filter(({ id }) => !ids.includes(id))
-        return { ok: true }
+      {
+        path: `/contests/period-2/players/status`,
+        action: async ({ request }) => {
+          await statusGate
+          if (refuseStatus) {
+            players = removeOnRefusal ? players.slice(1) : players
+            return { error: `This bracket is gone or not submitted` }
+          }
+          const { ids, status } = submissionStatusSchema.parse(
+            Object.fromEntries(await request.formData()),
+          )
+          for (const id of ids) {
+            update(id, { status })
+          }
+          return { ok: true }
+        },
       },
-    },
-    {
-      path: `/contests/period-2/players/:playerId/name`,
-      action: async ({ request, params }) => {
-        const submission = parseWithZod(await request.formData(), {
-          schema: playerNameSchema(freeTextSchema),
-        })
-        if (submission.status === `success`) {
-          update(params.playerId!, {
-            displayName: submission.value.displayName,
+      {
+        path: `/contests/period-2/players/delete`,
+        action: async ({ request }) => {
+          const { ids } = idsSchema.parse(
+            Object.fromEntries(await request.formData()),
+          )
+          if (refuseDelete) {
+            return { error: `Nothing was deleted` }
+          }
+          players = players.filter(({ id }) => !ids.includes(id))
+          return { ok: true }
+        },
+      },
+      {
+        path: `/contests/period-2/players/:playerId/name`,
+        action: async ({ request, params }) => {
+          const submission = parseWithZod(await request.formData(), {
+            schema: playerNameSchema(freeTextSchema),
           })
-        }
-        return { result: submission.reply(), saved: true }
+          if (submission.status === `success`) {
+            update(params.playerId!, {
+              displayName: submission.value.displayName,
+            })
+          }
+          return { result: submission.reply(), saved: true }
+        },
       },
-    },
-  ])
-  await render(<Stub initialEntries={[`/contests/period-2`]} />)
+    ],
+    `/contests/period-2`,
+  )
 }
 
 const MAYA = player(`maya`, `Maya R.`, `PENDING`)

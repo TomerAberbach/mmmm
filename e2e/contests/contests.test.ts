@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 import { ADMINS, signInAsAdmin } from '../admins.ts'
 import { newEmailAddress, signInConfirmed } from '../auth.ts'
-import { createContest } from '../brackets.ts'
+import { createContest } from '../contests.ts'
+import { confirmDialog } from '../dialogs.ts'
 
 // `setup.test.ts` publishes this server's bracket first
 
@@ -286,11 +287,7 @@ test(`a player deletes their own bracket, which the contest's trash marks`, asyn
   await startBracketAsMaya(page, link)
   const secret = await readPersonalLinkSecret(page)
 
-  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Delete my bracket` })
-    .click()
+  await confirmDialog(page, `Delete my bracket`)
 
   await expect(
     page.getByRole(`heading`, { name: `Your bracket is deleted` }),
@@ -310,11 +307,7 @@ test(`a deleted contest turns off its links until it's restored`, async ({
   browser,
 }) => {
   const { educator, link } = await createContestAsEducator(browser)
-  await educator.getByRole(`button`, { name: `Delete contest` }).click()
-  await educator
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Delete contest` })
-    .click()
+  await confirmDialog(educator, `Delete contest`)
   await educator.getByRole(`link`, { name: `Deleted contests (1)` }).click()
 
   await page.goto(link)
@@ -348,11 +341,7 @@ test(`deleting from a page left open by another player deletes neither bracket`,
   ).toBeVisible()
   await startBracketAsMaya(nextPlayer, link)
 
-  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Delete my bracket` })
-    .click()
+  await confirmDialog(page, `Delete my bracket`)
 
   await expect(
     page.getByText(
@@ -403,8 +392,7 @@ test(`replacing the contest link keeps players' brackets without showing them th
   const { educator, link: oldLink } = await createContestAsEducator(browser)
   await startBracketAsMaya(page, oldLink)
   const secret = await readPersonalLinkSecret(page)
-  await educator.getByRole(`button`, { name: `New contest link` }).click()
-  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await confirmDialog(educator, `New contest link`, `Create new link`)
   await expect(
     educator.getByText(
       `Created a new contest link. The old one no longer works`,
@@ -440,15 +428,10 @@ test(`a player who started with a replaced contest link gets no new one by delet
   const { educator, link } = await createContestAsEducator(browser)
   await startBracketAsMaya(page, link)
   const secret = await readPersonalLinkSecret(page)
-  await educator.getByRole(`button`, { name: `New contest link` }).click()
-  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await confirmDialog(educator, `New contest link`, `Create new link`)
   await expect(educator.getByText(/^Created a new contest link/u)).toBeVisible()
 
-  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Delete my bracket` })
-    .click()
+  await confirmDialog(page, `Delete my bracket`)
   await expect(
     page.getByRole(`heading`, { name: `Your bracket is deleted` }),
   ).toBeVisible()

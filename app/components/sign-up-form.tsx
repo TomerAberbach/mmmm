@@ -40,7 +40,7 @@ export const SignUpForm = ({
           {...fieldProps(fields.email)}
           type='email'
           label='Email address'
-          description="We'll send a link to confirm it"
+          description='We’ll send a link to confirm it'
           autoComplete='email'
         />
         <PasswordField
