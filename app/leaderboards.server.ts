@@ -1,12 +1,19 @@
 import {
   isOpen,
+  isOpenYear,
   readBracketAndResultRows,
   readCurrentYear,
   readSnapshot,
 } from './brackets.server.ts'
+import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
-import type { LeaderboardPage, LeaderboardRow } from './leaderboard-row.ts'
+import type {
+  LeaderboardPage,
+  LeaderboardRow,
+  PlayerRank,
+} from './leaderboard-row.ts'
 import { CONTEST_ORGANIZATION_SQL } from './organizations.server.ts'
+import { countRowsBefore, PAGE_SIZE, toPageNumber } from './page-number.ts'
 import type { Picks } from './picks.ts'
 import { readSubmissionPicks } from './player-picks.server.ts'
 import type { Results } from './results.ts'
@@ -17,6 +24,7 @@ import { readSharedContestIds } from './shares.server.ts'
 export type LeaderboardScope = { year: number } & (
   | { kind: `contest`; contestId: string }
   | { kind: `organization`; domain: string }
+  | { kind: `global` }
 )
 
 /**
@@ -27,8 +35,6 @@ export type LeaderboardScope = { year: number } & (
 export type LeaderboardViewer =
   | { kind: `educator`; educatorId: string }
   | { kind: `player`; contestId: string; playerId: string }
-
-const LEADERBOARD_PAGE_SIZE = 100
 
 /** Players see the names in this many of their contest's highest score tiers */
 const NAMED_TIERS = 3
@@ -47,36 +53,35 @@ export const readLeaderboard = (
     if (isOpen(await readCurrentYear(tx), scope.year)) {
       return null
     }
-    const pages = isPaged(scope) ? await readPages(tx, scope, page) : null
-    const rows = await tx.$queryRaw<RankedSubmission[]>`
-      SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
-      ORDER BY "rank", "playerId"
-      ${
-        pages
-          ? Prisma.sql`
-              LIMIT ${LEADERBOARD_PAGE_SIZE}
-              OFFSET ${(pages.number - 1) * LEADERBOARD_PAGE_SIZE}
-            `
-          : Prisma.empty
-      }
-    `
+    const pages = isPaged(scope)
+      ? toPageNumber(page, await countRanked(tx, scope))
+      : null
+    const rows = await tx.$queryRaw<RankedSubmission[]>(
+      withNamesSql(Prisma.sql`
+        SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
+        ORDER BY "rank", "playerId"
+        ${
+          pages
+            ? Prisma.sql`LIMIT ${PAGE_SIZE} OFFSET ${countRowsBefore(pages)}`
+            : Prisma.empty
+        }
+      `),
+    )
     return { rows: rows.map(await labelRows(tx, scope, viewer)), page: pages }
   })
 
 /** A contest's rows all fit on one page, so it prints whole */
 const isPaged = ({ kind }: LeaderboardScope): boolean => kind !== `contest`
 
-/** The page, or the last one for a page past it */
-const readPages = async (
+const countRanked = async (
   tx: Prisma.TransactionClient,
   scope: LeaderboardScope,
-  page: number,
-): Promise<{ number: number; count: number }> => {
+): Promise<number> => {
   const [row] = await tx.$queryRaw<{ total: number }[]>`
-    SELECT count(*)::int AS "total" FROM (${rankedSql(scope)}) AS "Ranked"
+    SELECT count(*)::int AS "total"
+    ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
   `
-  const count = Math.max(1, Math.ceil(row!.total / LEADERBOARD_PAGE_SIZE))
-  return { number: Math.min(page, count), count }
+  return row!.total
 }
 
 export type LeaderboardSubmission = {
@@ -100,10 +105,12 @@ export const readLeaderboardSubmission = (
     if (isOpen(await readCurrentYear(tx), scope.year)) {
       return null
     }
-    const [row] = await tx.$queryRaw<RankedSubmission[]>`
-      SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
-      WHERE "playerId" = ${playerId}
-    `
+    const [row] = await tx.$queryRaw<RankedSubmission[]>(
+      withNamesSql(Prisma.sql`
+        SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
+        WHERE "playerId" = ${playerId}
+      `),
+    )
     return row
       ? {
           row: (await labelRows(tx, scope, viewer))(row),
@@ -121,6 +128,7 @@ type RankedSubmission = {
   contestName: string
   educatorId: string
   educatorName: string
+  organizationName: string | null
   score: number
   rank: number
   /** 1 for the highest score tier in its contest */
@@ -160,7 +168,7 @@ const readNamed = async (
 }
 
 const describeHidden = (
-  { contestName, educatorName }: RankedSubmission,
+  { contestName, educatorName, organizationName }: RankedSubmission,
   scope: LeaderboardScope,
 ): string => {
   switch (scope.kind) {
@@ -168,8 +176,29 @@ const describeHidden = (
       return `Player`
     case `organization`:
       return `Player from ${contestName} (${educatorName})`
+    case `global`:
+      return organizationName === null
+        ? `Player`
+        : `Player from ${organizationName}`
   }
 }
+
+/** Looks up the names of only the ranked rows, so ranking sorts short rows */
+const withNamesSql = (ranked: Prisma.Sql): Prisma.Sql => Prisma.sql`
+  SELECT
+    "Ranked".*,
+    "Player"."displayName",
+    "Contest"."name" AS "contestName",
+    "Educator"."id" AS "educatorId",
+    "Educator"."name" AS "educatorName",
+    "Organization"."name" AS "organizationName"
+  FROM (${ranked}) AS "Ranked"
+  JOIN "Player" ON "Player"."id" = "Ranked"."playerId"
+  JOIN "Contest" ON "Contest"."id" = "Ranked"."contestId"
+  JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
+  LEFT JOIN "Organization" ON "Organization"."domain" = ${CONTEST_ORGANIZATION_SQL}
+  ORDER BY "rank", "playerId"
+`
 
 /**
  * Ties rank by when the picks last changed, earliest first, so only identical
@@ -178,11 +207,7 @@ const describeHidden = (
 const rankedSql = (scope: LeaderboardScope): Prisma.Sql => Prisma.sql`
   SELECT
     "Player"."id" AS "playerId",
-    "Player"."displayName",
     "Contest"."id" AS "contestId",
-    "Contest"."name" AS "contestName",
-    "Educator"."id" AS "educatorId",
-    "Educator"."name" AS "educatorName",
     "Submission"."score",
     (rank() OVER (
       ORDER BY "Submission"."score" DESC, "Submission"."picksChangedAt"
@@ -190,22 +215,65 @@ const rankedSql = (scope: LeaderboardScope): Prisma.Sql => Prisma.sql`
     (dense_rank() OVER (
       PARTITION BY "Contest"."id" ORDER BY "Submission"."score" DESC
     ))::int AS "contestTier"
+  ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
+`
+
+/** Every year's approved submissions outside the trash */
+const APPROVED_SUBMISSIONS_SQL = Prisma.sql`
   FROM "Submission"
   JOIN "Player" ON "Player"."id" = "Submission"."playerId"
   JOIN "Contest" ON "Contest"."id" = "Player"."contestId"
   JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
-  WHERE ${scopeSql(scope)}
-    AND "Contest"."year" = ${scope.year}
-    AND "Player"."deletedAt" IS NULL
+  WHERE "Player"."deletedAt" IS NULL
     AND "Contest"."deletedAt" IS NULL
     AND "Submission"."status" = 'APPROVED'
 `
 
-const scopeSql = (scope: LeaderboardScope): Prisma.Sql => {
+const scopeSql = (scope: LeaderboardScope): Prisma.Sql =>
+  Prisma.sql`"Contest"."year" = ${scope.year} AND ${membershipSql(scope)}`
+
+const membershipSql = (scope: LeaderboardScope): Prisma.Sql => {
   switch (scope.kind) {
     case `contest`:
       return Prisma.sql`"Contest"."id" = ${scope.contestId}`
     case `organization`:
-      return Prisma.sql`${CONTEST_ORGANIZATION_SQL} = ${scope.domain}`
+      return Prisma.sql`
+        NOT "Contest"."isHidden" AND ${CONTEST_ORGANIZATION_SQL} = ${scope.domain}
+      `
+    case `global`:
+      return Prisma.sql`NOT "Contest"."isHidden" AND "Educator"."emailVerified"`
   }
+}
+
+/**
+ * Where the player ranks on the scope's leaderboard, in `rankedSql`'s order but
+ * without its sort. Null when it leaves the player out, and while the year is
+ * open
+ */
+export const readPlayerRank = async (
+  scope: LeaderboardScope,
+  playerId: string,
+): Promise<PlayerRank | null> => {
+  if (await isOpenYear(scope.year)) {
+    return null
+  }
+  // One statement, so a concurrent result can't rank an old score among new ones
+  const [row] = await prisma.$queryRaw<(PlayerRank & { isRanked: boolean })[]>`
+    WITH "Own" AS (
+      SELECT "score", "picksChangedAt" FROM "Submission"
+      WHERE "playerId" = ${playerId}
+    )
+    SELECT
+      count(*)::int AS "total",
+      (1 + count(*) FILTER (
+        WHERE "Submission"."score" > (SELECT "score" FROM "Own")
+          OR ("Submission"."score" = (SELECT "score" FROM "Own")
+            AND "Submission"."picksChangedAt" <
+              (SELECT "picksChangedAt" FROM "Own"))
+      ))::int AS "rank",
+      coalesce(bool_or("Player"."id" = ${playerId}), false) AS "isRanked"
+    ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
+  `
+  const { isRanked, ...playerRank } = row!
+  return isRanked ? playerRank : null
 }

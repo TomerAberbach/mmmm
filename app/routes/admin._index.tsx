@@ -45,6 +45,9 @@ const Admin = ({ loaderData: { current, setup } }: Route.ComponentProps) => (
         </ButtonLink>
       </YearCard>
     ) : null}
+    <Link to={href(`/admin/contests`)} className='self-start'>
+      Contests
+    </Link>
     <Link to={href(`/admin/organizations`)} className='self-start'>
       Organizations
     </Link>

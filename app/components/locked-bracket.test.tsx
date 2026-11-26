@@ -43,7 +43,7 @@ const renderLocked = async (
               personalLink: `https://mmmm.test/my-bracket/secret`,
             }
           }
-          leaderboardPath='/leaderboard'
+          ranks={<p>Ranks</p>}
           forgetPath='/forgotten'
           deletePath='/deleted'
           playerId='maya'

@@ -276,6 +276,8 @@ model Contest {
   linkVersion Int       @default(1)
   // Set while the contest is in the trash
   deletedAt   DateTime?
+  // Set by the admin to leave it off organization and global leaderboards
+  isHidden    Boolean   @default(false)
   bracket     Bracket   @relation(fields: [year], references: [year], onDelete: Restrict)
   educator    Educator  @relation(fields: [educatorId], references: [id], onDelete: Restrict)
   players     Player[]

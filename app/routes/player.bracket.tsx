@@ -4,6 +4,8 @@ import { isOpenYear } from '~/brackets.server.ts'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
+import { PlayerRanks } from '~/components/player-ranks.tsx'
+import { readPlayerRanks } from '~/leaderboard-scopes.server.ts'
 import { readArrangement } from '~/moves.ts'
 import { readPlayContest, readRequiredPlayer } from '~/play-context.server.ts'
 import { readPlayerBracket } from '~/player-picks.server.ts'
@@ -14,11 +16,17 @@ export const handle = { fullWidth: true }
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
-  const { year } = readPlayContest(context)
+  const contest = readPlayContest(context)
+  const { year } = contest
   // A contest exists only while its year's bracket is published
   const [{ bracket, results, draft, submission, hasClearedPicks }, isOpen] =
     await Promise.all([readPlayerBracket(player.id, year), isOpenYear(year)])
+  const ranks =
+    !isOpen && submission?.status === `APPROVED`
+      ? await readPlayerRanks(contest, player.id)
+      : null
   return {
+    ranks,
     playerId: player.id,
     displayName: player.displayName,
     year,
@@ -36,8 +44,15 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
 }
 
 const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
-  const { displayName, isOpen, draft, results, hasClearedPicks, ...shared } =
-    loaderData
+  const {
+    displayName,
+    isOpen,
+    draft,
+    results,
+    hasClearedPicks,
+    ranks,
+    ...shared
+  } = loaderData
   const paths = {
     forgetPath: href(`/player/:contestId/forgotten`, params),
     deletePath: href(`/player/:contestId/delete`, params),
@@ -61,7 +76,9 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
           {...paths}
           draft={draft}
           results={results}
-          leaderboardPath={href(`/player/:contestId/leaderboard`, params)}
+          ranks={
+            ranks && <PlayerRanks contestId={params.contestId} ranks={ranks} />
+          }
         />
       )}
     </div>

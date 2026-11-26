@@ -7,15 +7,17 @@ import {
   createContestInNewYear,
   readEducatorId,
 } from '../test/contests.ts'
-import { createMember } from '../test/educators.ts'
+import { createEducator, createMember } from '../test/educators.ts'
 import { pickEveryBattle } from '../test/picks.ts'
 import { readSeededBracket } from '../test/results.ts'
 import { addYear, setLocked } from '../test/years.ts'
+import { setContestHidden } from './admin-contests.server.ts'
 import { prisma } from './db.server.ts'
 import type { SubmissionStatus } from './generated/prisma/client.ts'
 import {
   readLeaderboard,
   readLeaderboardSubmission,
+  readPlayerRank,
 } from './leaderboards.server.ts'
 import type {
   LeaderboardScope,
@@ -344,4 +346,83 @@ test(`a colleague sees every name in a contest shared with them`, async () => {
   const rows = await readRows(scope, viewer)
 
   expect(rows.map(({ label }) => label)).toStrictEqual([`Colleague's`])
+})
+
+test(`the global leaderboard ranks every confirmed educator's contest`, async () => {
+  const { scope, own, colleague, outside } = await createOrganizationContests()
+  const unconfirmed = await addContest(await createEducator(), `Unconfirmed`)
+  await prisma.organization.update({
+    where: { domain: scope.domain },
+    data: { name: `Springfield High` },
+  })
+  await addScored(own, `Own`, 50)
+  await addScored(colleague, `Colleague's`, 60)
+  await addScored(outside, `Outside`, 70)
+  await addScored(unconfirmed, `Unconfirmed`, 80)
+
+  const rows = await readRows(
+    { kind: `global`, year: scope.year },
+    await asEducator(own),
+  )
+
+  expect(rows.map(({ rank, label }) => [rank, label])).toStrictEqual([
+    [1, `Player`],
+    [2, `Player from Springfield High`],
+    [3, `Own`],
+  ])
+})
+
+test(`the global leaderboard doesn't name an organization by its domain`, async () => {
+  const { scope, own, outside } = await createOrganizationContests()
+  await addScored(own, `Own`, 50)
+
+  const rows = await readRows(
+    { kind: `global`, year: scope.year },
+    await asEducator(outside),
+  )
+
+  expect(rows.map(({ label }) => label)).toStrictEqual([`Player`])
+})
+
+test(`a hidden contest keeps only its own leaderboard`, async () => {
+  const { scope, own, colleague } = await createOrganizationContests()
+  const id = await addScored(own, `Own`, 50)
+  await addScored(colleague, `Colleague's`, 60)
+  await setContestHidden(own, true)
+  const viewer = await asEducator(own)
+  const contestScope = toScope({ contestId: own, year: scope.year })
+  const globalScope = { kind: `global`, year: scope.year } as const
+
+  await expect(readRows(contestScope, viewer)).resolves.toHaveLength(1)
+  for (const hiding of [scope, globalScope]) {
+    expect(
+      (await readRows(hiding, viewer)).map(({ playerId }) => playerId),
+    ).not.toContain(id)
+    await expect(readPlayerRank(hiding, id)).resolves.toBeNull()
+  }
+  await expect(readPlayerRank(contestScope, id)).resolves.toStrictEqual({
+    rank: 1,
+    total: 1,
+  })
+})
+
+test(`a player's rank matches the leaderboard's`, async () => {
+  const { scope, own, colleague } = await createOrganizationContests()
+  for (const [index, score] of [30, 40, 40, 50].entries()) {
+    await addScored(index % 2 === 0 ? own : colleague, `Player ${index}`, score)
+  }
+
+  const rows = await readRows(scope, await asEducator(own))
+
+  await expect(
+    Promise.all(rows.map(({ playerId }) => readPlayerRank(scope, playerId))),
+  ).resolves.toStrictEqual(rows.map(({ rank }) => ({ rank, total: 4 })))
+})
+
+test(`a submission that isn't approved has no rank`, async () => {
+  const { scope, own } = await createOrganizationContests()
+  const { id } = await addPlayer(own)
+  await addSubmission(id, `PENDING`)
+
+  await expect(readPlayerRank(scope, id)).resolves.toBeNull()
 })

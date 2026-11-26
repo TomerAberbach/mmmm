@@ -27,7 +27,7 @@ export const LeaderboardBracket = ({
     <PageTitle>{`${label}’s bracket`}</PageTitle>
     <p className='text-lg'>
       <strong>{formatRank(rank)}</strong>
-      {` in ${scopeName}`}
+      {` · ${scopeName}`}
     </p>
     <MarkedBracket year={year} {...marked} />
   </div>
