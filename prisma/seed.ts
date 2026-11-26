@@ -74,8 +74,8 @@ for (const educator of EDUCATORS) {
 }
 
 // 2025's is published, so it's the current year's bracket. The upcoming
-// year's is unpublished, as a new bracket starts, so an admin can publish it.
-// It takes 2026's names
+// year's is unpublished, as a new bracket starts, and the admin can publish it
+// once 2025 has a champion. It takes 2026's names
 if (!(await prisma.bracket.findUnique({ where: { year: 2025 } }))) {
   await saveUnpublishedBracket(2025, BRACKET_2025)
 }
@@ -96,6 +96,18 @@ const pickFirstContenders = (bracket: SeededBracket): Picks =>
       ).picks,
     {},
   )
+
+/** Returns the new contest's ID */
+const seedContest = async (
+  educatorId: string,
+  name: string,
+): Promise<string> => {
+  const contest = await createContest(educatorId, name)
+  if (`refusal` in contest) {
+    throw new Error(`The current year refused ${name}: ${contest.refusal}`)
+  }
+  return contest.id
+}
 
 /** Returns the new player's ID */
 const seedPlayer = async (
@@ -166,13 +178,11 @@ const educator = await prisma.educator.findUniqueOrThrow({
   select: { id: true, _count: { select: { contests: true } } },
 })
 if (educator._count.contests === 0) {
-  const period2Id = await createContest(educator.id, `Period 2 Biology`)
-  await createContest(educator.id, `Period 5 Biology`)
-  const deletedId = await createContest(educator.id, `Period 7 Biology`)
-  if (!period2Id || !deletedId) {
-    throw new Error(`No current year takes contests`)
-  }
-  await seedPlayers(period2Id)
-  await deleteContest(educator.id, deletedId)
+  await seedPlayers(await seedContest(educator.id, `Period 2 Biology`))
+  await seedContest(educator.id, `Period 5 Biology`)
+  await deleteContest(
+    educator.id,
+    await seedContest(educator.id, `Period 7 Biology`),
+  )
 }
 await prisma.$disconnect()

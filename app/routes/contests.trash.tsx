@@ -5,12 +5,14 @@ import { readRequiredEducator } from '~/session.server.ts'
 import { readDeletedContests } from '~/trash.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
-  const year = await readCurrentYear()
+  const current = await readCurrentYear()
   return {
-    contests:
-      year === null
-        ? []
-        : await readDeletedContests(readRequiredEducator(context).id, year),
+    contests: current
+      ? await readDeletedContests(
+          readRequiredEducator(context).id,
+          current.year,
+        )
+      : [],
   }
 }
 

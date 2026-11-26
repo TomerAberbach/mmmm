@@ -13,14 +13,20 @@ import { displayNameSchema } from '~/player-forms.ts'
 
 /**
  * What the contest link shows: the name question, the prompt for a player
- * this browser remembers, or that the contest no longer takes players
+ * this browser remembers, or that the contest takes no players
  */
 export type PlayView =
   | { state: `askName` }
-  | { state: `returning`; displayName: string; bracketPath: string }
-  | { state: `closed` }
+  | {
+      state: `returning`
+      displayName: string
+      bracketPath: string
+      /** Whether the contest takes new players */
+      isOpen: boolean
+    }
+  | { state: `notOpen` }
 
-export const CONTEST_CLOSED = `This contest’s year is over, so it takes no new players`
+export const NOT_OPEN_MESSAGE = `Submissions are closed, so no one can start a bracket`
 
 export const PlayContestPage = ({
   view,
@@ -32,9 +38,9 @@ export const PlayContestPage = ({
   view.state === `askName` ? (
     <NameForm lastResult={lastResult} />
   ) : view.state === `returning` ? (
-    <ReturningPlayer {...view} />
+    <ReturningPlayer view={view} />
   ) : (
-    <ContestClosed />
+    <ContestNotOpen />
   )
 
 /**
@@ -92,11 +98,9 @@ const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
 }
 
 const ReturningPlayer = ({
-  displayName,
-  bracketPath,
+  view: { displayName, bracketPath, isOpen },
 }: {
-  displayName: string
-  bracketPath: string
+  view: Extract<PlayView, { state: `returning` }>
 }) => (
   <div className='flex flex-col gap-4'>
     <PageTitle>{`Continue as ${displayName}?`}</PageTitle>
@@ -104,15 +108,18 @@ const ReturningPlayer = ({
     <Form method='post' className='flex flex-wrap gap-3'>
       <ButtonLink href={bracketPath}>{`Continue as ${displayName}`}</ButtonLink>
       <Button type='submit' name='intent' value='not-you' variant='secondary'>
-        Not you? Start a new bracket
+        {isOpen ? `Not you? Start a new bracket` : `Not you?`}
       </Button>
     </Form>
   </div>
 )
 
-const ContestClosed = () => (
+const ContestNotOpen = () => (
   <div className='flex flex-col gap-3'>
-    <PageTitle>New brackets are closed</PageTitle>
-    <p>{`${CONTEST_CLOSED}.`}</p>
+    <PageTitle>Submissions are closed</PageTitle>
+    <p>
+      The first result is in, so no one can start a bracket. If you already have
+      one, open your personal link.
+    </p>
   </div>
 )

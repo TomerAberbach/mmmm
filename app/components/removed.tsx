@@ -36,26 +36,34 @@ export const BrokenLink = () => (
   </Removed>
 )
 
+const CANNOT_START = `Submissions are closed, so you can’t start a new one.`
+
 /** What a deleted player's personal link shows. Nothing of the bracket appears */
 export const DeletedBracket = ({
   restoreBy,
   contestPath,
+  isOpen,
 }: {
   /** When a bracket its player deleted is erased, or null for an educator's */
   restoreBy: Date | null
   contestPath: string | null
+  /** Whether the contest's year takes new players */
+  isOpen: boolean
 }) =>
   restoreBy ? (
     <Removed title='This bracket was deleted' contestPath={contestPath}>
       It was deleted from its personal link. If that wasn’t you, ask your
       educator to restore it by{` `}
       <LocalTime date={restoreBy} format={formatLocalDate} />.
+      {isOpen ? null : ` ${CANNOT_START}`}
     </Removed>
   ) : (
     <Removed
       title='Your educator removed this bracket'
       contestPath={contestPath}
-    />
+    >
+      {isOpen ? null : CANNOT_START}
+    </Removed>
   )
 
 /** What a player sees right after deleting their own bracket */

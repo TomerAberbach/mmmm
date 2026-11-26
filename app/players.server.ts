@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
-import { isCurrentYear, withCurrentYear } from './brackets.server.ts'
+import { isOpen, isOpenYear, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
 import type { LimitRefusal } from './limits.server.ts'
@@ -10,13 +10,13 @@ import { readEraseTime } from './trash.ts'
 
 export type NewPlayer =
   | { secret: string }
-  | { refusal: `NOT_CURRENT_YEAR` | `CONTEST_DELETED` | `BROKEN_LINK` }
+  | { refusal: `NOT_OPEN` | `CONTEST_DELETED` | `BROKEN_LINK` }
   | { refusal: `LIMITED`; limit: LimitRefusal }
 
 /**
  * Starts a player's draft in the contest whose contest link has the secret, and
  * returns their personal link's secret, which only the player's cookie and link
- * keep. Only the current year's contests outside the trash take new players.
+ * keep. Only contests outside the trash, in an open year, take new players.
  * `limit` runs once the contest takes the player, so a refused player costs no
  * attempt
  */
@@ -25,7 +25,7 @@ export const createPlayer = (
   displayName: string,
   limit: () => Promise<LimitRefusal | undefined>,
 ): Promise<NewPlayer> =>
-  withCurrentYear(async (tx, currentYear) => {
+  withCurrentYear(async (tx, current) => {
     // The request may have read the contest before another deleted it or
     // replaced its contest link
     const [contest] = await tx.$queryRaw<
@@ -44,8 +44,8 @@ export const createPlayer = (
     if (contest.deletedAt) {
       return { refusal: `CONTEST_DELETED` }
     }
-    if (contest.year !== currentYear) {
-      return { refusal: `NOT_CURRENT_YEAR` }
+    if (!isOpen(current, contest.year)) {
+      return { refusal: `NOT_OPEN` }
     }
     const limitRefusal = await limit()
     if (limitRefusal) {
@@ -95,6 +95,8 @@ export type PersonalLinkTarget =
        * player started, since that keeps out whoever started with the old one
        */
       startLinkSecret: string | null
+      /** Whether the contest's year takes new players */
+      isOpen: boolean
     }
 
 /** Null for a secret that matches no player */
@@ -125,20 +127,19 @@ export const readPersonalLink = async (
   if (contest.deletedAt) {
     return { state: `contestDeleted` }
   }
-  return deletedAt && deletedBy
-    ? {
-        state: `deleted`,
-        restoreBy: readEraseTime({ deletedAt, deletedBy }),
-        startLinkSecret:
-          linkVersion === contest.linkVersion &&
-          (await isCurrentYear(contest.year))
-            ? contest.linkSecret
-            : null,
-      }
-    : {
-        state: `active`,
-        contestId: contest.id,
-      }
+  if (!deletedAt || !deletedBy) {
+    return { state: `active`, contestId: contest.id }
+  }
+  const isYearOpen = await isOpenYear(contest.year)
+  return {
+    state: `deleted`,
+    restoreBy: readEraseTime({ deletedAt, deletedBy }),
+    startLinkSecret:
+      isYearOpen && linkVersion === contest.linkVersion
+        ? contest.linkSecret
+        : null,
+    isOpen: isYearOpen,
+  }
 }
 
 export const toPersonalLink = (secret: string): string =>

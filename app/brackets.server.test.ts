@@ -7,8 +7,8 @@ import { addYear, claimYear } from '../test/years.ts'
 import { toNames } from './bracket-input.ts'
 import {
   deleteUnpublishedBracket,
+  listBracketCombatants,
   readBracket,
-  readBracketCombatants,
   readBracketSummary,
   readCurrentBracket,
   renameCombatant,
@@ -171,6 +171,7 @@ test(`the current bracket is the newest published one, read back as entered`, as
   expect(current).toStrictEqual({
     year: newestPublishedYear,
     expectedLockDate: null,
+    results: {},
   })
   expect(toNames(bracket)).toStrictEqual(BRACKET_2025)
 })
@@ -298,6 +299,8 @@ test.each([
     change: `UNCHANGED`,
   },
 ])(`$scenario reports whether it changed it`, async ({ from, to, change }) => {
+  // A current year without a champion would keep this one unpublished
+  await prisma.bracket.updateMany({ data: { publishedAt: null } })
   const year = await addYear({ published: from, input: BRACKET_2026 })
 
   const result = await setBracketPublished(year, to)
@@ -348,7 +351,7 @@ test(`the current bracket carries its expected lock date`, async () => {
 test(`the wild card's entrants are listed at its seed`, async () => {
   const year = await addYear({ published: false, input: BRACKET_2025 })
 
-  const divisions = await readBracketCombatants(year)
+  const divisions = listBracketCombatants((await readBracket(year))!)
 
   expect(
     divisions[0]?.combatants.filter(({ seed }) => seed === 14),

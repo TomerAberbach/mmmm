@@ -10,11 +10,11 @@ export const addContest = async (
   educatorId: string,
   name: string,
 ): Promise<string> => {
-  const contestId = await createContest(educatorId, name)
-  if (contestId === null) {
-    throw new Error(`The current year refused the contest`)
+  const contest = await createContest(educatorId, name)
+  if (`refusal` in contest) {
+    throw new Error(`The contest was refused: ${contest.refusal}`)
   }
-  return contestId
+  return contest.id
 }
 
 /** Publishes a new current year with a contest in it */

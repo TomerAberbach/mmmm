@@ -1,27 +1,29 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { DialogTrigger } from 'react-aria-components'
 import { useRevalidator } from 'react-router'
 import { Bracket } from './bracket.tsx'
 import { Button } from './button.tsx'
+import { ClearedNotice } from './cleared-notice.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
-import { CopyButton } from './copy-button.tsx'
-import { LocalTime } from './local-time.tsx'
-import { ModalFrame } from './modal-frame.tsx'
 import { Notice } from './notice.tsx'
 import { PickingContext } from './picking.ts'
 import type { Picking } from './picking.ts'
-import { usePicksRequests } from './picks-requests.ts'
-import type { RequestState } from './picks-requests.ts'
 import {
-  buildBracketView,
-  readBattleName,
-  readStartingRound,
-} from '~/bracket-view.ts'
-import type { BracketView } from '~/bracket-view.ts'
+  DeleteButton,
+  ForgetButton,
+  PersonalLink,
+  PersonalLinkButton,
+  PicksChanged,
+} from './player-controls.tsx'
+import type { Submitted } from './player-controls.tsx'
+import { useRequestQueue } from './request-queue.ts'
+import type { QueueRules, RequestState } from './request-queue.ts'
+import { RequestAlert, RequestNote } from './request-status.tsx'
+import { useShownRound } from './shown-round.ts'
+import { buildBracketView, readBattleName } from '~/bracket-view.ts'
 import { listBattles, toBattleKey } from '~/bracket.ts'
-import type { BattleRef, Round } from '~/bracket.ts'
-import { formatDateTime, formatTime } from '~/dates.ts'
+import type { BattleRef } from '~/bracket.ts'
+import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import type { PicksRequest } from '~/picks-request.ts'
@@ -35,7 +37,6 @@ import type { Picks } from '~/picks.ts'
 import type { Submission } from '~/player-picks.server.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
-import { PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 /**
  * The player's bracket, each battle a control. Every change saves the whole
@@ -73,7 +74,10 @@ export const PlayerBracket = ({
     [year, bracket, picks],
   )
   const { round, setRound, showBattle } = useShownRound(view)
-  const { state, isSending, send } = usePicksRequests(picksPath)
+  const { state, isSending, send } = useRequestQueue(
+    picksPath,
+    PICKS_QUEUE_RULES,
+  )
   const revalidator = useRevalidator()
   // Counts the player's changes, so a submit that a later change overtakes
   // shows no panel
@@ -81,6 +85,7 @@ export const PlayerBracket = ({
 
   const picking = useMemo(
     (): Picking => ({
+      kind: `picks`,
       pick: (battle, winnerId) => {
         const next = pickWinner(bracket, picks, battle, winnerId)
         changeCount.current += 1
@@ -176,6 +181,7 @@ export const PlayerBracket = ({
             <RequestStatus
               state={state}
               onRetry={intent => retries[intent]()}
+              onReload={() => void revalidator.revalidate()}
             />
             <BarActions>
               <PersonalLinkButton personalLink={submitted.personalLink} />
@@ -193,6 +199,7 @@ export const PlayerBracket = ({
             <RequestStatus
               state={state}
               onRetry={intent => retries[intent]()}
+              onReload={() => void revalidator.revalidate()}
             />
             <BarActions>
               {hasChanges ? (
@@ -218,7 +225,9 @@ export const PlayerBracket = ({
         </div>
       ) : null}
       <ClearedNotice
-        cleared={outcome?.kind === `cleared` ? outcome.battles : []}
+        message={describeCleared(
+          outcome?.kind === `cleared` ? outcome.battles : [],
+        )}
       />
       <Bracket view={view} selection={{ round, onSelect: setRound }} />
       <div className='print:hidden'>
@@ -232,6 +241,16 @@ export const PlayerBracket = ({
   )
 }
 
+const PICKS_QUEUE_RULES: QueueRules<PicksRequest> = {
+  // Each request holds the whole set of picks, or replaces it
+  isReplaceable: ({ intent }) => intent === `save`,
+  // A save doesn't submit. A save after a failed discard builds on the
+  // submitted picks and replaces the draft, so discarding again would lose the
+  // player's newer picks
+  keepsFailure: (failed, next) =>
+    failed.intent === `submit` && next.intent === `save`,
+}
+
 /**
  * The result of the player's latest action, shown until their next one: the
  * picks a change cleared, the battles left to pick before submitting, or the
@@ -241,9 +260,6 @@ type Outcome =
   | { kind: `cleared`; battles: BattleRef[] }
   | { kind: `unpicked` }
   | { kind: `submitted`; submitted: `bracket` | `changes` }
-
-/** A player's submission, and the personal link they see once they submit */
-export type Submitted = { submission: Submission; personalLink: string }
 
 const BarLabel = ({ children }: { children: string }) => (
   <span className='font-condensed text-xl font-bold uppercase'>{children}</span>
@@ -333,64 +349,6 @@ const SubmittedPanel = ({
   )
 }
 
-const PersonalLink = ({ personalLink }: { personalLink: string }) => (
-  <>
-    <p>
-      It opens your bracket on any device, now and after this computer forgets
-      you. Paste it somewhere you’ll find it, such as a note or an email to
-      yourself. Anyone with it can change your picks, so keep it to yourself.
-    </p>
-    <p className='border-2 border-ink bg-white p-3 font-mono text-xl break-all sm:text-2xl'>
-      {personalLink}
-    </p>
-    <div>
-      <CopyButton text={personalLink} />
-    </div>
-  </>
-)
-
-const PersonalLinkButton = ({ personalLink }: { personalLink: string }) => (
-  <DialogTrigger>
-    <Button variant='quiet'>Show my personal link</Button>
-    <ModalFrame title='Your personal link'>
-      <PersonalLink personalLink={personalLink} />
-      <div className='mt-2 flex justify-end'>
-        <Button slot='close' variant='secondary'>
-          Close
-        </Button>
-      </div>
-    </ModalFrame>
-  </DialogTrigger>
-)
-
-const ForgetButton = ({
-  forgetPath,
-  variant,
-  isSending,
-}: {
-  forgetPath: string
-  variant: `quiet` | `secondary`
-  /** A response still in flight would make this computer remember again */
-  isSending: boolean
-}) => (
-  <ConfirmDialog
-    trigger={
-      <Button variant={variant} isDisabled={isSending}>
-        Done, forget this computer
-      </Button>
-    }
-    title='Forget this computer?'
-    confirmLabel='Forget this computer'
-    confirmVariant='primary'
-    action={forgetPath}
-  >
-    <p>
-      This computer will stop opening your bracket. To come back to it, you’ll
-      need your personal link.
-    </p>
-  </ConfirmDialog>
-)
-
 const DiscardButton = ({
   onDiscard,
   isSending,
@@ -416,65 +374,6 @@ const DiscardButton = ({
   </ConfirmDialog>
 )
 
-const DeleteButton = ({
-  deletePath,
-  playerId,
-  isSending,
-}: {
-  deletePath: string
-  playerId: string
-  isSending: boolean
-}) => (
-  <ConfirmDialog
-    trigger={
-      <Button variant='quiet' isDisabled={isSending}>
-        Delete my bracket
-      </Button>
-    }
-    title='Delete your bracket?'
-    confirmLabel='Delete my bracket'
-    action={deletePath}
-    // The browser may have remembered another player since the page loaded
-    fields={{ playerId }}
-  >
-    <p>
-      {`Your personal link stops working. If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days. After that it’s erased for good.`}
-    </p>
-  </ConfirmDialog>
-)
-
-const PicksChanged = ({ at }: { at: Date }) => (
-  <p className='text-muted'>
-    Submitted picks last changed <LocalTime date={at} format={formatDateTime} />
-    . If you didn’t make a change, tell your educator.
-  </p>
-)
-
-/**
- * The round the tabs show, and a way to show and focus any battle, switching
- * tabs when it's in another round
- */
-const useShownRound = (view: BracketView) => {
-  const [round, setRound] = useState<Round>(() => readStartingRound(view))
-  const battleToFocus = useRef<BattleRef>(undefined)
-  useEffect(() => {
-    if (battleToFocus.current) {
-      focusBattle(battleToFocus.current)
-      battleToFocus.current = undefined
-    }
-  }, [round])
-  const showBattle = (battle: BattleRef): void => {
-    if (battle.round === round) {
-      focusBattle(battle)
-    } else {
-      // Focuses it once its round's tab renders
-      battleToFocus.current = battle
-      setRound(battle.round)
-    }
-  }
-  return { round, setRound, showBattle }
-}
-
 const PickProgress = ({
   unpicked,
   onShowBattle,
@@ -497,61 +396,52 @@ const PickProgress = ({
   )
 }
 
-/** The live region stays in place, so its first message is announced */
-const ClearedNotice = ({ cleared }: { cleared: BattleRef[] }) => (
-  <output
-    className={
-      cleared.length > 0
-        ? `max-w-prose border-2 border-ink bg-white p-3`
-        : `sr-only`
-    }
-  >
-    {describeCleared(cleared)}
-  </output>
-)
-
-const describeCleared = (cleared: BattleRef[]): string =>
+const describeCleared = (cleared: BattleRef[]): string | null =>
   cleared.length === 0
-    ? ``
+    ? null
     : `Your change cleared ${formatCount(cleared.length, `later pick`)} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
 
 const RequestStatus = ({
   state,
   onRetry,
+  onReload,
 }: {
-  state: RequestState
+  state: RequestState<PicksRequest>
   onRetry: (intent: PicksRequest[`intent`]) => void
+  onReload: () => void
 }) => {
   switch (state.kind) {
     case `idle`:
-      return <span className='text-muted'>Picks save as you go</span>
+      return <RequestNote>Picks save as you go</RequestNote>
     case `sending`:
       return (
-        <span className='text-muted'>{INTENT_TEXT[state.intent].sending}</span>
+        <RequestNote>{INTENT_TEXT[state.request.intent].sending}</RequestNote>
       )
     case `sent`:
+      return <RequestNote>{`Saved at ${formatTime(state.at)}`}</RequestNote>
+    case `failed`: {
+      const { intent } = state.request
       return (
-        <span className='text-muted'>{`Saved at ${formatTime(state.at)}`}</span>
-      )
-    case `failed`:
-      return (
-        <span
-          role='alert'
-          className='flex items-center gap-2 font-semibold text-danger'
+        <RequestAlert
+          action={{ label: `Try again`, onPress: () => onRetry(intent) }}
         >
-          {state.intent === `discard`
+          {intent === `discard`
             ? INTENT_TEXT.discard.failed
-            : `${INTENT_TEXT[state.intent].failed}. Your picks are still here`}
-          <Button variant='quiet' onPress={() => onRetry(state.intent)}>
-            Try again
-          </Button>
-        </span>
+            : `${INTENT_TEXT[intent].failed}. Your picks are still here`}
+        </RequestAlert>
+      )
+    }
+    case `locked`:
+      return (
+        <RequestAlert action={{ label: `Reload`, onPress: onReload }}>
+          {`Submissions just closed. ${INTENT_TEXT[state.request.intent].failed}`}
+        </RequestAlert>
       )
     case `refused`:
       return (
-        <span role='alert' className='font-semibold text-danger'>
-          {`${INTENT_TEXT[state.intent].failed}. Reload the page to keep picking`}
-        </span>
+        <RequestAlert>
+          {`${INTENT_TEXT[state.request.intent].failed}. Reload the page to keep picking`}
+        </RequestAlert>
       )
   }
 }
@@ -563,14 +453,4 @@ const INTENT_TEXT: Record<
   save: { sending: `Saving…`, failed: `Couldn’t save` },
   submit: { sending: `Submitting…`, failed: `Couldn’t submit` },
   discard: { sending: `Discarding…`, failed: `Couldn’t discard your changes` },
-}
-
-/** Focuses the battle's first control in whichever layout is showing */
-const focusBattle = (battle: BattleRef): void => {
-  const boxes = document.querySelectorAll<HTMLElement>(
-    `[data-battle="${CSS.escape(toBattleKey(battle))}"]`,
-  )
-  const box = [...boxes].find(element => element.checkVisibility())
-  box?.scrollIntoView({ block: `center`, inline: `center` })
-  box?.querySelector<HTMLElement>(`input, button`)?.focus()
 }

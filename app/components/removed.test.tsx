@@ -12,7 +12,11 @@ const renderDeleted = async (props: Parameters<typeof DeletedBracket>[0]) => {
 }
 
 test(`a bracket an educator removed offers a new one`, async () => {
-  await renderDeleted({ restoreBy: null, contestPath: `/play/secret` })
+  await renderDeleted({
+    restoreBy: null,
+    contestPath: `/play/secret`,
+    isOpen: true,
+  })
 
   await expect
     .element(
@@ -28,7 +32,11 @@ test(`a bracket an educator removed offers a new one`, async () => {
 test(`a bracket its player deleted says when it can be restored by`, async () => {
   const restoreBy = new Date(`2027-03-22T15:40:00Z`)
 
-  await renderDeleted({ restoreBy, contestPath: `/play/secret` })
+  await renderDeleted({
+    restoreBy,
+    contestPath: `/play/secret`,
+    isOpen: true,
+  })
 
   await expect
     .element(
@@ -40,7 +48,7 @@ test(`a bracket its player deleted says when it can be restored by`, async () =>
 })
 
 test(`a contest that takes no players offers no new bracket`, async () => {
-  await renderDeleted({ restoreBy: null, contestPath: null })
+  await renderDeleted({ restoreBy: null, contestPath: null, isOpen: false })
 
   await expect.element(page.getByRole(`heading`)).toBeVisible()
   await expect.element(page.getByRole(`link`)).not.toBeInTheDocument()

@@ -9,6 +9,7 @@ import { Notice } from './notice.tsx'
 import { PageHeader } from './page-header.tsx'
 import { QrCode } from './qr-code.tsx'
 import { SettingsSection } from './settings-section.tsx'
+import { SubmissionsClosed } from './submissions-closed.tsx'
 import { TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
 import type { ContestPlayer } from '~/contest-players.server.ts'
@@ -20,19 +21,29 @@ export const ContestDetails = ({
   contest,
   players,
   deletedCount,
+  isOpen,
 }: {
   contest: Contest
   players: ContestPlayer[]
   /** How many players are in the contest's trash */
   deletedCount: number
+  /** Whether the contest's year takes players and picks */
+  isOpen: boolean
 }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
     <Link to={href(`/contests`)} className='self-start print:hidden'>
       All contests
     </Link>
     <ContestName contest={contest} />
-    <ContestLink contest={contest} />
-    <ContestPlayers contestId={contest.id} players={players} />
+    {isOpen ? (
+      <ContestLink contest={contest} />
+    ) : (
+      <SubmissionsClosed>
+        The contest link no longer starts brackets. You can still approve,
+        reject, and rename.
+      </SubmissionsClosed>
+    )}
+    <ContestPlayers contestId={contest.id} players={players} isOpen={isOpen} />
     <div className='flex flex-wrap items-center justify-between gap-4 border-t-2 border-ink pt-4 print:hidden'>
       <Link to={href(`/contests/:contestId/trash`, { contestId: contest.id })}>
         {`Trash (${deletedCount})`}

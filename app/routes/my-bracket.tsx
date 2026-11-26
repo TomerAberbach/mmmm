@@ -21,6 +21,7 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
     return data(
       {
         restoreBy: target.restoreBy,
+        isOpen: target.isOpen,
         contestPath:
           linkSecret === null
             ? null

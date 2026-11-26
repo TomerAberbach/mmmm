@@ -5,18 +5,20 @@ import { setExpectedLockDate } from '~/brackets.server.ts'
 import { fromIsoDate } from '~/dates.ts'
 import type { FormRejection, SavedResult } from '~/form-replies.server.ts'
 import { saveForm } from '~/form-replies.server.ts'
-import { readUpcomingYear } from '~/year.ts'
 
 export const loader = (): Response => redirect(href(`/admin/bracket`))
 
 export const action = ({
   request,
 }: Route.ActionArgs): Promise<SavedResult | FormRejection> =>
-  saveForm(request, expectedLockDateSchema, async ({ expectedLockDate }) => {
-    const year = readUpcomingYear(new Date())
-    const wasSet = await setExpectedLockDate(
-      year,
-      expectedLockDate ? fromIsoDate(expectedLockDate) : null,
-    )
-    return wasSet ? null : { formErrors: [`Set up the ${year} bracket first`] }
-  })
+  saveForm(
+    request,
+    expectedLockDateSchema,
+    async ({ year, expectedLockDate }) =>
+      (await setExpectedLockDate(
+        year,
+        expectedLockDate ? fromIsoDate(expectedLockDate) : null,
+      ))
+        ? null
+        : { formErrors: [`The ${year} bracket is locked or deleted`] },
+  )

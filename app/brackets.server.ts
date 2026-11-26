@@ -14,10 +14,12 @@ import {
   mapDivisions,
   toBattleKey,
 } from './bracket.ts'
-import type { DivisionPosition } from './bracket.ts'
+import type { BattleRef, DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
+import type { Results } from './results.ts'
 import type { Combatant, StoredBracket } from './seeded-bracket.ts'
+import { readUpcomingYear } from './year.ts'
 
 /**
  * Replaces the year's unpublished bracket, keeping its expected lock date, or
@@ -138,30 +140,42 @@ const CURRENT_BRACKET = {
 export const readCurrentBracket = async (): Promise<{
   year: number
   bracket: StoredBracket
+  /** Null once the year locks, as without a date */
   expectedLockDate: Date | null
+  results: Results
 } | null> => {
   const bracket = await prisma.bracket.findFirst({
     ...CURRENT_BRACKET,
-    select: BRACKET_SELECT,
+    select: {
+      ...BRACKET_SELECT,
+      year: true,
+      expectedLockDate: true,
+      lockedAt: true,
+      battles: RESULTS,
+    },
   })
   return (
     bracket && {
       year: bracket.year,
       bracket: readStoredBracket(bracket),
-      expectedLockDate: bracket.expectedLockDate,
+      expectedLockDate: bracket.lockedAt ? null : bracket.expectedLockDate,
+      results: toResults(bracket.battles),
     }
   )
 }
 
+/** `isLocked` once the year's first result is saved, until the admin reopens */
+export type CurrentYear = { year: number; isLocked: boolean }
+
 /** Null before any bracket is published */
 export const readCurrentYear = async (
   db: Prisma.TransactionClient = prisma,
-): Promise<number | null> => {
+): Promise<CurrentYear | null> => {
   const bracket = await db.bracket.findFirst({
     ...CURRENT_BRACKET,
-    select: { year: true },
+    select: { year: true, lockedAt: true },
   })
-  return bracket?.year ?? null
+  return bracket && { year: bracket.year, isLocked: bracket.lockedAt !== null }
 }
 
 /** The year's bracket, published or not, or null when it has none */
@@ -199,6 +213,27 @@ export const readBracketRows = async (
   }
 }
 
+/** The year's results, keyed by `toBattleKey` */
+export const readResultRows = async (
+  year: number,
+  db: Prisma.TransactionClient = prisma,
+): Promise<Results> =>
+  toResults(
+    await db.battle.findMany({
+      ...RESULTS,
+      where: { ...RESULTS.where, year },
+    }),
+  )
+
+const toResults = (
+  battles: (BattleRef & { result: { winnerId: string } | null })[],
+): Results =>
+  Object.fromEntries(
+    battles.flatMap(({ result, ...battle }) =>
+      result ? [[toBattleKey(battle), result.winnerId]] : [],
+    ),
+  )
+
 /**
  * One relation a query, because Prisma loads sibling relations at once, and a
  * transaction's connection runs one query at a time
@@ -226,58 +261,123 @@ const readBracketInTransaction = async (
   })
 }
 
-export type Phase = `SETUP` | `OPEN`
+export type Phase = `SETUP` | `OPEN` | `IN_PROGRESS` | `COMPLETE` | `ARCHIVED`
 
-export type BracketSummary = { expectedLockDate: Date | null } & (
-  | { phase: `SETUP` }
-  // Unpublishing stops once the year has a contest
-  | { phase: `OPEN`; publishedAt: Date; hasContests: boolean }
-)
+export type BracketSummary =
+  | { phase: `SETUP`; expectedLockDate: Date | null }
+  | {
+      phase: `OPEN`
+      publishedAt: Date
+      expectedLockDate: Date | null
+      /** Unpublishing stops once the year has a contest */
+      hasContests: boolean
+    }
+  // Submissions reopen only while no results are saved
+  | { phase: `IN_PROGRESS`; hasResults: boolean }
+  | { phase: `COMPLETE`; champion: string }
+  | { phase: `ARCHIVED` }
 
 /** Null when the year has no bracket */
 export const readBracketSummary = async (
   year: number,
+  db: Prisma.TransactionClient = prisma,
 ): Promise<BracketSummary | null> => {
-  const bracket = await prisma.bracket.findUnique({
+  const bracket = await db.bracket.findUnique({
     where: { year },
     select: {
       publishedAt: true,
       expectedLockDate: true,
+      lockedAt: true,
+      battles: {
+        where: { result: { isNot: null } },
+        select: {
+          round: true,
+          result: { select: { winner: { select: { name: true } } } },
+        },
+      },
       _count: { select: { contests: true } },
     },
   })
   if (!bracket) {
     return null
   }
-  const { publishedAt, expectedLockDate, _count } = bracket
-  return publishedAt
-    ? {
+  const { publishedAt, expectedLockDate, lockedAt, battles, _count } = bracket
+  if (!publishedAt) {
+    return { phase: `SETUP`, expectedLockDate }
+  }
+  if ((await readCurrentYear(db))?.year !== year) {
+    return { phase: `ARCHIVED` }
+  }
+  const champion = battles.find(({ round }) => round === `CHAMPIONSHIP`)?.result
+    ?.winner.name
+  if (champion !== undefined) {
+    return { phase: `COMPLETE`, champion }
+  }
+  return lockedAt
+    ? { phase: `IN_PROGRESS`, hasResults: battles.length > 0 }
+    : {
         phase: `OPEN`,
         publishedAt,
-        expectedLockDate,
         hasContests: _count.contests > 0,
+        expectedLockDate,
       }
-    : { phase: `SETUP`, expectedLockDate }
 }
 
-export type PublicationChange = `CHANGED` | `UNCHANGED` | `HAS_CONTESTS`
+/**
+ * The years the admin manages: the current year, and the year to set up, which
+ * opens once the current year is Complete
+ */
+export const readAdminYears = async (): Promise<{
+  current: { year: number; summary: BracketSummary } | null
+  setupYear: number | null
+}> => {
+  const current = await readCurrentYear()
+  const upcomingYear = readUpcomingYear(new Date())
+  if (!current) {
+    return { current: null, setupYear: upcomingYear }
+  }
+  const { year } = current
+  const summary = (await readBracketSummary(year))!
+  return {
+    current: { year, summary },
+    // The champion can come before April, when the calendar's upcoming year is
+    // still this one
+    setupYear:
+      summary.phase === `COMPLETE` ? Math.max(year + 1, upcomingYear) : null,
+  }
+}
+
+export type PublicationChange =
+  `CHANGED` | `UNCHANGED` | `HAS_CONTESTS` | `LOCKED` | `NO_CHAMPION`
 
 /**
  * Publishing moves the year from Setup to Open, and unpublishing moves it back
- * until the year has a contest. `UNCHANGED` means the year has no bracket, or
- * its bracket is already in that state
+ * until the year has a contest or locks. A newer year waits for the current
+ * year's champion, since publishing it archives the current year's results.
+ * `UNCHANGED` means the year has no bracket, or its bracket is already in that
+ * state
  */
 export const setBracketPublished = (
   year: number,
   published: boolean,
 ): Promise<PublicationChange> =>
-  prisma.$transaction(async tx => {
-    await lockYears(tx, `UPDATE`)
+  withCurrentYearAlone(async (tx, current) => {
     if (
       !published &&
       (await tx.contest.findFirst({ where: { year }, select: { id: true } }))
     ) {
       return `HAS_CONTESTS`
+    }
+    if (!published && current?.year === year && current.isLocked) {
+      return `LOCKED`
+    }
+    if (
+      published &&
+      current &&
+      current.year !== year &&
+      (await readBracketSummary(current.year, tx))?.phase !== `COMPLETE`
+    ) {
+      return `NO_CHAMPION`
     }
     const { count } = await tx.bracket.updateMany({
       where: { year, publishedAt: published ? null : { not: null } },
@@ -286,37 +386,59 @@ export const setBracketPublished = (
     return count > 0 ? `CHANGED` : `UNCHANGED`
   })
 
-/** Only the current year takes new players */
-export const isCurrentYear = async (year: number): Promise<boolean> =>
-  (await readCurrentYear()) === year
+/**
+ * Only the current year takes new players, and only until it locks. Once it
+ * stops, players can't submit or edit either
+ */
+export const isOpenYear = async (year: number): Promise<boolean> =>
+  isOpen(await readCurrentYear(), year)
+
+export const isOpen = (current: CurrentYear | null, year: number): boolean =>
+  current?.year === year && !current.isLocked
+
+type CurrentYearChange<Result> = (
+  tx: Prisma.TransactionClient,
+  current: CurrentYear | null,
+) => Promise<Result>
 
 /**
- * Runs `change` in a transaction with the current year, which stays current
- * until the transaction ends, or null before any bracket is published. It locks
- * the years before `change` can lock a row, so every transaction takes its
- * locks in one order
+ * Runs `change` in a transaction with the current year, which stays current,
+ * and locked or not, until the transaction ends. Null before any bracket is
+ * published. It locks the years before `change` can lock a row, so every
+ * transaction takes its locks in one order
  */
 export const withCurrentYear = <Result>(
-  change: (
-    tx: Prisma.TransactionClient,
-    currentYear: number | null,
-  ) => Promise<Result>,
+  change: CurrentYearChange<Result>,
+): Promise<Result> => withLockedYears(`SHARE`, change)
+
+/**
+ * Runs `change` as `withCurrentYear` does, alone, so it can change which year
+ * is current or whether it's locked
+ */
+export const withCurrentYearAlone = <Result>(
+  change: CurrentYearChange<Result>,
+): Promise<Result> => withLockedYears(`UPDATE`, change)
+
+const withLockedYears = <Result>(
+  mode: LockMode,
+  change: CurrentYearChange<Result>,
 ): Promise<Result> =>
   prisma.$transaction(async tx => {
-    await lockYears(tx, `SHARE`)
+    await lockYears(tx, mode)
     return change(tx, await readCurrentYear(tx))
   })
 
+type LockMode = `SHARE` | `UPDATE`
+
 /**
- * Holds which years are published and current until the transaction ends, so
- * neither can change before then. Writes that depend on them take `SHARE`,
- * which lets them run together, and publishing and unpublishing take `UPDATE`.
- * One advisory lock covers every year, including a bracket inserted after the
- * lock is taken
+ * Holds which years are published, current, and locked until the transaction
+ * ends. Writes that depend on them take `SHARE`, which lets them run together,
+ * and writes that change them take `UPDATE`. One advisory lock covers every
+ * year, including a bracket inserted after the lock is taken
  */
 const lockYears = async (
   tx: Prisma.TransactionClient,
-  mode: `SHARE` | `UPDATE`,
+  mode: LockMode,
 ): Promise<void> => {
   await (mode === `SHARE`
     ? tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(${YEARS_LOCK_KEY})`
@@ -338,16 +460,18 @@ const lockYearForSaving = async (
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(${YEARS_LOCK_KEY}::int, ${year}::int)`
 }
 
-/** Returns whether the year has a bracket. Null clears the date */
+/**
+ * Returns whether the year has a bracket that isn't locked. Null clears the date
+ */
 export const setExpectedLockDate = (
   year: number,
   expectedLockDate: Date | null,
 ): Promise<boolean> =>
-  prisma.$transaction(async tx => {
+  withCurrentYear(async tx => {
     // A save of the bracket reinserts the date it read
     await lockYearForSaving(tx, year)
     const { count } = await tx.bracket.updateMany({
-      where: { year },
+      where: { year, lockedAt: null },
       data: { expectedLockDate },
     })
     return count > 0
@@ -359,16 +483,10 @@ export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
  * Each division's combatants in seed order, with the wild card's entrants at
  * its seed
  */
-export const readBracketCombatants = async (
-  year: number,
-): Promise<
-  { position: DivisionPosition; name: string; combatants: CombatantRow[] }[]
-> => {
-  const bracket = await readBracket(year)
-  if (!bracket) {
-    return []
-  }
-  return DIVISION_POSITIONS.map(position => ({
+export const listBracketCombatants = (
+  bracket: StoredBracket,
+): { position: DivisionPosition; name: string; combatants: CombatantRow[] }[] =>
+  DIVISION_POSITIONS.map(position => ({
     position,
     name: bracket.divisions[position].name,
     combatants: listDivisionSeedSlots(bracket, position).flatMap(
@@ -382,7 +500,6 @@ export const readBracketCombatants = async (
           : [{ ...combatant, seed, isWildCardEntrant: false }],
     ),
   }))
-}
 
 /**
  * Names the combatant `name`, which the route has checked, unless another
@@ -431,9 +548,16 @@ export const renameCombatant = async (
   return { ok: true }
 }
 
+const RESULTS = {
+  where: { result: { isNot: null } },
+  select: {
+    round: true,
+    index: true,
+    result: { select: { winnerId: true } },
+  },
+} satisfies Prisma.BattleFindManyArgs
+
 const BRACKET_SELECT = {
-  year: true,
-  expectedLockDate: true,
   divisions: {
     select: {
       position: true,

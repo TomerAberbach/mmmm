@@ -8,36 +8,25 @@ import {
 } from '~/bracket-form.ts'
 import { toNames } from '~/bracket-input.ts'
 import {
+  readAdminYears,
   readBracket,
-  readBracketCombatants,
   readBracketSummary,
   saveUnpublishedBracket,
 } from '~/brackets.server.ts'
 import { BracketSetupForm } from '~/components/bracket-setup-form.tsx'
-import { CombatantRenames } from '~/components/combatant-renames.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
-import { readUpcomingYear } from '~/year.ts'
 
-/**
- * Only the upcoming year's bracket can be managed here. Until it's published,
- * the setup form edits it. After that, only its combatants' names change
- */
+/** Only for a year to set up. The current year's bracket is with its results */
 export const loader = async () => {
-  const year = readUpcomingYear(new Date())
-  const summary = await readBracketSummary(year)
-  if (summary?.phase === `OPEN`) {
-    return {
-      editor: `renames` as const,
-      year,
-      summary,
-      divisions: await readBracketCombatants(year),
-    }
+  const { setupYear: year } = await readAdminYears()
+  if (year === null) {
+    return redirect(href(`/admin/results`))
   }
+  const summary = await readBracketSummary(year)
   const bracket = summary && (await readBracket(year))
   return {
-    editor: `setup` as const,
     year,
     summary,
     defaultValue: bracket ? toBracketForm(toNames(bracket)) : undefined,
@@ -45,19 +34,20 @@ export const loader = async () => {
 }
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  const year = readUpcomingYear(new Date())
-  const submission = parseWithZod(await request.formData(), {
+  const { setupYear: year } = await readAdminYears()
+  const formData = await request.formData()
+  const submission = parseWithZod(formData, {
     schema: bracketFormSchema,
   })
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
-  return (await saveUnpublishedBracket(year, toBracketInput(submission.value)))
+  return year !== null &&
+    formData.get(`year`) === String(year) &&
+    (await saveUnpublishedBracket(year, toBracketInput(submission.value)))
     ? redirect(href(`/admin`))
     : rejectForm(submission, {
-        formErrors: [
-          `The ${year} bracket is published, so it can’t change here`,
-        ],
+        formErrors: [`This bracket can’t change here now. Reload the page`],
       })
 }
 
@@ -68,15 +58,11 @@ const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (
     {loaderData.summary ? (
       <PhaseSection year={loaderData.year} summary={loaderData.summary} />
     ) : null}
-    {loaderData.editor === `renames` ? (
-      <CombatantRenames divisions={loaderData.divisions} />
-    ) : (
-      <BracketSetupForm
-        year={loaderData.year}
-        defaultValue={loaderData.defaultValue}
-        lastResult={actionData?.result}
-      />
-    )}
+    <BracketSetupForm
+      year={loaderData.year}
+      defaultValue={loaderData.defaultValue}
+      lastResult={actionData?.result}
+    />
   </div>
 )
 export default AdminBracket

@@ -12,11 +12,17 @@ import type { BracketSummary, Phase } from '~/brackets.server.ts'
 import { formatArizonaDate, toIsoDate } from '~/dates.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 
-const PHASE_LABELS: Record<Phase, string> = { SETUP: `Setup`, OPEN: `Open` }
+const PHASE_LABELS: Record<Phase, string> = {
+  SETUP: `Setup`,
+  OPEN: `Open`,
+  IN_PROGRESS: `In progress`,
+  COMPLETE: `Complete`,
+  ARCHIVED: `Archived`,
+}
 
 /**
- * The year's phase, the one action that moves it on, and the expected lock
- * date
+ * The year's phase, the action that moves it to another, and the expected lock
+ * date until it locks
  */
 export const PhaseSection = ({
   year,
@@ -35,42 +41,95 @@ export const PhaseSection = ({
         </span>
       ) : null}
     </div>
-    <p className='max-w-prose'>
-      {summary.phase === `OPEN`
-        ? `Educators can create contests with this bracket, and it’s the current bracket on the home page. Only combatant names can change now.`
-        : `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`}
-    </p>
-    <ExpectedLockDateForm
-      expectedLockDate={
-        summary.expectedLockDate && toIsoDate(summary.expectedLockDate)
-      }
-    />
+    <p className='max-w-prose'>{describePhase(year, summary)}</p>
+    {`expectedLockDate` in summary ? (
+      <ExpectedLockDateForm
+        year={year}
+        expectedLockDate={
+          summary.expectedLockDate && toIsoDate(summary.expectedLockDate)
+        }
+      />
+    ) : null}
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-      {summary.phase === `OPEN` ? (
-        <UnpublishControls year={year} hasContests={summary.hasContests} />
-      ) : (
-        <ConfirmDialog
-          trigger={<Button>{`Publish ${year} bracket`}</Button>}
-          title={`Publish the ${year} bracket?`}
-          confirmLabel={`Publish ${year} bracket`}
-          confirmVariant='primary'
-          action={href(`/admin/bracket/publication`)}
-          fields={{ published: `true` }}
-        >
-          <div className='flex flex-col gap-2'>
-            <p>
-              Educators can then create contests with it, and it becomes the
-              current bracket on the home page.
-            </p>
-            <p>
-              After publishing, only combatant names can change. You can
-              unpublish until an educator creates a contest.
-            </p>
-          </div>
-        </ConfirmDialog>
-      )}
+      <PhaseAction year={year} summary={summary} />
     </div>
   </section>
+)
+
+const describePhase = (year: number, summary: BracketSummary): string => {
+  switch (summary.phase) {
+    case `SETUP`:
+      return `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`
+    case `OPEN`:
+      return `Educators can create contests, and players can submit. The first result locks submissions.`
+    case `IN_PROGRESS`:
+      return summary.hasResults
+        ? `Submissions are locked. Results can be corrected until the ${year + 1} bracket is published.`
+        : `Submissions are locked, though no results are saved.`
+    case `COMPLETE`:
+      return `${summary.champion} won. Results can be corrected until the ${year + 1} bracket is published.`
+    case `ARCHIVED`:
+      return `A newer bracket is published, so this one can’t change.`
+  }
+}
+
+/** The action that moves the year to another phase, if any */
+const PhaseAction = ({
+  year,
+  summary,
+}: {
+  year: number
+  summary: BracketSummary
+}) => {
+  switch (summary.phase) {
+    case `SETUP`:
+      return <PublishButton year={year} />
+    case `OPEN`:
+      return <UnpublishControls year={year} hasContests={summary.hasContests} />
+    case `IN_PROGRESS`:
+      return summary.hasResults ? null : <ReopenButton year={year} />
+    case `COMPLETE`:
+    case `ARCHIVED`:
+      return null
+  }
+}
+
+const PublishButton = ({ year }: { year: number }) => (
+  <ConfirmDialog
+    trigger={<Button>{`Publish ${year} bracket`}</Button>}
+    title={`Publish the ${year} bracket?`}
+    confirmLabel={`Publish ${year} bracket`}
+    confirmVariant='primary'
+    action={href(`/admin/bracket/publication`)}
+    fields={{ year: String(year), published: `true` }}
+  >
+    <div className='flex flex-col gap-2'>
+      <p>
+        Educators can then create contests with it, and it becomes the current
+        bracket on the home page.
+      </p>
+      <p>
+        After publishing, only combatant names can change. You can unpublish
+        until an educator creates a contest.
+      </p>
+    </div>
+  </ConfirmDialog>
+)
+
+const ReopenButton = ({ year }: { year: number }) => (
+  <ConfirmDialog
+    trigger={<Button variant='secondary'>Reopen submissions</Button>}
+    title='Reopen submissions?'
+    confirmLabel='Reopen submissions'
+    confirmVariant='primary'
+    action={href(`/admin/results/reopen`)}
+    fields={{ year: String(year) }}
+  >
+    <p>
+      Players can start, edit, and submit brackets again, and educators can
+      create contests. The next result locks submissions again.
+    </p>
+  </ConfirmDialog>
 )
 
 const UnpublishControls = ({
@@ -91,7 +150,7 @@ const UnpublishControls = ({
         title={`Unpublish the ${year} bracket?`}
         confirmLabel={`Unpublish ${year} bracket`}
         action={href(`/admin/bracket/publication`)}
-        fields={{ published: `false` }}
+        fields={{ year: String(year), published: `false` }}
       >
         <p>
           Educators can’t create contests with it until you publish it again,
@@ -106,22 +165,24 @@ const UnpublishControls = ({
 
 export const PhaseTag = ({ phase }: { phase: Phase }) => (
   <span
-    className={`border-2 border-accent-strong px-2 font-condensed text-sm font-bold tracking-wider uppercase ${phase === `OPEN` ? `bg-accent-strong text-white` : `text-accent-strong`}`}
+    className={`border-2 border-accent-strong px-2 font-condensed text-sm font-bold tracking-wider uppercase ${phase === `OPEN` || phase === `IN_PROGRESS` ? `bg-accent-strong text-white` : `text-accent-strong`}`}
   >
     {PHASE_LABELS[phase]}
   </span>
 )
 
 const ExpectedLockDateForm = ({
+  year,
   expectedLockDate,
 }: {
+  year: number
   expectedLockDate: string | null
 }) => {
   const fetcher = useFetcher<SavedResult>()
   const { form, fields } = useValidatedForm(
     expectedLockDateSchema,
     fetcher.data?.result,
-    { expectedLockDate: expectedLockDate ?? undefined },
+    { year, expectedLockDate: expectedLockDate ?? undefined },
   )
   return (
     <fetcher.Form
@@ -130,6 +191,7 @@ const ExpectedLockDateForm = ({
       {...getFormProps(form)}
       className='flex flex-col gap-2'
     >
+      <input type='hidden' name={fields.year.name} value={year} />
       <div className='flex flex-wrap items-start gap-x-3 gap-y-2'>
         <div className='w-72'>
           <TextField

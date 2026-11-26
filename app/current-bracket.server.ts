@@ -6,7 +6,7 @@ import { toSeededBracket } from './seeded-bracket.ts'
 
 export type CurrentBracket = {
   view: BracketView
-  /** Such as "March 19, 2027" */
+  /** Such as "March 19, 2027", until the year locks */
   expectedLockDate: string | null
 }
 
@@ -19,7 +19,7 @@ export const readCurrentBracketView =
         view: buildBracketView(
           current.year,
           toSeededBracket(current.bracket),
-          {},
+          current.results,
         ),
         expectedLockDate:
           current.expectedLockDate && formatDate(current.expectedLockDate),
