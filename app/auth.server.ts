@@ -10,14 +10,12 @@ import {
 import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
-import { z } from 'zod'
 import { refuse } from './app-refusal.server.ts'
 import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
   RESET_EXPIRES_IN_HOURS,
-  signUpSchema,
 } from './auth-forms.ts'
 import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
 import { prisma } from './db.server.ts'
@@ -30,8 +28,6 @@ import { resetPasswordEmail } from './emails/reset-password.server.tsx'
 import { secondFactorChangedEmail } from './emails/second-factor-changed.server.tsx'
 import type { SecondFactorChange } from './emails/second-factor-changed.server.tsx'
 import { requireEnv } from './env.server.ts'
-import { serverFreeTextSchema } from './free-text.server.ts'
-import { EDUCATOR_NAME } from './free-text.ts'
 import { SessionAssurance } from './generated/prisma/enums.ts'
 import { joinOrganization } from './organizations.server.ts'
 import {
@@ -53,22 +49,14 @@ const SESSION_EXPIRES_IN_SECONDS = 30 * 24 * 60 * 60
  */
 const CONFIRMED_CALLBACK_URL = `${href(`/sign-in`)}?confirmed`
 
-/**
- * Clients can't choose where emailed links return, or keep their other
- * sessions through a password change
- */
+/** Fields that the app's routes leave out, and that no browser may choose */
 const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
   '/sign-up/email': { callbackURL: CONFIRMED_CALLBACK_URL },
-  '/sign-in/email': { callbackURL: CONFIRMED_CALLBACK_URL },
   '/send-verification-email': { callbackURL: CONFIRMED_CALLBACK_URL },
   // A reset link returns here with its token, or with `error` when it fails
   '/request-password-reset': { redirectTo: href(`/reset-password`) },
   // Whoever knew the old password loses access, however it changed
   '/change-password': { revokeOtherSessions: true },
-  // Every sign-in asks for the second factor. NIST SP 800-63B forbids
-  // remembering a browser in place of authenticating
-  '/two-factor/verify-totp': { trustDevice: false },
-  '/two-factor/verify-backup-code': { trustDevice: false },
   // Registering a passkey never signs in, so it can't make a session that
   // counts as having used a second factor. Pages label passkeys by their
   // provider, so they take no name that would need the offensive word filter.
@@ -76,19 +64,6 @@ const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
   // keep the client's
   '/passkey/verify-registration': { createSession: false, name: `` },
 }
-
-const UPDATE_USER_SCHEMA = z.looseObject({
-  name: serverFreeTextSchema(EDUCATOR_NAME).optional(),
-})
-
-/**
- * Refuses whatever Better Auth would, which it checks only after the app's hook
- * has deleted an unconfirmed educator
- */
-const SIGN_UP_SCHEMA = signUpSchema(serverFreeTextSchema)
-  // `FORCED_FIELDS` replaces it
-  .extend({ callbackURL: z.unknown().optional() })
-  .strict()
 
 const beforeAuthRequest = createAuthMiddleware(async ctx => {
   if (
@@ -98,7 +73,7 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
     throw ctx.redirect(`${CONFIRMED_CALLBACK_URL}&error=INVALID_TOKEN`)
   }
   await guardSecondFactorChange(ctx)
-  let body = ctx.body as Record<string, unknown> | undefined
+  const body = ctx.body as Record<string, unknown> | undefined
   if (!body) {
     return
   }
@@ -107,18 +82,11 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
     email: await readLimitedEmail(ctx),
     headers: ctx.headers,
   })
-  if (ctx.path === `/update-user`) {
-    body = await parseBody(UPDATE_USER_SCHEMA, body)
-  }
   if (ctx.path === `/sign-up/email`) {
-    // Before looking up the address, so a refused sign-up answers the same
-    // whether or not the address has an educator
-    const signUp = await parseBody(SIGN_UP_SCHEMA, body)
-    body = signUp
     // Otherwise the new link would confirm the password of whoever signed up
     // first, who may not own the address. Remove once Better Auth ships
     // https://github.com/better-auth/better-auth/pull/11260
-    await freeAddress(signUp.email)
+    await freeAddress(body.email as string)
   }
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
@@ -171,17 +139,6 @@ const readConfirmationToken = async (
   return typeof payload?.email === `string` && typeof payload.iat === `number`
     ? { email: payload.email, issuedAt: payload.iat }
     : undefined
-}
-
-const parseBody = async <Body extends Record<string, unknown>>(
-  schema: z.ZodType<Body>,
-  body: unknown,
-): Promise<Body> => {
-  const parsed = await schema.safeParseAsync(body)
-  if (!parsed.success) {
-    throw refuse(`BAD_REQUEST`, parsed.error.issues[0]!.message)
-  }
-  return parsed.data
 }
 
 /**

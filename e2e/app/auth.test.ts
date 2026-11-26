@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 import {
   confirm,
+  isSignedIn,
   newEmailAddress,
   PASSWORD,
-  readSession,
   signIn,
   signInConfirmed,
   signOut,
@@ -45,7 +45,7 @@ test(`confirming doesn't sign in whoever opens the confirmation link`, async ({
 
   await confirm(page, email)
 
-  expect(await readSession(page)).toBeNull()
+  expect(await isSignedIn(page)).toBe(false)
 })
 
 test(`an unconfirmed educator can't sign in, and is told to confirm first`, async ({
@@ -96,7 +96,7 @@ test(`signing out ends the session`, async ({ page }) => {
 
   await signOut(page)
 
-  expect(await readSession(page)).toBeNull()
+  expect(await isSignedIn(page)).toBe(false)
 })
 
 test(`an altered confirmation link says to sign in for a new one`, async ({
@@ -116,18 +116,16 @@ test(`an altered confirmation link says to sign in for a new one`, async ({
   )
 })
 
-test(`the auth route rejects an offensive name, even for an existing address`, async ({
-  page,
-  request,
-}) => {
-  const email = newEmailAddress()
-  await signUp(page, email)
-
+test(`the auth route answers only what browsers call`, async ({ request }) => {
   const response = await request.post(`/api/auth/sign-up/email`, {
-    data: { name: `sh1t`, email, password: PASSWORD },
+    data: {
+      name: `Ms. Frizzle`,
+      email: newEmailAddress(),
+      password: PASSWORD,
+    },
   })
 
-  expect(response.status()).toBe(400)
+  expect(response.status()).toBe(404)
 })
 
 test(`signing up again with an unconfirmed address sends a new confirmation link`, async ({

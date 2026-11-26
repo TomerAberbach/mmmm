@@ -56,20 +56,6 @@ test(`an address gets 3 resent confirmation links an hour`, async ({
   await expect(page.getByRole(`alert`)).toContainText(`Too many attempts`)
 })
 
-test(`the auth API applies the same limits`, async ({ request }) => {
-  const email = newEmailAddress()
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await request.post(`/api/auth/request-password-reset`, { data: { email } })
-  }
-
-  const response = await request.post(`/api/auth/request-password-reset`, {
-    data: { email },
-  })
-
-  expect(response.status()).toBe(429)
-  expect(response.headers()[`retry-after`]).toBeTruthy()
-})
-
 // Whoever set an unconfirmed educator's password could otherwise flood the
 // address by signing in again and again
 test(`signing in to an unconfirmed educator sends no email`, async ({

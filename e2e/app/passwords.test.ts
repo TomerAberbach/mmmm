@@ -1,9 +1,9 @@
 import { test as base, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import {
+  isSignedIn,
   newEmailAddress,
   PASSWORD,
-  readSession,
   requestReset,
   signIn,
   signInConfirmed,
@@ -136,7 +136,7 @@ test(`resetting a password emails a notice and signs out every session`, async (
 
   await setNewPassword(page, await readResetLink(page, email))
 
-  expect(await readSession(elsewhere)).toBeNull()
+  expect(await isSignedIn(elsewhere)).toBe(false)
   const [latest = ``] = await readEmails(page, email, {
     newestContaining: `Your password was changed`,
   })
@@ -156,8 +156,8 @@ test(`changing the password signs out other sessions but not this one`, async ({
   await expect(page.getByRole(`status`)).toContainText(
     `Your password is changed`,
   )
-  expect(await readSession(elsewhere)).toBeNull()
-  expect(await readSession(page)).not.toBeNull()
+  expect(await isSignedIn(elsewhere)).toBe(false)
+  expect(await isSignedIn(page)).toBe(true)
 })
 
 test(`changing the password emails a notice`, async ({ page }) => {
@@ -196,8 +196,8 @@ test(`signing out other sessions keeps this one`, async ({
   await expect(page.getByRole(`status`)).toContainText(
     `Every other session is signed out`,
   )
-  expect(await readSession(elsewhere)).toBeNull()
-  expect(await readSession(page)).not.toBeNull()
+  expect(await isSignedIn(elsewhere)).toBe(false)
+  expect(await isSignedIn(page)).toBe(true)
 })
 
 test(`changing the name shows it in the header`, async ({ page }) => {

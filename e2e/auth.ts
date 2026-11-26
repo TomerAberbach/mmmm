@@ -66,8 +66,10 @@ export const signInConfirmed = async (
   await expect(page.getByRole(`banner`)).toContainText(`Ms. Frizzle`)
 }
 
-export const readSession = async (page: Page): Promise<unknown> =>
-  (await page.request.get(`/api/auth/get-session`)).json()
+export const isSignedIn = async (page: Page): Promise<boolean> => {
+  const response = await page.request.get(`/settings`, { maxRedirects: 0 })
+  return response.ok()
+}
 
 export const submitResetRequest = async (
   page: Page,
