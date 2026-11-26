@@ -21,6 +21,7 @@ mmmm
 ├── server.ts           # Express entry point: middleware order, then Vite in development or the build in production
 ├── server/             # Express middleware: security headers, cross-origin checks, rate limits, the client's IP address, request logs. Has its own CLAUDE.md
 ├── app/                # The React Router app. Has its own CLAUDE.md
+├── import/             # Imports mmmm-old's database. See docs/operations.md
 ├── prisma/             # Schema and seed. Has its own CLAUDE.md
 ├── test/database.ts    # Creates throwaway databases for each Vitest worker and Playwright run
 ├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins
@@ -95,8 +96,8 @@ missing variable.
 
 ## Testing
 
-- `*.test.ts` files under `server/` and `test/` run in Node, colocated with the
-  code they test
+- `*.test.ts` files under `import/`, `server/`, and `test/` run in Node,
+  colocated with the code they test
 - Keep `test/database.ts`, `test/global-setup.ts`, and `test/setup.ts` from
   importing app modules. `app/db.server.ts` connects to `DATABASE_URL` on
   import, which is the development database until `test/setup.ts` changes it

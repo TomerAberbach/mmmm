@@ -16,7 +16,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: `node`,
-          include: [`{app,server,test}/**/*.test.ts`],
+          include: [`{app,import,server,test}/**/*.test.ts`],
           // Vitest stubs CSS imports by default, which empties `app.css?raw`
           css: { include: [/app\.css/u] },
           globalSetup: [`test/global-setup.ts`],

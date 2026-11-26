@@ -166,3 +166,34 @@ The steps that created staging, for redoing them or setting up production.
   then delete the old key
 - **age identity:** generate a new pair and update `BACKUP_AGE_RECIPIENT`. Keep
   the old identity until the dumps it encrypted expire, 30 days later
+
+## Import mmmm-old's data
+
+`pnpm db:import` copies mmmm-old's brackets, results, teachers, classes, and
+submissions into the database that `DATABASE_URL` names. It reads a restored
+dump of mmmm-old's database at `OLD_DATABASE_URL`, and never reads password
+hashes or schools. Run it against an empty or already imported database.
+
+1. Dump mmmm-old's database, and restore it into a local Postgres:
+
+   ```sh
+   createdb mmmm_old
+   pg_restore --no-owner --dbname mmmm_old mmmm-old.dump
+   ```
+
+2. Set `OLD_DATABASE_URL` and `DATABASE_URL` in your own terminal, then report
+   what the import would do, and do it:
+
+   ```sh
+   pnpm db:import --dry-run
+   pnpm db:import
+   ```
+
+3. Read the counts, and each skipped or changed row's ID. The report has no
+   names. Look up a row in the restored dump by its ID.
+4. Delete the dump and the restored database, since both hold names and password
+   hashes.
+
+A rerun replaces what an earlier run added. The import refuses to rerun once an
+imported educator confirms their address, so finish it before the launch emails.
+It runs in one transaction, so a failure changes nothing.
