@@ -49,7 +49,8 @@ export type ReportReader =
 export type ReportItem = {
   id: string
   contest: { id: string; name: string; year: number }
-  educatorName: string
+  /** Null for an orphaned contest */
+  educatorName: string | null
   /** Null for a report of the contest's name */
   player: { id: string; displayName: string } | null
   reason: ReportReason
@@ -88,7 +89,7 @@ export const readReports = async (
       ({ contest: { educator, ...contest }, ...report }) => ({
         ...report,
         contest,
-        educatorName: educator.name,
+        educatorName: educator?.name ?? null,
       }),
     ),
     page: pageNumber,

@@ -37,11 +37,12 @@ model Educator {
 
 // The educators whose confirmed addresses share a domain
 model Organization {
-  domain    String     @id
+  domain           String     @id
   // Null until an educator there gives it one
-  name      String?
-  createdAt DateTime   @default(now())
-  educators Educator[]
+  name             String?
+  createdAt        DateTime   @default(now())
+  educators        Educator[]
+  orphanedContests Contest[]
 }
 
 // How a session's educator proved who they are. A setup link lets a session
@@ -264,26 +265,31 @@ model Result {
 // A year's contests exist only while its bracket is published. Deleting the
 // educator or the bracket fails while either has a contest
 model Contest {
-  id          String    @id
-  year        Int
-  educatorId  String
-  name        String
+  id                 String        @id
+  year               Int
+  // Null for an orphaned contest, whose educator deleted their account
+  educatorId         String?
+  // The organization it had then
+  orphanedFromDomain String?
+  name               String
   // The contest link's secret. Stored as is, since the educator copies it
-  linkSecret  String    @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  linkSecret         String        @unique
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
   // Goes up each time the contest link is replaced
-  linkVersion Int       @default(1)
+  linkVersion        Int           @default(1)
   // Set while the contest is in the trash
-  deletedAt   DateTime?
+  deletedAt          DateTime?
   // Set by the admin to leave it off organization and global leaderboards
-  isHidden    Boolean   @default(false)
-  bracket     Bracket   @relation(fields: [year], references: [year], onDelete: Restrict)
-  educator    Educator  @relation(fields: [educatorId], references: [id], onDelete: Restrict)
-  players     Player[]
-  shares      Share[]
-  reports     Report[]
+  isHidden           Boolean       @default(false)
+  bracket            Bracket       @relation(fields: [year], references: [year], onDelete: Restrict)
+  educator           Educator?     @relation(fields: [educatorId], references: [id], onDelete: Restrict)
+  players            Player[]
+  shares             Share[]
+  reports            Report[]
+  orphanedFrom       Organization? @relation(fields: [orphanedFromDomain], references: [domain], onDelete: Restrict)
 
+  @@index([orphanedFromDomain])
   @@index([educatorId, year])
   @@index([year])
 }

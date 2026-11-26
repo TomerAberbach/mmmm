@@ -127,8 +127,9 @@ type RankedSubmission = {
   displayName: string
   contestId: string
   contestName: string
-  educatorId: string
-  educatorName: string
+  /** Null for an orphaned contest, as is `educatorName` */
+  educatorId: string | null
+  educatorName: string | null
   organizationName: string | null
   score: number
   rank: number
@@ -176,7 +177,7 @@ const describeHidden = (
     case `contest`:
       return UNNAMED_PLAYER
     case `organization`:
-      return `Player from ${contestName} (${educatorName})`
+      return `Player from ${contestName}${educatorName === null ? `` : ` (${educatorName})`}`
     case `global`:
       return organizationName === null
         ? UNNAMED_PLAYER
@@ -196,7 +197,7 @@ const withNamesSql = (ranked: Prisma.Sql): Prisma.Sql => Prisma.sql`
   FROM (${ranked}) AS "Ranked"
   JOIN "Player" ON "Player"."id" = "Ranked"."playerId"
   JOIN "Contest" ON "Contest"."id" = "Ranked"."contestId"
-  JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
+  LEFT JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
   LEFT JOIN "Organization" ON "Organization"."domain" = ${CONTEST_ORGANIZATION_SQL}
   ORDER BY "rank", "playerId"
 `
@@ -224,7 +225,7 @@ const APPROVED_SUBMISSIONS_SQL = Prisma.sql`
   FROM "Submission"
   JOIN "Player" ON "Player"."id" = "Submission"."playerId"
   JOIN "Contest" ON "Contest"."id" = "Player"."contestId"
-  JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
+  LEFT JOIN "Educator" ON "Educator"."id" = "Contest"."educatorId"
   WHERE "Player"."deletedAt" IS NULL
     AND "Contest"."deletedAt" IS NULL
     AND "Submission"."status" = 'APPROVED'
@@ -242,7 +243,10 @@ const membershipSql = (scope: LeaderboardScope): Prisma.Sql => {
         NOT "Contest"."isHidden" AND ${CONTEST_ORGANIZATION_SQL} = ${scope.domain}
       `
     case `global`:
-      return Prisma.sql`NOT "Contest"."isHidden" AND "Educator"."emailVerified"`
+      return Prisma.sql`
+        NOT "Contest"."isHidden"
+          AND coalesce("Educator"."emailVerified", TRUE)
+      `
   }
 }
 

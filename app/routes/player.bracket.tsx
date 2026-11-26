@@ -40,6 +40,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     year,
     isOpen,
     isPast: pastYear !== null,
+    isOrphaned: contest.educatorName === null,
     bracket,
     draft,
     results,

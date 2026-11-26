@@ -27,6 +27,9 @@ export type PlayView =
       isOpen: boolean
     }
   | { state: `notOpen` }
+  | { state: `orphaned` }
+
+export const ORPHANED_MESSAGE = `This contest’s educator left MMMM, so no one can start a bracket`
 
 export const NOT_OPEN_MESSAGE = `Submissions are closed, so no one can start a bracket`
 
@@ -44,6 +47,8 @@ export const PlayContestPage = ({
       <NameForm lastResult={lastResult} />
     ) : view.state === `returning` ? (
       <ReturningPlayer view={view} />
+    ) : view.state === `orphaned` ? (
+      <OrphanedContest />
     ) : (
       <ContestNotOpen />
     )}
@@ -69,7 +74,7 @@ export const ContestContext = ({ contest }: { contest: PlayContest }) => (
       {`March Mammal Madness ${contest.year}`}
     </p>
     <p className={PAGE_LABEL_CLASS_NAME}>
-      {`${contest.name} · ${contest.educatorName}’s contest`}
+      {`${contest.name} · ${contest.educatorName ?? `A former educator`}’s contest`}
     </p>
   </div>
 )
@@ -128,6 +133,16 @@ const ContestNotOpen = () => (
     <p>
       The first result is in, so no one can start a bracket. If you already have
       one, open your personal link.
+    </p>
+  </div>
+)
+
+const OrphanedContest = () => (
+  <div className='flex flex-col gap-3'>
+    <PageTitle>This contest takes no new players</PageTitle>
+    <p>
+      Its educator left MMMM. If you already have a bracket, open your personal
+      link.
     </p>
   </div>
 )

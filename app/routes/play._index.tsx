@@ -6,6 +6,7 @@ import { isOpenYear } from '~/brackets.server.ts'
 import { brokenLink } from '~/broken-link.ts'
 import {
   NOT_OPEN_MESSAGE,
+  ORPHANED_MESSAGE,
   PlayContestPage,
 } from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
@@ -35,6 +36,7 @@ export const loader = async ({
     readRememberedPlayer(request, contest.id),
     isOpenYear(contest.year),
   ])
+  const takesPlayers = isOpen && contest.educatorName !== null
   if (player) {
     return {
       state: `returning`,
@@ -42,10 +44,12 @@ export const loader = async ({
       bracketPath: href(`/player/:contestId/bracket`, {
         contestId: contest.id,
       }),
-      isOpen,
+      isOpen: takesPlayers,
     }
   }
-  return { state: isOpen ? `askName` : `notOpen` }
+  return {
+    state: takesPlayers ? `askName` : isOpen ? `orphaned` : `notOpen`,
+  }
 }
 
 export const action = async ({
@@ -81,7 +85,11 @@ export const action = async ({
     }
     return player.refusal === `LIMITED`
       ? rejectTooManyNewPlayers(submission, player.limit)
-      : rejectForm(submission, { formErrors: [NOT_OPEN_MESSAGE] })
+      : rejectForm(submission, {
+          formErrors: [
+            player.refusal === `ORPHANED` ? ORPHANED_MESSAGE : NOT_OPEN_MESSAGE,
+          ],
+        })
   }
   return redirect(
     href(`/player/:contestId/bracket`, { contestId: contest.id }),

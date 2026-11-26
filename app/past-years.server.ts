@@ -94,7 +94,7 @@ export const readPastYears = async (
     champion: battles[0]?.result?.winner.name ?? null,
     contests: contests.map(({ educator, _count, ...contest }) => ({
       ...contest,
-      sharedBy: educator.id === educatorId ? null : educator.name,
+      sharedBy: educator && educator.id !== educatorId ? educator.name : null,
       submissionCount: _count.players,
     })),
   }))

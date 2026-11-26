@@ -56,31 +56,41 @@ export const readOrganization = async (
 ): Promise<Organization | null> => {
   const { organization } = await prisma.educator.findUniqueOrThrow({
     where: { id: educatorId },
-    select: { organization: { select: { domain: true, name: true } } },
+    select: { organization: { select: ORGANIZATION_SELECT } },
   })
   return organization
 }
 
 /**
  * The domain of the organization a contest counts toward, in SQL that joins
- * `Educator`. `readContestOrganization` follows the same rule
+ * `Contest` and `Educator`. `readContestOrganization` follows the same rule
  */
-export const CONTEST_ORGANIZATION_SQL = Prisma.sql`"Educator"."organizationDomain"`
+export const CONTEST_ORGANIZATION_SQL = Prisma.sql`coalesce("Educator"."organizationDomain", "Contest"."orphanedFromDomain")`
 
 /** The organization the contest counts toward, if any */
 export const readContestOrganization = async (
   contestId: string,
-): Promise<Organization | null> => {
-  const { educator } = await prisma.contest.findUniqueOrThrow({
-    where: { id: contestId },
-    select: {
-      educator: {
-        select: { organization: { select: { domain: true, name: true } } },
+): Promise<Organization | null> =>
+  toContestOrganization(
+    await prisma.contest.findUniqueOrThrow({
+      where: { id: contestId },
+      select: {
+        orphanedFrom: { select: ORGANIZATION_SELECT },
+        educator: { select: { organization: { select: ORGANIZATION_SELECT } } },
       },
-    },
-  })
-  return educator.organization
-}
+    }),
+  )
+
+export const ORGANIZATION_SELECT = { domain: true, name: true } as const
+
+/** A contest never has both, since only an orphaned one has `orphanedFrom` */
+export const toContestOrganization = ({
+  educator,
+  orphanedFrom,
+}: {
+  educator: { organization: Organization | null } | null
+  orphanedFrom: Organization | null
+}): Organization | null => educator?.organization ?? orphanedFrom
 
 /**
  * Names the educator's organization. Returns whether it had no name yet, since

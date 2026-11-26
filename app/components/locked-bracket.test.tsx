@@ -45,6 +45,7 @@ const renderLocked = async (
             }
           }
           isPast={isPast}
+          isOrphaned={false}
           ranks={<p>Ranks</p>}
           forgetPath='/forgotten'
           deletePath='/deleted'

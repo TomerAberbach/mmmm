@@ -25,6 +25,7 @@ import type { StoredBracket } from '~/seeded-bracket.ts'
 export const LockedBracket = ({
   year,
   isPast,
+  isOrphaned,
   bracket,
   draft,
   submitted,
@@ -37,6 +38,8 @@ export const LockedBracket = ({
   year: number
   /** Whether a newer year is current, so no educator approves it anymore */
   isPast: boolean
+  /** Whether the contest has no educator */
+  isOrphaned: boolean
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted | null
@@ -51,7 +54,7 @@ export const LockedBracket = ({
     {submitted ? (
       <SubmittedBracket
         year={year}
-        isPast={isPast}
+        canBeApproved={!isPast && !isOrphaned}
         bracket={bracket}
         draft={draft}
         submitted={submitted}
@@ -66,6 +69,7 @@ export const LockedBracket = ({
       <DeleteButton
         deletePath={deletePath}
         playerId={playerId}
+        isOrphaned={isOrphaned}
         isSending={false}
         isOpen={false}
       />
@@ -75,7 +79,7 @@ export const LockedBracket = ({
 
 const SubmittedBracket = ({
   year,
-  isPast,
+  canBeApproved,
   bracket,
   draft,
   submitted: { submission, personalLink },
@@ -84,7 +88,7 @@ const SubmittedBracket = ({
   forgetPath,
 }: {
   year: number
-  isPast: boolean
+  canBeApproved: boolean
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted
@@ -100,7 +104,7 @@ const SubmittedBracket = ({
           arePicksEqual(draft, submission.picks)
             ? ``
             : `The changes you made after submitting weren’t submitted. `
-        }${isPast && submission.status === `PENDING` ? NEVER_APPROVED : STATUS_NOTES[submission.status]}`}
+        }${!canBeApproved && submission.status === `PENDING` ? NEVER_APPROVED : STATUS_NOTES[submission.status]}`}
       </Notice>
     </div>
     {ranks}
