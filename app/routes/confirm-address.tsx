@@ -35,7 +35,6 @@ const ConfirmButton = () => (
 const ConfirmAddress = ({ loaderData, actionData }: Route.ComponentProps) => (
   <div className='flex max-w-xl flex-col items-start gap-4'>
     <meta name='robots' content='noindex' />
-    <meta name='referrer' content='no-referrer' />
     {actionData === `TAKEN` ? (
       <>
         <PageTitle>This address already has an account</PageTitle>

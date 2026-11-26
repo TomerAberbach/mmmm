@@ -104,6 +104,23 @@ const startBracketAsMaya = async (page: Page, link: string): Promise<void> => {
   ).toBeVisible()
 }
 
+test(`a player enters their name without JavaScript`, async ({
+  browser,
+  baseURL,
+}) => {
+  const link = await createContestLink(browser)
+  const context = await browser.newContext({
+    baseURL,
+    javaScriptEnabled: false,
+  })
+  const plain = await context.newPage()
+
+  await startBracketAsMaya(plain, link)
+
+  await expect(plain).toHaveURL(/\/player\/[^/]+\/bracket$/u)
+  await context.close()
+})
+
 /** React Router's cookies hold their value as base64-encoded JSON */
 const readPersonalLinkSecret = async (page: Page): Promise<string> => {
   const cookies = await page.context().cookies()

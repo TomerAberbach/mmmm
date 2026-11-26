@@ -13,6 +13,7 @@ test.each<{ method: string; headers: Record<string, string>; status: number }>([
   { method: `POST`, headers: { 'sec-fetch-site': `cross-site` }, status: 403 },
   { method: `POST`, headers: { 'sec-fetch-site': `same-site` }, status: 403 },
   { method: `POST`, headers: { origin: `https://evil.example` }, status: 403 },
+  { method: `POST`, headers: { origin: `null` }, status: 403 },
   { method: `POST`, headers: {}, status: 200 },
   { method: `GET`, headers: { 'sec-fetch-site': `cross-site` }, status: 200 },
 ])(

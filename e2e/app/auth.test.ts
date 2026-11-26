@@ -246,3 +246,22 @@ test(`sign-in never leads to another site`, async ({ page, baseURL }) => {
 
   await expect(page).toHaveURL(`${baseURL}/contests`)
 })
+
+test(`signing in works without JavaScript`, async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  const email = newEmailAddress()
+  await signUpConfirmed(page, email)
+  const context = await browser.newContext({
+    baseURL,
+    javaScriptEnabled: false,
+  })
+  const plain = await context.newPage()
+
+  await signIn(plain, email)
+
+  await expect(plain).toHaveURL(`/contests`)
+  await context.close()
+})
