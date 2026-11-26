@@ -4,10 +4,8 @@ import { loadContestByLink, readPlayContest } from '~/play-context.server.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [loadContestByLink]
 
-export const loader = ({ context }: Route.LoaderArgs) => {
-  const { id: _, ...contest } = readPlayContest(context)
-  return contest
-}
+export const loader = ({ context }: Route.LoaderArgs) =>
+  readPlayContest(context)
 
 const PlayRoute = ({ loaderData }: Route.ComponentProps) => (
   <PlayLayout contest={loaderData} />

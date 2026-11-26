@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { href, Link, useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
@@ -46,11 +45,7 @@ export const ContestDetails = ({
 
 /** Rename opens the name's field below the heading until the save succeeds */
 const ContestName = ({ contest }: { contest: Contest }) => {
-  const [isEditing, setIsEditing] = useState(false)
-  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit(
-    isEditing,
-    setIsEditing,
-  )
+  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit()
 
   return (
     <div className='flex flex-col gap-3'>

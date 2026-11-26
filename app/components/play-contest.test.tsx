@@ -11,6 +11,7 @@ import { ContestContext, PlayContestPage } from './play-contest.tsx'
 import type { PlayView } from './play-contest.tsx'
 
 const CONTEST = {
+  id: `period-6`,
   name: `Period 6 Biology`,
   year: 2027,
   educatorName: `Ms. Rivera`,

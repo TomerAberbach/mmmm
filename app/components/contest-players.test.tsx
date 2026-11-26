@@ -24,7 +24,18 @@ const player = (
  */
 const renderPlayers = async (
   initialPlayers: ContestPlayer[],
-  { refuseStatus = false, refuseDelete = false } = {},
+  {
+    refuseStatus = false,
+    refuseDelete = false,
+    removeOnRefusal = false,
+    statusGate = Promise.resolve(null),
+  }: {
+    refuseStatus?: boolean
+    refuseDelete?: boolean
+    removeOnRefusal?: boolean
+    /** Holds status changes until it resolves */
+    statusGate?: Promise<null>
+  } = {},
 ) => {
   let players = initialPlayers
   const update = (id: string, change: Partial<ContestPlayer>) => {
@@ -47,7 +58,9 @@ const renderPlayers = async (
     {
       path: `/contests/period-2/players/status`,
       action: async ({ request }) => {
+        await statusGate
         if (refuseStatus) {
+          players = removeOnRefusal ? players.slice(1) : players
           return { error: `This bracket is gone or not submitted` }
         }
         const { ids, status } = submissionStatusSchema.parse(
@@ -84,18 +97,6 @@ const renderPlayers = async (
           })
         }
         return { result: submission.reply(), saved: true }
-      },
-    },
-    {
-      path: `/contests/period-2/approve-pending`,
-      action: async ({ request }) => {
-        const { ids } = idsSchema.parse(
-          Object.fromEntries(await request.formData()),
-        )
-        for (const id of ids) {
-          update(id, { status: `APPROVED` })
-        }
-        return { ok: true }
       },
     },
   ])
@@ -180,8 +181,105 @@ test(`a refused status change leaves the row and says why`, async () => {
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(`This bracket is gone or not submitted`)
+    .toHaveTextContent(`Maya R.: This bracket is gone or not submitted`)
   await expect.element(section(/^Pending/u).getByText(`Maya R.`)).toBeVisible()
+})
+
+test(`a refusal shows after its player's row is gone`, async () => {
+  await renderPlayers([MAYA, JONAH], {
+    refuseStatus: true,
+    removeOnRefusal: true,
+  })
+
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`Maya R.: This bracket is gone or not submitted`)
+  await expect
+    .element(page.getByRole(`row`, { name: /Maya R\./u }))
+    .not.toBeInTheDocument()
+})
+
+test(`a refusal goes once another change starts`, async () => {
+  await renderPlayers([MAYA, JONAH], { refuseStatus: true })
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+  await expect.element(page.getByRole(`alert`)).toBeVisible()
+
+  await deleteFromMenu(`Jonah K.`)
+  await confirmDelete(`Delete bracket`)
+
+  await expect.element(page.getByText(`Deleted Jonah K.`)).toBeInTheDocument()
+  await expect.element(page.getByRole(`alert`)).not.toBeInTheDocument()
+})
+
+test(`a selection's change clears it after a later change is refused`, async () => {
+  const gate = Promise.withResolvers<null>()
+  await renderPlayers([MAYA, JONAH], {
+    refuseDelete: true,
+    statusGate: gate.promise,
+  })
+  await selectPlayer(`Maya R.`)
+  await selectionBar.getByRole(`button`, { name: `Approve 1` }).click()
+  await deleteFromMenu(`Jonah K.`)
+  await confirmDelete(`Delete bracket`)
+
+  gate.resolve(null)
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`Jonah K.: Nothing was deleted`)
+  await expect.element(section(/^Approved/u).getByText(`Maya R.`)).toBeVisible()
+  await expect.element(selectionBar).not.toBeInTheDocument()
+})
+
+test(`an earlier change's refusal shows after a later one clears the selection`, async () => {
+  const gate = Promise.withResolvers<null>()
+  await renderPlayers([MAYA, JONAH], {
+    refuseStatus: true,
+    statusGate: gate.promise,
+  })
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+  await selectPlayer(`Jonah K.`)
+  await selectionBar.getByRole(`button`, { name: `Delete 1` }).click()
+  await confirmDelete(`Delete bracket`)
+
+  gate.resolve(null)
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`Maya R.: This bracket is gone or not submitted`)
+  await expect.element(selectionBar).not.toBeInTheDocument()
+  await expect.element(page.getByRole(`alert`)).toBeVisible()
+})
+
+test(`a player's menu can't delete them again while a change is pending`, async () => {
+  const gate = Promise.withResolvers<null>()
+  await renderPlayers([MAYA], { statusGate: gate.promise })
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+
+  await page.getByRole(`button`, { name: `More for Maya R.` }).click()
+
+  await expect
+    .element(page.getByRole(`menuitem`, { name: `Delete` }))
+    .toHaveAttribute(`aria-disabled`, `true`)
+  gate.resolve(null)
+})
+
+test(`renaming one player keeps another's editor open`, async () => {
+  await renderPlayers([MAYA, JONAH])
+  await page.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await page.getByRole(`menuitem`, { name: `Rename` }).click()
+
+  await page.getByRole(`button`, { name: `More for Jonah K.` }).click()
+  await page.getByRole(`menuitem`, { name: `Rename` }).click()
+
+  await expect
+    .element(page.getByLabelText(`New name for Jonah K.`))
+    .toBeVisible()
+  await expect
+    .element(page.getByLabelText(`New name for Maya R.`))
+    .toBeVisible()
 })
 
 test(`approving all asks first, naming the pending players`, async () => {
@@ -334,7 +432,7 @@ test(`a refused decision keeps the selection and says why`, async () => {
   await selectionBar.getByRole(`button`, { name: `Reject 1` }).click()
 
   await expect
-    .element(selectionBar.getByRole(`alert`))
+    .element(page.getByRole(`alert`))
     .toHaveTextContent(`This bracket is gone or not submitted`)
   await expect.element(selectionBar.getByText(`1 selected`)).toBeVisible()
 })
@@ -343,11 +441,11 @@ test(`a refused decision's error goes once the selection changes`, async () => {
   await renderPlayers([MAYA, JONAH], { refuseStatus: true })
   await selectPlayer(`Maya R.`)
   await selectionBar.getByRole(`button`, { name: `Reject 1` }).click()
-  await expect.element(selectionBar.getByRole(`alert`)).toBeVisible()
+  await expect.element(page.getByRole(`alert`)).toBeVisible()
 
   await selectPlayer(`Jonah K.`)
 
-  await expect.element(selectionBar.getByRole(`alert`)).not.toBeInTheDocument()
+  await expect.element(page.getByRole(`alert`)).not.toBeInTheDocument()
 })
 
 test(`rows' own decisions are off while any row is selected`, async () => {
@@ -523,7 +621,7 @@ test(`a refused delete leaves the row and says why`, async () => {
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(`Nothing was deleted`)
+    .toHaveTextContent(`Maya R.: Nothing was deleted`)
   await expect.element(section(/^Pending/u).getByText(`Maya R.`)).toBeVisible()
 })
 

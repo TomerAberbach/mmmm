@@ -57,27 +57,6 @@ export const setSubmissionStatus = async (
   return count
 }
 
-/**
- * Approves those of the players whose submissions are still pending, so a
- * submission that arrives after the educator read the list waits for them.
- * Returns how many it approved
- */
-export const approvePendingSubmissions = async (
-  educatorId: string,
-  contestId: string,
-  playerIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.submission.updateMany({
-    where: {
-      status: `PENDING`,
-      playerId: { in: playerIds },
-      player: educatorPlayers(educatorId, contestId),
-    },
-    data: { status: `APPROVED` },
-  })
-  return count
-}
-
 /** Returns whether the player is in a contest the educator runs */
 export const renamePlayer = async (
   educatorId: string,

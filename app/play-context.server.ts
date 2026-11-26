@@ -6,11 +6,8 @@ import type {
 } from 'react-router'
 import { brokenLink } from './broken-link.ts'
 import { readContestById, readContestByLink } from './contests.server.ts'
-import type { ContestByLink } from './contests.server.ts'
+import type { PlayContest } from './contests.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
-
-/** A contest outside the trash, as its players see it */
-export type PlayContest = Omit<ContestByLink, `isDeleted`>
 
 const contestContext = createContext<PlayContest>()
 
@@ -21,20 +18,19 @@ const contestContext = createContext<PlayContest>()
  */
 const loadContest =
   (
-    read: (params: Params) => Promise<ContestByLink | null>,
+    read: (params: Params) => ReturnType<typeof readContestById>,
   ): MiddlewareFunction<Response> =>
   async ({ params, context }, next) => {
-    const contest = await read(params)
-    if (!contest) {
+    const found = await read(params)
+    if (!found) {
       // React Router renders a thrown response with the error page
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw brokenLink()
     }
-    const { isDeleted, ...playContest } = contest
-    if (isDeleted) {
+    if (found.isDeleted) {
       return redirect(href(`/contest-removed`))
     }
-    context.set(contestContext, playContest)
+    context.set(contestContext, found.contest)
     return next()
   }
 

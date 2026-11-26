@@ -8,7 +8,6 @@ import {
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import {
-  approvePendingSubmissions,
   readContestPlayers,
   renamePlayer,
   replacePersonalLink,
@@ -115,43 +114,6 @@ test(`a player is changed only through their own contest`, async () => {
     otherContestId,
     [id],
     `REJECTED`,
-  )
-
-  expect(count).toBe(0)
-})
-
-test(`approving all pending approves only the listed pending submissions`, async () => {
-  const { contestId } = await createContestInNewYear()
-  const listed = await addPlayer(contestId, `Maya R.`)
-  await addSubmission(listed.id)
-  const rejected = await addPlayer(contestId, `Jonah K.`)
-  await addSubmission(rejected.id, `REJECTED`)
-  const arrivedLater = await addPlayer(contestId, `Priya S.`)
-  await addSubmission(arrivedLater.id)
-
-  const count = await approvePendingSubmissions(
-    await readEducatorId(contestId),
-    contestId,
-    [listed.id, rejected.id],
-  )
-
-  expect(count).toBe(1)
-  await expect(readStatuses(contestId)).resolves.toStrictEqual({
-    'Maya R.': `APPROVED`,
-    'Jonah K.': `REJECTED`,
-    'Priya S.': `PENDING`,
-  })
-})
-
-test(`another educator can't approve a contest's pending submissions`, async () => {
-  const { contestId } = await createContestInNewYear()
-  const { id } = await addPlayer(contestId)
-  await addSubmission(id)
-
-  const count = await approvePendingSubmissions(
-    await createEducator(),
-    contestId,
-    [id],
   )
 
   expect(count).toBe(0)

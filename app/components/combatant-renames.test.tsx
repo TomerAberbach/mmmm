@@ -44,7 +44,7 @@ const renderRenames = async (error?: string) => {
   await render(<Stub initialEntries={[`/admin/bracket`]} />)
 }
 
-test(`renaming opens one combatant at a time`, async () => {
+test(`renaming one combatant keeps another's name open`, async () => {
   await renderRenames()
 
   await page.getByRole(`button`, { name: `Rename Thorold’s Deer` }).click()
@@ -52,7 +52,7 @@ test(`renaming opens one combatant at a time`, async () => {
 
   await expect
     .element(page.getByLabelText(`New name for Thorold’s Deer`))
-    .not.toBeInTheDocument()
+    .toBeVisible()
   await expect
     .element(page.getByLabelText(`New name for Sun Bear`))
     .toHaveFocus()

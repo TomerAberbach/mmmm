@@ -7,11 +7,9 @@ import { PAGE_LABEL_CLASS_NAME } from './page-header.tsx'
 import { PageTitle } from './page-title.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
-import type { ContestByLink } from '~/contests.server.ts'
+import type { PlayContest } from '~/contests.server.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import { displayNameSchema } from '~/player-forms.ts'
-
-type PlayContest = Omit<ContestByLink, `id` | `isDeleted`>
 
 /**
  * What the contest link shows: the name question, the prompt for a player

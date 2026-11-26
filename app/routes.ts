@@ -46,10 +46,6 @@ export default [
       `routes/contests.$contestId.players.delete.ts`,
     ),
     route(
-      `:contestId/approve-pending`,
-      `routes/contests.$contestId.approve-pending.ts`,
-    ),
-    route(
       `:contestId/players/status`,
       `routes/contests.$contestId.players.status.ts`,
     ),

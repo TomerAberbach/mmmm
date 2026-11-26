@@ -50,11 +50,13 @@ test(`a contest's link shows the contest and its educator`, async () => {
   const contest = await readContestByLink(readLinkSecret(link))
 
   expect(contest).toStrictEqual({
-    id: contestId,
-    name: `Period 6 Biology`,
+    contest: {
+      id: contestId,
+      name: `Period 6 Biology`,
+      year,
+      educatorName: `Ms. Rivera`,
+    },
     isDeleted: false,
-    year,
-    educatorName: `Ms. Rivera`,
   })
 })
 
@@ -83,7 +85,7 @@ test(`renaming a contest changes the name its link shows`, async () => {
   expect(renamed).toBe(true)
   const { link } = (await readEducatorContest(educatorId, contestId))!
   await expect(readContestByLink(readLinkSecret(link))).resolves.toMatchObject({
-    name: `Period 3 Biology`,
+    contest: { name: `Period 3 Biology` },
   })
 })
 
@@ -116,7 +118,7 @@ test(`a new contest link replaces the old one`, async () => {
   await expect(readContestByLink(readLinkSecret(oldLink))).resolves.toBeNull()
   await expect(
     readContestByLink(readLinkSecret(newLink)),
-  ).resolves.toMatchObject({ id: contestId })
+  ).resolves.toMatchObject({ contest: { id: contestId } })
 })
 
 test(`another educator can't replace a contest's link`, async () => {
@@ -129,6 +131,6 @@ test(`another educator can't replace a contest's link`, async () => {
 
   expect(replaced).toBe(false)
   await expect(readContestByLink(readLinkSecret(link))).resolves.toMatchObject({
-    id: contestId,
+    contest: { id: contestId },
   })
 })
