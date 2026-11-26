@@ -23,6 +23,8 @@ import type { Combatant, SeededBracket, Side } from './seeded-bracket.ts'
 export type BattleView = BattleRef & {
   sides: Side[]
   winner?: Combatant
+  /** Whether the winner is a pick, instead of a result */
+  isPick?: true
   marking?: Marking
 }
 
@@ -77,6 +79,27 @@ export const buildBracketView = (
   }
 }
 
+/** A bracket whose winners are picks */
+export const buildPicksView = (
+  year: number,
+  bracket: SeededBracket,
+  picks: Picks,
+): BracketView => {
+  const view = buildBracketView(year, bracket, picks)
+  return {
+    ...view,
+    battles: mapBattles(view, battle => ({ ...battle, isPick: true })),
+  }
+}
+
+const mapBattles = <Battle>(
+  { battles }: BracketView,
+  toBattle: (battle: BattleView) => Battle,
+): Record<Round, Battle[]> =>
+  Object.fromEntries(
+    ROUNDS.map(round => [round, battles[round].map(toBattle)]),
+  ) as Record<Round, Battle[]>
+
 /** A bracket whose winners are picks, each marked against the results */
 export type MarkedBracketView = Omit<BracketView, `battles`> & {
   battles: Record<Round, MarkedBattleView[]>
@@ -88,7 +111,7 @@ export const buildMarkedBracketView = (
   picks: Picks,
   results: Results,
 ): MarkedBracketView => {
-  const view = buildBracketView(year, bracket, picks)
+  const view = buildPicksView(year, bracket, picks)
   const markBattle = (battle: BattleView): MarkedBattleView => {
     const { winner } = battle
     const result = results[toBattleKey(battle)]
@@ -104,9 +127,7 @@ export const buildMarkedBracketView = (
   }
   return {
     ...view,
-    battles: Object.fromEntries(
-      ROUNDS.map(round => [round, view.battles[round].map(markBattle)]),
-    ) as Record<Round, MarkedBattleView[]>,
+    battles: mapBattles(view, markBattle),
   }
 }
 
@@ -130,7 +151,12 @@ export const describeBattle = (battle: BattleView): string => {
   return `${readBattleName(battle)}: ${sideNames}${describeResult(battle)}`
 }
 
-const describeResult = ({ sides, winner, marking }: BattleView): string => {
+const describeResult = ({
+  sides,
+  winner,
+  isPick,
+  marking,
+}: BattleView): string => {
   if (!winner) {
     return marking?.actualWinner
       ? `. Not picked, ${marking.actualWinner.name} won`
@@ -138,6 +164,9 @@ const describeResult = ({ sides, winner, marking }: BattleView): string => {
   }
   if (marking) {
     return `. Picked ${winner.name}, ${describeMarking(marking)}`
+  }
+  if (isPick) {
+    return `. Picked ${winner.name}`
   }
   return sides.some(side => isMerged(side, winner))
     ? `, both advanced as ${winner.name}`

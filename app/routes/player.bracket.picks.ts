@@ -2,15 +2,13 @@ import { href, redirect } from 'react-router'
 import type { Route } from './+types/player.bracket.picks.ts'
 import { picksRequestSchema } from '~/picks-request.ts'
 import type { PicksRequest } from '~/picks-request.ts'
-import { readRequiredPlayer, requirePlayer } from '~/play-context.server.ts'
+import { readRequiredPlayer } from '~/play-context.server.ts'
 import {
   discardPlayerDraft,
   savePlayerDraft,
   submitPlayerPicks,
 } from '~/player-picks.server.ts'
 import { LOCKED_STATUS } from '~/submissions-locked.ts'
-
-export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
   redirect(href(`/player/:contestId/bracket`, params))

@@ -24,7 +24,7 @@ import {
   readDraftAndSubmission,
   submitPlayerPicks,
 } from './player-picks.server.ts'
-import { saveResult } from './results.server.ts'
+import { reopenSubmissions, saveResult } from './results.server.ts'
 import { listMerges } from './seeded-bracket.ts'
 
 /** Swaps the first two seeds of the top left division */
@@ -39,6 +39,7 @@ const makeMove = async (
     year,
     arrangement: readArrangement(bracket),
     isLocked,
+    results: isLocked ? Object.keys(await readResultRows(year)) : [],
     swaps: [[first!.id, second!.id]],
   }
 }
@@ -153,13 +154,14 @@ test(`the preview counts what a move clears`, async () => {
     battles: 9,
     submissions: 1,
     drafts: 0,
-    results: 1,
+    results: [`ROUND_1:0`],
   })
 })
 
 test.each<[string, Partial<MoveRequest>]>([
   [`made of another arrangement`, { arrangement: `` }],
   [`made before the lock changed`, { isLocked: true }],
+  [`that clears other results`, { results: [`ROUND_1:0`] }],
   [`of another year`, { year: 1999 }],
   [`of a missing combatant`, { swaps: [[`someone`, `else`]] }],
 ])(`a move %s is refused`, async (_, change) => {
@@ -168,4 +170,18 @@ test.each<[string, Partial<MoveRequest>]>([
   const moved = await moveCombatants({ ...(await makeMove(year)), ...change })
 
   expect(moved).toStrictEqual({ refusal: `STALE` })
+})
+
+test(`reopening returns a submission that lost picks to a draft`, async () => {
+  const { contestId, year } = await createContestInNewYear()
+  const id = await addSubmitted(contestId, year)
+  await crownChampion(year)
+  await moveCombatants(await makeMove(year, true))
+
+  const reopened = await reopenSubmissions(year)
+
+  expect(reopened).toBe(`REOPENED`)
+  const { submission, draft } = await readDraftAndSubmission(id)
+  expect(submission).toBeNull()
+  expect(Object.keys(draft)).toHaveLength(55)
 })

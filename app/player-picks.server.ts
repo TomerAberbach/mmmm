@@ -196,16 +196,31 @@ export const clearPicks = async (
     data: { picksClearedAt: new Date() },
   })
   if (!isLocked) {
-    await tx.submission.deleteMany({
-      where: {
-        player: { contest, picks: { some: { stage: `SUBMISSION`, battleId } } },
-      },
-    })
-    await tx.pick.deleteMany({
-      where: { stage: `SUBMISSION`, player: { contest, submission: null } },
-    })
+    await deleteClearedSubmissions(tx, year)
   }
   await tx.pick.deleteMany({ where: { battleId } })
+}
+
+/** Returns each of the year's submissions that lost picks to a draft */
+export const returnClearedSubmissions = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+): Promise<void> => {
+  await lockPlayers(tx)
+  await deleteClearedSubmissions(tx, year)
+}
+
+const deleteClearedSubmissions = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+): Promise<void> => {
+  const contest = { year }
+  await tx.submission.deleteMany({
+    where: { player: { contest, picksClearedAt: { not: null } } },
+  })
+  await tx.pick.deleteMany({
+    where: { stage: `SUBMISSION`, player: { contest, submission: null } },
+  })
 }
 
 /**

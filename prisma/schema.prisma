@@ -164,8 +164,8 @@ model SeedSlot {
   seed        Int
   combatantId String?    @unique
   division    Division   @relation(fields: [divisionId], references: [id], onDelete: Cascade)
-  // A seed slot never loses its combatant, so deleting one fails while a slot
-  // holds it. Deleting the bracket deletes both
+  // A seed slot has its combatant except while a move puts another in it, so
+  // deleting one fails while a slot holds it. Deleting the bracket deletes both
   combatant   Combatant? @relation(fields: [combatantId], references: [id], onDelete: NoAction)
   wildCard    WildCard?
 
@@ -326,8 +326,8 @@ enum SubmissionStatus {
   REJECTED
 }
 
-// A player's submitted picks, which have all 64 battles, and their educator's
-// approval
+// A player's submitted picks, and their educator's approval. They have all 64
+// battles, until a move of combatants after the lock clears some
 model Submission {
   playerId       String           @id
   status         SubmissionStatus @default(PENDING)

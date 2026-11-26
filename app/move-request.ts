@@ -11,6 +11,8 @@ export const moveRequestSchema = z.object({
   year: z.int(),
   arrangement: z.string(),
   isLocked: z.boolean(),
+  /** The keys of the battles whose results the admin saw the move clear */
+  results: z.array(idSchema),
   swaps: z.array(z.tuple([idSchema, idSchema])).min(1),
 })
 

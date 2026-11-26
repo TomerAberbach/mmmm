@@ -184,3 +184,18 @@ test(`a bracket never submitted has no score or marks`, async () => {
     .not.toBeInTheDocument()
   await expect.element(page.getByText(/, right$/u)).not.toBeInTheDocument()
 })
+
+test(`a draft never submitted describes its picks as picks`, async () => {
+  await page.viewport(390, 844)
+  await renderLocked(null)
+
+  await page.getByRole(`tab`, { name: `Round 1` }).click()
+
+  await expect
+    .element(
+      page
+        .getByRole(`tabpanel`)
+        .getByText(/^Round 1, battle 1: .* Picked [^,]+$/u),
+    )
+    .toBeInTheDocument()
+})

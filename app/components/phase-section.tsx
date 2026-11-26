@@ -109,7 +109,7 @@ const PublishButton = ({ year }: { year: number }) => (
         bracket on the home page.
       </p>
       <p>
-        After publishing, only combatant names can change. You can unpublish
+        After publishing, you can rename and move combatants. You can unpublish
         until an educator creates a contest.
       </p>
     </div>
@@ -127,7 +127,8 @@ const ReopenButton = ({ year }: { year: number }) => (
   >
     <p>
       Players can start, edit, and submit brackets again, and educators can
-      create contests. The next result locks submissions again.
+      create contests. A submission that lost picks when combatants moved
+      returns to a draft. The next result locks submissions again.
     </p>
   </ConfirmDialog>
 )

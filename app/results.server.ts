@@ -8,6 +8,7 @@ import {
 import type { Prisma } from './generated/prisma/client.ts'
 import { readArrangement } from './moves.ts'
 import { isContender } from './picks.ts'
+import { returnClearedSubmissions } from './player-picks.server.ts'
 import type { ResultRequest } from './result-request.ts'
 import {
   clearResult,
@@ -174,7 +175,7 @@ const buildMerge = (
     : null
 }
 
-const hasSameKeys = (keys: string[], otherKeys: string[]): boolean =>
+export const hasSameKeys = (keys: string[], otherKeys: string[]): boolean =>
   keys.length === otherKeys.length && keys.every(key => otherKeys.includes(key))
 
 /** Clears the results, by battle key, of the year's bracket, if any */
@@ -197,7 +198,9 @@ export const clearResults = async (
 
 /**
  * Lets players submit and educators create contests again, once every result is
- * cleared. `UNCHANGED` means submissions aren't locked
+ * cleared. A submission that lost picks to a move since the lock returns to a
+ * draft, as it would have before the lock. `UNCHANGED` means submissions aren't
+ * locked
  */
 export const reopenSubmissions = (
   year: number,
@@ -209,6 +212,7 @@ export const reopenSubmissions = (
     if (await tx.result.findFirst({ where: { battle: { year } } })) {
       return `HAS_RESULTS`
     }
+    await returnClearedSubmissions(tx, year)
     await tx.bracket.update({ where: { year }, data: { lockedAt: null } })
     return `REOPENED`
   })

@@ -141,7 +141,7 @@ app
 - Only an open year, current and not locked, takes new contests, players, and
   picks. Run a transaction that depends on it with `withCurrentYear` from
   `brackets.server.ts`, and check it with `isOpen`. Such writes share one lock,
-  which publishing, unpublishing, and results take alone with
+  which publishing, results, renames, and moves take alone with
   `withCurrentYearAlone`, so none interleaves with them.
   `saveUnpublishedBracket` shares it and takes a lock on its year, so saves of
   different years and pick writes run alongside it
@@ -214,10 +214,10 @@ app
   own pages under `routes/player.tsx`, whose addresses hold the contest's ID. A
   player who keeps their personal link after the contest link is replaced must
   never see the new one, so give a player a contest link only from
-  `readPersonalLink`'s `startLinkSecret`. Require the remembered player with
-  `requirePlayer` and read them with `readRequiredPlayer` from
-  `play-context.server.ts`. It restarts the player's 15 minutes on each
-  response, so leave it off a page that asks who the player is, such as the
+  `readPersonalLink`'s `startLinkSecret`. Nest a page for the remembered player
+  under `routes/player.remembered.tsx`, and read them with `readRequiredPlayer`
+  from `play-context.server.ts`. The layout restarts the player's 15 minutes on
+  each response, so leave it off a page that asks who the player is, such as the
   contest link's "Continue as" prompt
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.

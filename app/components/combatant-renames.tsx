@@ -23,9 +23,11 @@ type DivisionCombatants = {
 
 /** Renames a published bracket's combatants */
 export const CombatantRenames = ({
+  year,
   divisions,
   merges,
 }: {
+  year: number
   divisions: DivisionCombatants[]
   merges: Combatant[]
 }) => (
@@ -41,6 +43,7 @@ export const CombatantRenames = ({
           key={position}
           legend={`${POSITION_LABELS[position]}: ${name}`}
           combatants={combatants}
+          year={year}
         />
       ))}
       {merges.length > 0 ? (
@@ -50,6 +53,7 @@ export const CombatantRenames = ({
             ...merge,
             isWildCardEntrant: false,
           }))}
+          year={year}
         />
       ) : null}
     </div>
@@ -58,9 +62,11 @@ export const CombatantRenames = ({
 
 const RenameGroup = ({
   legend,
+  year,
   combatants,
 }: {
   legend: string
+  year: number
   combatants: CombatantRow[]
 }) => (
   <fieldset className='flex min-w-0 flex-col border-2 border-ink px-5 pt-3 pb-4'>
@@ -69,7 +75,7 @@ const RenameGroup = ({
     </legend>
     <ol>
       {combatants.map(combatant => (
-        <RenameRow key={combatant.id} combatant={combatant} />
+        <RenameRow key={combatant.id} year={year} combatant={combatant} />
       ))}
     </ol>
   </fieldset>
@@ -78,7 +84,13 @@ const RenameGroup = ({
 /**
  * The row's editor closes once its save succeeds, and Rename opens it afresh
  */
-const RenameRow = ({ combatant }: { combatant: CombatantRow }) => {
+const RenameRow = ({
+  year,
+  combatant,
+}: {
+  year: number
+  combatant: CombatantRow
+}) => {
   const { fetcher, isOpen, open, close } = useInlineEdit()
 
   const seedCell = (
@@ -111,16 +123,23 @@ const RenameRow = ({ combatant }: { combatant: CombatantRow }) => {
   return (
     <li className='grid grid-cols-[2rem_minmax(0,1fr)] gap-2 border-b border-muted-light py-2 last:border-b-0'>
       {seedCell}
-      <RenameForm combatant={combatant} fetcher={fetcher} onCancel={close} />
+      <RenameForm
+        year={year}
+        combatant={combatant}
+        fetcher={fetcher}
+        onCancel={close}
+      />
     </li>
   )
 }
 
 const RenameForm = ({
+  year,
   combatant: { id, name },
   fetcher,
   onCancel,
 }: {
+  year: number
   combatant: CombatantRow
   fetcher: FetcherWithComponents<SavedResult>
   onCancel: () => void
@@ -128,7 +147,7 @@ const RenameForm = ({
   const { form, fields } = useValidatedForm(
     renameSchema,
     fetcher.data?.result,
-    { name },
+    { year, name },
   )
   const cancelOnEscape = (event: KeyboardEvent) => {
     if (event.key === `Escape`) {
@@ -143,6 +162,7 @@ const RenameForm = ({
       onKeyDown={cancelOnEscape}
       className='flex flex-col gap-2'
     >
+      <input type='hidden' name={fields.year.name} value={year} />
       <input type='hidden' name={fields.combatantId.name} value={id} />
       <TextField
         {...fieldProps(fields.name)}

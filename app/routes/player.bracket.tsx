@@ -5,15 +5,9 @@ import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
 import { readArrangement } from '~/moves.ts'
-import {
-  readPlayContest,
-  readRequiredPlayer,
-  requirePlayer,
-} from '~/play-context.server.ts'
+import { readPlayContest, readRequiredPlayer } from '~/play-context.server.ts'
 import { readPlayerBracket } from '~/player-picks.server.ts'
 import { toPersonalLink } from '~/players.server.ts'
-
-export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
 /** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }

@@ -2,7 +2,7 @@ import { BATTLE_COUNTS, ROUNDS, toBattleKey } from './bracket.ts'
 import type { BattleRef, Round } from './bracket.ts'
 import { listContenders } from './picks.ts'
 import type { Results } from './results.ts'
-import { listMembers } from './seeded-bracket.ts'
+import { listOriginalIds } from './seeded-bracket.ts'
 import type { SeededBracket } from './seeded-bracket.ts'
 
 /** The points for a right pick of one of the round's battles */
@@ -32,7 +32,7 @@ export const listRightWinners = (
   battle: BattleRef,
 ): string[] => {
   const winner = results[toBattleKey(battle)]
-  return winner === undefined ? [] : listMembers(bracket, winner)
+  return winner === undefined ? [] : listOriginalIds(bracket, winner)
 }
 
 /**
@@ -54,7 +54,7 @@ export const markPick = (
   }
   return rightWinners.length === 0 &&
     listContenders(bracket, battle, results).some(({ id }) =>
-      listMembers(bracket, id).includes(winner),
+      listOriginalIds(bracket, id).includes(winner),
     )
     ? `UNDECIDED`
     : `WRONG`
