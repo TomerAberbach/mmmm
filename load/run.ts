@@ -248,7 +248,7 @@ const saveNextResult = async (): Promise<void> => {
     battle,
     winnerId: listContenders(toSeededBracket(stored), battle, results)[0]!.id,
     previousWinnerId: null,
-    mergeName: null,
+    merge: null,
     cleared: [],
     locks: !current.isLocked,
     arrangement: readArrangement(stored),

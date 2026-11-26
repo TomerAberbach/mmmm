@@ -144,7 +144,7 @@ test(`a pick of either side of a merge scores wherever the merge wins`, async ()
   const merge = await makeMerge(year)
   await saveResult(merge)
 
-  await saveResult({ ...merge, battle: ROUND_2_FIRST, mergeName: null })
+  await saveResult({ ...merge, battle: ROUND_2_FIRST, merge: null })
 
   const scores = await Promise.all(playerIds.map(readScore))
   expect(scores).toStrictEqual([3, 3])

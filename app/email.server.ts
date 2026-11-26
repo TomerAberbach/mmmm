@@ -119,11 +119,31 @@ const sendWithResend = async (email: RenderedEmail): Promise<void> => {
     signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   })
   if (!response.ok) {
-    throw new Error(
-      `Resend rejected the email with ${response.status}: ${await readErrorName(response)}`,
+    throw new EmailRejectionError(
+      response.status,
+      await readErrorName(response),
     )
   }
 }
+
+export class EmailRejectionError extends Error {
+  /** Whether it's about this email, such as its address, so others can pass */
+  public readonly isAboutEmail: boolean
+
+  public constructor(
+    status: number,
+    errorName: string,
+    options?: ErrorOptions,
+  ) {
+    super(`Resend rejected the email with ${status}: ${errorName}`, options)
+    this.name = `EmailRejectionError`
+    this.isAboutEmail =
+      status === UNPROCESSABLE && errorName === `validation_error`
+  }
+}
+
+/** Resend's answer to an address it won't send to */
+const UNPROCESSABLE = 422
 
 /**
  * Resend's error name, such as validation_error. Its message can quote the

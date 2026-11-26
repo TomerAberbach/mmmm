@@ -95,6 +95,16 @@ export const mayChangeSecondFactors = (
   assurance === `SECOND_FACTOR` ||
   (assurance === `SETUP_LINK` && !hasSecondFactor(secondFactors))
 
+/**
+ * Deleting an account deletes its second factors, so it needs one the same as
+ * removing them does. Otherwise whoever reads an admin's email could reset the
+ * password, delete the account, and sign up again
+ */
+export const mayDeleteAccount = (
+  assurance: SessionAssurance,
+  secondFactors: SecondFactors,
+): boolean => assurance === `SECOND_FACTOR` || !hasSecondFactor(secondFactors)
+
 export type SecondFactors = {
   /**
    * Each passkey's provider, such as iCloud Keychain, when its authenticator

@@ -13,7 +13,11 @@ test(`the new educator is named before the contest is theirs`, async () => {
       path: `/`,
       Component: () => (
         <HandOverDialog
-          contest={{ id: `period-2`, name: `Period 2 Biology` }}
+          contest={{
+            id: `period-2`,
+            name: `Period 2 Biology`,
+            isHidden: false,
+          }}
         />
       ),
     },

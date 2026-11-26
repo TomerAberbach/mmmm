@@ -120,3 +120,35 @@ test(`an educator who confirmed with a reset link joins their organization at si
     name: null,
   })
 })
+
+test(`wrong current passwords use up an educator's password changes`, async () => {
+  const email = `educator-${randomUUID()}@example.com`
+  const { user } = await auth.api.signUpEmail({
+    body: { name: `Ms. Frizzle`, email, password: `correct-horse-battery` },
+    headers: new Headers({ [CLIENT_IP_HEADER]: `203.0.113.99` }),
+  })
+  await prisma.educator.update({
+    where: { id: user.id },
+    data: { emailVerified: true },
+  })
+  const headers = new Headers({ [CLIENT_IP_HEADER]: `203.0.113.99` })
+  const signIn = await auth.api.signInEmail({
+    body: { email, password: `correct-horse-battery` },
+    headers,
+    returnHeaders: true,
+  })
+  headers.set(`cookie`, signIn.headers.getSetCookie()[0]!.split(`;`)[0]!)
+  const change = () =>
+    auth.api.changePassword({
+      body: {
+        currentPassword: `wrong-password-1`,
+        newPassword: `a-new-password`,
+      },
+      headers,
+    })
+  for (let i = 0; i < 10; i++) {
+    await expect(change()).rejects.toMatchObject({ statusCode: 400 })
+  }
+
+  await expect(change()).rejects.toMatchObject({ statusCode: 429 })
+})

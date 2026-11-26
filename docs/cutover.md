@@ -74,9 +74,10 @@ These steps leave mmmm-old as it is, so do them days ahead.
    until mmmm-old is deleted, since it holds names and password hashes
 3. Import it into production with the steps in
    [operations.md](operations.md#import-mmmm-olds-data), the dry run first. Set
-   `DATABASE_URL` to production's direct connection string. Compare the report's
-   counts with mmmm-old's tables, and finish checking the import here. Then
-   delete only the restored copy
+   `DATABASE_URL` to production's direct connection string in a new terminal,
+   and close it after, so no later command reaches production. Compare the
+   report's counts with mmmm-old's tables, and finish checking the import here.
+   Then delete only the restored copy
 4. If step 10 of "Create production" was refused, run
    `fly certs remove mmmm.onl --app mmmm`, then that step. Wait until
    `fly certs show` reports the certificate as issued
@@ -84,7 +85,10 @@ These steps leave mmmm-old as it is, so do them days ahead.
    turn on the `www` redirect. A proxied record would hide players' IP addresses
    from the rate limits. Once DNS moves, an imported educator can use Forgot
    password, and then the import can't rerun
-6. Check `https://mmmm.onl/healthz`, sign up, and open a past year's leaderboard
+6. Check `https://mmmm.onl/healthz`. Use Forgot password on your own imported
+   account, and open a past contest's leaderboard. The global leaderboard leaves
+   out each imported educator's contests until they set a password, so it starts
+   out empty. From here, the import can't rerun
 7. Send the launch emails as
    [operations.md](operations.md#send-the-launch-emails) says
 

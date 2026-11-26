@@ -221,22 +221,25 @@ the same after that. Send them once the import is checked, since the import
 can't rerun after an educator uses one.
 
 1. Check Resend's daily limit for the account's plan. The free plan sends 100
-   emails a day.
-2. In your own terminal, set `DATABASE_URL`, `APP_ENV`, `BETTER_AUTH_URL`,
-   `BETTER_AUTH_SECRET`, `EMAIL_FROM`, `RESEND_API_KEY`, and `SUPPORT_EMAIL` to
-   the app's values, and `EMAIL_TRANSPORT` to `resend`. The links and the footer
-   use them.
-3. Count who is waiting, then send up to that limit. Rerun it each day until no
-   educators are left:
+   emails a day, and the app's own emails, such as Forgot password, share it.
+   Upgrade the plan first, or send at most 50 launch emails a day.
+2. Open a new terminal, and close it after each run, so no later command reaches
+   production's database. In it, set `DATABASE_URL`, `APP_ENV`,
+   `BETTER_AUTH_URL`, `EMAIL_FROM`, and `SUPPORT_EMAIL` to the app's values,
+   `EMAIL_TRANSPORT` to `resend`, and `RESEND_API_KEY` to a new key made for
+   this run, since no one can read the app's back. Set `BETTER_AUTH_SECRET` to
+   any random value, which the links don't use. Leave the app's secret as it is.
+3. Count who is waiting, then send within that limit. Rerun it each day until
+   only rejected addresses are left:
 
    ```sh
    pnpm launch:emails --dry-run
-   pnpm launch:emails --limit 100
+   pnpm launch:emails --limit 50
    ```
 
 A run goes on past an address that Resend rejects, reports its educator's ID,
-and tries it again on the next run. It stops after 3 failures in a row. Ctrl-C
-stops it after the current educator, and a second one stops at once, which can
-leave an educator marked as emailed with no email. Forgot password still works
-for them. An educator gets two emails only when Resend accepts one but doesn't
-answer in time.
+and tries it again on the next run. It stops after 3 other failures in a row.
+Ctrl-C stops it after the current educator, and a second one stops at once,
+which can leave an educator marked as emailed with no email. Forgot password
+still works for them. An educator gets two emails only when Resend accepts one
+but doesn't answer in time.

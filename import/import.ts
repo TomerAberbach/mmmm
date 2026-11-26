@@ -15,6 +15,7 @@ import { UNNAMED_PLAYER } from '../app/leaderboard-row.ts'
 import { normalizeEmail } from '../app/limits.server.ts'
 import { lockPlayers } from '../app/lock-players.server.ts'
 import { readNameRemovalYear } from '../app/name-removal.server.ts'
+import { ensureOrganization } from '../app/organizations.server.ts'
 import { storeScores } from '../app/scores.server.ts'
 import { createSecret, hashSecret } from '../app/secrets.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
@@ -241,6 +242,8 @@ const importEducators = async (
     await tx.educator.create({
       data: { id, name: IMPORTED_EDUCATOR_NAME, email, createdAt },
     })
+    // So the admin can delete a school's data before its educators sign in
+    await ensureOrganization(email, tx)
     educatorIds.set(id, id)
     importedIds.add(id)
     report.imported.educators++

@@ -283,7 +283,7 @@ test(`changing a merge to one side's win removes the merge`, async () => {
   const saved = await saveResult({
     ...merge,
     winnerId,
-    mergeName: null,
+    merge: null,
     previousWinnerId: merge.winnerId,
   })
 
@@ -303,11 +303,30 @@ test(`a merge whose member merge is cleared goes with it`, async () => {
   const saved = await saveResult({
     ...first,
     winnerId: null,
-    mergeName: null,
+    merge: null,
     previousWinnerId: first.winnerId,
     cleared: [`ROUND_2:0`],
   })
 
   expect(saved).toStrictEqual({ saved: true })
   expect(listMerges(await readSeededBracket(year))).toStrictEqual([])
+})
+
+test(`a merge of sides that changed since the admin saw them is refused`, async () => {
+  const year = await addYear({ published: true })
+  const first = await makeFirstResult(year)
+  await saveResult(first)
+  await saveResult(await makeFirstResult(year, { round: `ROUND_1`, index: 1 }))
+  const merge = await makeMerge(year, `Two Together`, ROUND_2_FIRST)
+  const bracket = await readSeededBracket(year)
+  const [, other] = listContenders(bracket, first.battle)
+  await saveResult({
+    ...first,
+    winnerId: other!.id,
+    previousWinnerId: first.winnerId,
+  })
+
+  const saved = await saveResult(merge)
+
+  expect(saved).toStrictEqual({ refusal: `STALE` })
 })

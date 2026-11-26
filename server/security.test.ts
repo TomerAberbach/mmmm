@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import { serve } from '../test/http.ts'
 import {
+  forbidStoring,
   rejectCrossOriginRequests,
   setContentSecurityPolicy,
   setSecurityHeaders,
@@ -64,4 +65,12 @@ test(`an app served over HTTP leaves browsers on HTTP`, async () => {
   expect(response.headers.get(`content-security-policy`)).not.toContain(
     `upgrade-insecure-requests`,
   )
+})
+
+test(`browsers store no page`, async () => {
+  const url = await serve(forbidStoring)
+
+  const response = await fetch(url)
+
+  expect(response.headers.get(`cache-control`)).toBe(`no-store`)
 })

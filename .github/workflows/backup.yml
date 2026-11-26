@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     # pg_dump must be at least the server's version, 18
-    container: postgres:18
+    container: postgres:18@sha256:64c8b0d31e4ab6ea665e8426ea406a94bf52de3c05b3a4a8bf713704eefa9328
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -32,8 +32,13 @@ jobs:
       - name: Dump, encrypt, and upload
         shell: bash
         env:
-          STAGING_DATABASE_URL: ${{ secrets.STAGING_BACKUP_DATABASE_URL }}
-          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_BACKUP_DATABASE_URL }}
+          # Each run holds only its own database's URL
+          STAGING_DATABASE_URL:
+            ${{ matrix.name == 'staging' && secrets.STAGING_BACKUP_DATABASE_URL
+            || '' }}
+          PRODUCTION_DATABASE_URL:
+            ${{ matrix.name == 'production' &&
+            secrets.PRODUCTION_BACKUP_DATABASE_URL || '' }}
           NAME: ${{ matrix.name }}
           AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
           BUCKET: ${{ vars.BACKUP_BUCKET }}

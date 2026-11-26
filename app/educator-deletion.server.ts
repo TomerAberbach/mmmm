@@ -2,13 +2,15 @@ import { withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
+import { ensureOrganization } from './organizations.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { endShares } from './shares.server.ts'
 
 /**
  * Deletes the educator's account. Their contests become orphaned, which keeps
- * the organization they count toward. Returns whether the address is the
- * account's
+ * the organization they count toward. An unconfirmed educator's contests are
+ * hidden, since no one confirmed them, and keep their address's organization, so
+ * `deleteOrganization` finds them. Returns whether the address is the account's
  */
 export const deleteEducator = async (
   educatorId: string,
@@ -50,7 +52,7 @@ const orphanAndDelete = (
     `
     const educator = await tx.educator.findUnique({
       where: { id: educatorId },
-      select: { email: true, organizationDomain: true },
+      select: { email: true, emailVerified: true, organizationDomain: true },
     })
     if (educator?.email !== normalizeEmail(address)) {
       return false
@@ -60,7 +62,10 @@ const orphanAndDelete = (
       where: { educatorId },
       data: {
         educatorId: null,
-        orphanedFromDomain: educator.organizationDomain,
+        ...(!educator.emailVerified && { isHidden: true }),
+        orphanedFromDomain: educator.emailVerified
+          ? educator.organizationDomain
+          : await ensureOrganization(educator.email, tx),
       },
     })
     await tx.educator.delete({ where: { id: educatorId } })

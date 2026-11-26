@@ -17,7 +17,11 @@ const openDialog = async (contestCount: number) => {
         <DeleteAccountDialog
           trigger={<Button>Delete account</Button>}
           title='Delete your account?'
-          account={{ email: `ada@example.com`, contestCount }}
+          account={{
+            email: `ada@example.com`,
+            contestCount,
+            isConfirmed: true,
+          }}
           action='/delete'
         />
       ),

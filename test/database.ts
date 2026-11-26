@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { requireEnv } from '../app/env.server.ts'
 import { PrismaClient } from '../app/generated/prisma/client.ts'
+import { requireDisposableDatabase } from '../prisma/local-database.ts'
 import { migrate, pushSchema } from '../prisma/push-schema.ts'
 
 // This module imports nothing that loads `app/db.server.ts`, whose `prisma`
@@ -99,7 +100,10 @@ const createDatabase = async (
 const dropDatabase = (serverUrl: URL, name: string): Promise<void> =>
   runSql(serverUrl, `DROP DATABASE "${name}" WITH (FORCE)`)
 
-const readServerUrl = (): URL => new URL(requireEnv(`DATABASE_URL`))
+const readServerUrl = (): URL => {
+  requireDisposableDatabase()
+  return new URL(requireEnv(`DATABASE_URL`))
+}
 
 const toDatabaseUrl = (serverUrl: URL, name: string): string => {
   const url = new URL(serverUrl)

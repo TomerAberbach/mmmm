@@ -11,7 +11,11 @@ import { accountDeletionSchema } from '~/account-deletion-forms.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 import { formatCount } from '~/format-count.ts'
 
-export type DeletableEducator = { email: string; contestCount: number }
+export type DeletableEducator = {
+  email: string
+  contestCount: number
+  isConfirmed: boolean
+}
 
 /** Deletes an account once its email address is typed */
 export const DeleteAccountDialog = ({
@@ -37,7 +41,7 @@ export const DeleteAccountDialog = ({
 
 /** Mounts with each opening, so the form starts empty */
 const DeleteAccountForm = ({
-  account: { email, contestCount },
+  account: { email, contestCount, isConfirmed },
   action,
 }: {
   account: DeletableEducator
@@ -65,8 +69,9 @@ const DeleteAccountForm = ({
               {`${formatCount(contestCount, `contest`)} ${contestCount === 1 ? `stays` : `stay`} without an educator, so no one can start a bracket from a contest link, and pending brackets stay pending.`}
             </li>
             <li>
-              Players keep their personal links, and approved brackets stay on
-              leaderboards.
+              {isConfirmed
+                ? `Players keep their personal links, and approved brackets stay on leaderboards.`
+                : `Players keep their personal links. Approved brackets stay on their contest’s leaderboard, and off the organization and global ones.`}
             </li>
           </>
         ) : null}
