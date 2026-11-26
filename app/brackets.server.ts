@@ -376,20 +376,23 @@ export const readAdminYears = async (): Promise<{
 }
 
 export type PublicationChange =
-  `CHANGED` | `UNCHANGED` | `HAS_CONTESTS` | `LOCKED` | `NO_CHAMPION`
+  `CHANGED` | `UNCHANGED` | `PAST` | `HAS_CONTESTS` | `LOCKED` | `NO_CHAMPION`
 
 /**
  * Publishing moves the year from Setup to Open, and unpublishing moves it back
  * until the year has a contest or locks. A newer year waits for the current
  * year's champion, since publishing it archives the current year's results.
- * `UNCHANGED` means the year has no bracket, or its bracket is already in that
- * state
+ * `PAST` means a newer year is current. `UNCHANGED` means the year has no
+ * bracket, or its bracket is already in that state
  */
 export const setBracketPublished = (
   year: number,
   published: boolean,
 ): Promise<PublicationChange> =>
   withCurrentYearAlone(async (tx, current) => {
+    if (current && year < current.year) {
+      return `PAST`
+    }
     if (
       !published &&
       (await tx.contest.findFirst({ where: { year }, select: { id: true } }))

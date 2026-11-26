@@ -20,6 +20,7 @@ const renderContests = async () => {
           name: `Period 2 Biology`,
           educatorName: `Ms. Frizzle`,
           organizationName: null,
+          year: 2027,
           approvedCount: 24,
           isHidden: useLoaderData<boolean>(),
         }
@@ -47,17 +48,19 @@ const press = async (label: string) => {
 test(`the admin hides a contest and shows it again`, async () => {
   await renderContests()
   await expect
-    .element(page.getByText(`Ms. Frizzle · 24 approved`))
+    .element(page.getByText(`2027 · Ms. Frizzle · 24 approved`))
     .toBeVisible()
 
   await press(`Hide`)
   await expect
-    .element(page.getByText(`Hidden · Ms. Frizzle · 24 approved`))
+    .element(page.getByText(`Hidden · 2027 · Ms. Frizzle · 24 approved`))
     .toBeVisible()
   await expectNoAxeViolations()
 
   await press(`Show`)
   await expect
-    .element(page.getByText(`Ms. Frizzle · 24 approved`, { exact: true }))
+    .element(
+      page.getByText(`2027 · Ms. Frizzle · 24 approved`, { exact: true }),
+    )
     .toBeVisible()
 })

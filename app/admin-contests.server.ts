@@ -9,26 +9,32 @@ export type AdminContest = {
   name: string
   educatorName: string
   organizationName: string | null
+  year: number
   approvedCount: number
   /** Whether the organization and global leaderboards leave it out */
   isHidden: boolean
 }
 
-/** Hidden contests first, then by name */
+/** Hidden contests first, then the newest year's, by name */
 export const readAdminContests = async (
-  year: number,
   page: number,
 ): Promise<{ contests: AdminContest[]; page: PageNumber }> => {
-  const where = { year, ...CONTEST_OUTSIDE_TRASH }
+  const where = CONTEST_OUTSIDE_TRASH
   const pageNumber = toPageNumber(page, await prisma.contest.count({ where }))
   const contests = await prisma.contest.findMany({
     where,
-    orderBy: [{ isHidden: `desc` }, { name: `asc` }, { id: `asc` }],
+    orderBy: [
+      { isHidden: `desc` },
+      { year: `desc` },
+      { name: `asc` },
+      { id: `asc` },
+    ],
     skip: countRowsBefore(pageNumber),
     take: PAGE_SIZE,
     select: {
       id: true,
       name: true,
+      year: true,
       isHidden: true,
       educator: {
         select: {

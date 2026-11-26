@@ -165,3 +165,16 @@ test(`a deleted contest closes for colleagues`, async () => {
 
   await expect(readSharedContest(colleague.id, contestId)).resolves.toBeNull()
 })
+
+test(`the contest page leaves out a share that no longer works`, async () => {
+  const { owner, colleague, contestId } = await createColleagues()
+  await shareContest(owner.id, contestId, colleague.email)
+
+  // A share can be added while its colleague leaves the organization
+  await prisma.educator.update({
+    where: { id: colleague.id },
+    data: { organizationDomain: null },
+  })
+
+  await expect(readColleagues(contestId)).resolves.toStrictEqual([])
+})

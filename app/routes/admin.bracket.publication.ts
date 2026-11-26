@@ -37,6 +37,8 @@ export const action = async ({
       return {
         error: `The ${year} bracket is already ${published ? `published` : `unpublished`} or deleted`,
       }
+    case `PAST`:
+      return { error: `The ${year} bracket is archived. Reload the page` }
     case `HAS_CONTESTS`:
       return {
         error: `Educators have created ${year} contests, so the bracket stays published`,
