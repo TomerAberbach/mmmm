@@ -115,6 +115,9 @@ app
 - Educators can't sign in until they confirm their address, and confirming
   doesn't sign them in. Sign-up answers an existing address the same as a new
   one, so never show a different page or error for it
+- Delete an unconfirmed educator only with `freeAddress` from
+  `educator-deletion.server.ts`, which keeps one with contests. Never set
+  `emailVerified` back to false, since an orphaned contest counts as confirmed
 
 ## Email
 

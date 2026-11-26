@@ -5,7 +5,7 @@ import type { RequestHandler } from 'express'
  * any case
  */
 const SECRET_PATH =
-  /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket)\/)[^/]+/iu
+  /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket|confirm-address)\/)[^/]+/iu
 
 /**
  * Logs each request without its query string, its secrets, or the client's IP

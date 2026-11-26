@@ -1,6 +1,7 @@
 import { href } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
+import { HandOverDialog } from './hand-over-dialog.tsx'
 import type { AdminContest } from '~/admin-contests.server.ts'
 
 /** Contests, each with the button that hides it or shows it again */
@@ -28,7 +29,12 @@ export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
                 .join(` · `)}
             </p>
           </div>
-          <HiddenButton contest={contest} />
+          <div className='flex flex-wrap gap-2'>
+            {contest.educatorName === null ? (
+              <HandOverDialog contest={contest} />
+            ) : null}
+            <HiddenButton contest={contest} />
+          </div>
         </li>
       ))}
     </ul>

@@ -17,6 +17,7 @@ import {
 } from './auth-forms.ts'
 import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
 import { prisma } from './db.server.ts'
+import { freeAddress } from './educator-deletion.server.ts'
 import { sendEmail, sendEmailOrLog, sendNoticeOrLog } from './email.server.ts'
 import { alreadySignedUpEmail } from './emails/already-signed-up.server.tsx'
 import { confirmEmail } from './emails/confirm-email.server.tsx'
@@ -107,7 +108,10 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
     // whether or not the address has an educator
     const signUp = await parseBody(SIGN_UP_SCHEMA, body)
     body = signUp
-    await deleteUnconfirmedEducator(ctx.context.internalAdapter, signUp.email)
+    // Otherwise the new link would confirm the password of whoever signed up
+    // first, who may not own the address. Remove once Better Auth ships
+    // https://github.com/better-auth/better-auth/pull/11260
+    await freeAddress(signUp.email)
   }
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
@@ -163,22 +167,6 @@ const parseBody = async <Body extends Record<string, unknown>>(
     throw refuse(`BAD_REQUEST`, parsed.error.issues[0]!.message)
   }
   return parsed.data
-}
-
-/**
- * An unconfirmed educator belongs to no one yet, so a new sign-up starts over
- * with its own name and password. Otherwise the new link would confirm the
- * password of whoever signed up first, who may not own the address. Remove
- * once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
- */
-const deleteUnconfirmedEducator = async (
-  internalAdapter: AuthContext[`internalAdapter`],
-  email: string,
-): Promise<void> => {
-  const existing = await internalAdapter.findUserByEmail(email)
-  if (existing && !existing.user.emailVerified) {
-    await internalAdapter.deleteUser(existing.user.id)
-  }
 }
 
 /**

@@ -58,6 +58,9 @@ const Admin = ({
     <Link to={href(`/admin/reports`)} className='self-start'>
       {`Reports (${reportCount})`}
     </Link>
+    <Link to={href(`/admin/educators`)} className='self-start'>
+      Educators
+    </Link>
     <Link to={href(`/admin/contests`)} className='self-start'>
       Contests
     </Link>
