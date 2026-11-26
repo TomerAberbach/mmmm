@@ -8,6 +8,7 @@ import {
   signInConfirmed,
   signOut,
   signUp,
+  signUpConfirmed,
 } from '../auth.ts'
 import { readActionLink, readEmails, readNewestActionLink } from '../mailbox.ts'
 
@@ -194,8 +195,6 @@ test(`a confirmation link sent before signing up again no longer confirms`, asyn
     email,
     `Confirm email address`,
   )
-  // A link records its time to the second, so the next sign-up must come later
-  await page.waitForTimeout(1100)
   await signUp(page, email, { password: `someone else's password` })
 
   await page.goto(firstLink)
@@ -203,4 +202,47 @@ test(`a confirmation link sent before signing up again no longer confirms`, asyn
   await expect(page.getByRole(`alert`)).toContainText(
     `Sign in to get a new one`,
   )
+})
+
+test(`signing in returns to the page the visitor was going to`, async ({
+  page,
+}) => {
+  const email = newEmailAddress()
+  await signUpConfirmed(page, email)
+  await page.goto(`/settings`)
+  await page.getByLabel(`Email address`).fill(email)
+  await page.getByLabel(`Password`, { exact: true }).fill(PASSWORD)
+
+  await page.getByRole(`button`, { name: `Sign in`, exact: true }).click()
+
+  await expect(page).toHaveURL(`/settings`)
+})
+
+test(`a link pressed after the session ended returns there once signed in`, async ({
+  page,
+  context,
+}) => {
+  const email = newEmailAddress()
+  await signInConfirmed(page, email)
+  await context.clearCookies()
+  await page.getByRole(`link`, { name: `Ms. Frizzle` }).click()
+  await expect(page).toHaveURL(`/sign-in?to=%2Fsettings`)
+  await page.getByLabel(`Email address`).fill(email)
+  await page.getByLabel(`Password`, { exact: true }).fill(PASSWORD)
+
+  await page.getByRole(`button`, { name: `Sign in`, exact: true }).click()
+
+  await expect(page).toHaveURL(`/settings`)
+})
+
+test(`sign-in never leads to another site`, async ({ page, baseURL }) => {
+  const email = newEmailAddress()
+  await signUpConfirmed(page, email)
+  await page.goto(`/sign-in?to=${encodeURIComponent(`//example.com`)}`)
+  await page.getByLabel(`Email address`).fill(email)
+  await page.getByLabel(`Password`, { exact: true }).fill(PASSWORD)
+
+  await page.getByRole(`button`, { name: `Sign in`, exact: true }).click()
+
+  await expect(page).toHaveURL(`${baseURL}/contests`)
 })

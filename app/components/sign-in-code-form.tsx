@@ -2,6 +2,7 @@ import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
 import { Form, href, Link } from 'react-router'
 import { recoveryCodeSchema, securityCodeFormSchema } from '../auth-forms.ts'
+import { withReturnPath } from '../return-path.ts'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { PageTitle } from './page-title.tsx'
@@ -11,8 +12,10 @@ import { useValidatedForm } from './use-validated-form.ts'
 
 export const SignInCodeForm = ({
   lastResult,
+  returnPath = null,
 }: {
   lastResult?: SubmissionResult
+  returnPath?: string | null
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
     securityCodeFormSchema,
@@ -24,7 +27,7 @@ export const SignInCodeForm = ({
       <p>Open your authenticator app and enter the code it shows for MMMM.</p>
       <Form
         method='post'
-        action={href(`/sign-in/code`)}
+        action={withReturnPath(href(`/sign-in/code`), returnPath)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -33,7 +36,7 @@ export const SignInCodeForm = ({
           <Button type='submit' isPending={isSubmitting}>
             Continue
           </Button>
-          <Link to={href(`/sign-in/recovery-code`)}>
+          <Link to={withReturnPath(href(`/sign-in/recovery-code`), returnPath)}>
             Use a recovery code instead
           </Link>
         </div>
@@ -45,9 +48,11 @@ export const SignInCodeForm = ({
 
 export const RecoveryCodeForm = ({
   lastResult,
+  returnPath = null,
   supportEmail,
 }: {
   lastResult?: SubmissionResult
+  returnPath?: string | null
   supportEmail: string
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
@@ -60,7 +65,7 @@ export const RecoveryCodeForm = ({
       <p>Enter one of the recovery codes you saved. Each code works once.</p>
       <Form
         method='post'
-        action={href(`/sign-in/recovery-code`)}
+        action={withReturnPath(href(`/sign-in/recovery-code`), returnPath)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -74,7 +79,9 @@ export const RecoveryCodeForm = ({
           <Button type='submit' isPending={isSubmitting}>
             Continue
           </Button>
-          <Link to={href(`/sign-in/code`)}>Use your authenticator app</Link>
+          <Link to={withReturnPath(href(`/sign-in/code`), returnPath)}>
+            Use your authenticator app
+          </Link>
         </div>
         <FormError form={form} />
       </Form>

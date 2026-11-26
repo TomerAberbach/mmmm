@@ -11,6 +11,8 @@ export const ADMINS = {
   authenticatorApp: `authenticator-app-admin@example.com`,
   passkey: `passkey-admin@example.com`,
   otherBrowser: `other-browser-admin@example.com`,
+  returnPath: `return-path-admin@example.com`,
+  returnPathPassword: `return-path-password-admin@example.com`,
   lostSession: `lost-session-admin@example.com`,
   setup: `setup-admin@example.com`,
   publish: `publish-admin@example.com`,

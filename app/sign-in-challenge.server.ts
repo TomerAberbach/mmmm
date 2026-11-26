@@ -4,6 +4,7 @@ import { href, redirect } from 'react-router'
 import { rejectAuthError } from './auth-replies.server.ts'
 import { rejectForm } from './form-replies.server.ts'
 import type { FormRejection } from './form-replies.server.ts'
+import { readReturnPath, withReturnPath } from './return-path.ts'
 
 /**
  * Sign-in sends an educator with an authenticator app here with a cookie that
@@ -16,6 +17,7 @@ const TOO_MANY_CODES = `${href(`/sign-in`)}?too-many-codes`
 
 /** Signs in once `verify` accepts the code, or answers why it didn't */
 export const answerSignInChallenge = async (
+  request: Request,
   submission: Submission<{ code: string }>,
   verify: (code: string) => Promise<{ headers: Headers }>,
   invalidMessage: string,
@@ -23,11 +25,12 @@ export const answerSignInChallenge = async (
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
+  const returnPath = readReturnPath(request)
   try {
     const { headers } = await verify(submission.value.code)
-    return redirect(href(`/contests`), { headers })
+    return redirect(returnPath ?? href(`/contests`), { headers })
   } catch (error) {
-    return rejectChallenge(submission, error, invalidMessage)
+    return rejectChallenge(submission, error, invalidMessage, returnPath)
   }
 }
 
@@ -40,6 +43,7 @@ const rejectChallenge = (
   submission: Submission<{ code: string }>,
   error: unknown,
   invalidMessage: string,
+  returnPath: string | null,
 ): Response | FormRejection => {
   const code = error instanceof APIError ? error.body?.code : undefined
   if (code === `INVALID_CODE` || code === `INVALID_BACKUP_CODE`) {
@@ -48,7 +52,7 @@ const rejectChallenge = (
     })
   }
   if (code === `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE`) {
-    return redirect(TOO_MANY_CODES)
+    return redirect(withReturnPath(TOO_MANY_CODES, returnPath))
   }
   if (
     code === `INVALID_TWO_FACTOR_COOKIE` ||
@@ -58,7 +62,7 @@ const rejectChallenge = (
     // later code of this one
     (error instanceof APIError && error.status === `CONFLICT`)
   ) {
-    return redirect(SIGN_IN_AGAIN)
+    return redirect(withReturnPath(SIGN_IN_AGAIN, returnPath))
   }
   return code === `ACCOUNT_TEMPORARILY_LOCKED`
     ? rejectForm(

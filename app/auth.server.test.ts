@@ -56,6 +56,29 @@ test(`a sign-up in other letter case replaces the address's unconfirmed educator
   expect(educator.id).not.toBe(first.user.id)
 })
 
+test(`a confirmation link emailed before the address signed up again is refused`, async () => {
+  const email = `${randomUUID()}@example.com`
+  const body = {
+    name: `Ada Lovelace`,
+    email,
+    password: `correct-horse-battery`,
+  }
+  const headers = new Headers({ [CLIENT_IP_HEADER]: `203.0.113.11` })
+  await auth.api.signUpEmail({ body, headers })
+  const { text } = readMailbox().find(sent => sent.to === email)!
+  const token = /verify-email\?token=(?<token>[^&\s]+)/u.exec(text)!.groups!
+    .token!
+  await auth.api.signUpEmail({ body, headers })
+
+  const verifying = auth.api.verifyEmail({ query: { token }, headers })
+
+  await expect(verifying).rejects.toMatchObject({
+    body: { code: `INVALID_TOKEN` },
+  })
+  const educator = await prisma.educator.findUniqueOrThrow({ where: { email } })
+  expect(educator.emailVerified).toBe(false)
+})
+
 test(`an educator who confirmed with a reset link joins their organization at sign-in`, async () => {
   const domain = `${randomUUID()}.edu`
   const email = `frizzle@${domain}`

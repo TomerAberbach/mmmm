@@ -215,5 +215,5 @@ test(`changing the name shows it in the header`, async ({ page }) => {
 test(`settings sends signed-out visitors to sign in`, async ({ page }) => {
   await page.goto(`/settings`)
 
-  await expect(page).toHaveURL(`/sign-in`)
+  await expect(page).toHaveURL(`/sign-in?to=%2Fsettings`)
 })

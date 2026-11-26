@@ -4,6 +4,11 @@ import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
 import { isAdmin } from './admins.server.ts'
 import { auth } from './auth.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
+import {
+  readReturnPath,
+  readVisitedPath,
+  withReturnPath,
+} from './return-path.ts'
 import { readAssurance } from './second-factor.server.ts'
 
 export type SignedInEducator = {
@@ -76,30 +81,33 @@ export const readSignedInEducator = async (
 const requiredContext = createContext<SignedIn>()
 
 /**
- * Sends signed-out visitors to sign in. Routes below it read the educator with
+ * Sends signed-out visitors to sign in, which returns them only to a page
+ * listed in `return-path.ts`. Routes below it read the educator with
  * `readRequiredEducator`, and the session with `readRequiredSession`
  */
 export const requireSignedInEducator: MiddlewareFunction<Response> = async (
-  { context },
+  { url, context },
   next,
 ) => {
   const signedIn = await context.get(signedInContext)()
   if (!signedIn) {
-    return redirect(href(`/sign-in`))
+    return redirect(withReturnPath(href(`/sign-in`), readVisitedPath(url)))
   }
   context.set(requiredContext, signedIn)
   return next()
 }
 
 /**
- * Sends a signed-in educator to their dashboard, away from the pages that sign
- * in or sign up
+ * Sends a signed-in educator where they were going, if `return-path.ts` lists
+ * it, or to their dashboard, away from the pages that sign in or sign up
  */
 export const requireSignedOut: MiddlewareFunction<Response> = async (
-  { context },
+  { request, context },
   next,
 ) =>
-  (await context.get(signedInContext)()) ? redirect(href(`/contests`)) : next()
+  (await context.get(signedInContext)())
+    ? redirect(readReturnPath(request) ?? href(`/contests`))
+    : next()
 
 export const readRequiredEducator = (
   context: Readonly<RouterContextProvider>,

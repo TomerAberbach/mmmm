@@ -1,13 +1,12 @@
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
-import type { AuthContext, GenericEndpointContext } from 'better-auth'
+import type { GenericEndpointContext } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import {
   APIError,
   createAuthMiddleware,
   getSessionFromCtx,
 } from 'better-auth/api'
-import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
 import { readRefusal, refuse } from './app-refusal.server.ts'
@@ -73,12 +72,6 @@ const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
 }
 
 const beforeAuthRequest = createAuthMiddleware(async ctx => {
-  if (
-    ctx.path === `/verify-email` &&
-    (await isOlderThanEducator(ctx.context, ctx.query?.token))
-  ) {
-    throw ctx.redirect(`${CONFIRMED_CALLBACK_URL}&error=INVALID_TOKEN`)
-  }
   await guardSecondFactorChange(ctx)
   const body = ctx.body as Record<string, unknown> | undefined
   if (!body) {
@@ -90,9 +83,8 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
     headers: ctx.headers,
   })
   if (ctx.path === `/sign-up/email`) {
-    // Otherwise the new link would confirm the password of whoever signed up
-    // first, who may not own the address. Remove once Better Auth ships
-    // https://github.com/better-auth/better-auth/pull/11260
+    // Otherwise Better Auth keeps the password of whoever signed up first, who
+    // may not own the address, and emails its owner no confirmation link
     await freeAddress(body.email as string)
   }
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
@@ -105,48 +97,6 @@ const readLimitedEmail = async (
   PASSWORD_PROMPT_PATHS.has(ctx.path)
     ? (await getSessionFromCtx(ctx))?.user.email
     : (ctx.body as Record<string, unknown> | undefined)?.email
-
-/**
- * A confirmation link contains only the address, so without this check a link
- * sent before sign-up started over would confirm the new educator's password.
- * Remove once Better Auth ships https://github.com/better-auth/better-auth/pull/11260
- */
-const isOlderThanEducator = async (
-  context: AuthContext,
-  token: unknown,
-): Promise<boolean> => {
-  const confirmation = await readConfirmationToken(token, context.secret)
-  if (!confirmation) {
-    return false
-  }
-  const existing = await context.internalAdapter.findUserByEmail(
-    confirmation.email,
-  )
-  return (
-    existing !== null &&
-    confirmation.issuedAt < Math.floor(existing.user.createdAt.getTime() / 1000)
-  )
-}
-
-/**
- * Returns nothing for a token that fails verification. The issue time is in
- * seconds
- */
-const readConfirmationToken = async (
-  token: unknown,
-  secret: string,
-): Promise<{ email: string; issuedAt: number } | undefined> => {
-  if (typeof token !== `string`) {
-    return undefined
-  }
-  const payload = await verifyJWT<{ email?: unknown; iat?: unknown }>(
-    token,
-    secret,
-  )
-  return typeof payload?.email === `string` && typeof payload.iat === `number`
-    ? { email: payload.email, issuedAt: payload.iat }
-    : undefined
-}
 
 /**
  * Refunds the attempts of a request whose password was right. Notifies the owner
