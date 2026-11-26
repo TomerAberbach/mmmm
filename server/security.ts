@@ -10,6 +10,10 @@ export const setSecurityHeaders = ({
 }): RequestHandler =>
   helmet({
     contentSecurityPolicy: false,
+    // Addresses hold secrets, so no other site may receive one. `no-referrer`
+    // would also make browsers post forms with `Origin: null`, which React
+    // Router refuses
+    referrerPolicy: { policy: `same-origin` },
     strictTransportSecurity: isServedOverHttps,
   })
 

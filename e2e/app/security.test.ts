@@ -7,7 +7,7 @@ test(`pages set security headers`, async ({ request }) => {
   expect(response.headers()).toMatchObject({
     'x-content-type-options': `nosniff`,
     'x-frame-options': `SAMEORIGIN`,
-    'referrer-policy': `no-referrer`,
+    'referrer-policy': `same-origin`,
   })
 })
 
@@ -36,4 +36,30 @@ test(`a form posted from another site is rejected`, async ({ request }) => {
 
   expect(response.status()).toBe(403)
   expect(await response.text()).toBe(`Cross-origin request rejected`)
+})
+
+test(`a form posted with an opaque origin is refused`, async ({ request }) => {
+  const response = await request.post(`/sign-in`, {
+    headers: { origin: `null`, 'sec-fetch-site': `same-origin` },
+    form: { email: `educator@example.com`, password: `password` },
+  })
+
+  expect(response.status()).toBe(400)
+})
+
+test(`a link to another site sends no Referer`, async ({ page }) => {
+  await page.route(`https://elsewhere.example/**`, route =>
+    route.fulfill({ body: `Elsewhere` }),
+  )
+  await page.goto(`/my-bracket/secret`)
+  const request = page.waitForRequest(`https://elsewhere.example/`)
+
+  await page.evaluate(() => {
+    const link = document.createElement(`a`)
+    link.href = `https://elsewhere.example/`
+    document.body.append(link)
+    link.click()
+  })
+
+  expect(await (await request).headerValue(`referer`)).toBeNull()
 })
