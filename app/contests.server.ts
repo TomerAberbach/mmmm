@@ -83,28 +83,27 @@ export const renameContest = async (
   return count > 0
 }
 
-/**
- * What a contest link shows a player. Null for a link that matches no contest
- */
-export type ContestByLink = {
+/** A contest as its players see it, without its contest link */
+export type PlayContest = {
   id: string
   name: string
   year: number
   educatorName: string
-  isDeleted: boolean
 }
 
+type FoundPlayContest = { contest: PlayContest; isDeleted: boolean }
+
+/** Null for a link that matches no contest */
 export const readContestByLink = (
   linkSecret: string,
-): Promise<ContestByLink | null> => readPlayedContest({ linkSecret })
+): Promise<FoundPlayContest | null> => readPlayedContest({ linkSecret })
 
-/** What the contest's own players see, without its contest link */
-export const readContestById = (id: string): Promise<ContestByLink | null> =>
+export const readContestById = (id: string): Promise<FoundPlayContest | null> =>
   readPlayedContest({ id })
 
 const readPlayedContest = async (
   where: { linkSecret: string } | { id: string },
-): Promise<ContestByLink | null> => {
+): Promise<FoundPlayContest | null> => {
   const contest = await prisma.contest.findUnique({
     where,
     select: {
@@ -117,10 +116,12 @@ const readPlayedContest = async (
   })
   return (
     contest && {
-      id: contest.id,
-      name: contest.name,
-      year: contest.year,
-      educatorName: contest.educator.name,
+      contest: {
+        id: contest.id,
+        name: contest.name,
+        year: contest.year,
+        educatorName: contest.educator.name,
+      },
       isDeleted: contest.deletedAt !== null,
     }
   )
