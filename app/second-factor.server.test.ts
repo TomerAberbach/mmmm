@@ -200,7 +200,7 @@ test(`signing in with an authenticator app's code uses a second factor`, async (
   })
 
   const { headers } = await auth.api.verifyTOTP({
-    body: { code: readTotpCode(totpUri), trustDevice: true },
+    body: { code: readTotpCode(totpUri) },
     headers: withCookies(challenge, ip),
     returnHeaders: true,
   })

@@ -109,9 +109,10 @@ app
   one refuses, and key per-IP limits on `readClientIp`
 - Pass `headers: request.headers` to every `auth.api` call. The auth limits read
   the client's IP address from them, and throw without it
-- Force request fields that no client may choose in `FORCED_FIELDS` in
-  `auth.server.ts`, because `/api/auth/*` is public and skips the app's routes.
-  Sign-up refuses a field missing from `SIGN_UP_SCHEMA` there
+- `/api/auth/*` answers only the endpoints that browsers and emailed links call,
+  listed in `auth-endpoints.server.ts`. Call any other from a route through
+  `auth.api`, after validating its form. Force fields that every caller needs in
+  `FORCED_FIELDS` in `auth.server.ts`
 - Educators can't sign in until they confirm their address, and confirming
   doesn't sign them in. Sign-up answers an existing address the same as a new
   one, so never show a different page or error for it
