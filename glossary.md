@@ -78,11 +78,12 @@ for a **Player**'s **Draft** or **Submission**.
 
 ## Leaderboards
 
-| Term            | Definition                                                                                        | Aliases to avoid       |
-| --------------- | ------------------------------------------------------------------------------------------------- | ---------------------- |
-| **Score**       | The points a **Submission**'s **Picks** have earned from saved **Results**                        | Points, total          |
-| **Score tier**  | Every **Submission** with the same **Score**                                                      | Score group, tie group |
-| **Leaderboard** | Approved **Submissions** ranked by **Score**, for a **Contest**, an **Organization**, or everyone | Standings, rankings    |
+| Term            | Definition                                                                                                                  | Aliases to avoid       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **Score**       | The points a **Submission**'s **Picks** have earned from saved **Results**                                                  | Points, total          |
+| **Score tier**  | Every **Submission** with the same **Score**                                                                                | Score group, tie group |
+| **Hide**        | An **Admin**'s removal of a **Contest** from the **Organization** and global **Leaderboards**, which the **Admin** can undo | Block, ban             |
+| **Leaderboard** | Approved **Submissions** ranked by **Score**, for a **Contest**, an **Organization**, or everyone                           | Standings, rankings    |
 
 ## Views
 

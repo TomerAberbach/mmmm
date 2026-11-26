@@ -65,13 +65,19 @@ export const EducatorDashboard = ({
       {current && current.sharedContests.length > 0 ? (
         <SharedContests contests={current.sharedContests} />
       ) : null}
-      {current?.isLocked && organization ? (
-        <Link
-          to={href(`/contests/leaderboard`)}
-          className='self-start print:hidden'
-        >
-          Organization leaderboard
-        </Link>
+      {current?.isLocked ? (
+        <ul className='flex flex-col gap-2 print:hidden'>
+          {organization ? (
+            <li>
+              <Link to={href(`/contests/leaderboard`)}>
+                Organization leaderboard
+              </Link>
+            </li>
+          ) : null}
+          <li>
+            <Link to={href(`/contests/global`)}>Global leaderboard</Link>
+          </li>
+        </ul>
       ) : null}
       {current && current.deletedCount > 0 ? (
         <Link to={href(`/contests/trash`)} className='self-start print:hidden'>

@@ -1,32 +1,22 @@
-import { href, Link, redirect } from 'react-router'
+import { href, Link } from 'react-router'
 import type { Route } from './+types/contests.leaderboard.ts'
 import { Leaderboard } from '~/components/leaderboard.tsx'
 import { PageHeader } from '~/components/page-header.tsx'
-import { readPageNumber } from '~/leaderboard-row.ts'
 import {
   readEducatorOrganizationScope,
   readEducatorViewer,
+  readRequiredLeaderboard,
 } from '~/leaderboard-scopes.server.ts'
-import { readLeaderboard } from '~/leaderboards.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
 /** The educator's organization's leaderboard for the current year */
-export const loader = async ({ request, context }: Route.LoaderArgs) => {
-  const named = await readEducatorOrganizationScope(
-    readRequiredEducator(context).id,
+export const loader = async ({ request, context }: Route.LoaderArgs) =>
+  readRequiredLeaderboard(
+    request,
+    await readEducatorOrganizationScope(readRequiredEducator(context).id),
+    readEducatorViewer(context),
+    href(`/contests`),
   )
-  const leaderboard =
-    named &&
-    (await readLeaderboard(
-      named.scope,
-      readEducatorViewer(context),
-      readPageNumber(request),
-    ))
-  if (!leaderboard) {
-    throw redirect(href(`/contests`))
-  }
-  return { name: named.name, leaderboard }
-}
 
 const OrganizationLeaderboard = ({ loaderData }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>

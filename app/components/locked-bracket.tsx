@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router'
+import type { ReactNode } from 'react'
 import { Bracket } from './bracket.tsx'
 import { MarkedBracket } from './marked-bracket.tsx'
 import { Notice } from './notice.tsx'
@@ -28,7 +28,7 @@ export const LockedBracket = ({
   draft,
   submitted,
   results,
-  leaderboardPath,
+  ranks,
   forgetPath,
   deletePath,
   playerId,
@@ -38,7 +38,8 @@ export const LockedBracket = ({
   draft: Picks
   submitted: Submitted | null
   results: Results
-  leaderboardPath: string
+  /** Null unless the submission is approved */
+  ranks: ReactNode
   forgetPath: string
   deletePath: string
   playerId: string
@@ -51,7 +52,7 @@ export const LockedBracket = ({
         draft={draft}
         submitted={submitted}
         results={results}
-        leaderboardPath={leaderboardPath}
+        ranks={ranks}
         forgetPath={forgetPath}
       />
     ) : (
@@ -74,7 +75,7 @@ const SubmittedBracket = ({
   draft,
   submitted: { submission, personalLink },
   results,
-  leaderboardPath,
+  ranks,
   forgetPath,
 }: {
   year: number
@@ -82,7 +83,8 @@ const SubmittedBracket = ({
   draft: Picks
   submitted: Submitted
   results: Results
-  leaderboardPath: string
+  /** Null unless the submission is approved */
+  ranks: ReactNode
   forgetPath: string
 }) => (
   <>
@@ -95,14 +97,7 @@ const SubmittedBracket = ({
         }${STATUS_NOTES[submission.status]}`}
       </Notice>
     </div>
-    {submission.status === `APPROVED` ? (
-      <Link
-        to={leaderboardPath}
-        className='self-start font-semibold print:hidden'
-      >
-        Leaderboard
-      </Link>
-    ) : null}
+    {ranks}
     <MarkedBracket
       year={year}
       bracket={bracket}

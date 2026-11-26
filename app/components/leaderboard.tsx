@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Pages } from './pages.tsx'
 import type { LeaderboardPage } from '~/leaderboard-row.ts'
 
 /** Approved submissions by rank, each opening its marked bracket */
@@ -64,23 +65,3 @@ export const Leaderboard = ({
       {page ? <Pages {...page} /> : null}
     </div>
   )
-
-const Pages = ({ number, count }: { number: number; count: number }) =>
-  count > 1 ? (
-    <nav
-      aria-label='Pages'
-      className='flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-2'
-    >
-      {number > 1 ? (
-        <Link to={{ search: `?page=${number - 1}` }} className='print:hidden'>
-          Previous
-        </Link>
-      ) : null}
-      <span className='text-muted'>{`Page ${number} of ${count}`}</span>
-      {number < count ? (
-        <Link to={{ search: `?page=${number + 1}` }} className='print:hidden'>
-          Next
-        </Link>
-      ) : null}
-    </nav>
-  ) : null

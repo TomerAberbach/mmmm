@@ -1,3 +1,5 @@
+import type { PageNumber } from './page-number.ts'
+
 /** A leaderboard's row as one viewer sees it */
 export type LeaderboardRow = {
   playerId: string
@@ -11,14 +13,20 @@ export type LeaderboardRow = {
 
 export type LeaderboardPage = {
   rows: LeaderboardRow[]
-  /** Counts from 1. Null for a leaderboard without pages */
-  page: { number: number; count: number } | null
+  /** Null for a leaderboard without pages */
+  page: PageNumber | null
 }
 
-/** The page in the address, or the first for anything else */
-export const readPageNumber = (request: Request): number => {
-  const page = Number(new URL(request.url).searchParams.get(`page`))
-  return Number.isSafeInteger(page) && page > 0 ? page : 1
+/** Where a player ranks among a leaderboard's players */
+export type PlayerRank = { rank: number; total: number }
+
+/** Such as "Top 8%". Null in the bottom half, where it says little */
+export const formatPercentile = ({
+  rank,
+  total,
+}: PlayerRank): string | null => {
+  const percent = Math.ceil((100 * rank) / total)
+  return percent <= 50 ? `Top ${percent}%` : null
 }
 
 const ORDINAL = new Intl.PluralRules(`en-US`, { type: `ordinal` })
@@ -31,4 +39,4 @@ const ORDINAL_SUFFIXES: Partial<Record<Intl.LDMLPluralRule, string>> = {
 
 /** Such as "1st" or "12th" */
 export const formatRank = (rank: number): string =>
-  `${rank}${ORDINAL_SUFFIXES[ORDINAL.select(rank)] ?? `th`}`
+  `${rank.toLocaleString(`en-US`)}${ORDINAL_SUFFIXES[ORDINAL.select(rank)] ?? `th`}`

@@ -26,6 +26,8 @@ export default [
     index(`routes/contests._index.tsx`),
     route(`new`, `routes/contests.new.ts`),
     route(`organization`, `routes/contests.organization.ts`),
+    route(`global`, `routes/contests.global.tsx`),
+    route(`global/:playerId`, `routes/contests.global.$playerId.tsx`),
     route(`leaderboard`, `routes/contests.leaderboard.tsx`),
     route(`leaderboard/:playerId`, `routes/contests.leaderboard.$playerId.tsx`),
     route(`trash`, `routes/contests.trash.tsx`),
@@ -90,6 +92,8 @@ export default [
           `leaderboard/:playerId`,
           `routes/player.leaderboard.$playerId.tsx`,
         ),
+        route(`global`, `routes/player.global.tsx`),
+        route(`global/:playerId`, `routes/player.global.$playerId.tsx`),
         route(`organization`, `routes/player.organization.tsx`),
         route(
           `organization/:playerId`,
@@ -106,6 +110,8 @@ export default [
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
+      route(`contests`, `routes/admin.contests.tsx`),
+      route(`contests/hidden`, `routes/admin.contests.hidden.ts`),
       route(`organizations`, `routes/admin.organizations.tsx`),
       route(`organizations/rename`, `routes/admin.organizations.rename.ts`),
       route(`bracket`, `routes/admin.bracket.tsx`),
