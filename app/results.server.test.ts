@@ -59,6 +59,7 @@ test.each<[string, Partial<ResultRequest>]>([
   [`with other results to clear`, { cleared: [`ROUND_2:0`] }],
   [`whose winner isn't in the battle`, { winnerId: `someone` }],
   [`that clears a missing result`, { winnerId: null }],
+  [`made of another arrangement`, { arrangement: `` }],
   [`for a missing battle`, { battle: { round: `ROUND_1`, index: 99 } }],
 ])(`a result %s is refused`, async (_, change) => {
   const year = await addYear({ published: true })

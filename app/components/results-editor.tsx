@@ -17,6 +17,7 @@ import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
+import { readArrangement } from '~/moves.ts'
 import { listContenders, TOTAL_BATTLES } from '~/picks.ts'
 import type { ResultRequest } from '~/result-request.ts'
 import {
@@ -63,6 +64,7 @@ export const ResultsEditor = ({
       ),
     })
   }, [stored, knownMerges, results])
+  const arrangement = useMemo(() => readArrangement(stored), [stored])
   const [cleared, setCleared] = useState<BattleRef[]>([])
   const [asking, setAsking] = useState<PendingChange | null>(null)
   const view = useMemo(
@@ -115,6 +117,7 @@ export const ResultsEditor = ({
         }
         const pending = readPendingChange({
           year,
+          arrangement,
           bracket,
           results,
           battle: { round, index },
@@ -127,7 +130,16 @@ export const ResultsEditor = ({
       isCleared: battle =>
         cleared.some(other => toBattleKey(other) === toBattleKey(battle)),
     }),
-    [isBlocked, year, bracket, results, isLocked, cleared, askOrSave],
+    [
+      isBlocked,
+      year,
+      arrangement,
+      bracket,
+      results,
+      isLocked,
+      cleared,
+      askOrSave,
+    ],
   )
   const decidable = listDecidableBattles(bracket, results)
   const [nextBattle] = decidable
@@ -164,6 +176,7 @@ export const ResultsEditor = ({
               askOrSave(
                 readPendingMerge({
                   year,
+                  arrangement,
                   bracket,
                   results,
                   battle,
@@ -210,6 +223,7 @@ type Question = `lock` | `change` | `clear`
 /** Pressing the recorded winner clears the result */
 const readPendingChange = ({
   year,
+  arrangement,
   bracket,
   results,
   battle,
@@ -217,6 +231,7 @@ const readPendingChange = ({
   isLocked,
 }: {
   year: number
+  arrangement: string
   bracket: SeededBracket
   results: Results
   battle: BattleRef
@@ -232,6 +247,7 @@ const readPendingChange = ({
     change,
     request: {
       year,
+      arrangement,
       battle,
       winnerId: isClear ? null : winnerId,
       mergeName: null,
@@ -244,6 +260,7 @@ const readPendingChange = ({
 
 const readPendingMerge = ({
   year,
+  arrangement,
   bracket,
   results,
   battle,
@@ -251,6 +268,7 @@ const readPendingMerge = ({
   isLocked,
 }: {
   year: number
+  arrangement: string
   bracket: SeededBracket
   results: Results
   battle: BattleRef
@@ -267,6 +285,7 @@ const readPendingMerge = ({
     change: recordMerge(results, battle, merge.id),
     request: {
       year,
+      arrangement,
       battle,
       winnerId: merge.id,
       mergeName: name,

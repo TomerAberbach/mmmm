@@ -164,16 +164,22 @@ export const readCurrentBracket = async (): Promise<{
 export const readBracketAndResults = (
   year: number,
 ): Promise<{ bracket: StoredBracket; results: Results }> =>
-  readSnapshot(async tx => ({
-    bracket: await readBracketInTransaction(tx, year),
-    results: await readResultRows(year, tx),
-  }))
+  readSnapshot(tx => readBracketAndResultRows(year, tx))
+
+/** Reads in a transaction from `readSnapshot`. The year must have a bracket */
+export const readBracketAndResultRows = async (
+  year: number,
+  tx: Prisma.TransactionClient,
+): Promise<{ bracket: StoredBracket; results: Results }> => ({
+  bracket: await readBracketInTransaction(tx, year),
+  results: await readResultRows(year, tx),
+})
 
 /**
  * Every query of `read` sees the database at one moment, so each result's
  * winner is in the bracket even when a merge is saved or cleared between them
  */
-const readSnapshot = <Read>(
+export const readSnapshot = <Read>(
   read: (tx: Prisma.TransactionClient) => Promise<Read>,
 ): Promise<Read> =>
   prisma.$transaction(read, {
@@ -508,6 +514,48 @@ export const setExpectedLockDate = (
     })
     return count > 0
   })
+
+/**
+ * Puts each combatant in its place in `after`, which has the same combatants as
+ * `before`, the year's bracket
+ */
+export const replacePlaces = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  before: StoredBracket,
+  after: StoredBracket,
+): Promise<void> => {
+  const slotsBefore = listSeedSlots(before)
+  const changedSlots = listSeedSlots(after).flatMap(
+    ({ position, seed, combatant }, index) =>
+      combatant && combatant.id !== slotsBefore[index]!.combatant?.id
+        ? {
+            where: { seed, division: { year, position } },
+            combatantId: combatant.id,
+          }
+        : [],
+  )
+  // A combatant has one place, so each leaves its old one first
+  await tx.seedSlot.updateMany({
+    where: { OR: changedSlots.map(({ where }) => where) },
+    data: { combatantId: null },
+  })
+  const { id: wildCardId } = await tx.wildCard.findUniqueOrThrow({
+    where: { year },
+    select: { id: true },
+  })
+  await tx.wildCardEntrant.deleteMany({ where: { wildCardId } })
+  await tx.wildCardEntrant.createMany({
+    data: after.wildCard.entrants.map(({ id }, index) => ({
+      wildCardId,
+      index,
+      combatantId: id,
+    })),
+  })
+  for (const { where, combatantId } of changedSlots) {
+    await tx.seedSlot.updateMany({ where, data: { combatantId } })
+  }
+}
 
 export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
 

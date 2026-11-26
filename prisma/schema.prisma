@@ -280,6 +280,8 @@ model Player {
   // The version of the contest link the player started with
   linkVersion      Int
   createdAt        DateTime       @default(now())
+  // When a move of combatants last cleared the player's picks, until they submit
+  picksClearedAt   DateTime?
   // Both set while the player is in the trash, which a CHECK constraint ensures
   deletedAt        DateTime?
   deletedBy        PlayerDeleter?

@@ -1,15 +1,16 @@
 import { href } from 'react-router'
 import type { Route } from './+types/player.bracket.ts'
-import { isOpenYear, readBracketAndResults } from '~/brackets.server.ts'
+import { isOpenYear } from '~/brackets.server.ts'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
+import { readArrangement } from '~/moves.ts'
 import {
   readPlayContest,
   readRequiredPlayer,
   requirePlayer,
 } from '~/play-context.server.ts'
-import { readDraftAndSubmission } from '~/player-picks.server.ts'
+import { readPlayerBracket } from '~/player-picks.server.ts'
 import { toPersonalLink } from '~/players.server.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
@@ -21,12 +22,8 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
   const { year } = readPlayContest(context)
   // A contest exists only while its year's bracket is published
-  const [{ bracket, results }, { draft, submission }, isOpen] =
-    await Promise.all([
-      readBracketAndResults(year),
-      readDraftAndSubmission(player.id),
-      isOpenYear(year),
-    ])
+  const [{ bracket, results, draft, submission, hasClearedPicks }, isOpen] =
+    await Promise.all([readPlayerBracket(player.id, year), isOpenYear(year)])
   return {
     playerId: player.id,
     displayName: player.displayName,
@@ -35,6 +32,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     bracket,
     draft,
     results,
+    hasClearedPicks,
     // A player sees their personal link once they submit
     submitted: submission && {
       submission,
@@ -44,7 +42,8 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
 }
 
 const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
-  const { displayName, isOpen, draft, results, ...shared } = loaderData
+  const { displayName, isOpen, draft, results, hasClearedPicks, ...shared } =
+    loaderData
   const paths = {
     forgetPath: href(`/player/:contestId/forgotten`, params),
     deletePath: href(`/player/:contestId/delete`, params),
@@ -54,9 +53,12 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
       <PageTitle>{`${displayName}’s bracket`}</PageTitle>
       {isOpen ? (
         <PlayerBracket
+          // A move can clear picks, so the picker starts again from the saved ones
+          key={readArrangement(shared.bracket)}
           {...shared}
           {...paths}
           initialDraft={draft}
+          hasClearedPicks={hasClearedPicks}
           picksPath={href(`/player/:contestId/bracket/picks`, params)}
         />
       ) : (

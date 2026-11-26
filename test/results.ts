@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { BattleRef } from '../app/bracket.ts'
 import { readBracket } from '../app/brackets.server.ts'
+import { readArrangement } from '../app/moves.ts'
 import { listContenders } from '../app/picks.ts'
 import type { ResultRequest } from '../app/result-request.ts'
 import { saveResult } from '../app/results.server.ts'
@@ -17,9 +18,11 @@ export const makeFirstResult = async (
   year: number,
   battle = ROUND_1_FIRST,
 ): Promise<ResultRequest> => {
-  const bracket = await readSeededBracket(year)
+  const stored = (await readBracket(year))!
+  const bracket = toSeededBracket(stored)
   return {
     year,
+    arrangement: readArrangement(stored),
     battle,
     winnerId: listContenders(bracket, battle)[0]!.id,
     mergeName: null,

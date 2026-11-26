@@ -132,7 +132,9 @@ export const describeBattle = (battle: BattleView): string => {
 
 const describeResult = ({ sides, winner, marking }: BattleView): string => {
   if (!winner) {
-    return ``
+    return marking?.actualWinner
+      ? `. Not picked, ${marking.actualWinner.name} won`
+      : ``
   }
   if (marking) {
     return `. Picked ${winner.name}, ${describeMarking(marking)}`

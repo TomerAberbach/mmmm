@@ -1,17 +1,24 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
-import { isOpen, readBracketRows, withCurrentYear } from './brackets.server.ts'
-import { prisma } from './db.server.ts'
+import {
+  isOpen,
+  readBracketAndResultRows,
+  readBracketRows,
+  readSnapshot,
+  withCurrentYear,
+} from './brackets.server.ts'
 import type {
   PickStage,
   Prisma,
   SubmissionStatus,
 } from './generated/prisma/client.ts'
+import { readArrangement } from './moves.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
 import type { Picks } from './picks.ts'
+import type { Results } from './results.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
-import type { SeededBracket } from './seeded-bracket.ts'
+import type { SeededBracket, StoredBracket } from './seeded-bracket.ts'
 
 export type Submission = {
   status: SubmissionStatus
@@ -19,22 +26,51 @@ export type Submission = {
   picks: Picks
 }
 
+type DraftAndSubmission = {
+  draft: Picks
+  submission: Submission | null
+  /** Whether a move of combatants cleared picks since the player submitted */
+  hasClearedPicks: boolean
+}
+
 /** The player's draft, and their submission once they've submitted */
-export const readDraftAndSubmission = async (
+export const readDraftAndSubmission = (
   playerId: string,
-): Promise<{ draft: Picks; submission: Submission | null }> => {
+): Promise<DraftAndSubmission> =>
   // One snapshot, so a concurrent submit can't pair one submission with
   // another's picks
-  const [picks, submission] = await prisma.$transaction(
-    [
-      prisma.pick.findMany({ where: { playerId }, select: PICK_SELECT }),
-      prisma.submission.findUnique({
-        where: { playerId },
-        select: { status: true, picksChangedAt: true },
-      }),
-    ],
-    { isolationLevel: `RepeatableRead` },
-  )
+  readSnapshot(tx => readDraftAndSubmissionRows(playerId, tx))
+
+/**
+ * The player's picks with the bracket and results of their year, which must
+ * have a bracket. One snapshot, so a concurrent move can't pair one
+ * arrangement with another's picks
+ */
+export const readPlayerBracket = (
+  playerId: string,
+  year: number,
+): Promise<DraftAndSubmission & { bracket: StoredBracket; results: Results }> =>
+  readSnapshot(async tx => ({
+    ...(await readBracketAndResultRows(year, tx)),
+    ...(await readDraftAndSubmissionRows(playerId, tx)),
+  }))
+
+const readDraftAndSubmissionRows = async (
+  playerId: string,
+  tx: Prisma.TransactionClient,
+): Promise<DraftAndSubmission> => {
+  const picks = await tx.pick.findMany({
+    where: { playerId },
+    select: PICK_SELECT,
+  })
+  const submission = await tx.submission.findUnique({
+    where: { playerId },
+    select: { status: true, picksChangedAt: true },
+  })
+  const player = await tx.player.findUnique({
+    where: { id: playerId },
+    select: { picksClearedAt: true },
+  })
   const toStagePicks = (stage: PickStage): Picks =>
     toPicks(picks.filter(pick => pick.stage === stage))
   return {
@@ -43,63 +79,83 @@ export const readDraftAndSubmission = async (
       ...submission,
       picks: toStagePicks(`SUBMISSION`),
     },
+    hasClearedPicks: Boolean(player?.picksClearedAt),
   }
 }
 
 /** Only an open year's contests take picks */
 export type PicksRefusal = {
   refusal:
-    `NOT_OPEN` | `DELETED` | `INCONSISTENT` | `INCOMPLETE` | `NOT_SUBMITTED`
+    | `NOT_OPEN`
+    | `DELETED`
+    | `MOVED`
+    | `INCONSISTENT`
+    | `INCOMPLETE`
+    | `NOT_SUBMITTED`
 }
 
 /**
  * Replaces the player's draft, unless the picks aren't consistent with the
- * bracket
+ * bracket, or were made of another arrangement of it than `arrangement`
  */
 export const savePlayerDraft = (
   playerId: string,
   picks: Picks,
+  arrangement?: string,
 ): Promise<{ saved: true } | PicksRefusal> =>
-  withPlayerBracket(playerId, async (tx, bracket, battleIdByKey) => {
-    if (!arePicksConsistent(bracket, picks)) {
-      return { refusal: `INCONSISTENT` } as const
-    }
-    await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
-    return { saved: true } as const
-  })
+  withPlayerBracket(
+    playerId,
+    arrangement,
+    async (tx, bracket, battleIdByKey) => {
+      if (!arePicksConsistent(bracket, picks)) {
+        return { refusal: `INCONSISTENT` } as const
+      }
+      await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
+      return { saved: true } as const
+    },
+  )
 
 /**
  * Saves the picks as the player's draft and submits them, unless they're
- * incomplete. A first submission waits for approval, and a later one keeps the
- * submission's status
+ * incomplete, or were made of another arrangement than `arrangement`. A first
+ * submission waits for approval, and a later one keeps the submission's status
  */
 export const submitPlayerPicks = (
   playerId: string,
   picks: Picks,
+  arrangement?: string,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
-  withPlayerBracket(playerId, async (tx, bracket, battleIdByKey) => {
-    if (!arePicksComplete(bracket, picks)) {
-      return { refusal: `INCOMPLETE` } as const
-    }
-    const isChanged = !arePicksEqual(
-      await readPicks(tx, playerId, `SUBMISSION`),
-      picks,
-    )
-    await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
-    if (isChanged) {
-      await writePicks(tx, playerId, `SUBMISSION`, picks, battleIdByKey)
-    }
-    // `create` runs only for a first submission, which always changes the
-    // submitted picks
-    const picksChangedAt = new Date()
-    const submission = await tx.submission.upsert({
-      where: { playerId },
-      create: { playerId, picksChangedAt },
-      update: isChanged ? { picksChangedAt } : {},
-      select: { status: true, picksChangedAt: true },
-    })
-    return { submission: { ...submission, picks } }
-  })
+  withPlayerBracket(
+    playerId,
+    arrangement,
+    async (tx, bracket, battleIdByKey) => {
+      if (!arePicksComplete(bracket, picks)) {
+        return { refusal: `INCOMPLETE` } as const
+      }
+      const isChanged = !arePicksEqual(
+        await readPicks(tx, playerId, `SUBMISSION`),
+        picks,
+      )
+      await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
+      if (isChanged) {
+        await writePicks(tx, playerId, `SUBMISSION`, picks, battleIdByKey)
+      }
+      // `create` runs only for a first submission, which always changes the
+      // submitted picks
+      const picksChangedAt = new Date()
+      const submission = await tx.submission.upsert({
+        where: { playerId },
+        create: { playerId, picksChangedAt },
+        update: isChanged ? { picksChangedAt } : {},
+        select: { status: true, picksChangedAt: true },
+      })
+      await tx.player.update({
+        where: { id: playerId },
+        data: { picksClearedAt: null },
+      })
+      return { submission: { ...submission, picks } }
+    },
+  )
 
 /**
  * Replaces the player's draft with their submission's picks, unless the player
@@ -120,6 +176,47 @@ export const discardPlayerDraft = (
     `
     return { discarded: true } as const
   })
+
+/**
+ * Clears every pick of the battles in the year's contests. Before the lock, a
+ * submission that loses picks returns to a draft. Players who lose picks see a
+ * note until they submit
+ */
+export const clearPicks = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  battleIds: string[],
+  isLocked: boolean,
+): Promise<void> => {
+  await lockPlayers(tx)
+  const contest = { year }
+  const battleId = { in: battleIds }
+  await tx.player.updateMany({
+    where: { contest, picks: { some: { battleId } } },
+    data: { picksClearedAt: new Date() },
+  })
+  if (!isLocked) {
+    await tx.submission.deleteMany({
+      where: {
+        player: { contest, picks: { some: { stage: `SUBMISSION`, battleId } } },
+      },
+    })
+    await tx.pick.deleteMany({
+      where: { stage: `SUBMISSION`, player: { contest, submission: null } },
+    })
+  }
+  await tx.pick.deleteMany({ where: { battleId } })
+}
+
+/**
+ * Approving, deleting, and erasing players lock their rows in their own order,
+ * so one running alongside this could deadlock with it. Erasing locks players
+ * before their submissions, so this does too
+ */
+const lockPlayers = async (tx: Prisma.TransactionClient): Promise<void> => {
+  await tx.$executeRaw`LOCK TABLE "Player" IN SHARE ROW EXCLUSIVE MODE`
+  await tx.$executeRaw`LOCK TABLE "Submission" IN SHARE ROW EXCLUSIVE MODE`
+}
 
 const PICK_SELECT = {
   stage: true,
@@ -191,6 +288,7 @@ const withCurrentPlayer = <Result>(
  */
 const withPlayerBracket = <Result>(
   playerId: string,
+  arrangement: string | undefined,
   change: (
     tx: Prisma.TransactionClient,
     bracket: SeededBracket,
@@ -199,5 +297,7 @@ const withPlayerBracket = <Result>(
 ): Promise<Result | PicksRefusal> =>
   withCurrentPlayer(playerId, async (tx, year) => {
     const { bracket, battleIdByKey } = await readBracketRows(year, tx)
-    return change(tx, toSeededBracket(bracket), battleIdByKey)
+    return arrangement !== undefined && arrangement !== readArrangement(bracket)
+      ? ({ refusal: `MOVED` } as const)
+      : change(tx, toSeededBracket(bracket), battleIdByKey)
   })

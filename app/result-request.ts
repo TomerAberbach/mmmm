@@ -10,6 +10,7 @@ const idSchema = z.string().max(40)
  */
 export const resultRequestSchema = z.object({
   year: z.int(),
+  arrangement: z.string(),
   battle: z.object({ round: z.enum(Round), index: z.int().min(0) }),
   /** The winner to record. Null clears the result */
   winnerId: idSchema.nullable(),

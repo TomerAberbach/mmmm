@@ -44,9 +44,9 @@ const refuse = (): Response => new Response(null, { status: 400 })
 const writePicks = (playerId: string, request: PicksRequest) => {
   switch (request.intent) {
     case `save`:
-      return savePlayerDraft(playerId, request.picks)
+      return savePlayerDraft(playerId, request.picks, request.arrangement)
     case `submit`:
-      return submitPlayerPicks(playerId, request.picks)
+      return submitPlayerPicks(playerId, request.picks, request.arrangement)
     case `discard`:
       return discardPlayerDraft(playerId)
   }

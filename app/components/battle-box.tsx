@@ -217,7 +217,10 @@ const ReadOnlySide = ({
   )
 }
 
-/** The actual winner of a battle picked wrong, when it isn't one of the sides */
+/**
+ * The actual winner of a battle picked wrong or not picked, when it isn't one of
+ * the sides
+ */
 const WonBy = ({
   battle: { sides, marking },
   className,
@@ -225,7 +228,7 @@ const WonBy = ({
   battle: BattleView
   className: string
 }) => {
-  if (marking?.mark !== `WRONG` || !marking.actualWinner) {
+  if (!marking?.actualWinner || marking.mark === `RIGHT`) {
     return null
   }
   const { actualWinner } = marking
