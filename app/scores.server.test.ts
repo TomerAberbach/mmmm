@@ -4,10 +4,16 @@ import {
   createContestInNewYear,
   readEducatorId,
 } from '../test/contests.ts'
-import { CHAMPIONSHIP, pickEveryBattle, ROUND_1_FIRST } from '../test/picks.ts'
+import {
+  CHAMPIONSHIP,
+  pickEveryBattle,
+  ROUND_1_FIRST,
+  ROUND_2_FIRST,
+} from '../test/picks.ts'
 import {
   crownChampion,
   makeFirstResult,
+  makeMerge,
   readSeededBracket,
 } from '../test/results.ts'
 import { buildMarkedBracketView } from './bracket-view.ts'
@@ -118,4 +124,28 @@ test(`players are listed by score, then by when their picks last changed`, async
     [`Tied`, 1],
     [`Low`, 0],
   ])
+})
+
+test(`a pick of either side of a merge scores wherever the merge wins`, async () => {
+  const { contestId, year } = await createContestInNewYear()
+  const bracket = await readSeededBracket(year)
+  const picks = pickEveryBattle(bracket)
+  const [first, second] = listContenders(bracket, ROUND_1_FIRST)
+  const playerIds = await Promise.all(
+    [first, second].map(async combatant => {
+      const { id } = await addPlayer(contestId)
+      await submitPlayerPicks(
+        id,
+        pickWinner(bracket, picks, CHAMPIONSHIP, combatant!.id).picks,
+      )
+      return id
+    }),
+  )
+  const merge = await makeMerge(year)
+  await saveResult(merge)
+
+  await saveResult({ ...merge, battle: ROUND_2_FIRST, mergeName: null })
+
+  const scores = await Promise.all(playerIds.map(readScore))
+  expect(scores).toStrictEqual([3, 3])
 })

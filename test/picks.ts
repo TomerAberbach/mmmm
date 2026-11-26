@@ -8,11 +8,14 @@ import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket, StoredBracket } from '../app/seeded-bracket.ts'
 
 export const ROUND_1_FIRST: BattleRef = { round: `ROUND_1`, index: 0 }
+export const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
 export const CHAMPIONSHIP: BattleRef = { round: `CHAMPIONSHIP`, index: 0 }
 
 /** The input with a made-up row ID for each combatant */
-export const storeTestBracket = (input: BracketInput): StoredBracket =>
-  mapCombatants(input, name => ({ id: `id-${name}`, name }))
+export const storeTestBracket = (input: BracketInput): StoredBracket => ({
+  ...mapCombatants(input, name => ({ id: `id-${name}`, name })),
+  merges: [],
+})
 
 export const seedTestBracket = (input: BracketInput): SeededBracket =>
   toSeededBracket(storeTestBracket(input))

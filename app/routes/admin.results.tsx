@@ -3,13 +3,13 @@ import type { Route } from './+types/admin.results.ts'
 import {
   listBracketCombatants,
   readAdminYears,
-  readBracket,
-  readResultRows,
+  readBracketAndResults,
 } from '~/brackets.server.ts'
 import { CombatantRenames } from '~/components/combatant-renames.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { ResultsEditor } from '~/components/results-editor.tsx'
+import { listMerges, toSeededBracket } from '~/seeded-bracket.ts'
 
 /** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }
@@ -21,21 +21,19 @@ export const loader = async () => {
     return redirect(href(`/admin`))
   }
   const { year, summary } = current
-  const [bracket, results] = await Promise.all([
-    readBracket(year),
-    readResultRows(year),
-  ])
+  const { bracket, results } = await readBracketAndResults(year)
   return {
     year,
     summary,
-    bracket: bracket!,
+    bracket,
     results,
-    divisions: listBracketCombatants(bracket!),
+    divisions: listBracketCombatants(bracket),
+    merges: listMerges(toSeededBracket(bracket)),
   }
 }
 
 const AdminResults = ({
-  loaderData: { year, summary, bracket, results, divisions },
+  loaderData: { year, summary, bracket, results, divisions, merges },
 }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
@@ -50,7 +48,7 @@ const AdminResults = ({
       isLocked={summary.phase !== `OPEN`}
     />
     <div className='mx-auto w-full max-w-6xl'>
-      <CombatantRenames divisions={divisions} />
+      <CombatantRenames divisions={divisions} merges={merges} />
     </div>
   </div>
 )

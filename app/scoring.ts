@@ -1,7 +1,8 @@
 import { BATTLE_COUNTS, ROUNDS, toBattleKey } from './bracket.ts'
 import type { BattleRef, Round } from './bracket.ts'
-import { isContender } from './picks.ts'
+import { listContenders } from './picks.ts'
 import type { Results } from './results.ts'
+import { listMembers } from './seeded-bracket.ts'
 import type { SeededBracket } from './seeded-bracket.ts'
 
 /** The points for a right pick of one of the round's battles */
@@ -21,13 +22,17 @@ export const PERFECT_SCORE = ROUNDS.reduce(
   0,
 )
 
-/** The combatants, by ID, whose picks to win the battle score */
+/**
+ * The combatants, by ID, whose picks to win the battle score. A merge's winner
+ * stands for each member
+ */
 export const listRightWinners = (
+  bracket: SeededBracket,
   results: Results,
   battle: BattleRef,
 ): string[] => {
   const winner = results[toBattleKey(battle)]
-  return winner === undefined ? [] : [winner]
+  return winner === undefined ? [] : listMembers(bracket, winner)
 }
 
 /**
@@ -43,12 +48,14 @@ export const markPick = (
   battle: BattleRef,
   winner: string,
 ): PickMark => {
-  const rightWinners = listRightWinners(results, battle)
+  const rightWinners = listRightWinners(bracket, results, battle)
   if (rightWinners.includes(winner)) {
     return `RIGHT`
   }
   return rightWinners.length === 0 &&
-    isContender(bracket, battle, winner, results)
+    listContenders(bracket, battle, results).some(({ id }) =>
+      listMembers(bracket, id).includes(winner),
+    )
     ? `UNDECIDED`
     : `WRONG`
 }

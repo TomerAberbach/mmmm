@@ -172,10 +172,15 @@ model SeedSlot {
   @@unique([divisionId, seed])
 }
 
+// An entrant, or a merge's winner, whose members are the two sides that
+// advanced under its name
 model Combatant {
   id              String           @id
   year            Int
   name            String
+  mergedIntoId    String?
+  mergedInto      Combatant?       @relation("Merge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  members         Combatant[]      @relation("Merge")
   bracket         Bracket          @relation(fields: [year], references: [year], onDelete: Cascade)
   seedSlot        SeedSlot?
   wildCardEntrant WildCardEntrant?
@@ -183,6 +188,7 @@ model Combatant {
   wins            Result[]
 
   @@unique([year, name])
+  @@index([mergedIntoId])
 }
 
 // The battle of 2 to 4 entrants whose winner fills `seedSlot`
@@ -229,7 +235,8 @@ model Battle {
   @@unique([year, round, index])
 }
 
-// The admin's record of who won a battle, always one of its sides
+// The admin's record of who won a battle, always one of its sides, or the merge
+// of both
 model Result {
   battleId String    @id
   winnerId String

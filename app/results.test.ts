@@ -3,16 +3,15 @@ import { BRACKET_2026 } from '../prisma/brackets.ts'
 import {
   findCombatantId,
   ROUND_1_FIRST,
+  ROUND_2_FIRST,
   seedTestBracket,
 } from '../test/picks.ts'
-import type { BattleRef } from './bracket.ts'
 import { listContenders } from './picks.ts'
 import { clearResult, listDecidableBattles, recordResult } from './results.ts'
 
 const BRACKET = seedTestBracket(BRACKET_2026)
 const NILE_CROCODILE = findCombatantId(BRACKET, `Nile Crocodile`)
 const PAPYRUS = findCombatantId(BRACKET, `Papyrus`)
-const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
 
 test(`a later round's result also records the winner's earlier wins`, () => {
   const { results } = recordResult(BRACKET, {}, ROUND_2_FIRST, NILE_CROCODILE)
@@ -52,14 +51,14 @@ test(`clearing a result clears the later ones that depended on it`, () => {
   expect(change).toStrictEqual({ results: {}, cleared: [ROUND_2_FIRST] })
 })
 
-test(`a combatant who lost can't win a later battle`, () => {
+test(`a combatant who lost can't reach a later battle`, () => {
   const results = { 'ROUND_1:0': NILE_CROCODILE }
 
   const contenders = listContenders(BRACKET, ROUND_2_FIRST, results)
 
   expect(contenders.map(({ id }) => id)).not.toContain(PAPYRUS)
   expect(() => recordResult(BRACKET, results, ROUND_2_FIRST, PAPYRUS)).toThrow(
-    `can't win`,
+    `can't reach`,
   )
 })
 

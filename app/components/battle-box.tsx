@@ -19,7 +19,7 @@ import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { measureWidestName } from '~/name-width.ts'
 import type { PickMark } from '~/scoring.ts'
-import { findCombatant } from '~/seeded-bracket.ts'
+import { didAdvance } from '~/seeded-bracket.ts'
 import type { Combatant, Side } from '~/seeded-bracket.ts'
 
 const SIZE_CLASSES = {
@@ -46,11 +46,13 @@ const WILD_CARD_WINNER = `Wild card winner`
 export const readNameWidth = ({ battles }: BracketView): number =>
   measureWidestName([
     WILD_CARD_WINNER,
-    ...[...battles.WILD_CARD, ...battles.ROUND_1].flatMap(({ sides }) =>
-      sides.flatMap(side =>
-        side.kind === `combatant` ? side.combatant.name : [],
+    ...Object.values(battles)
+      .flat()
+      .flatMap(({ sides }) =>
+        sides.flatMap(side =>
+          side.kind === `combatant` ? side.combatant.name : [],
+        ),
       ),
-    ),
   ])
 
 /**
@@ -146,7 +148,7 @@ const readResultClasses = (side: Side, winner: Combatant | undefined) => {
   if (winner === undefined || side.kind === `undecided`) {
     return ``
   }
-  return side.combatant.id === winner.id
+  return didAdvance(side.combatant, winner)
     ? `bg-accent-soft/40 font-extrabold`
     : `text-muted`
 }
@@ -165,7 +167,9 @@ const readSideState = (
   if (id === winner?.id) {
     return marking.mark
   }
-  return id === marking.actualWinner?.id ? `ACTUAL_WINNER` : null
+  return didAdvance(side.combatant, marking.actualWinner)
+    ? `ACTUAL_WINNER`
+    : null
 }
 
 const STATE_CLASSES: Record<SideState, string> = {
@@ -224,10 +228,13 @@ const WonBy = ({
   if (marking?.mark !== `WRONG` || !marking.actualWinner) {
     return null
   }
-  const { id, name } = marking.actualWinner
-  return findCombatant(sides, id) ? null : (
+  const { actualWinner } = marking
+  return sides.some(
+    side =>
+      side.kind === `combatant` && didAdvance(side.combatant, actualWinner),
+  ) ? null : (
     <p aria-hidden className={`text-sm text-muted ${className}`}>
-      Won by <span className='font-semibold text-ink'>{name}</span>
+      Won by <span className='font-semibold text-ink'>{actualWinner.name}</span>
     </p>
   )
 }
@@ -359,14 +366,18 @@ const ResultBox = (props: PickableBoxProps) => {
           >
             <WildCardLineBar wildCardLine={wildCardLine} side={index} />
             <ToggleButton
-              isSelected={side.combatant.id === battle.winner?.id}
+              isSelected={didAdvance(side.combatant, battle.winner)}
               onChange={() => picking.pick(battle, side.combatant.id)}
               className={`flex min-w-0 flex-1 items-center gap-2 self-stretch text-start ${FOCUS_CLASSES}`}
             >
               <SeedNumber side={side} />
               <SideName side={side} className={classes.name} />
-              {side.combatant.id === battle.winner?.id ? (
-                <span className='sr-only'>, won. Press to clear</span>
+              {didAdvance(side.combatant, battle.winner) ? (
+                <span className='sr-only'>
+                  {side.combatant.id === battle.winner?.id
+                    ? `, won. Press to clear`
+                    : `, advanced in a merge. Press to record only this win`}
+                </span>
               ) : null}
             </ToggleButton>
           </div>

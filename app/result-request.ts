@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { freeTextSchema, MERGE_NAME } from './free-text.ts'
 import { Round } from './generated/prisma/enums.ts'
 
 const idSchema = z.string().max(40)
@@ -12,6 +13,8 @@ export const resultRequestSchema = z.object({
   battle: z.object({ round: z.enum(Round), index: z.int().min(0) }),
   /** The winner to record. Null clears the result */
   winnerId: idSchema.nullable(),
+  /** The combined name of a merge to record, whose new ID is `winnerId` */
+  mergeName: freeTextSchema(MERGE_NAME).nullable(),
   /** The battle's result before the change */
   previousWinnerId: idSchema.nullable(),
   /** The keys of the later battles whose results the change clears */

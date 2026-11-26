@@ -175,3 +175,80 @@ test(`the results editor passes accessibility checks`, async () => {
     .toHaveAttribute(`aria-pressed`, `true`)
   await expectNoAxeViolations()
 })
+
+test(`a merge is recorded under a combined name`, async () => {
+  const readRequests = await renderEditor({ 'ROUND_1:1': `id-Mouse` })
+  await page.getByRole(`button`, { name: `Record a merge` }).click()
+  await page
+    .getByRole(`dialog`)
+    .getByRole(`button`, { name: /Battle/u })
+    .click()
+  await page
+    .getByRole(`option`, { name: /^Round 1, battle 1: Nile Crocodile/u })
+    .click()
+  await expectNoAxeViolations()
+  await page.getByLabelText(`Combined name`).fill(`Croc & Roll`)
+
+  await page.getByRole(`button`, { name: `Record merge` }).click()
+
+  await expect.element(page.getByText(/^Saved at/u)).toBeVisible()
+  expect(readRequests()).toMatchObject([
+    {
+      battle: { round: `ROUND_1`, index: 0 },
+      mergeName: `Croc & Roll`,
+      previousWinnerId: null,
+    },
+  ])
+  await expect
+    .element(firstBattle().getByRole(`button`, { pressed: true }).nth(1))
+    .toBeVisible()
+  await page.getByRole(`tab`, { name: /^Round 2/u }).click()
+  await expect
+    .element(page.getByRole(`button`, { name: /Croc & Roll/u }))
+    .toBeVisible()
+})
+
+test(`a merge's name can't be another combatant's`, async () => {
+  const readRequests = await renderEditor({ 'ROUND_1:1': `id-Mouse` })
+  await page.getByRole(`button`, { name: `Record a merge` }).click()
+  await page.getByLabelText(`Combined name`).fill(`papyrus`)
+
+  await page.getByRole(`button`, { name: `Record merge` }).click()
+
+  await expect
+    .element(
+      page.getByText(
+        `papyrus is already a combatant. Give each combatant its own name`,
+      ),
+    )
+    .toBeVisible()
+  expect(readRequests()).toStrictEqual([])
+})
+
+test(`a cleared merge's name is free again`, async () => {
+  await renderEditor({ 'ROUND_1:1': `id-Mouse` })
+  const mergeFirst = async () => {
+    await page.getByRole(`button`, { name: `Record a merge` }).click()
+    await page
+      .getByRole(`dialog`)
+      .getByRole(`button`, { name: /Battle/u })
+      .click()
+    await page
+      .getByRole(`option`, { name: /^Round 1, battle 1: Nile Crocodile/u })
+      .click()
+    await page.getByRole(`button`, { name: `Record merge` }).click()
+    await expect.element(page.getByRole(`dialog`)).not.toBeInTheDocument()
+  }
+  await mergeFirst()
+  await press(/Papyrus/u)
+  await confirm(`Change result`)
+  await press(/Papyrus/u)
+  await confirm(`Clear result`)
+
+  await mergeFirst()
+
+  await page.getByRole(`tab`, { name: /^Round 2/u }).click()
+  await expect
+    .element(page.getByRole(`button`, { name: /Nile Crocodile & Papyrus/u }))
+    .toBeVisible()
+})

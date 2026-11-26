@@ -150,6 +150,10 @@ app
 - Change results only through `results.server.ts`. A request holds what the
   admin saw and confirmed, and `saveResult` refuses it when its effects would
   differ. The rules both sides share are in `results.ts`
+- A merge's winner is its own `Combatant` row, whose members are the two sides.
+  It lasts only while its result does, so results store and remove merges with
+  `replaceResults`. Compare a side with a winner through `didAdvance`, since the
+  winner may be a merge of the side
 - Decide which picks are right only in `listRightWinners` in `scoring.ts`. The
   marks, from `buildMarkedBracketView`, and the stored scores, from
   `storeScores`, both read it. Rank by score in the query that lists

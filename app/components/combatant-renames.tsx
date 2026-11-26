@@ -13,6 +13,7 @@ import { POSITION_LABELS, ROUND_NAMES } from '~/bracket.ts'
 import type { DivisionPosition } from '~/bracket.ts'
 import type { CombatantRow } from '~/brackets.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
+import type { Combatant } from '~/seeded-bracket.ts'
 
 type DivisionCombatants = {
   position: DivisionPosition
@@ -23,8 +24,10 @@ type DivisionCombatants = {
 /** Renames a published bracket's combatants */
 export const CombatantRenames = ({
   divisions,
+  merges,
 }: {
   divisions: DivisionCombatants[]
+  merges: Combatant[]
 }) => (
   <section className='flex flex-col gap-4'>
     <h2 className={SECTION_HEADING_CLASS_NAME}>Combatants</h2>
@@ -34,22 +37,42 @@ export const CombatantRenames = ({
     </p>
     <div className='grid items-start gap-6 lg:grid-cols-2'>
       {divisions.map(({ position, name, combatants }) => (
-        <fieldset
+        <RenameGroup
           key={position}
-          className='flex min-w-0 flex-col border-2 border-ink px-5 pt-3 pb-4'
-        >
-          <legend className='px-1.5 font-condensed text-xl font-extrabold uppercase'>
-            {POSITION_LABELS[position]}: {name}
-          </legend>
-          <ol>
-            {combatants.map(combatant => (
-              <RenameRow key={combatant.id} combatant={combatant} />
-            ))}
-          </ol>
-        </fieldset>
+          legend={`${POSITION_LABELS[position]}: ${name}`}
+          combatants={combatants}
+        />
       ))}
+      {merges.length > 0 ? (
+        <RenameGroup
+          legend='Merges'
+          combatants={merges.map(merge => ({
+            ...merge,
+            isWildCardEntrant: false,
+          }))}
+        />
+      ) : null}
     </div>
   </section>
+)
+
+const RenameGroup = ({
+  legend,
+  combatants,
+}: {
+  legend: string
+  combatants: CombatantRow[]
+}) => (
+  <fieldset className='flex min-w-0 flex-col border-2 border-ink px-5 pt-3 pb-4'>
+    <legend className='px-1.5 font-condensed text-xl font-extrabold uppercase'>
+      {legend}
+    </legend>
+    <ol>
+      {combatants.map(combatant => (
+        <RenameRow key={combatant.id} combatant={combatant} />
+      ))}
+    </ol>
+  </fieldset>
 )
 
 /**

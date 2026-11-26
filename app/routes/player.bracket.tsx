@@ -1,6 +1,6 @@
 import { href } from 'react-router'
 import type { Route } from './+types/player.bracket.ts'
-import { isOpenYear, readBracket, readResultRows } from '~/brackets.server.ts'
+import { isOpenYear, readBracketAndResults } from '~/brackets.server.ts'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
@@ -21,18 +21,18 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
   const { year } = readPlayContest(context)
   // A contest exists only while its year's bracket is published
-  const [bracket, { draft, submission }, isOpen, results] = await Promise.all([
-    readBracket(year),
-    readDraftAndSubmission(player.id),
-    isOpenYear(year),
-    readResultRows(year),
-  ])
+  const [{ bracket, results }, { draft, submission }, isOpen] =
+    await Promise.all([
+      readBracketAndResults(year),
+      readDraftAndSubmission(player.id),
+      isOpenYear(year),
+    ])
   return {
     playerId: player.id,
     displayName: player.displayName,
     year,
     isOpen,
-    bracket: bracket!,
+    bracket,
     draft,
     results,
     // A player sees their personal link once they submit
