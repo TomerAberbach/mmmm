@@ -2,6 +2,7 @@ import freeEmailDomains from 'free-email-domains'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
 import type { Organization } from './organizations.ts'
+import { endShares } from './shares.server.ts'
 
 /** Providers anyone can get an address from, including disposable ones */
 const FREE_EMAIL_DOMAINS: ReadonlySet<string> = new Set([
@@ -36,6 +37,7 @@ export const joinOrganization = (educatorId: string): Promise<void> =>
     if (domain === educator.organizationDomain) {
       return
     }
+    await endShares(educatorId, tx)
     if (domain !== null) {
       await tx.organization.createMany({
         data: { domain },

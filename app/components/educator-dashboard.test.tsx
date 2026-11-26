@@ -53,7 +53,13 @@ test(`before any bracket is published, the educator dashboard says when contests
 test(`an educator without contests is offered one way to create the first`, async () => {
   await renderDashboard({
     organization: null,
-    current: { year: 2027, isLocked: false, contests: [], deletedCount: 0 },
+    current: {
+      year: 2027,
+      isLocked: false,
+      contests: [],
+      sharedContests: [],
+      deletedCount: 0,
+    },
   })
 
   await expect
@@ -72,6 +78,7 @@ test(`each contest links to its page and offers its contest link`, async () => {
       year: 2027,
       isLocked: false,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -88,6 +95,7 @@ test(`the contest list passes accessibility checks`, async () => {
       year: 2027,
       isLocked: false,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -109,6 +117,7 @@ test(`creating a contest opens its page`, async () => {
       year: 2027,
       isLocked: false,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -133,6 +142,7 @@ test(`a contest without a name isn't created`, async () => {
       year: 2027,
       isLocked: false,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -150,7 +160,13 @@ test(`a contest without a name isn't created`, async () => {
 test(`the educator dashboard links deleted contests once there are some`, async () => {
   await renderDashboard({
     organization: null,
-    current: { year: 2027, isLocked: false, contests: [], deletedCount: 1 },
+    current: {
+      year: 2027,
+      isLocked: false,
+      contests: [],
+      sharedContests: [],
+      deletedCount: 1,
+    },
   })
 
   await expect
@@ -165,6 +181,7 @@ test(`the educator dashboard leaves out deleted contests without any`, async () 
       year: 2027,
       isLocked: false,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -184,6 +201,7 @@ test(`once submissions close, the educator dashboard says why no contest can be 
       year: 2027,
       isLocked: true,
       contests: CONTESTS,
+      sharedContests: [],
       deletedCount: 0,
     },
   })
@@ -221,4 +239,30 @@ test(`a named organization shows above the title`, async () => {
   await expect
     .element(page.getByRole(`heading`, { name: `Name your organization` }))
     .not.toBeInTheDocument()
+})
+
+test(`contests shared with the educator open from the dashboard`, async () => {
+  await renderDashboard({
+    organization: { domain: `example.com`, name: `Springfield High` },
+    current: {
+      year: 2027,
+      isLocked: false,
+      contests: CONTESTS,
+      sharedContests: [
+        {
+          id: `period-1`,
+          name: `Period 1 Chemistry`,
+          year: 2027,
+          educatorName: `Mr. Ruhle`,
+        },
+      ],
+      deletedCount: 0,
+    },
+  })
+  await expect.element(page.getByText(`Mr. Ruhle`)).toBeVisible()
+  await expectNoAxeViolations()
+
+  await page.getByRole(`link`, { name: `Period 1 Chemistry` }).click()
+
+  await expect.element(page.getByText(`Opened period-1`)).toBeVisible()
 })

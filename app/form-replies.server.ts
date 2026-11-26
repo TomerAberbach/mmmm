@@ -54,13 +54,16 @@ export const saveForm = async <Schema extends z.ZodType>(
   request: Request,
   schema: Schema,
   save: (value: z.output<Schema>) => Promise<FormErrors | null>,
+  options?: { resetForm?: boolean },
 ): Promise<SavedResult | FormRejection> => {
   const submission = parseWithZod(await request.formData(), { schema })
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
   const errors = await save(submission.value)
-  return errors ? rejectForm(submission, errors) : acceptForm(submission)
+  return errors
+    ? rejectForm(submission, errors)
+    : acceptForm(submission, options)
 }
 
 /**

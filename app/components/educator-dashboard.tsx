@@ -7,6 +7,7 @@ import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { SubmissionsClosed } from './submissions-closed.tsx'
 import type { ContestSummary } from '~/contests.server.ts'
 import type { Organization } from '~/organizations.ts'
+import type { SharedContest } from '~/shares.server.ts'
 
 /**
  * Contests open once a bracket is published, so there's no current year yet
@@ -22,6 +23,7 @@ export type EducatorDashboardView = {
         year: number
         isLocked: boolean
         contests: ContestSummary[]
+        sharedContests: SharedContest[]
         deletedCount: number
       }
     }
@@ -60,6 +62,9 @@ export const EducatorDashboard = ({
       ) : (
         <BracketNotReady upcomingYear={view.upcomingYear} />
       )}
+      {current && current.sharedContests.length > 0 ? (
+        <SharedContests contests={current.sharedContests} />
+      ) : null}
       {current?.isLocked && organization ? (
         <Link
           to={href(`/contests/leaderboard`)}
@@ -122,4 +127,23 @@ const ContestList = ({ contests }: { contests: ContestSummary[] }) => (
       </li>
     ))}
   </ul>
+)
+
+const SharedContests = ({ contests }: { contests: SharedContest[] }) => (
+  <section className='flex flex-col gap-3'>
+    <h2 className={SECTION_HEADING_CLASS_NAME}>Shared with you</h2>
+    <ul className='flex flex-col border-t-2 border-ink'>
+      {contests.map(({ id, name, educatorName }) => (
+        <li key={id} className='border-b border-muted-light py-2'>
+          <Link
+            to={href(`/contests/:contestId`, { contestId: id })}
+            className='text-lg font-semibold wrap-anywhere'
+          >
+            {name}
+          </Link>
+          <p className='wrap-anywhere text-muted'>{educatorName}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
 )

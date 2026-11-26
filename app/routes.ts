@@ -43,6 +43,11 @@ export default [
         `routes/contests.$contestId.leaderboard.$playerId.tsx`,
       ),
     ]),
+    route(`:contestId/shares`, `routes/contests.$contestId.shares.ts`),
+    route(
+      `:contestId/shares/stop`,
+      `routes/contests.$contestId.shares.stop.ts`,
+    ),
     route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
     route(`:contestId/link`, `routes/contests.$contestId.link.ts`),
     route(`:contestId/delete`, `routes/contests.$contestId.delete.ts`),

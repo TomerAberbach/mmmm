@@ -137,6 +137,11 @@ app
   `organizations.server.ts`. The package's install script only refetches its
   list, so `allowBuilds` denies it
 
+- A contest page under `routes/contests.contest.tsx` also opens for a colleague
+  the contest is shared with. Read the contest with `readRequiredContest` unless
+  a colleague may see the page, then with `readViewableContest`, which leaves
+  out the contest link
+
 ## Brackets
 
 - Store or replace an unpublished bracket with `saveUnpublishedBracket` from

@@ -4,6 +4,7 @@ import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ContestPlayers } from './contest-players.tsx'
+import { ContestShares } from './contest-shares.tsx'
 import { CopyButton } from './copy-button.tsx'
 import { Notice } from './notice.tsx'
 import { PageHeader } from './page-header.tsx'
@@ -16,17 +17,21 @@ import type { ContestPlayer } from '~/contest-players.server.ts'
 import type { Contest } from '~/contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 import { formatCount } from '~/format-count.ts'
+import type { Colleague } from '~/shares.server.ts'
 
 export const ContestDetails = ({
   contest,
   players,
   deletedCount,
+  colleagues,
   isOpen,
 }: {
   contest: Contest
   players: ContestPlayer[]
   /** How many players are in the contest's trash */
   deletedCount: number
+  /** The educators it's shared with. Null without an organization */
+  colleagues: Colleague[] | null
   /** Whether the contest's year takes players and picks */
   isOpen: boolean
 }) => (
@@ -54,6 +59,13 @@ export const ContestDetails = ({
       </>
     )}
     <ContestPlayers contestId={contest.id} players={players} isOpen={isOpen} />
+    {colleagues ? (
+      <ContestShares
+        key={contest.id}
+        contest={contest}
+        colleagues={colleagues}
+      />
+    ) : null}
     <div className='flex flex-wrap items-center justify-between gap-4 border-t-2 border-ink pt-4 print:hidden'>
       <Link to={href(`/contests/:contestId/trash`, { contestId: contest.id })}>
         {`Trash (${deletedCount})`}

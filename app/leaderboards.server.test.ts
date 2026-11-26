@@ -7,7 +7,7 @@ import {
   createContestInNewYear,
   readEducatorId,
 } from '../test/contests.ts'
-import { createEducator } from '../test/educators.ts'
+import { createMember } from '../test/educators.ts'
 import { pickEveryBattle } from '../test/picks.ts'
 import { readSeededBracket } from '../test/results.ts'
 import { addYear, setLocked } from '../test/years.ts'
@@ -21,7 +21,6 @@ import type {
   LeaderboardScope,
   LeaderboardViewer,
 } from './leaderboards.server.ts'
-import { joinOrganization } from './organizations.server.ts'
 import { submitPlayerPicks } from './player-picks.server.ts'
 import { deletePlayers } from './trash.server.ts'
 
@@ -219,11 +218,7 @@ const createOrganizationContests = async () => {
     contestName: string,
     educatorDomain: string,
   ) => {
-    const educatorId = await createEducator(name, {
-      domain: educatorDomain,
-      emailVerified: true,
-    })
-    await joinOrganization(educatorId)
+    const educatorId = await createMember(educatorDomain, name)
     return addContest(educatorId, contestName)
   }
   return {
@@ -336,4 +331,17 @@ test(`a contest's leaderboard is one page`, async () => {
   )
 
   expect(rows).toHaveLength(MANY)
+})
+
+test(`a colleague sees every name in a contest shared with them`, async () => {
+  const { scope, own, colleague } = await createOrganizationContests()
+  await addScored(colleague, `Colleague's`, 60)
+  const viewer = await asEducator(own)
+  await prisma.share.create({
+    data: { contestId: colleague, educatorId: await readEducatorId(own) },
+  })
+
+  const rows = await readRows(scope, viewer)
+
+  expect(rows.map(({ label }) => label)).toStrictEqual([`Colleague's`])
 })

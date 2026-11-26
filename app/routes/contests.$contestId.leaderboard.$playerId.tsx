@@ -1,7 +1,7 @@
 import { href } from 'react-router'
 import type { Route } from './+types/contests.$contestId.leaderboard.$playerId.ts'
 import { LeaderboardBracket } from '~/components/leaderboard-bracket.tsx'
-import { readRequiredContest } from '~/contest-context.server.ts'
+import { readViewableContest } from '~/contest-context.server.ts'
 import {
   readEducatorViewer,
   readRequiredSubmission,
@@ -13,7 +13,7 @@ export const handle = { fullWidth: true }
 
 export const loader = async ({ context, params }: Route.LoaderArgs) =>
   readRequiredSubmission(
-    toContestScope(readRequiredContest(context)),
+    toContestScope(readViewableContest(context).contest),
     params.playerId,
     readEducatorViewer(context),
   )
