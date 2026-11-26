@@ -495,7 +495,7 @@ test(`a player deletes their bracket after confirming`, async () => {
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Delete your bracket?Your personal link stops working. If you change your mind, ask your educator to restore it within 7 days. After that it’s erased for good.CancelDelete my bracket`,
+      `Delete your bracket?Your personal link stops working. If you change your mind, ask your educator to restore it within 7 days, or before next year’s bracket is published, if that’s sooner. After that it’s erased for good.CancelDelete my bracket`,
     )
 
   await page
@@ -587,6 +587,46 @@ test(`submitting as submissions close says so and reloads the page`, async () =>
     .toHaveTextContent(`Submissions just closed. Couldn’t submitReload`)
   await expect
     .element(page.getByRole(`button`, { name: `Reload` }))
+    .toBeVisible()
+})
+
+test.each([
+  [`PENDING`, `Submitted · can’t be approved`],
+  [`REJECTED`, `Your educator didn’t approve your bracket.`],
+] as const)(
+  `a %s submission of an orphaned contest says nothing of asking the educator`,
+  async (status, text) => {
+    await renderBracket({
+      draft: COMPLETE_PICKS,
+      submission: { ...SUBMISSION, status },
+      isOrphaned: true,
+    })
+
+    await expect.element(page.getByText(text, { exact: true })).toBeVisible()
+    await expect
+      .element(page.getByText(/ask them|tell your educator/u))
+      .not.toBeInTheDocument()
+  },
+)
+
+test(`submitting to an orphaned contest says no one can approve it`, async () => {
+  const { server } = await renderBracket({
+    draft: COMPLETE_PICKS,
+    isOrphaned: true,
+  })
+  answerRequests(Response.json({ ok: true }), () =>
+    recordSubmission(server, SUBMISSION),
+  )
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+
+  await expect
+    .element(
+      page.getByText(
+        `Your educator left MMMM, so no one can approve your bracket.`,
+        { exact: false },
+      ),
+    )
     .toBeVisible()
 })
 

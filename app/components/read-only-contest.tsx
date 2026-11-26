@@ -18,6 +18,7 @@ export const ReadOnlyContest = ({
   sharedBy,
   players,
   isOpen,
+  areNamesRemoved,
   children,
 }: {
   contest: { id: string; name: string; year: number }
@@ -26,6 +27,8 @@ export const ReadOnlyContest = ({
   players: ContestPlayer[]
   /** Whether the contest's year takes players and picks */
   isOpen: boolean
+  /** Whether the year's display names may be removed */
+  areNamesRemoved: boolean
   children?: ReactNode
 }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
@@ -67,7 +70,10 @@ export const ReadOnlyContest = ({
         targets={[
           CONTEST_TARGET,
           ...players
-            .filter(({ displayName }) => displayName !== UNNAMED_PLAYER)
+            .filter(
+              ({ displayName }) =>
+                !areNamesRemoved || displayName !== UNNAMED_PLAYER,
+            )
             .map(({ id, displayName }) => ({ id, label: displayName })),
         ]}
       />

@@ -1,9 +1,11 @@
 import { href } from 'react-router'
 import type { Route } from './+types/player.bracket.ts'
+import { LockHeadsUp } from '~/components/lock-heads-up.tsx'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
 import { PlayerRanks } from '~/components/player-ranks.tsx'
+import { readExpectedLockDate } from '~/current-bracket.server.ts'
 import { readPlayerRanks } from '~/leaderboard-scopes.server.ts'
 import { readArrangement } from '~/moves.ts'
 import { readPastYear } from '~/past-years.server.ts'
@@ -24,10 +26,12 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     { bracket, results, draft, submission, hasClearedPicks },
     isOpen,
     pastYear,
+    expectedLockDate,
   ] = await Promise.all([
     readPlayerBracket(player.id, year),
     isOpenYear(year),
     readPastYear(year),
+    readExpectedLockDate(year),
   ])
   const ranks =
     !isOpen && submission?.status === `APPROVED`
@@ -39,6 +43,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     displayName: player.displayName,
     year,
     isOpen,
+    expectedLockDate: isOpen ? expectedLockDate : null,
     isPast: pastYear !== null,
     isOrphaned: contest.educatorName === null,
     bracket,
@@ -57,6 +62,7 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
   const {
     displayName,
     isOpen,
+    expectedLockDate,
     draft,
     results,
     hasClearedPicks,
@@ -71,6 +77,9 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
   return (
     <div className='flex flex-col gap-6'>
       <PageTitle>{`${displayName}’s bracket`}</PageTitle>
+      {expectedLockDate ? (
+        <LockHeadsUp expectedLockDate={expectedLockDate} />
+      ) : null}
       {isOpen ? (
         <PlayerBracket
           // A move can clear picks, and the browser may remember another player
@@ -87,6 +96,7 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
           {...shared}
           {...paths}
           isPast={isPast}
+          hasClearedPicks={hasClearedPicks}
           draft={draft}
           results={results}
           ranks={

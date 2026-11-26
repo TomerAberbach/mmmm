@@ -29,6 +29,7 @@ export const LockedBracket = ({
   bracket,
   draft,
   submitted,
+  hasClearedPicks,
   results,
   ranks,
   forgetPath,
@@ -43,6 +44,8 @@ export const LockedBracket = ({
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted | null
+  /** Whether a move of combatants cleared picks since the player submitted */
+  hasClearedPicks: boolean
   results: Results
   /** Null unless the submission is approved */
   ranks: ReactNode
@@ -54,7 +57,9 @@ export const LockedBracket = ({
     {submitted ? (
       <SubmittedBracket
         year={year}
-        canBeApproved={!isPast && !isOrphaned}
+        isPast={isPast}
+        isOrphaned={isOrphaned}
+        hasClearedPicks={hasClearedPicks}
         bracket={bracket}
         draft={draft}
         submitted={submitted}
@@ -64,7 +69,12 @@ export const LockedBracket = ({
         playerId={playerId}
       />
     ) : (
-      <UnsubmittedBracket year={year} bracket={bracket} draft={draft} />
+      <UnsubmittedBracket
+        year={year}
+        bracket={bracket}
+        draft={draft}
+        hasClearedPicks={hasClearedPicks}
+      />
     )}
     <div className='print:hidden'>
       <DeleteButton
@@ -73,6 +83,7 @@ export const LockedBracket = ({
         isOrphaned={isOrphaned}
         isSending={false}
         isOpen={false}
+        isPast={isPast}
       />
     </div>
   </>
@@ -80,7 +91,9 @@ export const LockedBracket = ({
 
 const SubmittedBracket = ({
   year,
-  canBeApproved,
+  isPast,
+  isOrphaned,
+  hasClearedPicks,
   bracket,
   draft,
   submitted: { submission, personalLink },
@@ -90,7 +103,9 @@ const SubmittedBracket = ({
   playerId,
 }: {
   year: number
-  canBeApproved: boolean
+  isPast: boolean
+  isOrphaned: boolean
+  hasClearedPicks: boolean
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted
@@ -107,9 +122,17 @@ const SubmittedBracket = ({
           arePicksEqual(draft, submission.picks)
             ? ``
             : `The changes you made after submitting weren’t submitted. `
-        }${!canBeApproved && submission.status === `PENDING` ? NEVER_APPROVED : STATUS_NOTES[submission.status]}`}
+        }${describeStatus(submission.status, isPast, isOrphaned)}`}
       </Notice>
     </div>
+    {hasClearedPicks ? (
+      <div className='max-w-prose'>
+        <Notice kind='alert'>
+          The bracket changed after submissions closed, so some of your picks
+          were cleared.
+        </Notice>
+      </div>
+    ) : null}
     {ranks}
     <MarkedBracket
       year={year}
@@ -117,7 +140,7 @@ const SubmittedBracket = ({
       picks={submission.picks}
       results={results}
     >
-      <PicksChanged at={submission.picksChangedAt} />
+      <PicksChanged at={submission.picksChangedAt} isOrphaned={isOrphaned} />
       <div className='flex flex-wrap gap-3 print:hidden'>
         <PersonalLinkButton personalLink={personalLink} isOpen={false} />
         <ForgetButton
@@ -136,10 +159,12 @@ const UnsubmittedBracket = ({
   year,
   bracket,
   draft,
+  hasClearedPicks,
 }: {
   year: number
   bracket: StoredBracket
   draft: Picks
+  hasClearedPicks: boolean
 }) => {
   const view = useMemo(
     () => buildPicksView(year, toSeededBracket(bracket), draft),
@@ -153,6 +178,13 @@ const UnsubmittedBracket = ({
           count
         </Notice>
       </div>
+      {hasClearedPicks ? (
+        <div className='max-w-prose'>
+          <Notice kind='alert'>
+            The bracket changed, so some of your picks were cleared
+          </Notice>
+        </div>
+      ) : null}
       <div className='print:page-landscape'>
         <Bracket view={view} />
       </div>
@@ -167,3 +199,22 @@ const STATUS_NOTES: Record<SubmissionStatus, string> = {
 }
 
 const NEVER_APPROVED = `Your educator didn’t approve your bracket in time, so it doesn’t count.`
+
+/** Notes that read otherwise in an orphaned contest */
+const ORPHANED_STATUS_NOTES: Partial<typeof STATUS_NOTES> = {
+  PENDING: `Your educator left MMMM, so no one can approve your bracket.`,
+  REJECTED: `Your educator didn’t approve your bracket.`,
+}
+
+const describeStatus = (
+  status: SubmissionStatus,
+  isPast: boolean,
+  isOrphaned: boolean,
+): string => {
+  if (isPast && status === `PENDING`) {
+    return NEVER_APPROVED
+  }
+  return (
+    (isOrphaned ? ORPHANED_STATUS_NOTES[status] : null) ?? STATUS_NOTES[status]
+  )
+}

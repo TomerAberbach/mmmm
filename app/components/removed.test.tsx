@@ -3,11 +3,25 @@ import { page } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import { formatLocalDate } from '../dates.ts'
-import { DeletedBracket } from './removed.tsx'
+import {
+  DeletedBracket,
+  DeletedOwnBracket,
+  RemovedContest,
+} from './removed.tsx'
 
-const renderDeleted = async (props: Parameters<typeof DeletedBracket>[0]) => {
+const renderDeleted = async (
+  props: Omit<Parameters<typeof DeletedBracket>[0], `isPast` | `isOrphaned`> & {
+    isPast?: boolean
+    isOrphaned?: boolean
+  },
+) => {
   await renderRoutes([
-    { path: `/`, Component: () => <DeletedBracket {...props} /> },
+    {
+      path: `/`,
+      Component: () => (
+        <DeletedBracket isPast={false} isOrphaned={false} {...props} />
+      ),
+    },
   ])
 }
 
@@ -41,7 +55,7 @@ test(`a bracket its player deleted says when it can be restored by`, async () =>
   await expect
     .element(
       page.getByText(
-        `It was deleted from its personal link. If that wasn’t you, ask your educator to restore it by ${formatLocalDate(restoreBy)}.`,
+        `It was deleted from its personal link. If that wasn’t you, ask your educator to restore it by ${formatLocalDate(restoreBy)}, or before next year’s bracket is published, if that’s sooner.`,
       ),
     )
     .toBeVisible()
@@ -52,4 +66,55 @@ test(`a contest that takes no players offers no new bracket`, async () => {
 
   await expect.element(page.getByRole(`heading`)).toBeVisible()
   await expect.element(page.getByRole(`link`)).not.toBeInTheDocument()
+})
+
+test(`a past year's deleted bracket says only its own date`, async () => {
+  const restoreBy = new Date(`2027-03-22T15:40:00Z`)
+
+  await renderDeleted({
+    restoreBy,
+    contestPath: null,
+    isOpen: false,
+    isPast: true,
+  })
+
+  await expect
+    .element(
+      page.getByText(
+        `ask your educator to restore it by ${formatLocalDate(restoreBy)}. This contest`,
+        { exact: false },
+      ),
+    )
+    .toBeVisible()
+})
+
+test.each([
+  [
+    `a bracket its player deleted`,
+    () => (
+      <DeletedBracket
+        restoreBy={new Date(`2027-03-22T15:40:00Z`)}
+        contestPath={null}
+        isOpen={false}
+        isPast={false}
+        isOrphaned
+      />
+    ),
+  ],
+  [
+    `the player's own deletion`,
+    () => <DeletedOwnBracket contestPath={null} isPast={false} isOrphaned />,
+  ],
+  [`a removed contest`, () => <RemovedContest isOrphaned />],
+])(`%s of an orphaned contest says no one can restore it`, async (_, Page) => {
+  await renderRoutes([{ path: `/`, Component: Page }])
+
+  await expect
+    .element(
+      page.getByText(`Your educator left MMMM, so no one can restore it.`, {
+        exact: false,
+      }),
+    )
+    .toBeVisible()
+  await expect.element(page.getByText(/ask /iu)).not.toBeInTheDocument()
 })

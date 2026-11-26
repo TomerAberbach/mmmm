@@ -7,6 +7,7 @@ import type {
   LeaderboardRow,
   PlayerRank,
 } from './leaderboard-row.ts'
+import { areNamesRemoved } from './name-removal.server.ts'
 import { CONTEST_ORGANIZATION_SQL } from './organizations.server.ts'
 import { countRowsBefore, PAGE_SIZE, toPageNumber } from './page-number.ts'
 import type { Picks } from './picks.ts'
@@ -144,13 +145,22 @@ const labelRows = async (
   viewer: LeaderboardViewer,
 ): Promise<(row: RankedSubmission) => LeaderboardRow> => {
   const isNamed = await readNamed(tx, scope.year, viewer)
-  return row => ({
-    playerId: row.playerId,
-    label: isNamed(row) ? row.displayName : describeHidden(row, scope),
-    score: row.score,
-    rank: row.rank,
-    isOwn: viewer.kind === `player` && viewer.playerId === row.playerId,
-  })
+  // A player may have entered the name that stands in for a removed one
+  const mayBeRemoved = areNamesRemoved(scope.year, new Date())
+  return row => {
+    const label = isNamed(row) ? row.displayName : describeHidden(row, scope)
+    return {
+      playerId: row.playerId,
+      label,
+      isNameRemoved:
+        mayBeRemoved &&
+        row.displayName === UNNAMED_PLAYER &&
+        label === UNNAMED_PLAYER,
+      score: row.score,
+      rank: row.rank,
+      isOwn: viewer.kind === `player` && viewer.playerId === row.playerId,
+    }
+  }
 }
 
 /** Resolves to whether the viewer sees a row's name */
@@ -283,18 +293,29 @@ export const readPlayerRank = async (
   return isRanked ? playerRank : null
 }
 
-/** The player's contest. Null when `readPlayerRank` would be */
-export const readRankedContestId = async (
+/**
+ * The contest of the player's row. Null when `readPlayerRank` would be, or when
+ * the row only stands in for a removed name
+ */
+export const readReportableContestId = async (
   scope: LeaderboardScope,
   playerId: string,
+  viewer: LeaderboardViewer,
 ): Promise<string | null> => {
   if (await isOpenYear(scope.year)) {
     return null
   }
-  const [row] = await prisma.$queryRaw<{ contestId: string }[]>`
-    SELECT "Contest"."id" AS "contestId"
+  const [row] = await prisma.$queryRaw<
+    { contestId: string; displayName: string }[]
+  >`
+    SELECT "Contest"."id" AS "contestId", "Player"."displayName"
     ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
       AND "Player"."id" = ${playerId}
   `
-  return row?.contestId ?? null
+  if (row?.displayName !== UNNAMED_PLAYER) {
+    return row?.contestId ?? null
+  }
+  // Only ranking the row tells which label the viewer sees
+  const submission = await readLeaderboardSubmission(scope, playerId, viewer)
+  return submission && !submission.row.isNameRemoved ? row.contestId : null
 }

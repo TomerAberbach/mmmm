@@ -18,6 +18,7 @@ const PLAYERS: ContestPlayer[] = [
 const renderContest = (
   isOpen: boolean,
   sharedBy: string | null = `Ms. Frizzle`,
+  { players = PLAYERS, areNamesRemoved = false } = {},
 ) =>
   renderRoutes([
     {
@@ -30,7 +31,8 @@ const renderContest = (
             year: 2027,
           }}
           sharedBy={sharedBy}
-          players={PLAYERS}
+          players={players}
+          areNamesRemoved={areNamesRemoved}
           isOpen={isOpen}
         />
       ),
@@ -66,4 +68,35 @@ test(`a past contest of the educator's own has no Report`, async () => {
 
   await expect.element(page.getByText(`Ava L.`)).toBeVisible()
   await expect.element(page.getByRole(`button`)).not.toBeInTheDocument()
+})
+
+const UNNAMED: ContestPlayer = { ...PLAYERS[0]!, displayName: `Player` }
+
+test(`a player who entered "Player" as their name can be reported`, async () => {
+  await renderContest(false, `Ms. Frizzle`, { players: [UNNAMED] })
+  await page.getByRole(`button`, { name: `Report` }).click()
+
+  await page
+    .getByRole(`dialog`)
+    .getByRole(`button`, { name: /^The contest/u })
+    .click()
+
+  await expect
+    .element(page.getByRole(`option`, { name: `Player`, exact: true }))
+    .toBeVisible()
+})
+
+test(`a removed name can't be reported`, async () => {
+  await renderContest(false, `Ms. Frizzle`, {
+    players: [UNNAMED],
+    areNamesRemoved: true,
+  })
+
+  await page.getByRole(`button`, { name: `Report` }).click()
+
+  const dialog = page.getByRole(`dialog`)
+  await expect.element(dialog.getByText(`The contest’s name`)).toBeVisible()
+  await expect
+    .element(dialog.getByText(`Player`, { exact: true }))
+    .not.toBeInTheDocument()
 })

@@ -32,6 +32,10 @@ export const removeExpiredNames = async (now: Date): Promise<number> => {
   })
 }
 
+/** Whether the year's display names may be removed by `now` */
+export const areNamesRemoved = (year: number, now: Date): boolean =>
+  year <= readNameRemovalYear(now)
+
 /** The newest year whose tournament ended two years ago or earlier */
 export const readNameRemovalYear = (now: Date): number => {
   const { year, month } = readArizonaDate(now)

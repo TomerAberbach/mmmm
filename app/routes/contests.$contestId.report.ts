@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.report.ts'
 import { readViewableContest } from '~/contest-context.server.ts'
-import { hasPlayer } from '~/contest-players.server.ts'
+import { hasReportablePlayer } from '~/contest-players.server.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { answerReport } from '~/report-replies.server.ts'
 
@@ -12,8 +12,10 @@ export const action = ({
   request,
   context,
 }: Route.ActionArgs): Promise<ConfirmResult> => {
-  const { id } = readViewableContest(context).contest
+  const { contest } = readViewableContest(context)
   return answerReport(request, async playerId =>
-    playerId === null || (await hasPlayer(id, playerId)) ? id : null,
+    playerId === null || (await hasReportablePlayer(contest, playerId))
+      ? contest.id
+      : null,
   )
 }

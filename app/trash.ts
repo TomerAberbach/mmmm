@@ -2,6 +2,9 @@ import type { PlayerDeleter } from './generated/prisma/enums.ts'
 
 export const PLAYER_DELETION_DAYS = 7
 
+/** Follows when a deleted player is erased, since an archived year's trash goes */
+export const OR_BEFORE_ARCHIVE = `, or before next year’s bracket is published, if that’s sooner`
+
 const PLAYER_DELETION_MILLISECONDS = PLAYER_DELETION_DAYS * 24 * 60 * 60 * 1000
 
 /**

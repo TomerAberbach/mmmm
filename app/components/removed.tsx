@@ -3,7 +3,7 @@ import { ButtonLink } from './button.tsx'
 import { LocalTime } from './local-time.tsx'
 import { PageTitle } from './page-title.tsx'
 import { formatLocalDate } from '~/dates.ts'
-import { PLAYER_DELETION_DAYS } from '~/trash.ts'
+import { OR_BEFORE_ARCHIVE, PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 const Removed = ({
   title,
@@ -24,9 +24,17 @@ const Removed = ({
   </div>
 )
 
-export const RemovedContest = () => (
+/** Follows a link that a deletion turned off once no educator can restore it */
+const CANNOT_RESTORE = `Your educator left MMMM, so no one can restore it.`
+
+export const RemovedContest = ({
+  isOrphaned,
+}: {
+  /** Whether the contest has no educator */
+  isOrphaned: boolean
+}) => (
   <Removed title='Your educator removed this contest'>
-    Ask them if you think that’s a mistake.
+    {isOrphaned ? CANNOT_RESTORE : `Ask them if you think that’s a mistake.`}
   </Removed>
 )
 
@@ -43,18 +51,31 @@ export const DeletedBracket = ({
   restoreBy,
   contestPath,
   isOpen,
+  isPast,
+  isOrphaned,
 }: {
   /** When a bracket its player deleted is erased, or null for an educator's */
   restoreBy: Date | null
   contestPath: string | null
   /** Whether the contest takes new players */
   isOpen: boolean
+  /** Whether a newer year is current */
+  isPast: boolean
+  /** Whether the contest has no educator */
+  isOrphaned: boolean
 }) =>
   restoreBy ? (
     <Removed title='This bracket was deleted' contestPath={contestPath}>
-      It was deleted from its personal link. If that wasn’t you, ask your
-      educator to restore it by{` `}
-      <LocalTime date={restoreBy} format={formatLocalDate} />.
+      It was deleted from its personal link.{` `}
+      {isOrphaned ? (
+        CANNOT_RESTORE
+      ) : (
+        <>
+          If that wasn’t you, ask your educator to restore it by{` `}
+          <LocalTime date={restoreBy} format={formatLocalDate} />
+          {isPast ? null : OR_BEFORE_ARCHIVE}.
+        </>
+      )}
       {isOpen ? null : ` ${CANNOT_START}`}
     </Removed>
   ) : (
@@ -69,10 +90,18 @@ export const DeletedBracket = ({
 /** What a player sees right after deleting their own bracket */
 export const DeletedOwnBracket = ({
   contestPath,
+  isPast,
+  isOrphaned,
 }: {
   contestPath: string | null
+  /** Whether a newer year is current */
+  isPast: boolean
+  /** Whether the contest has no educator */
+  isOrphaned: boolean
 }) => (
   <Removed title='Your bracket is deleted' contestPath={contestPath}>
-    {`If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days.`}
+    {isOrphaned
+      ? CANNOT_RESTORE
+      : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days${isPast ? `` : OR_BEFORE_ARCHIVE}.`}
   </Removed>
 )

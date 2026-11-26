@@ -29,7 +29,7 @@ const LEO: DeletedPlayer = {
 /** The actions take the players out of the trash, unless `refuse` is set */
 const renderTrash = async (
   initialPlayers: DeletedPlayer[],
-  { refuse = false } = {},
+  { refuse = false, isOpen = true } = {},
 ) => {
   let players = initialPlayers
   const remove = async (request: Request) => {
@@ -56,6 +56,7 @@ const renderTrash = async (
               year: 2027,
               link: `https://mmmm.onl/play/secret`,
             }}
+            isOpen={isOpen}
             players={useLoaderData<DeletedPlayer[]>()}
           />
         ),
@@ -102,6 +103,14 @@ test(`a player's own deletion says when it's erased`, async () => {
         `Deleted by player, ${formatDateTime(DELETED_AT)}. Erased for good ${formatLocalDate(SEVEN_DAYS_LATER)}`,
       ),
     )
+    .toBeVisible()
+})
+
+test(`a draft in a locked year is said to be never submitted`, async () => {
+  await renderTrash([LEO], { isOpen: false })
+
+  await expect
+    .element(row(`Leo M.`).getByText(`Leo M. · Never submitted`))
     .toBeVisible()
 })
 

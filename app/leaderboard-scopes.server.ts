@@ -5,7 +5,7 @@ import {
   readLeaderboard,
   readLeaderboardSubmission,
   readPlayerRank,
-  readRankedContestId,
+  readReportableContestId,
 } from './leaderboards.server.ts'
 import type {
   LeaderboardScope,
@@ -102,16 +102,17 @@ export const readEducatorScopes = async (
     toGlobalScope(year),
   ].filter(named => named !== null)
 
-/** Null unless the player has a row in one of the scopes */
-export const findRankedContestId = async (
+/** Null unless the player has a row to report in one of the scopes */
+export const findReportableContestId = async (
   scopes: NamedScope[],
   playerId: string | null,
+  viewer: LeaderboardViewer,
 ): Promise<string | null> => {
   if (playerId === null) {
     return null
   }
   for (const { scope } of scopes) {
-    const contestId = await readRankedContestId(scope, playerId)
+    const contestId = await readReportableContestId(scope, playerId, viewer)
     if (contestId !== null) {
       return contestId
     }

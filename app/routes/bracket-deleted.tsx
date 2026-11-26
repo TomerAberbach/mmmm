@@ -1,4 +1,11 @@
+import type { Route } from './+types/bracket-deleted.ts'
 import { DeletedOwnBracket } from '~/components/removed.tsx'
+import { readRemovedContext } from '~/removed-paths.ts'
 
-const BracketDeletedPage = () => <DeletedOwnBracket contestPath={null} />
+export const loader = ({ request }: Route.LoaderArgs) =>
+  readRemovedContext(request)
+
+const BracketDeletedPage = ({ loaderData }: Route.ComponentProps) => (
+  <DeletedOwnBracket contestPath={null} {...loaderData} />
+)
 export default BracketDeletedPage

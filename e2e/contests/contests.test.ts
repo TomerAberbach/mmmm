@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 import { ADMINS, signInAsAdmin } from '../admins.ts'
 import { newEmailAddress, signInConfirmed } from '../auth.ts'
+import { YEAR } from '../brackets.ts'
 import { createContest } from '../contests.ts'
 import { confirmDialog } from '../dialogs.ts'
 
@@ -74,6 +75,8 @@ const createContestAsEducator = async (
 
 /** By keyboard */
 const pickEveryBattle = async (page: Page): Promise<void> => {
+  // 64 picks take most of the default limit on CI's few cores
+  test.slow()
   const nextBattle = page.getByRole(`button`, { name: `Next battle to pick` })
   while (await nextBattle.isVisible()) {
     await nextBattle.click()
@@ -531,7 +534,7 @@ test(`deleting from a page left open by another player deletes neither bracket`,
 
   await expect(
     page.getByText(
-      `Your bracket wasn’t deleted. Open your personal link and try again`,
+      `Your bracket wasn’t deleted. Open your personal link, or ask your educator for one, and try again`,
     ),
   ).toBeVisible()
   await nextPlayer.reload()
@@ -659,4 +662,70 @@ test(`a leaderboard opens only for a player the browser remembers`, async ({
   await expect(page).toHaveURL(
     new RegExp(`${pathname.replace(`/bracket`, `/forgotten`)}$`, `u`),
   )
+})
+
+test(`an educator's dashboard and a player's bracket show the expected lock date`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  const heading = `Expected to lock March 19, ${YEAR}`
+  await startBracketAsMaya(page, link)
+  await educator.goto(`/contests`)
+
+  await expect(page.getByText(heading, { exact: false })).toBeVisible()
+  await expect(educator.getByText(heading, { exact: false })).toBeVisible()
+})
+
+test(`a player's bare address opens their bracket`, async ({
+  page,
+  browser,
+}) => {
+  await startBracketAsMaya(page, await createContestLink(browser))
+  const bracketUrl = page.url()
+
+  await page.goto(bracketUrl.replace(`/bracket`, ``))
+
+  await expect(page).toHaveURL(bracketUrl)
+})
+
+test(`the page that says the computer forgot opens the bracket of a player it remembers`, async ({
+  page,
+  browser,
+}) => {
+  await startBracketAsMaya(page, await createContestLink(browser))
+  const bracketUrl = page.url()
+
+  await page.goto(bracketUrl.replace(`/bracket`, `/forgotten`))
+
+  await expect(page).toHaveURL(bracketUrl)
+})
+
+test(`a player the computer forgot can ask for a personal link to a bracket they started`, async ({
+  page,
+  browser,
+}) => {
+  await startBracketAsMaya(page, await createContestLink(browser))
+  await page.context().clearCookies()
+
+  await page.reload()
+
+  await expect(
+    page.getByText(
+      `Open your personal link to come back to your bracket. If you don’t have one, ask your educator for a personal link to the bracket you started, or open the contest link they shared to start a new bracket.`,
+    ),
+  ).toBeVisible()
+})
+
+test(`an open year's page leaves out its leaderboards`, async ({ page }) => {
+  await signInConfirmed(page, newEmailAddress())
+
+  await page.goto(`/contests/years/${YEAR}`)
+
+  await expect(
+    page.getByRole(`heading`, { name: `${YEAR} bracket` }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole(`link`, { name: /leaderboard/iu }),
+  ).not.toBeAttached()
 })

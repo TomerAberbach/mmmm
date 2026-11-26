@@ -3,6 +3,7 @@ import type { Route } from './+types/my-bracket.ts'
 import { BrokenLink, DeletedBracket } from '~/components/removed.tsx'
 import { rememberPlayer } from '~/player-cookie.server.ts'
 import { readPersonalLink } from '~/players.server.ts'
+import { toRemovedContestPath } from '~/removed-paths.ts'
 
 /**
  * A personal link moves its secret into the player's cookie and redirects, so
@@ -14,7 +15,7 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
     return data(null, { status: 404 })
   }
   if (target.state === `contestDeleted`) {
-    throw redirect(href(`/contest-removed`))
+    throw redirect(toRemovedContestPath(target.isOrphaned))
   }
   if (target.state === `deleted`) {
     const { startLinkSecret: linkSecret } = target
@@ -22,6 +23,8 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
       {
         restoreBy: target.restoreBy,
         isOpen: target.isOpen,
+        isPast: target.isPast,
+        isOrphaned: target.isOrphaned,
         contestPath:
           linkSecret === null
             ? null

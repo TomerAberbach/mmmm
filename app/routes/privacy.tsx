@@ -61,9 +61,10 @@ const Privacy = () => (
       <p>
         A player can delete their bracket from their personal link. Unless their
         educator restores it, it’s erased for good after{` `}
-        {PLAYER_DELETION_DAYS} days, though backups keep it for up to 30 more. A
-        parent can ask the educator, or email <SupportEmail />, to see or delete
-        it. Requests are handled within 30 days.
+        {PLAYER_DELETION_DAYS} days, or when next year’s bracket is published,
+        if that’s sooner, though backups keep it for up to 30 more. A parent can
+        ask the educator, or email <SupportEmail />, to see or delete it.
+        Requests are handled within 30 days.
       </p>
       <p>
         An educator can delete their account in account settings. Their contests

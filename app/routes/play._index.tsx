@@ -21,6 +21,7 @@ import {
 import { displayNameSchema } from '~/player-forms.ts'
 import { limitNewPlayer } from '~/player-limits.server.ts'
 import { createPlayer } from '~/players.server.ts'
+import { toRemovedContestPath } from '~/removed-paths.ts'
 import { isOpenYear } from '~/years.server.ts'
 
 /**
@@ -81,7 +82,7 @@ export const action = async ({
       throw brokenLink()
     }
     if (player.refusal === `CONTEST_DELETED`) {
-      return redirect(href(`/contest-removed`))
+      return redirect(toRemovedContestPath(contest.educatorName === null))
     }
     return player.refusal === `LIMITED`
       ? rejectTooManyNewPlayers(submission, player.limit)

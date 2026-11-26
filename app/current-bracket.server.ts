@@ -2,6 +2,7 @@ import { buildBracketView } from './bracket-view.ts'
 import type { BracketView } from './bracket-view.ts'
 import { readCurrentBracket } from './brackets.server.ts'
 import { formatDate } from './dates.ts'
+import { prisma } from './db.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 
 export type CurrentBracket = {
@@ -26,3 +27,14 @@ export const readCurrentBracketView =
       }
     )
   }
+
+/** Such as "March 19, 2027". Null once the year locks */
+export const readExpectedLockDate = async (
+  year: number,
+): Promise<string | null> => {
+  const bracket = await prisma.bracket.findUnique({
+    where: { year, lockedAt: null },
+    select: { expectedLockDate: true },
+  })
+  return bracket?.expectedLockDate ? formatDate(bracket.expectedLockDate) : null
+}

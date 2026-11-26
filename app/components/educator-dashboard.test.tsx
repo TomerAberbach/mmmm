@@ -58,6 +58,7 @@ test(`an educator without contests is offered one way to create the first`, asyn
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: [],
       sharedContests: [],
       deletedCount: 0,
@@ -81,6 +82,7 @@ test(`each contest links to its page and offers its contest link`, async () => {
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -100,6 +102,7 @@ test(`the contest list passes accessibility checks`, async () => {
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -124,6 +127,7 @@ test(`creating a contest opens its page`, async () => {
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -151,6 +155,7 @@ test(`a contest without a name isn't created`, async () => {
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -175,6 +180,7 @@ test(`the educator dashboard links deleted contests once there are some`, async 
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: [],
       sharedContests: [],
       deletedCount: 1,
@@ -194,6 +200,7 @@ test(`the educator dashboard leaves out deleted contests without any`, async () 
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -216,6 +223,7 @@ test(`once submissions close, the educator dashboard says why no contest can be 
     current: {
       year: 2027,
       isLocked: true,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [],
       deletedCount: 0,
@@ -224,11 +232,48 @@ test(`once submissions close, the educator dashboard says why no contest can be 
   })
 
   await expect
-    .element(page.getByText(`The first 2027 result is in`, { exact: false }))
+    .element(
+      page.getByText(
+        `You can create contests again once the 2028 bracket is published.`,
+        { exact: false },
+      ),
+    )
     .toBeVisible()
   await expect
     .element(page.getByRole(`button`, { name: `Create contest` }))
     .not.toBeInTheDocument()
+  await expect
+    .element(
+      page.getByRole(`button`, { name: `Copy link for Period 2 Biology` }),
+    )
+    .not.toBeInTheDocument()
+})
+
+test(`the educator dashboard shows the expected lock date and links the bracket`, async () => {
+  await renderDashboard({
+    organization: null,
+
+    current: {
+      year: 2027,
+      isLocked: false,
+      expectedLockDate: `March 19, 2027`,
+      contests: CONTESTS,
+      sharedContests: [],
+      deletedCount: 0,
+      hasPastYears: false,
+    },
+  })
+
+  await expect
+    .element(
+      page.getByText(
+        `Expected to lock March 19, 2027. Players can submit until the first result is posted.`,
+      ),
+    )
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`link`, { name: `2027 bracket` }))
+    .toHaveAttribute(`href`, `/bracket`)
 })
 
 test(`an organization without a name asks for one`, async () => {
@@ -267,6 +312,7 @@ test(`contests shared with the educator open from the dashboard`, async () => {
     current: {
       year: 2027,
       isLocked: false,
+      expectedLockDate: null,
       contests: CONTESTS,
       sharedContests: [
         {

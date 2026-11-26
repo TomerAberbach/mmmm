@@ -34,7 +34,9 @@ export const SignedOutHome = ({
             <LockHeadsUp expectedLockDate={current.expectedLockDate} />
           ) : null}
         </div>
-        <Bracket view={current.view} />
+        <div className='print:page-landscape'>
+          <Bracket view={current.view} />
+        </div>
       </section>
     ) : null}
   </div>

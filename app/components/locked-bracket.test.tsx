@@ -21,6 +21,7 @@ const renderLocked = async (
   draft: Picks = PICKS,
   results: Results = {},
   isPast = false,
+  { isOrphaned = false, hasClearedPicks = false } = {},
 ) => {
   await renderRoutes([
     {
@@ -42,7 +43,8 @@ const renderLocked = async (
             }
           }
           isPast={isPast}
-          isOrphaned={false}
+          isOrphaned={isOrphaned}
+          hasClearedPicks={hasClearedPicks}
           ranks={<p>Ranks</p>}
           forgetPath='/forgotten'
           deletePath='/deleted'
@@ -74,6 +76,43 @@ test.each([
     await expect.element(page.getByText(text)).toBeVisible()
     await expect.element(page.getByRole(`radio`)).not.toBeInTheDocument()
     await expectNoAxeViolations()
+  },
+)
+
+test.each([
+  [
+    `PENDING`,
+    `Submissions are closed. Your educator left MMMM, so no one can approve your bracket.`,
+  ],
+  [
+    `REJECTED`,
+    `Submissions are closed. Your educator didn’t approve your bracket.`,
+  ],
+] as const)(
+  `a locked %s bracket of an orphaned contest says nothing of asking the educator`,
+  async (status, text) => {
+    await renderLocked(status, PICKS, {}, false, { isOrphaned: true })
+
+    await expect.element(page.getByText(text, { exact: true })).toBeVisible()
+    await expect
+      .element(page.getByText(`tell your educator`, { exact: false }))
+      .not.toBeInTheDocument()
+  },
+)
+
+test.each([
+  [
+    `submission`,
+    `APPROVED`,
+    `The bracket changed after submissions closed, so some of your picks were cleared.`,
+  ],
+  [`draft`, null, `The bracket changed, so some of your picks were cleared`],
+] as const)(
+  `a locked %s that lost picks to a move says so`,
+  async (_, status, text) => {
+    await renderLocked(status, PICKS, {}, false, { hasClearedPicks: true })
+
+    await expect.element(page.getByText(text, { exact: true })).toBeVisible()
   },
 )
 

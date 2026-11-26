@@ -2,9 +2,14 @@ import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/player.delete.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { OTHER_PLAYER_STATUS } from '~/other-player.ts'
-import { readPlayContest } from '~/play-context.server.ts'
+import { readPastYear } from '~/past-years.server.ts'
+import {
+  canAskForPersonalLink,
+  readPlayContest,
+} from '~/play-context.server.ts'
 import { forgetPlayer, readRememberedPlayer } from '~/player-cookie.server.ts'
 import { readPersonalLink } from '~/players.server.ts'
+import { toDeletedBracketPath } from '~/removed-paths.ts'
 import { deleteOwnPlayer } from '~/trash.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
@@ -32,27 +37,36 @@ export const action = async ({
     player?.id !== formData.get(`playerId`) ||
     !(await deleteOwnPlayer(player.id))
   ) {
-    return refuse()
+    return refuse(await canAskForPersonalLink(contest))
   }
-  return redirect(await readDeletedPath(player.secret), {
-    headers: { 'Set-Cookie': await forgetPlayer(contest.id) },
-  })
+  return redirect(
+    await readDeletedPath(player.secret, {
+      isOrphaned: contest.educatorName === null,
+      isPast: (await readPastYear(contest.year)) !== null,
+    }),
+    {
+      headers: { 'Set-Cookie': await forgetPlayer(contest.id) },
+    },
+  )
 }
 
 /** The status keeps the page from reloading, which would show the other player */
-const refuse = () =>
+const refuse = (canAsk: boolean) =>
   data<ConfirmResult>(
     {
-      error: `Your bracket wasn’t deleted. Open your personal link and try again`,
+      error: `Your bracket wasn’t deleted. Open your personal link${canAsk ? `, or ask your educator for one,` : ``} and try again`,
     },
     { status: OTHER_PLAYER_STATUS },
   )
 
 /** The page that says so, with a button to start again when the player can */
-const readDeletedPath = async (secret: string): Promise<string> => {
+const readDeletedPath = async (
+  secret: string,
+  context: Parameters<typeof toDeletedBracketPath>[0],
+): Promise<string> => {
   const target = await readPersonalLink(secret)
   const linkSecret = target?.state === `deleted` ? target.startLinkSecret : null
   return linkSecret === null
-    ? href(`/bracket-deleted`)
+    ? toDeletedBracketPath(context)
     : href(`/play/:linkSecret/deleted`, { linkSecret })
 }

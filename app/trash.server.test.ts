@@ -204,6 +204,7 @@ test(`a deleted contest leaves the educator's contests and turns off its players
   await expect(readEducatorContest(educatorId, contestId)).resolves.toBeNull()
   await expect(readPersonalLink(secret)).resolves.toStrictEqual({
     state: `contestDeleted`,
+    isOrphaned: false,
   })
 })
 

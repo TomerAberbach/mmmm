@@ -47,3 +47,11 @@ export const readEducatorId = async (contestId: string): Promise<string> =>
       select: { educatorId: true },
     })
   ).educatorId!
+
+/** Leaves the contest as deleting its educator would */
+export const orphan = async (contestId: string): Promise<void> => {
+  await prisma.contest.update({
+    where: { id: contestId },
+    data: { educatorId: null },
+  })
+}

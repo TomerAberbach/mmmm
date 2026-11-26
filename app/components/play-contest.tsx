@@ -131,8 +131,8 @@ const ContestNotOpen = () => (
   <div className='flex flex-col gap-3'>
     <PageTitle>Submissions are closed</PageTitle>
     <p>
-      The first result is in, so no one can start a bracket. If you already have
-      one, open your personal link.
+      No one can start a bracket anymore. If you already have one, open your
+      personal link.
     </p>
   </div>
 )
