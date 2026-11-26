@@ -89,6 +89,25 @@ test(`a run stops at its limit, oldest first`, async () => {
   await expect(countWaiting()).resolves.toBe(1)
 })
 
+test(`an interrupted run stops after the current educator`, async () => {
+  await send()
+  const first = await addImported(new Date(`2022-01-01T00:00:00Z`))
+  const second = await addImported(new Date(`2023-01-01T00:00:00Z`))
+  const stop = new AbortController()
+
+  const run = sendLaunchEmails({
+    limit: 1000,
+    pauseMs: 500,
+    signal: stop.signal,
+  })
+  await expect.poll(() => isEmailed(first.email)).toBe(true)
+  stop.abort()
+
+  await expect(run).resolves.toMatchObject({ sent: 1 })
+  expect(isEmailed(second.email)).toBe(false)
+  await expect(countWaiting()).resolves.toBe(1)
+})
+
 test(`an educator who signed up gets no launch email`, async () => {
   const unconfirmed = await addImported()
   await prisma.credential.create({

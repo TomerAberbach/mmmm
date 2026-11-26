@@ -20,7 +20,8 @@ Staging holds only seed data, which its next deploy restores.
 These steps leave mmmm-old as it is, so do them days ahead.
 
 1. Have a lawyer review the pages at `/privacy`, `/terms`, and `/retention`, and
-   listen to the main pages with a screen reader
+   listen to the main pages with a screen reader. Then remove the draft notice
+   from `app/components/legal-page.tsx`
 2. In Neon, create the project `mmmm-production` with Postgres 18 in AWS
    `us-east-1`, on the Launch plan, with database name `mmmm`
 3. Run `fly apps create mmmm-production`, then set the secrets in
@@ -89,9 +90,10 @@ These steps leave mmmm-old as it is, so do them days ahead.
 
 ## Roll back
 
-Before step 5 of "Cut over", only step 1 is needed, and nothing is lost. After
-it, a rollback loses what educators and players did in the new app, so fix
-forward unless the app is unusable.
+Before step 5 of "Cut over", only step 1 is needed, with step 3 if the
+certificate moved, and nothing is lost. After it, a rollback loses what
+educators and players did in the new app, so fix forward unless the app is
+unusable.
 
 1. Start mmmm-old with the count noted in step 1 of "Cut over", and check it
    with `fly status --app mmmm`:
@@ -109,5 +111,8 @@ forward unless the app is unusable.
 - Keep mmmm-old stopped for 30 days. Then delete the dump, its Fly app, and its
   database
 - Raise production's machine in March, as [load-test.md](load-test.md) says
-- Delete `pnpm db:import`. Keep `pnpm launch:emails` and the files in `import/`
-  that it uses until no educator waits, then delete them
+- Delete `pnpm db:import`, and inline `insertBracket`, which only the import
+  uses
+- Keep `pnpm launch:emails` and the files in `import/` that it uses until no
+  educator waits, then delete them with the `launchEmailedAt` column and
+  `app/emails/launch.server.tsx`
