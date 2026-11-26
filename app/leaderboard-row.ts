@@ -8,6 +8,8 @@ export type LeaderboardRow = {
   playerId: string
   /** The player's name, or what stands in for one hidden from the viewer */
   label: string
+  /** Whether the label only stands in for a removed name */
+  isNameRemoved: boolean
   score: number
   rank: number
   /** Whether it's the viewer's own */

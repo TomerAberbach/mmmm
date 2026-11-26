@@ -29,6 +29,7 @@ const PRIYA: LeaderboardRow = {
   label: `Priya S.`,
   score: 64,
   rank: 1,
+  isNameRemoved: false,
   isOwn: false,
 }
 
@@ -37,6 +38,7 @@ const HIDDEN: LeaderboardRow = {
   label: `Player`,
   score: 47,
   rank: 2,
+  isNameRemoved: false,
   isOwn: false,
 }
 
@@ -45,6 +47,7 @@ const JONAH: LeaderboardRow = {
   label: `Jonah K.`,
   score: 40,
   rank: 3,
+  isNameRemoved: false,
   isOwn: false,
 }
 
@@ -53,6 +56,7 @@ const WREN: LeaderboardRow = {
   label: `Wren A.`,
   score: 31,
   rank: 4,
+  isNameRemoved: false,
   isOwn: false,
 }
 
@@ -160,4 +164,31 @@ test(`a later page has no podium, and links to the others`, async () => {
   await expect
     .element(page.getByRole(`link`, { name: `Next` }))
     .toHaveAttribute(`href`, `/?page=3`)
+})
+
+test(`a removed name can't be reported, unlike a hidden one`, async () => {
+  await renderLeaderboard([
+    PRIYA,
+    HIDDEN,
+    { ...JONAH, label: `Player`, isNameRemoved: true },
+  ])
+  await page.getByRole(`button`, { name: `Report` }).click()
+
+  await page.getByRole(`dialog`).getByRole(`button`, { name: /^1st/u }).click()
+
+  await expect
+    .element(page.getByRole(`option`, { name: `2nd · Player` }))
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`option`, { name: `3rd · Player` }))
+    .not.toBeInTheDocument()
+})
+
+test(`a leaderboard whose every name was removed has nothing to report`, async () => {
+  await renderLeaderboard([{ ...PRIYA, label: `Player`, isNameRemoved: true }])
+
+  await expect.element(podium()).toBeVisible()
+  await expect
+    .element(page.getByRole(`button`, { name: `Report` }))
+    .not.toBeInTheDocument()
 })

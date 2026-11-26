@@ -35,7 +35,7 @@ const SCHEDULE: { data: string; why: string; until: string }[] = [
   {
     data: `Trash`,
     why: `Undoing a deletion`,
-    until: `Next year’s bracket is published, or the educator empties it. A bracket its player deleted: ${PLAYER_DELETION_DAYS} days`,
+    until: `Next year’s bracket is published, or the educator empties it. A bracket its player deleted: ${PLAYER_DELETION_DAYS} days, or when next year’s bracket is published, if that’s sooner`,
   },
   {
     data: `Contest and personal links`,

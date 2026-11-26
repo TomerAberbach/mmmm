@@ -1,6 +1,8 @@
 import { prisma } from './db.server.ts'
 import { changeContests, editablePlayers } from './editable-contests.server.ts'
 import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
+import { UNNAMED_PLAYER } from './leaderboard-row.ts'
+import { areNamesRemoved } from './name-removal.server.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import type { Decision } from './player-forms.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
@@ -16,12 +18,20 @@ export type ContestPlayer = {
   score: number | null
 }
 
-export const hasPlayer = async (
-  contestId: string,
+/** Whether the contest has the player, with a name to report */
+export const hasReportablePlayer = async (
+  { id: contestId, year }: { id: string; year: number },
   playerId: string,
 ): Promise<boolean> =>
   (await prisma.player.count({
-    where: { id: playerId, contestId, ...PLAYER_OUTSIDE_TRASH },
+    where: {
+      id: playerId,
+      contestId,
+      ...(areNamesRemoved(year, new Date())
+        ? { displayName: { not: UNNAMED_PLAYER } }
+        : {}),
+      ...PLAYER_OUTSIDE_TRASH,
+    },
   })) > 0
 
 /** Drafts are oldest first either way. Scores order as leaderboards do */

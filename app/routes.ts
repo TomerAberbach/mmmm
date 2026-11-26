@@ -101,6 +101,7 @@ export default [
     route(`report`, `routes/play.report.ts`),
   ]),
   route(`player/:contestId`, `routes/player.tsx`, [
+    index(`routes/player._index.ts`),
     layout(`routes/player.remembered.tsx`, [
       route(`bracket`, `routes/player.bracket.tsx`),
       route(`bracket/picks`, `routes/player.bracket.picks.ts`),

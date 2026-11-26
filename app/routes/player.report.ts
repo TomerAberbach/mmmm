@@ -2,10 +2,10 @@ import { href, redirect } from 'react-router'
 import type { Route } from './+types/player.report.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import {
-  findRankedContestId,
+  findReportableContestId,
   readPlayerScopes,
 } from '~/leaderboard-scopes.server.ts'
-import { readPlayContest } from '~/play-context.server.ts'
+import { readPlayContest, readPlayerViewer } from '~/play-context.server.ts'
 import { answerReport } from '~/report-replies.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
@@ -22,8 +22,9 @@ export const action = ({
   context,
 }: Route.ActionArgs): Promise<ConfirmResult> =>
   answerReport(request, async playerId =>
-    findRankedContestId(
+    findReportableContestId(
       await readPlayerScopes(readPlayContest(context)),
       playerId,
+      readPlayerViewer(context),
     ),
   )

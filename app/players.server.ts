@@ -6,7 +6,7 @@ import type { LimitRefusal } from './limits.server.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 import { readEraseTime } from './trash.ts'
-import { isOpen, isOpenYear, withCurrentYear } from './years.server.ts'
+import { isOpen, readCurrentYear, withCurrentYear } from './years.server.ts'
 
 export type NewPlayer =
   | { secret: string }
@@ -88,7 +88,7 @@ export const readContestPlayer = (
 /** Where a personal link leads. A deleted contest or player turns it off */
 export type PersonalLinkTarget =
   | { state: `active`; contestId: string }
-  | { state: `contestDeleted` }
+  | { state: `contestDeleted`; isOrphaned: boolean }
   | {
       state: `deleted`
       /** When the daily job erases the player, or null when it doesn't */
@@ -101,6 +101,9 @@ export type PersonalLinkTarget =
       startLinkSecret: string | null
       /** Whether the contest takes new players */
       isOpen: boolean
+      /** Whether a newer year is current */
+      isPast: boolean
+      isOrphaned: boolean
     }
 
 /** Null for a secret that matches no player */
@@ -129,14 +132,15 @@ export const readPersonalLink = async (
     return null
   }
   const { contest, linkVersion, deletedAt, deletedBy } = player
+  const isOrphaned = contest.educatorId === null
   if (contest.deletedAt) {
-    return { state: `contestDeleted` }
+    return { state: `contestDeleted`, isOrphaned }
   }
   if (!deletedAt || !deletedBy) {
     return { state: `active`, contestId: contest.id }
   }
-  const takesPlayers =
-    contest.educatorId !== null && (await isOpenYear(contest.year))
+  const current = await readCurrentYear()
+  const takesPlayers = !isOrphaned && isOpen(current, contest.year)
   return {
     state: `deleted`,
     restoreBy: readEraseTime({ deletedAt, deletedBy }),
@@ -145,6 +149,8 @@ export const readPersonalLink = async (
         ? contest.linkSecret
         : null,
     isOpen: takesPlayers,
+    isPast: current !== null && contest.year < current.year,
+    isOrphaned,
   }
 }
 

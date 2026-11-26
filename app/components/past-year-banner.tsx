@@ -16,8 +16,8 @@ export const PastYearBanner = ({
       className='flex flex-wrap items-center justify-between gap-x-6 gap-y-1 bg-ink px-4 py-2.5 text-white print:border-2 print:border-ink print:bg-white print:text-black'
     >
       <p>
-        <strong>{`${pastYear.year} is over.`}</strong> You can look, but not
-        change anything.
+        <strong>{`${pastYear.year} is over.`}</strong> Its contests can’t be
+        edited anymore.
       </p>
       <Link
         to={currentPath}

@@ -27,6 +27,6 @@ export const action = ({
       )
       return renamed
         ? null
-        : { formErrors: [`This player is gone, so their name wasn’t saved`] }
+        : { formErrors: [`This player’s name wasn’t saved. Reload the page`] }
     },
   )

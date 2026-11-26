@@ -20,10 +20,12 @@ export const Leaderboard = ({
   reportPath: string | null
   toBracketPath: (playerId: string) => string
 }) => {
-  const [first, ...others] = rows
+  const [firstTarget, ...otherTargets] = rows
+    .filter(({ isNameRemoved }) => !isNameRemoved)
+    .map(toTarget)
   const podiumRows = readPodium(rows)
   const tableRows = rows.slice(podiumRows.length)
-  return first ? (
+  return rows.length > 0 ? (
     <div className='flex flex-col gap-9'>
       {podiumRows.length > 0 ? (
         <Podium rows={podiumRows} toBracketPath={toBracketPath} />
@@ -36,10 +38,10 @@ export const Leaderboard = ({
         />
       ) : null}
       {page ? <Pages {...page} /> : null}
-      {reportPath === null ? null : (
+      {reportPath === null || !firstTarget ? null : (
         <ReportDialog
           action={reportPath}
-          targets={[toTarget(first), ...others.map(toTarget)]}
+          targets={[firstTarget, ...otherTargets]}
         />
       )}
     </div>

@@ -2,7 +2,7 @@ import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.year.report.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import {
-  findRankedContestId,
+  findReportableContestId,
   readEducatorScopes,
 } from '~/leaderboard-scopes.server.ts'
 import { readRequiredYear } from '~/past-years.server.ts'
@@ -18,12 +18,11 @@ export const action = ({
   context,
   params,
 }: Route.ActionArgs): Promise<ConfirmResult> =>
-  answerReport(request, async playerId =>
-    findRankedContestId(
-      await readEducatorScopes(
-        readRequiredEducator(context).id,
-        await readRequiredYear(params.year),
-      ),
+  answerReport(request, async playerId => {
+    const { id: educatorId } = readRequiredEducator(context)
+    return findReportableContestId(
+      await readEducatorScopes(educatorId, await readRequiredYear(params.year)),
       playerId,
-    ),
-  )
+      { kind: `educator`, educatorId },
+    )
+  })

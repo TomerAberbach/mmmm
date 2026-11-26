@@ -170,6 +170,7 @@ export const PlayerBracket = ({
         <SubmittedPanel
           {...submitted}
           kind={outcome.submitted}
+          isOrphaned={isOrphaned}
           forgetPath={forgetPath}
           playerId={playerId}
           isSending={isSending}
@@ -185,14 +186,18 @@ export const PlayerBracket = ({
       ) : null}
       {submission?.status === `REJECTED` && outcome?.kind !== `submitted` ? (
         <div className='max-w-prose'>
-          <Notice kind='alert'>{STATUS_TEXT.REJECTED.note}</Notice>
+          <Notice kind='alert'>
+            {describeStatus(`REJECTED`, isOrphaned).note}
+          </Notice>
         </div>
       ) : null}
-      {submission ? <PicksChanged at={submission.picksChangedAt} /> : null}
+      {submission ? (
+        <PicksChanged at={submission.picksChangedAt} isOrphaned={isOrphaned} />
+      ) : null}
       <div className='sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-ink bg-white py-3 print:hidden'>
         {submitted && !hasChanges ? (
           <>
-            <BarLabel>{`Submitted · ${STATUS_TEXT[submitted.submission.status].label}`}</BarLabel>
+            <BarLabel>{`Submitted · ${describeStatus(submitted.submission.status, isOrphaned).label}`}</BarLabel>
             <RequestStatus
               state={state}
               comeBack={comeBack}
@@ -247,7 +252,9 @@ export const PlayerBracket = ({
           outcome?.kind === `cleared` ? outcome.battles : [],
         )}
       />
-      <Bracket view={view} selection={{ round, onSelect: setRound }} />
+      <div className='print:page-landscape'>
+        <Bracket view={view} selection={{ round, onSelect: setRound }} />
+      </div>
       <div className='print:hidden'>
         <DeleteButton
           deletePath={deletePath}
@@ -316,15 +323,32 @@ const STATUS_TEXT: Record<SubmissionStatus, { label: string; note: string }> = {
   },
 }
 
+/** Statuses that read otherwise in an orphaned contest */
+const ORPHANED_STATUS_TEXT: Partial<typeof STATUS_TEXT> = {
+  PENDING: {
+    label: `can’t be approved`,
+    note: `Your educator left MMMM, so no one can approve your bracket.`,
+  },
+  REJECTED: {
+    label: `not approved`,
+    note: `Your educator didn’t approve your bracket.`,
+  },
+}
+
+const describeStatus = (status: SubmissionStatus, isOrphaned: boolean) =>
+  (isOrphaned ? ORPHANED_STATUS_TEXT[status] : null) ?? STATUS_TEXT[status]
+
 const SubmittedPanel = ({
   submission,
   personalLink,
   kind,
+  isOrphaned,
   forgetPath,
   playerId,
   isSending,
 }: Submitted & {
   kind: `bracket` | `changes`
+  isOrphaned: boolean
   forgetPath: string
   playerId: string
   isSending: boolean
@@ -349,7 +373,7 @@ const SubmittedPanel = ({
           {kind === `bracket` ? `Bracket submitted` : `Changes submitted`}
         </h2>
         <p>
-          {`${STATUS_TEXT[submission.status].note} Until the first battle’s result, you can change your picks and submit them again.`}
+          {`${describeStatus(submission.status, isOrphaned).note} Until the first battle’s result, you can change your picks and submit them again.`}
         </p>
       </div>
       <div className='flex flex-col gap-3'>

@@ -13,4 +13,4 @@ export const action = async ({
 }: Route.ActionArgs): Promise<Response | ConfirmResult> =>
   (await deleteContest(readRequiredEducator(context).id, params.contestId))
     ? redirect(href(`/contests`))
-    : { error: `This contest is already deleted. Reload the page` }
+    : { error: `This contest wasn’t deleted. Reload the page` }

@@ -5,6 +5,7 @@ import { ContestShares } from '~/components/contest-shares.tsx'
 import { ReadOnlyContest } from '~/components/read-only-contest.tsx'
 import { readViewableContest } from '~/contest-context.server.ts'
 import { readContestPlayers } from '~/contest-players.server.ts'
+import { areNamesRemoved } from '~/name-removal.server.ts'
 import { readContestOrganization } from '~/organizations.server.ts'
 import { readPastYear } from '~/past-years.server.ts'
 import { readColleagues } from '~/shares.server.ts'
@@ -29,6 +30,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
       sharedBy: contest.educatorName,
       isOpen,
       players,
+      areNamesRemoved: areNamesRemoved(contest.year, new Date()),
     } as const
   }
   const [deletedCount, organization, colleagues] = await Promise.all([
@@ -54,7 +56,11 @@ const ContestPage = ({ loaderData }: Route.ComponentProps) => {
       return <ReadOnlyContest {...loaderData} />
     case `past`:
       return (
-        <ReadOnlyContest {...loaderData} sharedBy={null}>
+        <ReadOnlyContest
+          {...loaderData}
+          sharedBy={null}
+          areNamesRemoved={false}
+        >
           <PastContestControls {...loaderData} />
         </ReadOnlyContest>
       )

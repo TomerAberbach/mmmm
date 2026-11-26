@@ -31,7 +31,7 @@ export const action = async ({
   return {
     error:
       parsed.data.ids.length === 1
-        ? `This bracket is gone or not submitted. Reload the page`
-        : `These brackets are gone or not submitted. Reload the page`,
+        ? `This bracket wasn’t changed. Reload the page`
+        : `These brackets weren’t changed. Reload the page`,
   }
 }

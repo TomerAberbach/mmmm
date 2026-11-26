@@ -26,6 +26,6 @@ export const action = ({
       )
       return renamed
         ? null
-        : { formErrors: [`This contest is gone, so its name wasn’t saved`] }
+        : { formErrors: [`This contest’s name wasn’t saved. Reload the page`] }
     },
   )

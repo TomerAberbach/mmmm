@@ -10,9 +10,12 @@ import { readEraseTime } from '~/trash.ts'
 export const ContestTrash = ({
   contest: { id: contestId, name },
   players,
+  isOpen,
 }: {
   contest: Contest
   players: DeletedPlayer[]
+  /** Whether the contest's year takes players and picks */
+  isOpen: boolean
 }) => (
   <div className='flex max-w-3xl flex-col gap-6'>
     <Link
@@ -27,7 +30,7 @@ export const ContestTrash = ({
       items={players.map(player => ({
         id: player.id,
         name: player.displayName,
-        detail: describeStatus(player.status),
+        detail: describeStatus(player.status, isOpen),
         deletion: <Deletion player={player} />,
       }))}
       restorePath={href(`/contests/:contestId/trash/restore`, { contestId })}

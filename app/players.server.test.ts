@@ -1,6 +1,10 @@
 import { expect, test, vi } from 'vitest'
 import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
-import { createContestInNewYear, readEducatorId } from '../test/contests.ts'
+import {
+  createContestInNewYear,
+  orphan,
+  readEducatorId,
+} from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
 import { replaceContestLink } from './contests.server.ts'
@@ -11,7 +15,7 @@ import {
   readContestPlayer,
   readPersonalLink,
 } from './players.server.ts'
-import { deleteOwnPlayer } from './trash.server.ts'
+import { deleteContest, deleteOwnPlayer } from './trash.server.ts'
 
 test(`a player's personal link finds their contest`, async () => {
   const { contestId } = await createContestInNewYear()
@@ -150,4 +154,37 @@ test(`a deleted player of a past year can't start again`, async () => {
   const linkSecret = await readStartLinkAfterDeleting(player)
 
   expect(linkSecret).toBeNull()
+})
+
+test(`a deleted player's link says when the contest is orphaned`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const player = await addPlayer(contestId)
+  await deleteOwnPlayer(player.id)
+  await orphan(contestId)
+
+  const target = await readPersonalLink(player.secret)
+
+  expect(target).toMatchObject({ state: `deleted`, isOrphaned: true })
+})
+
+test(`a deleted contest's player's link says when the contest is orphaned`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const { secret } = await addPlayer(contestId)
+  await deleteContest(await readEducatorId(contestId), contestId)
+  await orphan(contestId)
+
+  const target = await readPersonalLink(secret)
+
+  expect(target).toStrictEqual({ state: `contestDeleted`, isOrphaned: true })
+})
+
+test(`a deleted player's link says when the year is past`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const player = await addPlayer(contestId)
+  await deleteOwnPlayer(player.id)
+  await addYear({ published: true })
+
+  const target = await readPersonalLink(player.secret)
+
+  expect(target).toMatchObject({ state: `deleted`, isPast: true })
 })

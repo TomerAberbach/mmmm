@@ -2,6 +2,7 @@ import { href, Link } from 'react-router'
 import { CopyButton } from './copy-button.tsx'
 import { CreateContestDialog } from './create-contest-dialog.tsx'
 import { LeaderboardLinks } from './leaderboard-links.tsx'
+import { LockHeadsUp } from './lock-heads-up.tsx'
 import { OrganizationNameCard } from './organization-name-card.tsx'
 import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
@@ -23,6 +24,8 @@ export type EducatorDashboardView = {
       current: {
         year: number
         isLocked: boolean
+        /** Such as "March 19, 2027". Null once locked */
+        expectedLockDate: string | null
         contests: ContestSummary[]
         sharedContests: SharedContest[]
         deletedCount: number
@@ -50,14 +53,20 @@ export const EducatorDashboard = ({
       {organization?.name === null ? (
         <OrganizationNameCard domain={organization.domain} />
       ) : null}
+      {current?.expectedLockDate ? (
+        <LockHeadsUp expectedLockDate={current.expectedLockDate} />
+      ) : null}
       {current?.isLocked ? (
         <SubmissionsClosed>
-          {`The first ${current.year} result is in, so you can create contests again once the ${current.year + 1} bracket is published.`}
+          {`You can create contests again once the ${current.year + 1} bracket is published.`}
         </SubmissionsClosed>
       ) : null}
       {current ? (
         hasContests ? (
-          <ContestList contests={current.contests} />
+          <ContestList
+            contests={current.contests}
+            isLocked={current.isLocked}
+          />
         ) : current.isLocked ? null : (
           <FirstContest />
         )
@@ -72,6 +81,11 @@ export const EducatorDashboard = ({
           year={current.year}
           hasOrganization={organization !== null}
         />
+      ) : null}
+      {current ? (
+        <Link to={href(`/bracket`)} className='self-start print:hidden'>
+          {`${current.year} bracket`}
+        </Link>
       ) : null}
       {current && current.deletedCount > 0 ? (
         <Link to={href(`/contests/trash`)} className='self-start print:hidden'>
@@ -111,7 +125,14 @@ const FirstContest = () => (
   </section>
 )
 
-const ContestList = ({ contests }: { contests: ContestSummary[] }) => (
+const ContestList = ({
+  contests,
+  isLocked,
+}: {
+  contests: ContestSummary[]
+  /** Whether contest links no longer start brackets */
+  isLocked: boolean
+}) => (
   <ul className='flex flex-col border-t-2 border-ink'>
     {contests.map(({ id, name, link }) => (
       <li
@@ -124,11 +145,13 @@ const ContestList = ({ contests }: { contests: ContestSummary[] }) => (
         >
           {name}
         </Link>
-        <CopyButton
-          text={link}
-          variant='quiet'
-          aria-label={`Copy link for ${name}`}
-        />
+        {isLocked ? null : (
+          <CopyButton
+            text={link}
+            variant='quiet'
+            aria-label={`Copy link for ${name}`}
+          />
+        )}
       </li>
     ))}
   </ul>

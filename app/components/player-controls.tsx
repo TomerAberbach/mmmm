@@ -6,7 +6,7 @@ import { LocalTime } from './local-time.tsx'
 import { ModalFrame } from './modal-frame.tsx'
 import { formatDateTime } from '~/dates.ts'
 import type { Submission } from '~/player-picks.server.ts'
-import { PLAYER_DELETION_DAYS } from '~/trash.ts'
+import { OR_BEFORE_ARCHIVE, PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 /** A player's submission, and the personal link they see once they submit */
 export type Submitted = { submission: Submission; personalLink: string }
@@ -89,6 +89,7 @@ export const DeleteButton = ({
   isSending,
   isOrphaned,
   isOpen = true,
+  isPast = false,
 }: {
   deletePath: string
   playerId: string
@@ -97,6 +98,8 @@ export const DeleteButton = ({
   isOrphaned: boolean
   /** Whether the player can still submit another bracket */
   isOpen?: boolean
+  /** Whether a newer year is current */
+  isPast?: boolean
 }) => (
   <ConfirmDialog
     trigger={
@@ -115,15 +118,22 @@ export const DeleteButton = ({
         `Your personal link stops working${isOpen ? `` : `, and submissions are closed, so you can’t submit again`}.`,
         isOrphaned
           ? `Your educator left MMMM, so this can’t be undone.`
-          : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days. After that it’s erased for good.`,
+          : `If you change your mind, ask your educator to restore it within ${PLAYER_DELETION_DAYS} days${isPast ? `` : OR_BEFORE_ARCHIVE}. After that it’s erased for good.`,
       ].join(` `)}
     </p>
   </ConfirmDialog>
 )
 
-export const PicksChanged = ({ at }: { at: Date }) => (
+export const PicksChanged = ({
+  at,
+  isOrphaned,
+}: {
+  at: Date
+  /** Whether the contest has no educator to tell */
+  isOrphaned: boolean
+}) => (
   <p className='text-muted'>
     Submitted picks last changed <LocalTime date={at} format={formatDateTime} />
-    . If you didn’t make a change, tell your educator.
+    .{isOrphaned ? null : ` If you didn’t make a change, tell your educator.`}
   </p>
 )

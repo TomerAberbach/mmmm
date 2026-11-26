@@ -2,6 +2,7 @@ import type { Route } from './+types/contests._index.ts'
 import { EducatorDashboard } from '~/components/educator-dashboard.tsx'
 import type { EducatorDashboardView } from '~/components/educator-dashboard.tsx'
 import { readEducatorContests } from '~/contests.server.ts'
+import { readExpectedLockDate } from '~/current-bracket.server.ts'
 import { readOrganization } from '~/organizations.server.ts'
 import { hasPastYears } from '~/past-years.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
@@ -26,17 +27,20 @@ export const loader = async ({
     }
   }
   const { year, isLocked } = current
-  const [contests, sharedContests, deletedCount, hasPast] = await Promise.all([
-    readEducatorContests(educator.id, year),
-    readSharedContests(educator.id, year),
-    countDeletedContests(educator.id, year),
-    hasPastYears(year),
-  ])
+  const [contests, sharedContests, deletedCount, hasPast, expectedLockDate] =
+    await Promise.all([
+      readEducatorContests(educator.id, year),
+      readSharedContests(educator.id, year),
+      countDeletedContests(educator.id, year),
+      hasPastYears(year),
+      readExpectedLockDate(year),
+    ])
   return {
     organization,
     current: {
       year,
       isLocked,
+      expectedLockDate,
       contests,
       sharedContests,
       deletedCount,

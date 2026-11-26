@@ -9,8 +9,10 @@ import { readContestById, readContestByLink } from './contests.server.ts'
 import type { PlayContest } from './contests.server.ts'
 import type { LeaderboardViewer } from './leaderboards.server.ts'
 import { OTHER_PLAYER_STATUS } from './other-player.ts'
+import { readPastYear } from './past-years.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 import { readSubmissionStatus } from './player-picks.server.ts'
+import { toRemovedContestPath } from './removed-paths.ts'
 import { isOpenYear } from './years.server.ts'
 
 const contestContext = createContext<PlayContest>()
@@ -32,7 +34,7 @@ const loadContest =
       throw brokenLink()
     }
     if (found.isDeleted) {
-      return redirect(href(`/contest-removed`))
+      return redirect(toRemovedContestPath(found.contest.educatorName === null))
     }
     context.set(contestContext, found.contest)
     return next()
@@ -59,6 +61,13 @@ export type RequiredPlayer = {
   displayName: string
   personalLinkSecret: string
 }
+
+/** Whether an educator can still give the contest's players personal links */
+export const canAskForPersonalLink = async ({
+  educatorName,
+  year,
+}: PlayContest): Promise<boolean> =>
+  educatorName !== null && (await readPastYear(year)) === null
 
 const playerContext = createContext<RequiredPlayer>()
 
