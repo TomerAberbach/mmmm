@@ -46,7 +46,7 @@ export type ImportReport = {
 /**
  * Replaces what an earlier import added with mmmm-old's data, and leaves
  * everything else as it is. Keeps mmmm-old's IDs, which makes it safe to rerun
- * until an imported educator confirms their address.
+ * until an imported educator is emailed or confirms their address.
  * A dry run changes nothing
  */
 export const importOldData = async (
@@ -156,18 +156,22 @@ const note = (
 
 /**
  * Once an imported educator has confirmed their address, a rerun would undo what
- * they changed, and bring back what they deleted
+ * they changed, and bring back what they deleted. Once one has been emailed, it
+ * would email them again
  */
 const refuseOnceInUse = async (
   tx: Prisma.TransactionClient,
   { teachers }: OldData,
 ): Promise<void> => {
   const count = await tx.educator.count({
-    where: { id: { in: teachers.map(readId) }, emailVerified: true },
+    where: {
+      id: { in: teachers.map(readId) },
+      OR: [{ emailVerified: true }, { launchEmailedAt: { not: null } }],
+    },
   })
   if (count > 0) {
     throw new Error(
-      `${count} imported educators have confirmed their addresses, so the import can't rerun`,
+      `${count} imported educators have been emailed or have confirmed, so the import can't rerun`,
     )
   }
 }

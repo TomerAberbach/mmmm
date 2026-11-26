@@ -273,6 +273,13 @@ export const auth = betterAuth({
         where: { id: user.id },
         data: { emailVerified: true },
       })
+      // An older link could otherwise set the password again
+      await prisma.verification.deleteMany({
+        where: {
+          identifier: { startsWith: `reset-password:` },
+          value: user.id,
+        },
+      })
       notifyPasswordChanged(user.email)
     },
     revokeSessionsOnPasswordReset: true,
