@@ -8,6 +8,7 @@ import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import { expectedLockDateSchema } from '~/bracket-admin-forms.ts'
+import { listBattles } from '~/bracket.ts'
 import type { BracketSummary, Phase } from '~/brackets.server.ts'
 import { formatArizonaDate, toIsoDate } from '~/dates.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
@@ -19,6 +20,8 @@ const PHASE_LABELS: Record<Phase, string> = {
   COMPLETE: `Complete`,
   ARCHIVED: `Archived`,
 }
+
+type ArchivedYear = { year: number; resultCount: number }
 
 /**
  * The year's phase, the action that moves it to another, and the expected lock
@@ -32,7 +35,7 @@ export const PhaseSection = ({
   year: number
   summary: BracketSummary
   /** The year that publishing this one archives */
-  archivedYear?: number | null
+  archivedYear?: ArchivedYear | null
 }) => (
   <section className='flex max-w-3xl flex-col gap-3 border-2 border-ink p-5'>
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
@@ -44,7 +47,7 @@ export const PhaseSection = ({
         </span>
       ) : null}
     </div>
-    <p className='max-w-prose'>{describePhase(year, summary)}</p>
+    <p className='max-w-prose'>{describePhase(summary)}</p>
     {`expectedLockDate` in summary ? (
       <ExpectedLockDateForm
         year={year}
@@ -59,7 +62,7 @@ export const PhaseSection = ({
   </section>
 )
 
-const describePhase = (year: number, summary: BracketSummary): string => {
+const describePhase = (summary: BracketSummary): string => {
   switch (summary.phase) {
     case `SETUP`:
       return `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`
@@ -67,14 +70,17 @@ const describePhase = (year: number, summary: BracketSummary): string => {
       return `Educators can create contests, and players can submit. The first result locks submissions.`
     case `IN_PROGRESS`:
       return summary.hasResults
-        ? `Submissions are locked. Results can be corrected until the ${year + 1} bracket is published.`
+        ? `Submissions are locked. Results can be corrected until the next bracket is published.`
         : `Submissions are locked, though no results are saved.`
     case `COMPLETE`:
-      return `${summary.champion} won. Results can be corrected until the ${year + 1} bracket is published.`
+      return `${summary.champion} won, and ${describeResultCount(summary.resultCount)} saved. Results can be corrected until the next bracket is published.`
     case `ARCHIVED`:
       return `A newer bracket is published, so this one can’t change.`
   }
 }
+
+const describeResultCount = (count: number): string =>
+  `${count} of ${listBattles().length} results are`
 
 /** The action that moves the year to another phase, if any */
 const PhaseAction = ({
@@ -84,7 +90,7 @@ const PhaseAction = ({
 }: {
   year: number
   summary: BracketSummary
-  archivedYear: number | null
+  archivedYear: ArchivedYear | null
 }) => {
   switch (summary.phase) {
     case `SETUP`:
@@ -104,7 +110,7 @@ const PublishButton = ({
   archivedYear,
 }: {
   year: number
-  archivedYear: number | null
+  archivedYear: ArchivedYear | null
 }) => (
   <ConfirmDialog
     trigger={<Button>{`Publish ${year} bracket`}</Button>}
@@ -121,10 +127,11 @@ const PublishButton = ({
       </p>
       {archivedYear === null ? null : (
         <p>
-          {`${archivedYear} becomes read-only. Everything in its trash, and every bracket its players never submitted, is deleted for good. Unpublishing doesn’t bring it back.`}
+          {`${archivedYear.year} becomes read-only, and ${describeResultCount(archivedYear.resultCount)} saved. Everything in its trash, and every bracket its players never submitted, is deleted for good. Unpublishing doesn’t bring it back.`}
         </p>
       )}
       <p>
+        This publishes the saved bracket, without unsaved changes in the form.
         After publishing, you can rename and move combatants. You can unpublish
         until an educator creates a contest.
       </p>
@@ -171,7 +178,8 @@ const UnpublishControls = ({
       >
         <p>
           Educators can’t create contests with it until you publish it again,
-          and the previous bracket becomes the current one on the home page.
+          and the previous bracket, if any, becomes the current one on the home
+          page.
         </p>
       </ConfirmDialog>
       <span className='text-muted'>

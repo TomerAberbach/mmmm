@@ -134,6 +134,17 @@ export const erasePlayer = (
     return count > 0
   })
 
+/** Restores the contest if it's in the trash and orphaned, in any year */
+export const restoreOrphanedContest = async (
+  contestId: string,
+  tx: Prisma.TransactionClient,
+): Promise<void> => {
+  await tx.contest.updateMany({
+    where: { id: contestId, educatorId: null },
+    data: { deletedAt: null },
+  })
+}
+
 /**
  * A player moves their own draft or submission to the trash. Returns whether it
  * was outside the trash

@@ -21,6 +21,28 @@ test(`an admin sets up the upcoming year's bracket from a pasted list`, async ({
   ).toBeVisible()
 })
 
+test(`a tab left open can't replace a newer save`, async ({ page }) => {
+  await signInAsAdmin(page, ADMINS.stale)
+  const other = await page.context().newPage()
+  await other.goto(`/admin/bracket`)
+  await page.goto(`/admin/bracket`)
+  await page.getByLabel(`Division name`).first().fill(`Renamed`)
+  await page.getByRole(`button`, { name: `Save changes` }).click()
+  await expect(page).toHaveURL(`/admin`)
+  // Reloads the page's data, though not its fields
+  await other.getByLabel(`Expected lock date`).fill(`${YEAR}-03-18`)
+  await other.getByRole(`button`, { name: `Save date` }).click()
+  await expect(other.getByText(`Saved the expected lock date`)).toBeVisible()
+
+  await other.getByRole(`button`, { name: `Save changes` }).click()
+
+  await expect(
+    other.getByText(`so nothing was saved`, { exact: false }),
+  ).toBeVisible()
+  await other.reload()
+  await expect(other.getByLabel(`Division name`).first()).toHaveValue(`Renamed`)
+})
+
 test(`a published bracket is on the home page, with each rename`, async ({
   page,
   browser,

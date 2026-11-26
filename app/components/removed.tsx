@@ -25,7 +25,7 @@ const Removed = ({
 )
 
 /** Follows a link that a deletion turned off once no educator can restore it */
-const CANNOT_RESTORE = `Your educator left MMMM, so no one can restore it.`
+const CANNOT_RESTORE = `Your educator left MMMM, so they can’t restore it.`
 
 export const RemovedContest = ({
   isOrphaned,

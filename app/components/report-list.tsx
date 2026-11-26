@@ -3,7 +3,7 @@ import { Link, useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { FetcherError } from './fetcher-error.tsx'
 import { LocalTime } from './local-time.tsx'
-import { formatDate } from '~/dates.ts'
+import { formatLocalDate } from '~/dates.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { CONTEST_TARGET, REASON_LABELS } from '~/report-forms.ts'
 import type { ReportItem } from '~/reports.server.ts'
@@ -88,7 +88,7 @@ const ReportDescription = ({ report }: { report: ReportItem }) => {
           educatorName ?? `No educator`,
         ].join(` · `)}
         {` · `}
-        <LocalTime date={createdAt} format={formatDate} />
+        <LocalTime date={createdAt} format={formatLocalDate} />
       </p>
     </div>
   )

@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, onTestFinished, test, vi } from 'vitest'
 import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
 import {
   createContestInNewYear,
@@ -27,6 +27,7 @@ import { discardPlayerDraft } from './player-picks.server.ts'
 import { createPlayer, readPersonalLink } from './players.server.ts'
 import type { ResultRequest } from './result-request.ts'
 import { reopenSubmissions, saveResult } from './results.server.ts'
+import { loader as readSetupPage } from './routes/admin.bracket.tsx'
 import { fillSides, listMerges } from './seeded-bracket.ts'
 import type { Combatant } from './seeded-bracket.ts'
 import { deletePlayers } from './trash.server.ts'
@@ -199,8 +200,30 @@ test(`the champion completes the year and opens the next year's setup`, async ()
 
   expect(before).toMatchObject({ current: { year }, setupYear: null })
   const after = await readAdminYears()
-  expect(after.current?.summary.phase).toBe(`COMPLETE`)
+  expect(after.current?.summary).toMatchObject({
+    phase: `COMPLETE`,
+    resultCount: 6,
+  })
   expect(after.setupYear).toBeGreaterThan(year)
+})
+
+test(`a bracket set up before the calendar moves on stays the one to set up`, async () => {
+  const year = await addYear({ published: true })
+  await crownChampion(year)
+  vi.useFakeTimers({ toFake: [`Date`] })
+  // The calendar's upcoming year is then past the one set up
+  vi.setSystemTime(new Date(`${year + 5}-04-02T12:00:00Z`))
+  onTestFinished(() => {
+    vi.useRealTimers()
+  })
+
+  const setupYear = await addYear({ published: false })
+
+  await expect(readAdminYears()).resolves.toMatchObject({ setupYear })
+  await expect(readSetupPage()).resolves.toMatchObject({
+    year: setupYear,
+    laterYear: year + 6,
+  })
 })
 
 test(`publishing a newer bracket archives the year`, async () => {

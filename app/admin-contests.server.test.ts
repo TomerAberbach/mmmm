@@ -9,8 +9,8 @@ import {
 import { createMember } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
 import {
+  readAdminContest,
   readAdminContests,
-  readAdminPlayers,
   setContestHidden,
 } from './admin-contests.server.ts'
 import type { AdminContest } from './admin-contests.server.ts'
@@ -83,7 +83,7 @@ test(`the admin sees the players of a contest in the trash`, async () => {
   await addPlayer(contestId, `Maya R.`)
   await deleteContest(await readEducatorId(contestId), contestId)
 
-  const contest = await readAdminPlayers(contestId)
+  const contest = await readAdminContest(contestId)
 
   expect(contest?.players).toMatchObject([
     { displayName: `Maya R.`, isInTrash: true },

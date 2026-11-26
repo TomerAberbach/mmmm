@@ -7,13 +7,21 @@ import { toBracketForm } from '../bracket-form.ts'
 import type { BracketForm } from '../bracket-form.ts'
 import { BracketSetupForm } from './bracket-setup-form.tsx'
 
-const renderForm = async (defaultValue?: BracketForm) => {
+const renderForm = async (
+  defaultValue?: BracketForm,
+  laterYear: number | null = null,
+) => {
   await renderRoutes(
     [
       {
         path: `/admin/bracket`,
         Component: () => (
-          <BracketSetupForm year={2027} defaultValue={defaultValue} />
+          <BracketSetupForm
+            year={2027}
+            version='seen'
+            laterYear={laterYear}
+            defaultValue={defaultValue}
+          />
         ),
         action: () => null,
       },
@@ -43,6 +51,27 @@ test(`an existing bracket fills the form, with no accessibility violations`, asy
     .toHaveValue(`Flying Frog`)
   await expectNoAxeViolations()
 })
+
+test.each([
+  {
+    laterYear: 2028,
+    hint: `The 2027 tournament is over. To set up the 2028 bracket, delete this one below.`,
+  },
+  { laterYear: null, hint: null },
+])(
+  `with $laterYear to set up later, the form's hint is $hint`,
+  async ({ laterYear, hint }) => {
+    await renderForm(toBracketForm(BRACKET_2025), laterYear)
+
+    await expect
+      .element(page.getByRole(`button`, { name: `Save changes` }))
+      .toBeVisible()
+    expect(
+      page.getByText(`tournament is over`, { exact: false }).query()
+        ?.textContent ?? null,
+    ).toBe(hint)
+  },
+)
 
 test(`choosing the wild card's seed moves its entrants there`, async () => {
   await renderForm()

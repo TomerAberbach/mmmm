@@ -9,6 +9,7 @@ import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
 import { isSaved } from './saved-notice.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
+import type { AdminContest } from '~/admin-contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 import { handOverSchema } from '~/support-forms.ts'
 
@@ -17,12 +18,13 @@ export type HandOverReply = SavedResult & {
   educator?: { id: string; name: string }
 }
 
+type HandOverContest = Pick<
+  AdminContest,
+  `id` | `name` | `isHidden` | `isInTrash`
+>
+
 /** Finds the new educator by address, then names them before the handover */
-export const HandOverDialog = ({
-  contest,
-}: {
-  contest: { id: string; name: string; isHidden: boolean }
-}) => {
+export const HandOverDialog = ({ contest }: { contest: HandOverContest }) => {
   const [isOpen, setIsOpen] = useState(false)
   const fetcher = useFetcher<HandOverReply>()
   const isDone = isSaved(fetcher)
@@ -47,10 +49,10 @@ export const HandOverDialog = ({
 }
 
 const HandOverForm = ({
-  contest: { id, name, isHidden },
+  contest: { id, name, isHidden, isInTrash },
   fetcher,
 }: {
-  contest: { id: string; name: string; isHidden: boolean }
+  contest: HandOverContest
   fetcher: FetcherWithComponents<HandOverReply>
 }) => {
   const { form, fields } = useValidatedForm(
@@ -76,9 +78,13 @@ const HandOverForm = ({
       ) : null}
       <p>
         {educator
-          ? `${educator.name} runs ${name} from then on, with its trash and pending brackets.`
-          : `The new educator runs it from then on, with its trash and pending brackets.`}
+          ? `${educator.name} becomes the educator of ${name}, with all its brackets.`
+          : `The new educator gets it with all its brackets.`}
+        {` It then counts toward their organization.`}
       </p>
+      {isInTrash ? (
+        <p>It’s in the trash. Handing it over restores it.</p>
+      ) : null}
       {isHidden ? <p>It stays hidden until you show it again.</p> : null}
       <TextField
         {...fieldProps(fields.email)}

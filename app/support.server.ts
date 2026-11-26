@@ -4,6 +4,7 @@ import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
 import { describeOrganization } from './organizations.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
+import { restoreOrphanedContest } from './trash.server.ts'
 import { withCurrentYear, withCurrentYearAlone } from './years.server.ts'
 
 export type FoundEducator = {
@@ -46,7 +47,8 @@ export const findEducator = async (
 
 /**
  * Gives an orphaned contest to a confirmed educator, with its trash and pending
- * submissions. Returns whether both still are
+ * submissions, and restores it when it's in the trash. Returns whether both
+ * still are
  */
 export const handOverContest = (
   contestId: string,
@@ -64,8 +66,9 @@ export const handOverContest = (
     if (!educator) {
       return false
     }
+    await restoreOrphanedContest(contestId, tx)
     const { count } = await tx.contest.updateMany({
-      where: { id: contestId, educatorId: null, ...CONTEST_OUTSIDE_TRASH },
+      where: { id: contestId, educatorId: null },
       data: { educatorId, orphanedFromDomain: null },
     })
     return count > 0

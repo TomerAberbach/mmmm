@@ -56,6 +56,30 @@ test(`a bracket with a contest stays published`, async ({ page, browser }) => {
   ).not.toBeAttached()
 })
 
+test(`an admin opens a reported contest and hides it`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  const visitor = await browser.newPage()
+  await visitor.goto(link)
+  await visitor.getByRole(`button`, { name: `Report` }).click()
+  await visitor.getByText(`Rude or hurtful`).click()
+  await visitor.getByRole(`button`, { name: `Send report` }).click()
+  await expect(visitor.getByRole(`dialog`)).not.toBeVisible()
+  await signInAsAdmin(page, ADMINS.reports)
+  await page.goto(`/admin/reports`)
+
+  await page.getByRole(`link`, { name: `See the contest` }).click()
+  await page.getByRole(`button`, { name: `Hide Period 4 Biology` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Hide contest` })
+    .click()
+
+  await expect(page.getByText(/^Hidden · /u)).toBeVisible()
+})
+
 /** Creates a contest as a new educator, and returns its contest link */
 const createContestLink = async (browser: Browser): Promise<string> =>
   (await createContestAsEducator(browser)).link

@@ -106,15 +106,18 @@ test.each([
     () => <DeletedOwnBracket contestPath={null} isPast={false} isOrphaned />,
   ],
   [`a removed contest`, () => <RemovedContest isOrphaned />],
-])(`%s of an orphaned contest says no one can restore it`, async (_, Page) => {
-  await renderRoutes([{ path: `/`, Component: Page }])
+])(
+  `%s of an orphaned contest says its educator can't restore it`,
+  async (_, Page) => {
+    await renderRoutes([{ path: `/`, Component: Page }])
 
-  await expect
-    .element(
-      page.getByText(`Your educator left MMMM, so no one can restore it.`, {
-        exact: false,
-      }),
-    )
-    .toBeVisible()
-  await expect.element(page.getByText(/ask /iu)).not.toBeInTheDocument()
-})
+    await expect
+      .element(
+        page.getByText(`Your educator left MMMM, so they can’t restore it.`, {
+          exact: false,
+        }),
+      )
+      .toBeVisible()
+    await expect.element(page.getByText(/ask /iu)).not.toBeInTheDocument()
+  },
+)

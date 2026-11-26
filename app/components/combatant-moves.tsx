@@ -29,9 +29,16 @@ export const CombatantMoves = ({
   const arrangement = readArrangement(bracket)
   // Swaps of an arrangement that has changed no longer mean what they did
   const [pending, setPending] = useState({ arrangement, swaps: NO_SWAPS })
-  const swaps = pending.arrangement === arrangement ? pending.swaps : NO_SWAPS
   const preview = useFetcher<MoveReply>()
   const save = useFetcher<ConfirmResult>()
+  const [submitted, setSubmitted] = useState(NO_SWAPS)
+  const isSaved = Boolean(save.data && `ok` in save.data)
+  // Saved swaps that cancel out leave the arrangement as it was
+  const swaps =
+    pending.arrangement === arrangement &&
+    !(isSaved && pending.swaps === submitted)
+      ? pending.swaps
+      : NO_SWAPS
   const clearSaved = () => {
     // Resetting a save under way would drop its reply and the reload after it
     if (save.state === `idle`) {
@@ -58,7 +65,6 @@ export const CombatantMoves = ({
     `impact` in preview.data
       ? preview.data.impact
       : null
-  const isMoved = save.data && `ok` in save.data && swaps.length === 0
   return (
     <section className='flex flex-col gap-4'>
       <h2 className={SECTION_HEADING_CLASS_NAME}>Move combatants</h2>
@@ -91,19 +97,20 @@ export const CombatantMoves = ({
       ) : null}
       <FetcherError fetcher={preview} />
       <FetcherError fetcher={save} />
-      {isMoved ? <Notice kind='status'>Moved the combatants</Notice> : null}
+      {isSaved ? <Notice kind='status'>Moved the combatants</Notice> : null}
       {impact ? (
         <ConfirmDialog
           isOpen
           onOpenChange={() => preview.reset()}
           title='Move combatants?'
           confirmLabel='Move combatants'
-          onConfirm={() =>
-            save.submit(
+          onConfirm={() => {
+            setSubmitted(swaps)
+            return save.submit(
               { ...move, intent: `save`, results: impact.results },
               target,
             )
-          }
+          }}
         >
           <MoveDescription
             moves={listMoves(bracket, swaps)}
@@ -218,11 +225,15 @@ const MoveDescription = ({
   isLocked: boolean
 }) => (
   <div className='flex flex-col gap-2'>
-    <ul className='max-h-48 list-disc overflow-y-auto ps-5'>
-      {moves.map(move => (
-        <li key={move}>{move}</li>
-      ))}
-    </ul>
+    {moves.length === 0 ? (
+      <p>The swaps cancel out, so no combatant moves.</p>
+    ) : (
+      <ul className='max-h-48 list-disc overflow-y-auto ps-5'>
+        {moves.map(move => (
+          <li key={move}>{move}</li>
+        ))}
+      </ul>
+    )}
     {battles === 0 ? (
       <p>The same combatants meet in every battle, so nothing is cleared.</p>
     ) : (

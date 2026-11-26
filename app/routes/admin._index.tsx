@@ -1,6 +1,10 @@
 import { href, Link } from 'react-router'
 import type { Route } from './+types/admin._index.ts'
-import { readAdminYears, readBracketSummary } from '~/brackets.server.ts'
+import {
+  hidePastDate,
+  readAdminYears,
+  readBracketSummary,
+} from '~/brackets.server.ts'
 import type { BracketSummary } from '~/brackets.server.ts'
 import { ButtonLink } from '~/components/button.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
@@ -14,15 +18,26 @@ export const loader = async () => {
     readAdminYears(),
     countReports({ kind: `admin` }),
   ])
+  const setupSummary =
+    setupYear === null ? null : await readBracketSummary(setupYear)
   return {
     reportCount,
-    current,
+    current: current && {
+      ...current,
+      expectedLockDate: readShownLockDate(current.summary),
+    },
     setup: setupYear !== null && {
       year: setupYear,
-      summary: await readBracketSummary(setupYear),
+      summary: setupSummary,
+      expectedLockDate: readShownLockDate(setupSummary),
     },
   }
 }
+
+const readShownLockDate = (summary: BracketSummary | null): Date | null =>
+  summary && `expectedLockDate` in summary
+    ? hidePastDate(summary.expectedLockDate)
+    : null
 
 const Admin = ({
   loaderData: { reportCount, current, setup },
@@ -74,11 +89,14 @@ export default Admin
 const YearCard = ({
   year,
   summary,
+  expectedLockDate,
   children,
 }: {
   year: number
   /** Null before the year's bracket is set up */
   summary: BracketSummary | null
+  /** Null without one to show */
+  expectedLockDate: Date | null
   children: React.ReactNode
 }) => (
   <section className='flex max-w-xl flex-col gap-3 border-2 border-ink p-5'>
@@ -96,9 +114,9 @@ const YearCard = ({
     {summary?.phase === `COMPLETE` ? (
       <p className='font-semibold'>Champion: {summary.champion}</p>
     ) : null}
-    {summary && `expectedLockDate` in summary && summary.expectedLockDate ? (
+    {expectedLockDate ? (
       <p className='text-muted'>
-        Expected to lock {formatDate(summary.expectedLockDate)}
+        Expected to lock {formatDate(expectedLockDate)}
       </p>
     ) : null}
     <div>{children}</div>

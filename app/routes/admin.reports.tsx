@@ -15,7 +15,10 @@ const AdminReports = ({ loaderData }: Route.ComponentProps) => (
     <ReportList
       reports={loaderData.reports}
       dismissPath={href(`/admin/reports/dismiss`)}
-      toLink={() => ({ to: href(`/admin/contests`), label: `See contests` })}
+      toLink={({ contest }) => ({
+        to: href(`/admin/contests/:contestId`, { contestId: contest.id }),
+        label: `See the contest`,
+      })}
     />
     <Pages {...loaderData.page} />
   </div>

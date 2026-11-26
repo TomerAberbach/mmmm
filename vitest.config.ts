@@ -21,6 +21,8 @@ export default defineConfig({
           css: { include: [/app\.css/u] },
           globalSetup: [`test/global-setup.ts`],
           setupFiles: [`test/setup.ts`],
+          // Hashing a password for each attempt is slow on CI's few cores
+          testTimeout: 30_000,
           env: {
             APP_ENV: `test`,
             BETTER_AUTH_SECRET: `test-secret-that-is-at-least-32-characters`,

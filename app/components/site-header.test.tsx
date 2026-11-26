@@ -18,7 +18,9 @@ test(`a signed-in educator's name links to their settings`, async () => {
     {
       path: `/`,
       Component: () => (
-        <SiteHeader educator={{ name: `Ms. Frizzle`, reportCount: 0 }} />
+        <SiteHeader
+          educator={{ name: `Ms. Frizzle`, reportCount: 0, isAdmin: false }}
+        />
       ),
     },
   ])
@@ -34,7 +36,9 @@ test(`an educator with reports sees how many`, async () => {
     {
       path: `/`,
       Component: () => (
-        <SiteHeader educator={{ name: `Ms. Frizzle`, reportCount: 2 }} />
+        <SiteHeader
+          educator={{ name: `Ms. Frizzle`, reportCount: 2, isAdmin: false }}
+        />
       ),
     },
   ])
@@ -43,3 +47,29 @@ test(`an educator with reports sees how many`, async () => {
     .element(page.getByRole(`link`, { name: `Reports (2)` }))
     .toHaveAttribute(`href`, `/contests/reports`)
 })
+
+test.each([
+  { isAdmin: true, linkCount: 1 },
+  { isAdmin: false, linkCount: 0 },
+])(
+  `only admins get a link to the admin area (admin: $isAdmin)`,
+  async ({ isAdmin, linkCount }) => {
+    await renderRoutes([
+      {
+        path: `/`,
+        Component: () => (
+          <SiteHeader
+            educator={{ name: `Ms. Frizzle`, reportCount: 0, isAdmin }}
+          />
+        ),
+      },
+    ])
+
+    await expect
+      .element(page.getByRole(`link`, { name: `Ms. Frizzle` }))
+      .toBeVisible()
+    expect(
+      page.getByRole(`link`, { name: `Admin`, exact: true }).elements(),
+    ).toHaveLength(linkCount)
+  },
+)
