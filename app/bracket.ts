@@ -6,6 +6,13 @@ import { DivisionPosition, Round } from './generated/prisma/enums.ts'
  */
 export const DIVISION_POSITIONS = Object.values(DivisionPosition)
 
+export const mapDivisions = <Value>(
+  toValue: (position: DivisionPosition) => Value,
+): Record<DivisionPosition, Value> =>
+  Object.fromEntries(
+    DIVISION_POSITIONS.map(position => [position, toValue(position)]),
+  ) as Record<DivisionPosition, Value>
+
 export const POSITION_LABELS: Record<DivisionPosition, string> = {
   TOP_LEFT: `top left`,
   BOTTOM_LEFT: `bottom left`,

@@ -140,7 +140,7 @@ const seedPlayers = async (contestId: string): Promise<void> => {
   for (const [displayName, status, deletedBy] of players) {
     const id = await seedPlayer(contestId, displayName)
     if (status) {
-      const submitted = await submitPlayerPicks(id, year, picks)
+      const submitted = await submitPlayerPicks(id, picks)
       if (`refusal` in submitted) {
         throw new Error(
           `The contest refused ${displayName}'s picks: ${submitted.refusal}`,

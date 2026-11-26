@@ -2,21 +2,21 @@ import { z } from 'zod'
 import {
   DIVISION_POSITIONS,
   DivisionPosition,
+  isSameSeedSlot,
+  mapDivisions,
   MAX_WILD_CARD_ENTRANTS,
   MIN_WILD_CARD_ENTRANTS,
   POSITION_LABELS,
   readSeedsWithCombatants,
   SEEDS,
-  SEEDS_PER_DIVISION,
 } from './bracket.ts'
 import type { Seed, SeedSlotRef } from './bracket.ts'
 import { COMBATANT_NAME, DIVISION_NAME } from './free-text.ts'
-import { listSeedSlots } from './seeded-bracket.ts'
 
 /**
  * Admins enter these names from ASU's published bracket, so they skip the
  * offensive word filter, which flags real combatants such as the Great Tit.
- * `listBracketProblems` checks each name, so its message can give the name's
+ * `listNameProblems` checks each name, so its message can give the name's
  * place
  */
 const nameSchema = z.string().trim()
@@ -31,12 +31,11 @@ export type BracketInput<Combatant = string> = {
 }
 
 /**
- * Checks a bracket whose combatants match `combatantSchema`, comparing the
- * names `readName` reads
+ * Checks that a bracket whose combatants match `combatantSchema` is whole. It
+ * checks no names, so a stored bracket stays readable when a name rule changes
  */
 export const toBracketSchema = <Combatant>(
   combatantSchema: z.ZodType<Combatant>,
-  readName: (combatant: Combatant) => string,
 ): z.ZodType<BracketInput<Combatant>> =>
   z
     .object({
@@ -57,31 +56,56 @@ export const toBracketSchema = <Combatant>(
       }),
     })
     .superRefine((bracket, ctx) => {
-      const input = mapCombatants(bracket, readName)
-      for (const { place, message } of listBracketProblems(input)) {
-        ctx.addIssue({
-          code: `custom`,
-          path: readInputPath(place, input.wildCard),
-          message,
-        })
+      for (const message of listCountProblems(bracket)) {
+        // Names wait for the counts, since their messages give each
+        // combatant's seed
+        ctx.addIssue({ code: `custom`, message, continue: false })
       }
     })
 
-export const bracketInputSchema = toBracketSchema(nameSchema, name => name)
+export const bracketInputSchema = toBracketSchema(nameSchema).superRefine(
+  (input, ctx) => {
+    for (const { message } of listNameProblems(input)) {
+      ctx.addIssue({ code: `custom`, message })
+    }
+  },
+)
+
+/**
+ * The wild card's seed slot has no combatant, since the wild card's winner
+ * fills it
+ */
+type SeedSlot<Combatant> = SeedSlotRef & { combatant?: Combatant }
+
+/** A division's seed slots in seed order */
+export const listDivisionSeedSlots = <Combatant>(
+  { divisions, wildCard }: BracketInput<Combatant>,
+  position: DivisionPosition,
+): SeedSlot<Combatant>[] => {
+  const combatants = [...divisions[position].combatants]
+  return SEEDS.map(seed =>
+    isSameSeedSlot({ position, seed }, wildCard)
+      ? { position, seed }
+      : // The input schema checks each division's count
+        { position, seed, combatant: combatants.shift()! },
+  )
+}
+
+export const listSeedSlots = <Combatant>(
+  bracket: BracketInput<Combatant>,
+): SeedSlot<Combatant>[] =>
+  DIVISION_POSITIONS.flatMap(position =>
+    listDivisionSeedSlots(bracket, position),
+  )
 
 export const mapCombatants = <From, To>(
   { divisions, wildCard }: BracketInput<From>,
   toCombatant: (combatant: From) => To,
 ): BracketInput<To> => ({
-  divisions: Object.fromEntries(
-    DIVISION_POSITIONS.map(position => [
-      position,
-      {
-        name: divisions[position].name,
-        combatants: divisions[position].combatants.map(toCombatant),
-      },
-    ]),
-  ) as BracketInput<To>[`divisions`],
+  divisions: mapDivisions(position => ({
+    name: divisions[position].name,
+    combatants: divisions[position].combatants.map(toCombatant),
+  })),
   wildCard: { ...wildCard, entrants: wildCard.entrants.map(toCombatant) },
 })
 
@@ -97,56 +121,17 @@ export type CombatantPlace =
 export type NamePlace =
   CombatantPlace | { kind: `divisionName`; position: DivisionPosition }
 
-/** A name's place, or a division's combatants when their count is wrong */
-export type ProblemPlace =
-  NamePlace | { kind: `combatantCount`; position: DivisionPosition }
-
-type Problem = { place: ProblemPlace; message: string }
-
-/**
- * Every seed slot needs one combatant except the wild card's. Names are
- * checked only once the counts match, since their messages give each
- * combatant's seed. At most one problem per name, in the order the setup form
- * shows the names
- */
-export const listBracketProblems = (input: BracketInput): Problem[] => {
-  const countProblems = listCountProblems(input)
-  return countProblems.length > 0 ? countProblems : listNameProblems(input)
-}
-
-/** A seed's index in its division's list skips the wild card's seed */
-const readInputPath = (
-  place: ProblemPlace,
-  wildCard: SeedSlotRef,
-): PropertyKey[] => {
-  switch (place.kind) {
-    case `divisionName`:
-      return [`divisions`, place.position, `name`]
-    case `combatantCount`:
-      return [`divisions`, place.position, `combatants`]
-    case `seedSlot`: {
-      const { position, seed } = place.seedSlot
-      const index = readSeedsWithCombatants(position, wildCard).indexOf(seed)
-      return [`divisions`, position, `combatants`, index]
-    }
-    case `entrant`:
-      return [`wildCard`, `entrants`, place.index]
-  }
-}
-
-const listCountProblems = ({ divisions, wildCard }: BracketInput): Problem[] =>
+/** Every seed slot needs one combatant except the wild card's */
+const listCountProblems = ({
+  divisions,
+  wildCard,
+}: BracketInput<unknown>): string[] =>
   DIVISION_POSITIONS.flatMap(position => {
     const { name, combatants } = divisions[position]
-    const expected =
-      position === wildCard.position
-        ? SEEDS_PER_DIVISION - 1
-        : SEEDS_PER_DIVISION
+    const expected = readSeedsWithCombatants(position, wildCard).length
     return combatants.length === expected
       ? []
-      : {
-          place: { kind: `combatantCount`, position },
-          message: `Give ${name} ${expected} combatants`,
-        }
+      : `Give ${name} ${expected} combatants`
   })
 
 /**
@@ -177,7 +162,10 @@ const NAME_RULES = {
   },
 }
 
-const listNameProblems = (input: BracketInput): Problem[] => {
+/** At most one problem per name, in the order the setup form shows the names */
+export const listNameProblems = (
+  input: BracketInput,
+): { place: NamePlace; message: string }[] => {
   const fields = listNameFields(input)
   const findDuplicates = (kind: NameField[`kind`]) =>
     findDuplicateNames(
@@ -213,9 +201,8 @@ const readNameMessage = (
  * Each division's name, then its seeds, with the wild card's entrants at its
  * seed
  */
-const listNameFields = (input: BracketInput): NameField[] => {
-  const seedSlots = listSeedSlots(input)
-  return DIVISION_POSITIONS.flatMap((position): NameField[] => {
+const listNameFields = (input: BracketInput): NameField[] =>
+  DIVISION_POSITIONS.flatMap((position): NameField[] => {
     const division = input.divisions[position]
     const divisionLabel = `the ${POSITION_LABELS[position]} division`
     return [
@@ -225,9 +212,8 @@ const listNameFields = (input: BracketInput): NameField[] => {
         name: division.name,
         label: divisionLabel,
       },
-      ...seedSlots
-        .filter(seedSlot => seedSlot.position === position)
-        .flatMap(({ seed, combatant }): NameField | NameField[] =>
+      ...listDivisionSeedSlots(input, position).flatMap(
+        ({ seed, combatant }): NameField | NameField[] =>
           combatant === undefined
             ? input.wildCard.entrants.map((name, index) => ({
                 kind: `combatant`,
@@ -241,10 +227,9 @@ const listNameFields = (input: BracketInput): NameField[] => {
                 name: combatant,
                 label: `seed ${seed} in ${division.name || divisionLabel}`,
               },
-        ),
+      ),
     ]
   })
-}
 
 /**
  * Each place whose name another place shares, with the first other place that

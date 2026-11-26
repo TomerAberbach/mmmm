@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
-import { isCurrentYear, lockYear } from './brackets.server.ts'
+import { isCurrentYear, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
 import type { PlayerDeleter } from './generated/prisma/client.ts'
@@ -25,7 +25,7 @@ export const createPlayer = (
   displayName: string,
   limit: () => Promise<LimitRefusal | undefined>,
 ): Promise<NewPlayer> =>
-  prisma.$transaction(async tx => {
+  withCurrentYear(async (tx, currentYear) => {
     // The request may have read the contest before another deleted it or
     // replaced its contest link
     const [contest] = await tx.$queryRaw<
@@ -44,7 +44,7 @@ export const createPlayer = (
     if (contest.deletedAt) {
       return { refusal: `CONTEST_DELETED` }
     }
-    if ((await lockYear(tx, contest.year, `SHARE`)) !== `CURRENT`) {
+    if (contest.year !== currentYear) {
       return { refusal: `NOT_CURRENT_YEAR` }
     }
     const limitRefusal = await limit()

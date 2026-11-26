@@ -129,24 +129,23 @@ app
   in one transaction
 - Read a year's phase with `readBracketSummary`, instead of checking
   `publishedAt`
-- Only the current year takes new contests, players, and picks. Check a write
-  that depends on whether a year is published or current inside its transaction
-  with `lockYear` from `brackets.server.ts`, in `SHARE` mode, as `createPlayer`
-  and the pick writes do, or with `lockYears` before reading the current year,
-  as `createContest` does. Publishing and unpublishing take it in `UPDATE` mode,
-  so neither interleaves with those writes or with each other.
-  `saveUnpublishedBracket` takes `lockYears` in `SHARE` mode and a lock on its
-  year, so saves of different years and pick writes run alongside it. A
-  transaction that also locks a player's row locks it first
+- Only the current year takes new contests, players, and picks. Run a
+  transaction that depends on which year is current with `withCurrentYear` from
+  `brackets.server.ts`, which shares one lock among such writes. Publishing and
+  unpublishing take that lock alone, so neither interleaves with those writes or
+  with each other. `saveUnpublishedBracket` shares it and takes a lock on its
+  year, so saves of different years and pick writes run alongside it
 - Read which seed slots or earlier battles feed a battle, and which Round 1
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
   links, only a round and an index for results and picks to reference
 - A `BracketInput` skips the wild card's seed in its division's list, so read
-  each seed slot's combatant with `listSeedSlots` instead of indexing the list
-  by seed. The setup form keeps one field per seed instead, so a name stays at
-  its seed when the wild card moves. `bracket-form.ts` converts between the two,
-  and shows the problems `listBracketProblems` finds at the fields for their
-  places, so add a bracket rule only to `bracket-input.ts`
+  each seed slot's combatant with `listSeedSlots` or `listDivisionSeedSlots`
+  instead of indexing the list by seed. The setup form keeps one field per seed
+  instead, so a name stays at its seed when the wild card moves.
+  `bracket-form.ts` converts between the two, and shows the problems
+  `listNameProblems` finds at the fields for their places, so add a bracket rule
+  only to `bracket-input.ts`. Stored brackets skip the name rules, so a new one
+  can't make a past year unreadable
 - Key winners and picks by combatant ID, and show names only for display, so a
   rename leaves saved picks as they were. A `BracketInput` and the setup form
   hold names, because combatants have no IDs until the bracket is saved
@@ -200,7 +199,7 @@ app
 - A player edits a draft, and submitting copies it to their submission. Both are
   `Pick` rows, told apart by `stage`. Change them only through
   `player-picks.server.ts`, which locks the player's row so two requests can't
-  interleave. Pass the year of the player's contest from `readPlayContest`
+  interleave
 - Approve, reject, and rename a contest's players only through
   `contest-players.server.ts`, whose writes match a player by its contest and
   the signed-in educator's ID, so another educator's request changes nothing

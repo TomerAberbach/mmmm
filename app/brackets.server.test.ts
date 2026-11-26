@@ -384,3 +384,17 @@ test(`a combatant from another year can't be renamed`, async () => {
     error: `That combatant isn't in the ${year} bracket`,
   })
 })
+
+test(`a bracket whose combatants share a name still reads`, async () => {
+  const year = await addYear({ published: false })
+  const [first, second] = await prisma.combatant.findMany({
+    where: { year },
+    take: 2,
+  })
+  await prisma.combatant.update({
+    where: { id: second!.id },
+    data: { name: first!.name.toUpperCase() },
+  })
+
+  await expect(readBracket(year)).resolves.not.toBeNull()
+})
