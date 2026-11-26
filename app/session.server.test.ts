@@ -19,7 +19,10 @@ const stubSession = (setCookies: string[] = []) => {
     headers,
     response: {
       user: EDUCATOR,
-      session: { id: `session-1`, assurance: `PASSWORD` },
+      session: {
+        id: `session-1`,
+        assurance: `PASSWORD`,
+      },
     },
   } as never)
 }

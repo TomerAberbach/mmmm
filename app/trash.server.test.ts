@@ -8,6 +8,7 @@ import {
   readLinkSecret,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
+import { addYear } from '../test/years.ts'
 import {
   readContestPlayers,
   renamePlayer,
@@ -27,6 +28,7 @@ import {
   deletePlayers,
   eraseContests,
   eraseExpiredPlayers,
+  erasePlayer,
   erasePlayers,
   readDeletedContests,
   readDeletedPlayers,
@@ -298,4 +300,22 @@ test(`a deleted contest takes no players or picks`, async () => {
     { refusal: `CONTEST_DELETED` },
     { refusal: `DELETED` },
   ])
+})
+
+test(`an admin erases a past year's player`, async () => {
+  const { contestId, playerId } = await createContestWithPlayer()
+  await addYear({ published: true })
+
+  await expect(erasePlayer(contestId, playerId)).resolves.toBe(true)
+
+  await expect(prisma.player.count({ where: { id: playerId } })).resolves.toBe(
+    0,
+  )
+})
+
+test(`an admin erases no player through another contest`, async () => {
+  const { playerId } = await createContestWithPlayer()
+  const other = await createContestWithPlayer()
+
+  await expect(erasePlayer(other.contestId, playerId)).resolves.toBe(false)
 })

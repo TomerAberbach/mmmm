@@ -57,6 +57,7 @@ CREATE TABLE "Session" (
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "assurance" "SessionAssurance" NOT NULL DEFAULT 'PASSWORD',
+    "secondFactorUsedAt" TIMESTAMP(3),
     "educatorId" TEXT NOT NULL,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")

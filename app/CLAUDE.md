@@ -92,9 +92,9 @@ app
   shows. Load an educator's address or ID in the route that needs it
 - Add admin pages under the `routes/admin.second-factor.tsx` layout in
   `routes.ts`, which opens them only for a session whose `assurance` is
-  `SECOND_FACTOR`. It alone picks whether another session sets up or verifies a
-  second factor, so redirect to `/admin`. `requireAdmin` answers everyone but an
-  admin with the not-found page
+  `SECOND_FACTOR`, which lasts 12 hours from using one. It alone picks whether
+  another session sets up or verifies a second factor, so redirect to `/admin`.
+  `requireAdmin` answers everyone but an admin with the not-found page
 - `guardSecondFactorChange` in `second-factor.server.ts` checks every
   `/two-factor/*` and `/passkey/*` request. When adding a Better Auth endpoint
   that adds or removes a second factor, list it in `ADDING_PATHS` or

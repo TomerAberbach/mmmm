@@ -118,6 +118,22 @@ export const erasePlayers = (
   })
 
 /**
+ * The admin deletes a player for good, in any year and in or out of the
+ * contest's trash, such as for a family. Returns whether the player was in the contest
+ */
+export const erasePlayer = (
+  contestId: string,
+  playerId: string,
+): Promise<boolean> =>
+  // Alone, since changes to the contest lock its players in another order
+  withCurrentYearAlone(async tx => {
+    const { count } = await tx.player.deleteMany({
+      where: { id: playerId, contestId },
+    })
+    return count > 0
+  })
+
+/**
  * A player moves their own draft or submission to the trash. Returns whether it
  * was outside the trash
  */
