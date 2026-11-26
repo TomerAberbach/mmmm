@@ -1,10 +1,10 @@
-import { withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
 import { ensureOrganization } from './organizations.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { endShares } from './shares.server.ts'
+import { withCurrentYear } from './years.server.ts'
 
 /**
  * Deletes the educator's account. Their contests become orphaned, which keeps

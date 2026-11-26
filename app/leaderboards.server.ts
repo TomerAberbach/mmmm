@@ -1,10 +1,4 @@
-import {
-  isOpen,
-  isOpenYear,
-  readBracketAndResultRows,
-  readCurrentYear,
-  readSnapshot,
-} from './brackets.server.ts'
+import { readBracketAndResultRows, readSnapshot } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
 import { UNNAMED_PLAYER } from './leaderboard-row.ts'
@@ -20,6 +14,7 @@ import { readSubmissionPicks } from './player-picks.server.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
 import { readSharedContestIds } from './shares.server.ts'
+import { isOpen, isOpenYear, readCurrentYear } from './years.server.ts'
 
 /** Whose approved submissions a leaderboard ranks, in one year */
 export type LeaderboardScope = { year: number } & (

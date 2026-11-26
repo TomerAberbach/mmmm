@@ -1,11 +1,9 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
 import {
-  isOpen,
   readBracketAndResultRows,
   readBracketRows,
   readSnapshot,
-  withCurrentYear,
 } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type {
@@ -13,7 +11,6 @@ import type {
   Prisma,
   SubmissionStatus,
 } from './generated/prisma/client.ts'
-import { lockPlayers } from './lock-players.server.ts'
 import { readArrangement } from './moves.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
@@ -21,6 +18,7 @@ import type { Picks } from './picks.ts'
 import type { Results } from './results.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 import type { SeededBracket, StoredBracket } from './seeded-bracket.ts'
+import { isOpen, withCurrentYear } from './years.server.ts'
 
 export type Submission = {
   status: SubmissionStatus
@@ -193,7 +191,7 @@ export const discardPlayerDraft = (
 /**
  * Clears every pick of the battles in the year's contests. Before the lock, a
  * submission that loses picks returns to a draft. Players who lose picks see a
- * note until they submit
+ * note until they submit. Call it alone, from `withCurrentYearAlone`
  */
 export const clearPicks = async (
   tx: Prisma.TransactionClient,
@@ -201,7 +199,6 @@ export const clearPicks = async (
   battleIds: string[],
   isLocked: boolean,
 ): Promise<void> => {
-  await lockPlayers(tx)
   const contest = { year }
   const battleId = { in: battleIds }
   await tx.player.updateMany({
@@ -219,7 +216,6 @@ export const returnClearedSubmissions = async (
   tx: Prisma.TransactionClient,
   year: number,
 ): Promise<void> => {
-  await lockPlayers(tx)
   await deleteClearedSubmissions(tx, year)
 }
 

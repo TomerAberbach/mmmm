@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
-import { withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { changeContests } from './editable-contests.server.ts'
 import { toAppUrl } from './env.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret } from './secrets.server.ts'
+import { withCurrentYear } from './years.server.ts'
 
 /** `link` is the contest link, which players open */
 export type ContestSummary = { id: string; name: string; link: string }

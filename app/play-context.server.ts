@@ -4,13 +4,13 @@ import type {
   Params,
   RouterContextProvider,
 } from 'react-router'
-import { isOpenYear } from './brackets.server.ts'
 import { brokenLink } from './broken-link.ts'
 import { readContestById, readContestByLink } from './contests.server.ts'
 import type { PlayContest } from './contests.server.ts'
 import type { LeaderboardViewer } from './leaderboards.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 import { readSubmissionStatus } from './player-picks.server.ts'
+import { isOpenYear } from './years.server.ts'
 
 const contestContext = createContext<PlayContest>()
 

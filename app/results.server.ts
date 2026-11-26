@@ -1,10 +1,6 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
-import {
-  readBracketRows,
-  readResultRows,
-  withCurrentYearAlone,
-} from './brackets.server.ts'
+import { readBracketRows, readResultRows } from './brackets.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { readArrangement } from './moves.ts'
 import { isContender } from './picks.ts'
@@ -21,6 +17,7 @@ import type { Results, ResultsChange } from './results.ts'
 import { storeScores } from './scores.server.ts'
 import { toSeededBracket, withMerge } from './seeded-bracket.ts'
 import type { SeededBracket, StoredMerge } from './seeded-bracket.ts'
+import { withCurrentYearAlone } from './years.server.ts'
 
 export type ResultRefusal = { refusal: `NOT_CURRENT_YEAR` | `STALE` }
 

@@ -3,10 +3,7 @@ import {
   readBracketRows,
   readResultRows,
   replacePlaces,
-  withCurrentYear,
-  withCurrentYearAlone,
 } from './brackets.server.ts'
-import type { CurrentYear } from './brackets.server.ts'
 import type { ConfirmResult } from './form-replies.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { MoveRequest } from './move-request.ts'
@@ -20,6 +17,8 @@ import { clearPicks } from './player-picks.server.ts'
 import { clearResults, hasSameKeys } from './results.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
+import { withCurrentYear, withCurrentYearAlone } from './years.server.ts'
+import type { CurrentYear } from './years.server.ts'
 
 /** What a move clears, with counts that leave out the trash */
 export type MoveImpact = {

@@ -229,9 +229,10 @@ const runReading = async (): Promise<void> => {
 
 /** Saves the first undecided battle's first side as its winner */
 const saveNextResult = async (): Promise<void> => {
-  const { readBracket, readCurrentYear, readResultRows } = await import(
+  const { readBracket, readResultRows } = await import(
     `../app/brackets.server.ts`
   )
+  const { readCurrentYear } = await import(`../app/years.server.ts`)
   const { listBattles, toBattleKey } = await import(`../app/bracket.ts`)
   const { readArrangement } = await import(`../app/moves.ts`)
   const { listContenders } = await import(`../app/picks.ts`)

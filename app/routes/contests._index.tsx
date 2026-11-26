@@ -1,5 +1,4 @@
 import type { Route } from './+types/contests._index.ts'
-import { readCurrentYear } from '~/brackets.server.ts'
 import { EducatorDashboard } from '~/components/educator-dashboard.tsx'
 import type { EducatorDashboardView } from '~/components/educator-dashboard.tsx'
 import { readEducatorContests } from '~/contests.server.ts'
@@ -9,6 +8,7 @@ import { readRequiredEducator } from '~/session.server.ts'
 import { readSharedContests } from '~/shares.server.ts'
 import { countDeletedContests } from '~/trash.server.ts'
 import { readUpcomingYear } from '~/year.ts'
+import { readCurrentYear } from '~/years.server.ts'
 
 export const loader = async ({
   context,

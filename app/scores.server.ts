@@ -6,7 +6,8 @@ import type { SeededBracket } from './seeded-bracket.ts'
 
 /**
  * Stores the score that the results give each of the year's submissions, in the
- * trash or not. Call it in the transaction that saves the results
+ * trash or not. Call it in the transaction that saves the results, alone, since
+ * a group's approval or erasure locks its submissions in its own order
  */
 export const storeScores = async (
   tx: Prisma.TransactionClient,
@@ -22,9 +23,6 @@ export const storeScores = async (
       points: ROUND_POINTS[battle.round],
     })),
   )
-  // A group's approval or erasure locks its submissions in its own order, so
-  // one running alongside the update could deadlock with it
-  await tx.$executeRaw`LOCK TABLE "Submission" IN SHARE ROW EXCLUSIVE MODE`
   // One statement, because a year can have millions of picks
   await tx.$executeRaw`
     WITH "Scored" AS (
