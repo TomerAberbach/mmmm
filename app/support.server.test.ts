@@ -101,6 +101,31 @@ test(`deleting an organization's data leaves every other organization's`, async 
   await expect(deleteOrganization(domain, otherId)).resolves.toBe(`GONE`)
 })
 
+test(`deleting an organization's data deletes the links emailed to its educators`, async () => {
+  const [domain, otherDomain] = [`${randomUUID()}.edu`, `${randomUUID()}.edu`]
+  const educatorId = await createMember(domain)
+  const otherId = await createMember(otherDomain)
+  for (const id of [educatorId, otherId]) {
+    await prisma.verification.create({
+      data: {
+        id: randomUUID(),
+        identifier: randomUUID(),
+        value: id,
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    })
+  }
+
+  await deleteOrganization(domain, otherId)
+
+  await expect(
+    prisma.verification.count({ where: { value: educatorId } }),
+  ).resolves.toBe(0)
+  await expect(
+    prisma.verification.count({ where: { value: otherId } }),
+  ).resolves.toBe(1)
+})
+
 test(`an admin can't delete their own organization`, async () => {
   const domain = `${randomUUID()}.edu`
   const adminId = await createMember(domain)

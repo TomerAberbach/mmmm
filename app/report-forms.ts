@@ -11,7 +11,8 @@ export const CONTEST_TARGET: ReportTarget = {
 }
 
 export const reportSchema = z.object({
-  target: z.union([z.literal(CONTEST_TARGET.id), z.uuid()]),
+  // An imported player's ID is a CUID, and any other's a UUID
+  target: z.string().regex(/^[\da-z\-]{1,40}$/v),
   reason: z.enum(ReportReason),
 })
 

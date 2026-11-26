@@ -30,7 +30,10 @@ const OrganizationLeaderboard = ({
     <Link to={href(`/contests`)} className='self-start print:hidden'>
       All contests
     </Link>
-    <PageHeader label={loaderData.name} title='Organization leaderboard' />
+    <PageHeader
+      label={`${loaderData.year} · ${loaderData.name}`}
+      title='Organization leaderboard'
+    />
     <Leaderboard
       leaderboard={loaderData.leaderboard}
       reportPath={href(`/contests/years/:year/report`, params)}

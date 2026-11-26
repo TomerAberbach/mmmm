@@ -145,7 +145,7 @@ export const readRequiredLeaderboard = async (
   named: NamedScope | null,
   viewer: LeaderboardViewer,
   fallback: string,
-): Promise<{ name: string; leaderboard: LeaderboardPage }> => {
+): Promise<{ name: string; year: number; leaderboard: LeaderboardPage }> => {
   const leaderboard =
     named &&
     (await readLeaderboard(named.scope, viewer, readPageNumber(request)))
@@ -154,7 +154,7 @@ export const readRequiredLeaderboard = async (
     // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw redirect(fallback)
   }
-  return { name: named.name, leaderboard }
+  return { name: named.name, year: named.scope.year, leaderboard }
 }
 
 /** Throws the not-found page for a player without a row */

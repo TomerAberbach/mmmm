@@ -8,9 +8,14 @@ import { shareSchema } from '../share-forms.ts'
 import { ContestShares } from './contest-shares.tsx'
 import type { Colleague } from '~/shares.server.ts'
 
+const RUHLE = { id: `ruhle`, name: `Mr. Ruhle`, email: `ruhle@example.com` }
+
 /** The actions share and stop sharing, and the loader reads the shares back */
-const renderShares = async () => {
-  let colleagues: Colleague[] = []
+const renderShares = async ({
+  initial = [],
+  isPast = false,
+}: { initial?: Colleague[]; isPast?: boolean } = {}) => {
+  let colleagues = initial
   await renderRoutes(
     [
       {
@@ -21,6 +26,7 @@ const renderShares = async () => {
           <ContestShares
             contest={{ id: `period-2`, name: `Period 2 Biology` }}
             colleagues={useLoaderData<Colleague[]>()}
+            isPast={isPast}
           />
         ),
       },
@@ -56,6 +62,29 @@ const renderShares = async () => {
   )
 }
 
+const heading = () =>
+  page.getByRole(`heading`, { name: `Shared with` }).element()
+
+const stopSharing = async () => {
+  await page
+    .getByRole(`button`, { name: `Stop sharing with Mr. Ruhle` })
+    .click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Stop sharing` })
+    .click()
+}
+
+const expectFocusOnSection = async () => {
+  await expect
+    .poll(
+      () =>
+        document.activeElement !== document.body &&
+        document.activeElement?.contains(heading()),
+    )
+    .toBe(true)
+}
+
 const share = async (email: string) => {
   await page.getByLabelText(`Colleague’s email address`).fill(email)
   await page.getByRole(`button`, { name: `Share contest` }).click()
@@ -86,13 +115,19 @@ test(`stopping takes the colleague off the list once confirmed`, async () => {
   await renderShares()
   await share(`ruhle@example.com`)
 
-  await page
-    .getByRole(`button`, { name: `Stop sharing with Mr. Ruhle` })
-    .click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Stop sharing` })
-    .click()
+  await stopSharing()
 
   await expect.element(page.getByText(`Mr. Ruhle`)).not.toBeInTheDocument()
+  await expectFocusOnSection()
+})
+
+test(`stopping a past contest's last share keeps focus in the section`, async () => {
+  await renderShares({ initial: [RUHLE], isPast: true })
+
+  await stopSharing()
+
+  await expect
+    .element(page.getByText(`No colleague can see this contest anymore.`))
+    .toBeVisible()
+  await expectFocusOnSection()
 })

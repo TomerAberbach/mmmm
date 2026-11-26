@@ -1,5 +1,6 @@
 import { withCurrentYear, withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
+import { deleteEmailedLinks } from './educator-deletion.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
 import { lockPlayers } from './lock-players.server.ts'
@@ -76,10 +77,22 @@ export const handOverContest = (
  * toward it, in any year and in the trash. Returns whether it existed, and
  * refuses the one the admin is in
  */
-export const deleteOrganization = (
+export const deleteOrganization = async (
   domain: string,
   adminId: string,
-): Promise<`DELETED` | `GONE` | `OWN`> =>
+): Promise<`DELETED` | `GONE` | `OWN`> => {
+  const deleted = await deleteOrganizationRows(domain, adminId)
+  if (typeof deleted === `string`) {
+    return deleted
+  }
+  await deleteEmailedLinks(deleted.educatorIds)
+  return `DELETED`
+}
+
+const deleteOrganizationRows = (
+  domain: string,
+  adminId: string,
+): Promise<{ educatorIds: string[] } | `GONE` | `OWN`> =>
   // Alone, since changes to one contest lock its rows in another order
   withCurrentYearAlone(async tx => {
     await lockPlayers(tx)
@@ -102,10 +115,14 @@ export const deleteOrganization = (
     ) {
       return `OWN`
     }
+    const educatorRows = await tx.educator.findMany({
+      where: educators,
+      select: { id: true },
+    })
     await tx.contest.deleteMany({ where: organizationContests(domain) })
     await tx.educator.deleteMany({ where: educators })
     await tx.organization.delete({ where: { domain } })
-    return `DELETED`
+    return { educatorIds: educatorRows.map(({ id }) => id) }
   })
 
 /** Includes those who haven't signed in yet, so haven't joined */
