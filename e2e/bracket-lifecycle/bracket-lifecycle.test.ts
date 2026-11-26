@@ -88,7 +88,9 @@ test(`a published bracket is on the home page, with each rename`, async ({
     visitor.getByRole(`heading`, { name: `${YEAR} bracket` }),
   ).toBeVisible()
   await expect(
-    visitor.getByText(`Expected to lock March 19, ${YEAR}`, { exact: false }),
+    visitor.getByText(`expected to lock on March 19, ${YEAR}`, {
+      exact: false,
+    }),
   ).toBeVisible()
   await expect(
     visitor.getByText(`Combatant One`, { exact: true }).first(),

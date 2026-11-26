@@ -24,7 +24,7 @@ export const action = async ({
       return redirect(href(`/admin/contests`))
     case `GONE`:
       return rejectForm(submission, {
-        formErrors: [`That contest is gone. Reload the page`],
+        formErrors: [`This contest is gone. Reload the page`],
       })
     case `OTHER_NAME`:
       return rejectForm(submission, {

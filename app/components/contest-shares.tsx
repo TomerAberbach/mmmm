@@ -39,7 +39,7 @@ export const ContestShares = ({
         <p className='max-w-prose'>
           {isPast && colleagues.length === 0
             ? `No colleague can see this contest anymore.`
-            : `A colleague in your organization can see this contest’s players and scores. They can’t change anything.`}
+            : `A colleague in your organization can see this contest’s players and, once submissions close, their scores and approved brackets. They can’t change anything.`}
         </p>
         {colleagues.length > 0 ? (
           <ul className='border-t-2 border-ink'>

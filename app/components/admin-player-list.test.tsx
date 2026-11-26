@@ -40,10 +40,10 @@ test(`the admin erases a player`, async () => {
   await expect.element(page.getByText(`In the trash`)).toBeVisible()
   await expectNoAxeViolations()
 
-  await page.getByRole(`button`, { name: `Erase Maya R.` }).click()
+  await page.getByRole(`button`, { name: `Delete forever: Maya R.` }).click()
   await page
     .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: `Erase player` })
+    .getByRole(`button`, { name: `Delete forever` })
     .click()
 
   await expect.element(page.getByText(`Maya R.`)).not.toBeInTheDocument()
@@ -53,7 +53,7 @@ test(`the admin erases a player`, async () => {
 test(`erasing a player in the trash changes no leaderboard or link`, async () => {
   await renderPlayers()
 
-  await page.getByRole(`button`, { name: `Erase Sam T.` }).click()
+  await page.getByRole(`button`, { name: `Delete forever: Sam T.` }).click()
 
   await expect
     .element(

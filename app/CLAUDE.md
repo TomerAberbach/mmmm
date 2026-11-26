@@ -62,7 +62,9 @@ app
   `form-replies.server.ts`, or with `acceptForm` and `rejectForm` when the reply
   sets headers or Better Auth can refuse it, and show `SavedNotice` from
   `components/saved-notice.tsx`
-- Write apostrophes as ’ in copy, and end an error without a period
+- Write apostrophes as ’ in copy. End a notice, an error, or a field's
+  description without a period, even after several sentences, and page and
+  dialog text with one
 - Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
   UTC, so read it in UTC. Show an instant as its day in Arizona with
   `formatArizonaDate`

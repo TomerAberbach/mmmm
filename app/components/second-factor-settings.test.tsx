@@ -53,7 +53,7 @@ test(`a session that hasn't used a second factor can't change them`, async () =>
   await expect
     .element(page.getByRole(`status`))
     .toHaveTextContent(
-      `Open the admin area and use your second factor before changing these.`,
+      `Open the admin area and use your second factor before changing these`,
     )
   await expect
     .element(page.getByRole(`button`, { name: `Remove` }))
@@ -74,7 +74,7 @@ test(`an admin without a second factor is told to set one up`, async () => {
 
   await expect
     .element(page.getByRole(`status`))
-    .toHaveTextContent(`Open the admin area to set one up.`)
+    .toHaveTextContent(`Open the admin area to set one up`)
 })
 
 test(`removing a passkey asks first and shows why it failed`, async () => {

@@ -490,7 +490,7 @@ test(`a combatant from another year can't be renamed`, async () => {
   const result = await renameCombatant(year, id, `Lionesses`)
 
   expect(result).toStrictEqual({
-    error: `That combatant isn’t in the ${year} bracket`,
+    error: `This combatant isn’t in the ${year} bracket. Reload the page`,
   })
 })
 

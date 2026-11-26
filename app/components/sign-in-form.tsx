@@ -16,15 +16,15 @@ import { useValidatedForm } from './use-validated-form.ts'
 const NOTICES = {
   confirmed: {
     kind: `status`,
-    text: `Your email address is confirmed. Sign in to create your first contest.`,
+    text: `Your email address is confirmed. Sign in to create your first contest`,
   },
   'password-reset': {
     kind: `status`,
-    text: `Your password is changed. Sign in with your new password.`,
+    text: `Your password is changed. Sign in with your new password`,
   },
   'challenge-expired': {
     kind: `alert`,
-    text: `Your sign-in timed out before the code was accepted. Sign in again.`,
+    text: `Your sign-in timed out before the code was accepted. Sign in again`,
   },
   'too-many-codes': {
     kind: `alert`,
@@ -36,7 +36,7 @@ const NOTICES = {
   },
   'link-invalid': {
     kind: `alert`,
-    text: `That confirmation link has expired or doesn’t work. Sign in to get a new one.`,
+    text: `That confirmation link has expired or doesn’t work. Sign in to get a new one`,
   },
 } as const
 

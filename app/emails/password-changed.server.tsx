@@ -12,8 +12,8 @@ export const passwordChangedEmail = ({ to }: { to: string }): Email => ({
       heading='Your password was changed'
     >
       <EmailParagraph>
-        The password for the MMMM account with this email address was just
-        changed, and every other signed-in browser was signed out.
+        The password for the MMMM account with this email address was changed,
+        and every other signed-in browser was signed out.
       </EmailParagraph>
       <EmailParagraph>
         If you didn’t change it, reset your password now.

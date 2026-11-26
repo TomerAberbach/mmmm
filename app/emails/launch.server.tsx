@@ -26,7 +26,7 @@ export const launchEmail = ({
       <EmailAction href={url}>Set a password</EmailAction>
       <EmailParagraph>
         The link works once and expires in {CONFIRMATION_EXPIRES_IN_DAYS} days.
-        After that, use Forgot password with this address:{` `}
+        After that, get a new link for this email address at{` `}
         {toAppUrl(href(`/forgot-password`)).href}
       </EmailParagraph>
     </EmailLayout>

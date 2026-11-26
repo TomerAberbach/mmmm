@@ -40,7 +40,7 @@ const changeAddress = async (email: string) => {
   await page.getByRole(`button`, { name: `Change address` }).click()
   await expectNoAxeViolations()
   await page.getByLabelText(`New email address`).fill(email)
-  await page.getByRole(`button`, { name: `Send the link` }).click()
+  await page.getByRole(`button`, { name: `Send link` }).click()
 }
 
 test(`changing an address says what it does, then that the link was sent`, async () => {

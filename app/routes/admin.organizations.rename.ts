@@ -13,5 +13,5 @@ export const action = ({
   saveForm(request, organizationRenameSchema, async ({ domain, name }) =>
     (await renameOrganization(domain, name))
       ? null
-      : { formErrors: [`That organization is gone. Reload the page`] },
+      : { formErrors: [`This organization is gone. Reload the page`] },
   )

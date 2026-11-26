@@ -18,7 +18,9 @@ import {
 } from './admin-contests.server.ts'
 import type { AdminContest } from './admin-contests.server.ts'
 import { prisma } from './db.server.ts'
+import { action as eraseAction } from './routes/admin.contests.$contestId.erase-contest.ts'
 import { action as renameAction } from './routes/admin.contests.$contestId.name.ts'
+import { action as hideAction } from './routes/admin.contests.hidden.ts'
 import { deleteContest } from './trash.server.ts'
 import { withCurrentYearAlone } from './years.server.ts'
 
@@ -157,4 +159,28 @@ test(`renaming a contest waits for a change that takes the years alone`, async (
 
 test(`the admin can't rename a contest that's gone`, async () => {
   await expect(renameContestAsAdmin(`gone`, `New name`)).resolves.toBe(false)
+})
+
+test(`hiding a contest in the trash says it can't be`, async () => {
+  const { contestId } = await createContestInNewYear()
+  await deleteContest(await readEducatorId(contestId), contestId)
+
+  const reply = await hideAction({
+    request: formPost({ contestId, isHidden: `true` }),
+  } as never)
+
+  expect(reply).toStrictEqual({
+    error: `This contest can’t be hidden or shown now. Reload the page`,
+  })
+})
+
+test(`erasing a contest that's gone says so`, async () => {
+  const reply = await eraseAction({
+    request: formPost({ confirmation: `Period 2 Biology` }),
+    params: { contestId: `gone` },
+  } as never)
+
+  expect(JSON.stringify(reply)).toContain(
+    `This contest is gone. Reload the page`,
+  )
 })

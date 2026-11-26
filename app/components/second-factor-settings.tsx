@@ -42,11 +42,11 @@ export const SecondFactorSettings = ({
             <>
               Open the <Link to={href(`/admin`)}>admin area</Link>
               {hasSecondFactor
-                ? ` and use your second factor before changing these.`
-                : ` to set one up.`}
+                ? ` and use your second factor before changing these`
+                : ` to set one up`}
             </>
           ) : (
-            `Sign in with your passkey or authenticator app before changing these.`
+            `Sign in with your passkey or authenticator app before changing these`
           )}
         </Notice>
       )}
@@ -156,7 +156,7 @@ const AuthenticatorAppSettings = ({
         <>
           <Notice kind='status'>
             Here are your new recovery codes. Your old ones no longer work. Save
-            these now, since you won’t see them again.
+            these now, since you won’t see them again
           </Notice>
           <RecoveryCodeList codes={recoveryCodes} />
         </>

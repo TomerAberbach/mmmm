@@ -21,7 +21,31 @@ These steps leave mmmm-old as it is, so do them days ahead.
 
 1. Have a lawyer review the pages at `/privacy`, `/terms`, and `/retention`, and
    listen to the main pages with a screen reader. Then remove the draft notice
-   from `app/components/legal-page.tsx`
+   from `app/components/legal-page.tsx`. Ask the lawyer to check:
+   - [ ] Consent: whether an educator or their school may consent for players
+         under 13 on these terms, as COPPA and state law require, and whether
+         the sign-up form records enough of it
+   - [ ] "A scrambled form of their password" as wording for a password hash
+   - [ ] What MMMM keeps: the list in the privacy policy, with contest and
+         organization names and reports, against the retention schedule's
+   - [ ] Who sees a player's name: every admin, and anyone at a device that
+         still remembers the player
+   - [ ] What MMMM can do: in the terms, admins can hide, rename, hand over, and
+         permanently delete contests, permanently delete a player's bracket,
+         rename organizations, delete an organization's data, change an
+         account's email address, and delete accounts. Whether the terms must
+         say when, and whether educators get notice
+   - [ ] Keeping a deleted account's contests, with their players and
+         organization
+   - [ ] Retention: names for two years, picks without names after that, a
+         bracket its player deleted for 7 days or until a newer year's bracket
+         is published, and earlier permanent deletion
+   - [ ] Backups keeping deleted data for up to 30 days, and the 30 days to
+         handle a request
+   - [ ] Whether the Resend email provider must be listed beside the hosting and
+         database providers
+   - [ ] Having no warranty, and anything else the terms lack, such as limits on
+         liability and the governing law
 2. In Neon, create the project `mmmm-production` with Postgres 18 in AWS
    `us-east-1`, on the Launch plan, with database name `mmmm`
 3. Run `fly apps create mmmm-production`, then set the secrets in

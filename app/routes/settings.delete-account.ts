@@ -19,7 +19,7 @@ export const action = async ({
   return answerAccountDeletion(request, id, {
     refusal: mayDeleteAccount(assurance, await readSecondFactors(id))
       ? null
-      : `Use your second factor first. Reload the page to see how`,
+      : `Use your second factor before deleting your account. Reload the page to see how`,
     onDeleted: () => leaveDeletedAccount(request),
   })
 }

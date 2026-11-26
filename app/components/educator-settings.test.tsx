@@ -88,7 +88,7 @@ test(`saving the name confirms it below the button`, async () => {
 
   await expect
     .element(page.getByRole(`status`))
-    .toHaveTextContent(`Your name is saved.`)
+    .toHaveTextContent(`Saved your name`)
 })
 
 test(`changing the password confirms it and clears the fields`, async () => {
@@ -126,7 +126,7 @@ test(`signing out other sessions asks first, then confirms`, async () => {
 
   await expect
     .element(page.getByRole(`status`))
-    .toHaveTextContent(`Every other session is signed out.`)
+    .toHaveTextContent(`Every other session is signed out`)
 })
 
 test(`the password section links to resetting a forgotten password`, async () => {

@@ -507,7 +507,7 @@ const PlayerSection = ({
                 isIndeterminate={selection.selectedCount > 0 && !isAllSelected}
                 onChange={selection.onChange}
               >
-                <span className='sm:sr-only'>{`Select all ${title.toLowerCase()}`}</span>
+                <span className='sm:sr-only'>{`Select all ${status ? title.toLowerCase() : `not submitted`}`}</span>
               </Checkbox>
             </td>
             <th className='px-2 py-1.5 text-start max-sm:hidden'>Name</th>
@@ -541,6 +541,7 @@ const ApprovePendingButton = ({
 }) => {
   const count = players.length
   const label = `Approve all ${count}`
+  const names = listNames(players)
   return (
     <ConfirmDialog
       trigger={
@@ -554,9 +555,8 @@ const ApprovePendingButton = ({
       onConfirm={onApprove}
     >
       <p>
-        {`${listNames(players) ?? `The ${formatCount(count, `pending bracket`)}`} will be approved.`}
-        {` `}
-        You can reject any of them later.
+        {names ? `${names} will be approved. ` : null}
+        You can still reject them later.
       </p>
     </ConfirmDialog>
   )
@@ -681,7 +681,7 @@ const focusRow = (event: MouseEvent, playerId: string) => {
 const DuplicatesNote = ({ duplicates }: { duplicates: ContestPlayer[] }) =>
   duplicates.length > 0 ? (
     <p className='font-normal text-muted print:hidden'>
-      This might be the same as{` `}
+      This might be the same player as{` `}
       {LIST_FORMAT.formatToParts(duplicates.map(({ id }) => id)).map(
         ({ type, value }, index) =>
           type === `element` ? (
@@ -726,7 +726,7 @@ const PlayerMenu = ({
           Rename
         </MenuItem>
         <MenuItem onAction={onNewLink} className={MENU_ITEM_CLASS_NAME}>
-          New personal link
+          Replace personal link
         </MenuItem>
         <MenuItem
           isDisabled={isPending}

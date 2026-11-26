@@ -96,7 +96,7 @@ const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
         label={NAME_QUESTION}
         hideLabel
         description='For example, Maya R. Your educator sees it, and other players may see it on leaderboards'
-        // A shared computer would suggest the last player's name
+        // A shared device would suggest the last player's name
         autoComplete='off'
         spellCheck='false'
       />
@@ -117,7 +117,7 @@ const ReturningPlayer = ({
 }) => (
   <div className='flex flex-col gap-4'>
     <PageTitle>{`Continue as ${displayName}?`}</PageTitle>
-    <p>{`This computer has ${displayName}’s bracket for this contest.`}</p>
+    <p>{`This device has ${displayName}’s bracket for this contest.`}</p>
     <Form method='post' className='flex flex-wrap gap-3'>
       <ButtonLink href={bracketPath}>{`Continue as ${displayName}`}</ButtonLink>
       <Button type='submit' name='intent' value='not-you' variant='secondary'>

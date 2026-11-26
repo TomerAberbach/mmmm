@@ -12,7 +12,7 @@ export const DeletedContests = ({
 }) => (
   <div className='flex max-w-3xl flex-col gap-6'>
     <Link to={href(`/contests`)} className='self-start print:hidden'>
-      Your contests
+      All contests
     </Link>
     <TrashList
       title='Deleted contests'

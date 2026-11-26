@@ -1,16 +1,18 @@
 import type { Route } from './+types/contests.$contestId.trash.ts'
 import { ContestTrash } from '~/components/contest-trash.tsx'
 import { readRequiredContest } from '~/contest-context.server.ts'
+import { readPastYear } from '~/past-years.server.ts'
 import { readDeletedPlayers } from '~/trash.server.ts'
 import { isOpenYear } from '~/years.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const contest = readRequiredContest(context)
-  const [players, isOpen] = await Promise.all([
+  const [players, isOpen, pastYear] = await Promise.all([
     readDeletedPlayers(contest.id),
     isOpenYear(contest.year),
+    readPastYear(contest.year),
   ])
-  return { contest, players, isOpen }
+  return { contest, players, isOpen, isPast: pastYear !== null }
 }
 
 const ContestTrashPage = ({ loaderData }: Route.ComponentProps) => (

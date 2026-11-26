@@ -25,7 +25,7 @@ const renderDeleted = async (
   ])
 }
 
-test(`a bracket an educator removed offers a new one`, async () => {
+test(`a bracket an educator deleted offers a new one`, async () => {
   await renderDeleted({
     restoreBy: null,
     contestPath: `/play/secret`,
@@ -34,7 +34,7 @@ test(`a bracket an educator removed offers a new one`, async () => {
 
   await expect
     .element(
-      page.getByRole(`heading`, { name: `Your educator removed this bracket` }),
+      page.getByRole(`heading`, { name: `Your educator deleted this bracket` }),
     )
     .toBeVisible()
   await expect
@@ -105,7 +105,19 @@ test.each([
     `the player's own deletion`,
     () => <DeletedOwnBracket contestPath={null} isPast={false} isOrphaned />,
   ],
-  [`a removed contest`, () => <RemovedContest isOrphaned />],
+  [
+    `a bracket its educator deleted`,
+    () => (
+      <DeletedBracket
+        restoreBy={null}
+        contestPath={null}
+        isOpen={false}
+        isPast={false}
+        isOrphaned
+      />
+    ),
+  ],
+  [`a deleted contest`, () => <RemovedContest isOrphaned />],
 ])(
   `%s of an orphaned contest says its educator can't restore it`,
   async (_, Page) => {

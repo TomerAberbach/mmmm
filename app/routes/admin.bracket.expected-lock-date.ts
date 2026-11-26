@@ -20,5 +20,9 @@ export const action = ({
         expectedLockDate ? fromIsoDate(expectedLockDate) : null,
       ))
         ? null
-        : { formErrors: [`The ${year} bracket is locked or deleted`] },
+        : {
+            formErrors: [
+              `The ${year} bracket is locked or deleted. Reload the page`,
+            ],
+          },
   )

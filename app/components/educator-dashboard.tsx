@@ -109,14 +109,14 @@ const BracketNotReady = ({ upcomingYear }: { upcomingYear: number }) => (
     </h2>
     <p className='max-w-prose'>
       You can create {upcomingYear} contests once the bracket is published. ASU
-      releases it in early March.
+      publishes it in late February.
     </p>
   </section>
 )
 
 const FirstContest = () => (
   <section className='flex flex-col items-start gap-4 border-2 border-dashed border-muted-light p-8'>
-    <h2 className={SECTION_HEADING_CLASS_NAME}>Start your first contest</h2>
+    <h2 className={SECTION_HEADING_CLASS_NAME}>Create a contest</h2>
     <p className='max-w-prose'>
       A contest is one group of players, such as a class period. You get a link
       to share with them.

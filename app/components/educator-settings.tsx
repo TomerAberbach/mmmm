@@ -16,6 +16,7 @@ import { PageTitle } from './page-title.tsx'
 import { SavedNotice } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
 import { SettingsSection } from './settings-section.tsx'
+import { SupportLink } from './support-link.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
@@ -80,7 +81,7 @@ const NameSettings = ({ name }: { name: string }) => {
           </Button>
         </div>
         <SavedNotice fetcher={fetcher} isFormValid={form.valid}>
-          Your name is saved.
+          Saved your name
         </SavedNotice>
       </fetcher.Form>
     </SettingsSection>
@@ -98,7 +99,8 @@ const OrganizationSettings = ({
         {organization.name ? (
           <>
             <strong>{organization.name}</strong>
-            {`, from your ${organization.domain} address. To change its name, email support.`}
+            {`, from your ${organization.domain} address. To change its name, email `}
+            <SupportLink />.
           </>
         ) : (
           `Your ${organization.domain} organization has no name yet. Name it on your contests page.`
@@ -152,7 +154,7 @@ const PasswordSettings = () => {
         </div>
         <SavedNotice fetcher={fetcher} isFormValid={form.valid}>
           Your password is changed, and every other session is signed out. We
-          emailed you about the change.
+          emailed you about the change
         </SavedNotice>
       </fetcher.Form>
     </SettingsSection>
@@ -162,7 +164,7 @@ const PasswordSettings = () => {
 const SessionSettings = () => (
   <SettingsSection title='Sessions'>
     <p>
-      Signed in on a shared or lost computer? Sign out everywhere except this
+      Signed in on a shared or lost device? Sign out everywhere except this
       browser.
     </p>
     <div className='flex flex-col items-start gap-3'>
@@ -171,7 +173,7 @@ const SessionSettings = () => (
         title='Sign out other sessions?'
         confirmLabel='Sign out other sessions'
         action={href(`/settings/sign-out-others`)}
-        successNotice='Every other session is signed out.'
+        successNotice='Every other session is signed out'
       >
         Every browser and device signed in to your account, except this one,
         will need to sign in again.
@@ -205,10 +207,10 @@ const DeleteAccount = ({
         {isAdmin ? (
           <>
             Open the <Link to={href(`/admin`)}>admin area</Link> and use your
-            second factor before deleting your account.
+            second factor before deleting your account
           </>
         ) : (
-          `Sign out, then sign in with your passkey or authenticator app before deleting your account.`
+          `Sign out, then sign in with your passkey or authenticator app before deleting your account`
         )}
       </Notice>
     )}

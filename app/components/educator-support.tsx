@@ -67,7 +67,7 @@ const ChangeAddress = ({ educator }: { educator: FoundEducator }) => {
     <SettingsSection title='Change address'>
       <p className='text-muted'>
         The new address gets a link. The educator keeps the old address until
-        they use it.
+        they confirm the new one.
       </p>
       <div>
         <DialogTrigger
@@ -87,7 +87,8 @@ const ChangeAddress = ({ educator }: { educator: FoundEducator }) => {
       </div>
       {isSent ? (
         <Notice kind='status'>
-          We emailed the new address. It changes once they confirm it.
+          We emailed the new address. The educator’s address changes once they
+          confirm it
         </Notice>
       ) : null}
     </SettingsSection>
@@ -125,7 +126,7 @@ const ChangeAddressForm = ({
           Cancel
         </Button>
         <Button type='submit' isPending={fetcher.state !== `idle`}>
-          Send the link
+          Send link
         </Button>
       </div>
       <FormError form={form} />

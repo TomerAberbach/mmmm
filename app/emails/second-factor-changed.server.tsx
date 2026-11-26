@@ -9,11 +9,12 @@ export type SecondFactorChange =
   | `authenticator-app-added`
   | `authenticator-app-removed`
 
+/** Each goes before the account */
 const SUMMARIES: Record<SecondFactorChange, string> = {
-  'passkey-added': `A passkey was added`,
-  'passkey-removed': `A passkey was removed`,
-  'authenticator-app-added': `An authenticator app was turned on`,
-  'authenticator-app-removed': `The authenticator app was turned off`,
+  'passkey-added': `A passkey was added to`,
+  'passkey-removed': `A passkey was removed from`,
+  'authenticator-app-added': `An authenticator app was turned on for`,
+  'authenticator-app-removed': `The authenticator app was turned off for`,
 }
 
 export const secondFactorChangedEmail = ({
@@ -24,14 +25,14 @@ export const secondFactorChangedEmail = ({
   change: SecondFactorChange
 }): Email => ({
   to,
-  subject: `${SUMMARIES[change]} on your MMMM account`,
+  subject: `${SUMMARIES[change]} your MMMM account`,
   body: (
     <EmailLayout
       preview='Your second factors changed'
-      heading={SUMMARIES[change]}
+      heading={`${SUMMARIES[change]} your account`}
     >
       <EmailParagraph>
-        {SUMMARIES[change]} on the MMMM account with this email address.
+        {SUMMARIES[change]} the MMMM account with this email address.
       </EmailParagraph>
       <EmailParagraph>
         If you didn’t make this change, check your second factors and reset your

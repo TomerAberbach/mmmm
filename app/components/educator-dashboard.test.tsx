@@ -67,7 +67,7 @@ test(`an educator without contests is offered one way to create the first`, asyn
   })
 
   await expect
-    .element(page.getByRole(`heading`, { name: `Start your first contest` }))
+    .element(page.getByRole(`heading`, { name: `Create a contest` }))
     .toBeVisible()
   await expect
     .element(page.getByRole(`button`, { name: `Create contest` }))
@@ -267,7 +267,7 @@ test(`the educator dashboard shows the expected lock date and links the bracket`
   await expect
     .element(
       page.getByText(
-        `Expected to lock March 19, 2027. Players can submit until the first result is posted.`,
+        `Brackets are expected to lock on March 19, 2027. Players can submit until the first result is posted.`,
       ),
     )
     .toBeVisible()

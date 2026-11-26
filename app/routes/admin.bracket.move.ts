@@ -23,4 +23,6 @@ export const action = async ({
   return `moved` in (await moveCombatants(parsed.data)) ? { ok: true } : STALE
 }
 
-const STALE = { error: `The bracket changed. Reload the page` }
+const STALE = {
+  error: `This bracket changed since the page loaded. Reload the page`,
+}

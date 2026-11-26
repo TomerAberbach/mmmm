@@ -259,7 +259,7 @@ test(`changing a pick says which later picks it cleared`, async () => {
   await expect
     .element(
       page.getByText(
-        `Your change cleared 1 later pick that depended on it: Round 2, battle 1.`,
+        `Your change cleared 1 later pick that depended on it: Round 2, battle 1`,
       ),
     )
     .toBeVisible()
@@ -274,9 +274,7 @@ test(`submitting with battles left says how many and shows the next one`, async 
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(
-      `Pick the last 64 battles to submit. Next up: Wild card.`,
-    )
+    .toHaveTextContent(`Pick 64 more battles to submit. Next up: Wild card`)
   await expect
     .element(page.getByRole(`tab`, { name: /^Wild card/u }))
     .toHaveAttribute(`aria-selected`, `true`)
@@ -299,9 +297,7 @@ test(`only the latest notice shows`, async () => {
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(
-      `Pick the last 63 battles to submit. Next up: Wild card.`,
-    )
+    .toHaveTextContent(`Pick 63 more battles to submit. Next up: Wild card`)
   await expect
     .element(page.getByText(`Your change cleared`, { exact: false }))
     .not.toBeInTheDocument()
@@ -437,7 +433,7 @@ test(`submitting changes to an approved bracket says it stays approved`, async (
   await expect
     .element(
       page.getByText(
-        `Your educator approved your bracket, and it stays approved.`,
+        `Your educator approved your bracket, and it stays approved`,
         { exact: false },
       ),
     )
@@ -468,14 +464,16 @@ test(`discarding changes brings back the submitted picks`, async () => {
   ])
 })
 
-test(`forgetting this computer asks first, then forgets`, async () => {
+test(`forgetting the bracket on a device asks first, then forgets`, async () => {
   const { forgotten } = await renderBracket({
     draft: COMPLETE_PICKS,
     submission: SUBMISSION,
   })
 
-  await page.getByRole(`button`, { name: `Done, forget this computer` }).click()
-  await page.getByRole(`button`, { name: `Forget this computer` }).click()
+  await page
+    .getByRole(`button`, { name: `Done, forget my bracket here` })
+    .click()
+  await page.getByRole(`button`, { name: `Forget my bracket` }).click()
 
   await expect.element(page.getByText(`Forgotten`)).toBeVisible()
   expect(forgotten).toStrictEqual([{ playerId: `maya` }])
@@ -495,7 +493,7 @@ test(`a player deletes their bracket after confirming`, async () => {
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Delete your bracket?Your personal link stops working. If you change your mind, ask your educator to restore it within 7 days, or before next year’s bracket is published, if that’s sooner. After that it’s erased for good.CancelDelete my bracket`,
+      `Delete your bracket?Your personal link stops working. If you change your mind, ask your educator to restore it within 7 days, or before next year’s bracket is published, if that’s sooner. After that it’s deleted forever.CancelDelete my bracket`,
     )
 
   await page
@@ -564,7 +562,7 @@ test(`forgetting and deleting wait for a request in flight`, async () => {
     .getByRole(`button`, { name: `Discard changes` })
     .click()
   const forget = page.getByRole(`button`, {
-    name: `Done, forget this computer`,
+    name: `Done, forget my bracket here`,
   })
   const deleteBracket = page.getByRole(`button`, { name: `Delete my bracket` })
   await expect.element(forget).toBeDisabled()
@@ -592,7 +590,7 @@ test(`submitting as submissions close says so and reloads the page`, async () =>
 
 test.each([
   [`PENDING`, `Submitted · can’t be approved`],
-  [`REJECTED`, `Your educator didn’t approve your bracket.`],
+  [`REJECTED`, `Your educator didn’t approve your bracket`],
 ] as const)(
   `a %s submission of an orphaned contest says nothing of asking the educator`,
   async (status, text) => {
@@ -623,7 +621,7 @@ test(`submitting to an orphaned contest says no one can approve it`, async () =>
   await expect
     .element(
       page.getByText(
-        `Your educator left MMMM, so no one can approve your bracket.`,
+        `Your educator left MMMM, so no one can approve your bracket`,
         { exact: false },
       ),
     )
@@ -636,6 +634,6 @@ test(`picks that a move cleared are said to need finishing`, async () => {
   await expect
     .element(page.getByRole(`alert`))
     .toHaveTextContent(
-      `The bracket changed, so some of your picks were cleared. Finish your bracket, then submit it.`,
+      `The bracket changed, so some of your picks were cleared. Finish your bracket, then submit it`,
     )
 })

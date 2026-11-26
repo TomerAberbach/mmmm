@@ -43,7 +43,7 @@ export const SetupLinkRequest = ({
       {state === `link-invalid` ? (
         <Notice kind='alert'>
           That setup link has expired or was already used. Email yourself a new
-          one.
+          one
         </Notice>
       ) : null}
       <Form method='post' className='flex flex-col gap-5'>
@@ -59,7 +59,7 @@ export const SetupLinkRequest = ({
         {state === `sent` ? (
           <Notice kind='status'>
             We emailed you a setup link. It expires in{` `}
-            {SETUP_LINK_EXPIRES_IN_HOURS} hour.
+            {SETUP_LINK_EXPIRES_IN_HOURS} hour
           </Notice>
         ) : null}
         {state === `email-limit` ? (

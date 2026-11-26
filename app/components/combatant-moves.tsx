@@ -69,8 +69,8 @@ export const CombatantMoves = ({
     <section className='flex flex-col gap-4'>
       <h2 className={SECTION_HEADING_CLASS_NAME}>Move combatants</h2>
       <p className='max-w-prose text-muted'>
-        Swap combatants that are in each other’s place. Nothing changes until
-        you review the swaps and confirm.
+        Swap two combatants that ASU’s bracket has in each other’s place.
+        Nothing changes until you review the swaps and confirm.
       </p>
       <SwapForm
         places={listPlaces(swapCombatants(bracket, swaps)!)}
@@ -223,34 +223,57 @@ const MoveDescription = ({
   moves: string[]
   impact: MoveImpact
   isLocked: boolean
-}) => (
-  <div className='flex flex-col gap-2'>
-    {moves.length === 0 ? (
-      <p>The swaps cancel out, so no combatant moves.</p>
-    ) : (
-      <ul className='max-h-48 list-disc overflow-y-auto ps-5'>
-        {moves.map(move => (
-          <li key={move}>{move}</li>
-        ))}
-      </ul>
-    )}
-    {battles === 0 ? (
-      <p>The same combatants meet in every battle, so nothing is cleared.</p>
-    ) : (
-      <>
-        <p>
-          {`This clears the picks of ${formatCount(battles, `battle`)}: those where different combatants would meet, and the later ones they lead to.`}
-        </p>
-        <p>
-          {isLocked
-            ? `Submissions are locked, so those picks in ${formatCount(submissions, `submission`)} score nothing.`
-            : `${formatCount(submissions, `submission`)} will return to drafts, and ${formatCount(drafts, `draft`)} will lose picks. Those players see a note to finish and submit.`}
-        </p>
-        {results.length > 0 ? (
-          <p>{`It also clears ${formatCount(results.length, `result`)}, to record again.`}</p>
-        ) : null}
-        <p>Moving them back won’t restore what’s cleared.</p>
-      </>
-    )}
-  </div>
-)
+}) => {
+  const effect = isLocked
+    ? describeLockedImpact(submissions)
+    : describeOpenImpact(submissions, drafts)
+  return (
+    <div className='flex flex-col gap-2'>
+      {moves.length === 0 ? (
+        <p>The swaps cancel out, so no combatant moves.</p>
+      ) : (
+        <ul className='max-h-48 list-disc overflow-y-auto ps-5'>
+          {moves.map(move => (
+            <li key={move}>{move}</li>
+          ))}
+        </ul>
+      )}
+      {battles === 0 ? (
+        <p>The same combatants meet in every battle, so nothing is cleared.</p>
+      ) : (
+        <>
+          <p>
+            {`This clears the picks of ${formatCount(battles, `battle`)}: those where different combatants would meet, and the later ones they lead to.`}
+          </p>
+          {effect === null ? null : <p>{effect}</p>}
+          {results.length > 0 ? (
+            <p>{`It also clears ${formatCount(results.length, `result`)}, to record again.`}</p>
+          ) : null}
+          <p>Moving them back won’t restore what’s cleared.</p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Null when the counts, which leave out the trash, are 0 */
+const describeLockedImpact = (submissions: number): string | null =>
+  submissions === 0
+    ? null
+    : `Submissions are locked, so those picks in ${formatCount(submissions, `submission`)} score nothing.`
+
+/** Null when the counts, which leave out the trash, are 0 */
+const describeOpenImpact = (
+  submissions: number,
+  drafts: number,
+): string | null => {
+  const effects = [
+    submissions === 1
+      ? `1 submission returns to a draft`
+      : `${submissions} submissions return to drafts`,
+    drafts === 1 ? `1 draft loses picks` : `${drafts} drafts lose picks`,
+  ].filter((_, index) => [submissions, drafts][index]! > 0)
+  return effects.length === 0
+    ? null
+    : `${effects.join(`, and `)}. Those players see a note to finish and submit.`
+}

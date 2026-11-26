@@ -51,7 +51,13 @@ export const ReadOnlyContest = ({
         Leaderboard
       </Link>
     )}
-    {players.length === 0 ? <p className='text-muted'>No players.</p> : null}
+    {players.length === 0 ? (
+      <p className='text-muted'>
+        {isOpen
+          ? `No one has started a bracket yet.`
+          : `No one started a bracket.`}
+      </p>
+    ) : null}
     {SUBMISSION_SECTIONS.map(status => {
       const sectionPlayers = players.filter(player => player.status === status)
       return sectionPlayers.length > 0 ? (

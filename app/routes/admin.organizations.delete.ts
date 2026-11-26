@@ -17,7 +17,11 @@ export const action = ({
     organizationDeletionSchema,
     async ({ domain, confirmation }) => {
       if (confirmation !== domain) {
-        return { fieldErrors: { confirmation: [`This isn’t the domain`] } }
+        return {
+          fieldErrors: {
+            confirmation: [`This isn’t the organization’s domain`],
+          },
+        }
       }
       switch (
         await deleteOrganization(domain, readRequiredEducator(context).id)
@@ -25,11 +29,11 @@ export const action = ({
         case `DELETED`:
           return null
         case `GONE`:
-          return { formErrors: [`That organization is gone. Reload the page`] }
+          return { formErrors: [`This organization is gone. Reload the page`] }
         case `OWN`:
           return {
             formErrors: [
-              `Your own account is in this organization, so it can’t be deleted`,
+              `Your own account is in this organization, so you can’t delete its data`,
             ],
           }
       }

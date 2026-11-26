@@ -5,7 +5,7 @@ export const LockHeadsUp = ({
   expectedLockDate: string
 }) => (
   <p className='border-s-4 border-accent ps-3'>
-    Expected to lock {expectedLockDate}. Players can submit until the first
-    result is posted.
+    Brackets are expected to lock on {expectedLockDate}. Players can submit
+    until the first result is posted.
   </p>
 )

@@ -5,7 +5,7 @@ import type { ConfirmResult } from '~/form-replies.server.ts'
 import { removePasskey } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
-const NOT_FOUND_MESSAGE = `That passkey wasn’t found. Reload the page`
+const NOT_FOUND_MESSAGE = `This passkey is gone. Reload the page`
 
 export const loader = (): Response => redirect(href(`/settings`))
 

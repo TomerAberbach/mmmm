@@ -53,7 +53,7 @@ test(`a confirmed educator is told to sign in`, async () => {
   await expect
     .element(page.getByRole(`status`))
     .toHaveTextContent(
-      `Your email address is confirmed. Sign in to create your first contest.`,
+      `Your email address is confirmed. Sign in to create your first contest`,
     )
   await expectNoAxeViolations()
 })
@@ -64,7 +64,7 @@ test(`an educator who reset their password is told to sign in with it`, async ()
   await expect
     .element(page.getByRole(`status`))
     .toHaveTextContent(
-      `Your password is changed. Sign in with your new password.`,
+      `Your password is changed. Sign in with your new password`,
     )
 })
 

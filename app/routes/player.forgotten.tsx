@@ -41,7 +41,9 @@ export const action = async ({
   const playerId = (await request.formData()).get(`playerId`)
   const player = await readRememberedPlayer(request, contest.id)
   if (player && playerId === null) {
-    return refuse(`This device wasn’t forgotten. Reload the page and try again`)
+    return refuse(
+      `Your bracket wasn’t forgotten. Reload the page and try again`,
+    )
   }
   if (player && player.id !== playerId) {
     return refuse(
@@ -61,7 +63,7 @@ const ForgottenPage = ({
   loaderData: { canAsk, canStart },
 }: Route.ComponentProps) => (
   <div className='flex max-w-xl flex-col gap-3'>
-    <PageTitle>This computer forgot your bracket</PageTitle>
+    <PageTitle>This device forgot your bracket</PageTitle>
     <p>
       Open your personal link to come back to your bracket.
       {canAsk

@@ -42,7 +42,7 @@ export const PhaseSection = ({
 }) => (
   <section className='flex max-w-3xl flex-col gap-3 border-2 border-ink p-5'>
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-      <h2 className={SECTION_HEADING_CLASS_NAME}>Status</h2>
+      <h2 className={SECTION_HEADING_CLASS_NAME}>Phase</h2>
       <PhaseTag phase={summary.phase} />
       {summary.phase === `OPEN` ? (
         <span className='text-muted'>
@@ -149,7 +149,7 @@ const PublishButton = ({
       </p>
       {archivedYear === null ? null : (
         <p>
-          {`${archivedYear.year} becomes read-only, and ${describeResultCount(archivedYear.resultCount)} saved. Everything in its trash, and every bracket its players never submitted, is deleted for good. Unpublishing doesn’t bring it back.`}
+          {`${archivedYear.year} becomes read-only, and ${describeResultCount(archivedYear.resultCount)} saved. Everything in its trash, and every bracket its players never submitted, is deleted forever. Unpublishing doesn’t bring it back.`}
         </p>
       )}
       <p>

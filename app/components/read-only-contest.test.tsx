@@ -50,7 +50,7 @@ test(`a shared contest shows its players and scores without changing them`, asyn
       .getByRole(`button`)
       .elements()
       .map(({ textContent }) => textContent),
-  ).toStrictEqual([`Report`])
+  ).toStrictEqual([`Report a name`])
   await expectNoAxeViolations()
 })
 
@@ -74,7 +74,7 @@ const UNNAMED: ContestPlayer = { ...PLAYERS[0]!, displayName: `Player` }
 
 test(`a player who entered "Player" as their name can be reported`, async () => {
   await renderContest(false, `Ms. Frizzle`, { players: [UNNAMED] })
-  await page.getByRole(`button`, { name: `Report` }).click()
+  await page.getByRole(`button`, { name: `Report a name` }).click()
 
   await page
     .getByRole(`dialog`)
@@ -92,7 +92,7 @@ test(`a removed name can't be reported`, async () => {
     areNamesRemoved: true,
   })
 
-  await page.getByRole(`button`, { name: `Report` }).click()
+  await page.getByRole(`button`, { name: `Report a name` }).click()
 
   const dialog = page.getByRole(`dialog`)
   await expect.element(dialog.getByText(`The contest’s name`)).toBeVisible()

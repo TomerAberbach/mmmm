@@ -3,7 +3,7 @@ import { PLAYER_DELETION_DAYS } from '~/trash.ts'
 
 const SCHEDULE: { data: string; why: string; until: string }[] = [
   {
-    data: `An educator’s name, email address, and hashed password`,
+    data: `An educator’s name, email address, and a scrambled form of their password`,
     why: `Sign-in, organization, and support`,
     until: `The account is deleted`,
   },
@@ -20,37 +20,37 @@ const SCHEDULE: { data: string; why: string; until: string }[] = [
   {
     data: `A player’s display name`,
     why: `Leaderboards`,
-    until: `Two years after the tournament`,
+    until: `Two years after the tournament, or the bracket or contest is deleted forever, if that’s sooner`,
   },
   {
     data: `Picks, scores, and ranks`,
     why: `Results and past years`,
-    until: `Kept, without names after two years`,
+    until: `Kept, without names after two years, unless the bracket or contest is deleted forever`,
   },
   {
     data: `Drafts never submitted`,
     why: `Coming back to a bracket`,
-    until: `Next year’s bracket is published`,
+    until: `Next year’s bracket is published, or the bracket or contest is deleted forever, if that’s sooner`,
   },
   {
     data: `Trash`,
     why: `Undoing a deletion`,
-    until: `Next year’s bracket is published, or the educator empties it. A bracket its player deleted: ${PLAYER_DELETION_DAYS} days, or when next year’s bracket is published, if that’s sooner`,
+    until: `Next year’s bracket is published, or the educator or an admin deletes it forever. A bracket its player deleted: ${PLAYER_DELETION_DAYS} days, or when next year’s bracket is published, if that’s sooner`,
   },
   {
     data: `Contest and personal links`,
     why: `Access`,
-    until: `The contest or bracket is erased, or the link is replaced`,
+    until: `The contest or bracket is deleted forever, or the link is replaced`,
   },
   {
     data: `Reports of names`,
     why: `Moderation`,
-    until: `The bracket or contest is erased. Reports of a player’s name also go when the name is removed`,
+    until: `The bracket or contest is deleted forever. Reports of a player’s name also go when the name is removed`,
   },
   {
     data: `Contest names`,
     why: `Dashboards and leaderboards`,
-    until: `The contest is erased`,
+    until: `The contest is deleted forever`,
   },
   {
     data: `Sessions`,

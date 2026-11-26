@@ -85,9 +85,12 @@ test(`a move is confirmed with what it clears`, async () => {
   const dialog = page.getByRole(`alertdialog`)
   await expect
     .element(
-      dialog.getByText(`214 submissions will return to drafts`, {
-        exact: false,
-      }),
+      dialog.getByText(
+        `214 submissions return to drafts, and 1 draft loses picks.`,
+        {
+          exact: false,
+        },
+      ),
     )
     .toBeVisible()
   await expectNoAxeViolations()
@@ -114,6 +117,49 @@ test(`once locked, the dialog says that cleared picks score nothing`, async () =
     .toBeVisible()
 })
 
+test.each([
+  [
+    `no draft`,
+    { submissions: 1, drafts: 0 },
+    `1 submission returns to a draft. Those players see a note to finish and submit.`,
+  ],
+  [
+    `no submission`,
+    { submissions: 0, drafts: 2 },
+    `2 drafts lose picks. Those players see a note to finish and submit.`,
+  ],
+])(`a move that affects %s leaves it out`, async (_, counts, effect) => {
+  await renderMoves({ reply: { impact: { ...IMPACT, ...counts } } })
+  await addSwap(SEED_1!.name, SEED_2!.name)
+
+  await page.getByRole(`button`, { name: `Review 1 swap` }).click()
+
+  await expect.element(page.getByText(effect, { exact: true })).toBeVisible()
+})
+
+test.each([
+  [`open`, false],
+  [`locked`, true],
+])(
+  `a move that no counted player picked still can't be undone while %s`,
+  async (_, isLocked) => {
+    await renderMoves({
+      isLocked,
+      reply: { impact: { ...IMPACT, submissions: 0, drafts: 0, results: [] } },
+    })
+    await addSwap(SEED_1!.name, SEED_2!.name)
+
+    await page.getByRole(`button`, { name: `Review 1 swap` }).click()
+
+    await expect
+      .element(page.getByText(`Moving them back won’t restore what’s cleared.`))
+      .toBeVisible()
+    await expect
+      .element(page.getByText(/score nothing|submission|No player/u))
+      .not.toBeInTheDocument()
+  },
+)
+
 test(`a swap can be removed before the review`, async () => {
   await renderMoves()
   await addSwap(SEED_1!.name, SEED_2!.name)
@@ -132,14 +178,20 @@ test(`a swap can be removed before the review`, async () => {
 
 test(`a refused preview says so`, async () => {
   await renderMoves({
-    reply: { error: `The bracket changed. Reload the page` },
+    reply: {
+      error: `This bracket changed since the page loaded. Reload the page`,
+    },
   })
   await addSwap(SEED_1!.name, SEED_2!.name)
 
   await page.getByRole(`button`, { name: `Review 1 swap` }).click()
 
   await expect
-    .element(page.getByText(`The bracket changed. Reload the page`))
+    .element(
+      page.getByText(
+        `This bracket changed since the page loaded. Reload the page`,
+      ),
+    )
     .toBeVisible()
 })
 

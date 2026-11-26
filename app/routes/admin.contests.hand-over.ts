@@ -35,6 +35,6 @@ export const action = async ({
   return (await handOverContest(contestId, educatorId))
     ? acceptForm(submission)
     : rejectForm(submission, {
-        formErrors: [`This contest isn’t orphaned anymore. Reload the page`],
+        formErrors: [`This contest can’t be handed over now. Reload the page`],
       })
 }

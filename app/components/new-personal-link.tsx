@@ -54,7 +54,7 @@ export const NewPersonalLink = ({
           isOpen
           onOpenChange={onClose}
           title={`Replace ${player.displayName}’s personal link?`}
-          confirmLabel='Create new link'
+          confirmLabel='Replace personal link'
           onConfirm={() => replace(player)}
         >
           <p>
@@ -114,7 +114,7 @@ const FailedDialog = ({
   <ModalFrame
     isOpen
     onOpenChange={onClose}
-    title={`No new link for ${displayName}`}
+    title={`Couldn’t replace ${displayName}’s personal link`}
   >
     <p>
       Something went wrong, so the old link may or may not still work. Reload

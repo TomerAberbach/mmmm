@@ -14,5 +14,5 @@ export const action = async ({
   return typeof playerId === `string` &&
     (await erasePlayer(params.contestId, playerId))
     ? { ok: true }
-    : { error: `That player is gone. Reload the page` }
+    : { error: `This bracket is gone. Reload the page` }
 }

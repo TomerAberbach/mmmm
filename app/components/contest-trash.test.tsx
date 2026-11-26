@@ -29,7 +29,7 @@ const LEO: DeletedPlayer = {
 /** The actions take the players out of the trash, unless `refuse` is set */
 const renderTrash = async (
   initialPlayers: DeletedPlayer[],
-  { refuse = false, isOpen = true } = {},
+  { refuse = false, isOpen = true, isPast = false } = {},
 ) => {
   let players = initialPlayers
   const remove = async (request: Request) => {
@@ -58,6 +58,7 @@ const renderTrash = async (
               link: `https://mmmm.onl/play/secret`,
             }}
             isOpen={isOpen}
+            isPast={isPast}
             players={useLoaderData<DeletedPlayer[]>()}
           />
         ),
@@ -95,14 +96,24 @@ test(`a row says who deleted a player and when`, async () => {
   await expectNoAxeViolations()
 })
 
-test(`a player's own deletion says when it's erased`, async () => {
+test(`a player's own deletion says when it can be restored by`, async () => {
   await renderTrash([LEO])
 
   await expect
     .element(
       row(`Leo M.`).getByText(
-        `Deleted by player, ${formatDateTime(DELETED_AT)}. Erased for good ${formatLocalDate(SEVEN_DAYS_LATER)}`,
+        `Deleted by player, ${formatDateTime(DELETED_AT)}. Restore it by ${formatLocalDate(SEVEN_DAYS_LATER)}`,
       ),
+    )
+    .toBeVisible()
+})
+
+test(`a past year's trash says each row has its own date`, async () => {
+  await renderTrash([LEO], { isOpen: false, isPast: true })
+
+  await expect
+    .element(
+      page.getByText(`You can restore each bracket until the date beside it.`),
     )
     .toBeVisible()
 })
@@ -131,7 +142,7 @@ test(`restoring the last player focuses the empty trash`, async () => {
 
   await page.getByRole(`button`, { name: `Restore Maya R.` }).click()
 
-  await expect.element(page.getByText(`The trash is empty`)).toHaveFocus()
+  await expect.element(page.getByText(`The trash is empty.`)).toHaveFocus()
 })
 
 test(`deleting a player forever asks first`, async () => {
@@ -140,7 +151,7 @@ test(`deleting a player forever asks first`, async () => {
   await expect
     .element(page.getByRole(`alertdialog`))
     .toHaveTextContent(
-      `Delete Maya R.’s bracket forever?You can’t undo this. Backups keep deleted data for up to 30 days.CancelDelete forever`,
+      `Delete Maya R.’s bracket forever?This can’t be undone, though backups keep the data for up to 30 days.CancelDelete forever`,
     )
 
   await confirm(`Delete forever`)
@@ -151,13 +162,13 @@ test(`deleting a player forever asks first`, async () => {
     .toHaveFocus()
 })
 
-test(`emptying the trash asks first, counting the brackets`, async () => {
+test(`emptying the trash asks first`, async () => {
   await renderTrash([MAYA, LEO])
   await page.getByRole(`button`, { name: `Empty trash` }).click()
 
-  await confirm(`Delete 2 brackets forever`)
+  await confirm(`Empty trash`)
 
-  await expect.element(page.getByText(`The trash is empty`)).toHaveFocus()
+  await expect.element(page.getByText(`The trash is empty.`)).toHaveFocus()
 })
 
 test(`a refused restore leaves the row and says why`, async () => {

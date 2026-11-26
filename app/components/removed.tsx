@@ -27,24 +27,26 @@ const Removed = ({
 /** Follows a link that a deletion turned off once no educator can restore it */
 const CANNOT_RESTORE = `Your educator left MMMM, so they can’t restore it.`
 
+const ASK_ABOUT_MISTAKE = `Ask them if you think that’s a mistake.`
+
 export const RemovedContest = ({
   isOrphaned,
 }: {
   /** Whether the contest has no educator */
   isOrphaned: boolean
 }) => (
-  <Removed title='Your educator removed this contest'>
-    {isOrphaned ? CANNOT_RESTORE : `Ask them if you think that’s a mistake.`}
+  <Removed title='Your educator deleted this contest'>
+    {isOrphaned ? CANNOT_RESTORE : ASK_ABOUT_MISTAKE}
   </Removed>
 )
 
 export const BrokenLink = () => (
-  <Removed title='This link no longer works'>
+  <Removed title='This link doesn’t work'>
     Ask your educator for a new one.
   </Removed>
 )
 
-const CANNOT_START = `This contest takes no new players, so you can’t start a new one.`
+const CANNOT_START = `This contest takes no new players, so you can’t start a new bracket.`
 
 /** What a deleted player's personal link shows. Nothing of the bracket appears */
 export const DeletedBracket = ({
@@ -80,10 +82,11 @@ export const DeletedBracket = ({
     </Removed>
   ) : (
     <Removed
-      title='Your educator removed this bracket'
+      title='Your educator deleted this bracket'
       contestPath={contestPath}
     >
-      {isOpen ? null : CANNOT_START}
+      {isOrphaned ? CANNOT_RESTORE : ASK_ABOUT_MISTAKE}
+      {isOpen ? null : ` ${CANNOT_START}`}
     </Removed>
   )
 

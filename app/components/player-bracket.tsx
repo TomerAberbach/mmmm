@@ -180,7 +180,7 @@ export const PlayerBracket = ({
         <div className='max-w-prose'>
           <Notice kind='alert'>
             The bracket changed, so some of your picks were cleared. Finish your
-            bracket, then submit it.
+            bracket, then submit it
           </Notice>
         </div>
       ) : null}
@@ -300,26 +300,26 @@ const describeUnpicked = (
   nextBattle: BattleRef,
   submission: Submission | null,
 ): string => {
-  const battles = count === 1 ? `battle` : `${count} battles`
-  const next = `Next up: ${readBattleName(nextBattle)}.`
+  const battles = formatCount(count, `more battle`)
+  const next = `Next up: ${readBattleName(nextBattle)}`
   return submission
-    ? `Pick the last ${battles} to submit your changes. ${next} Your submitted bracket still counts until then.`
-    : `Pick the last ${battles} to submit. ${next}`
+    ? `Pick ${battles} to submit your changes. ${next}. Your submitted bracket still counts until then`
+    : `Pick ${battles} to submit. ${next}`
 }
 
 /** Submitting changes keeps the submission's status */
 const STATUS_TEXT: Record<SubmissionStatus, { label: string; note: string }> = {
   PENDING: {
     label: `waiting for approval`,
-    note: `Your educator will approve your bracket before it counts.`,
+    note: `Your bracket counts once your educator approves it`,
   },
   APPROVED: {
     label: `approved`,
-    note: `Your educator approved your bracket, and it stays approved.`,
+    note: `Your educator approved your bracket, and it stays approved`,
   },
   REJECTED: {
     label: `not approved`,
-    note: `Your educator didn’t approve your bracket. You can ask them about it.`,
+    note: `Your educator didn’t approve your bracket. You can ask them about it`,
   },
 }
 
@@ -327,11 +327,11 @@ const STATUS_TEXT: Record<SubmissionStatus, { label: string; note: string }> = {
 const ORPHANED_STATUS_TEXT: Partial<typeof STATUS_TEXT> = {
   PENDING: {
     label: `can’t be approved`,
-    note: `Your educator left MMMM, so no one can approve your bracket.`,
+    note: `Your educator left MMMM, so no one can approve your bracket`,
   },
   REJECTED: {
     label: `not approved`,
-    note: `Your educator didn’t approve your bracket.`,
+    note: `Your educator didn’t approve your bracket`,
   },
 }
 
@@ -373,7 +373,7 @@ const SubmittedPanel = ({
           {kind === `bracket` ? `Bracket submitted` : `Changes submitted`}
         </h2>
         <p>
-          {`${describeStatus(submission.status, isOrphaned).note} Until the first battle’s result, you can change your picks and submit them again.`}
+          {`${describeStatus(submission.status, isOrphaned).note}. Until the first result is posted, you can change your picks and submit them again.`}
         </p>
       </div>
       <div className='flex flex-col gap-3'>
@@ -383,7 +383,7 @@ const SubmittedPanel = ({
         <PersonalLink personalLink={personalLink} />
       </div>
       <div className='flex flex-col items-start gap-2 border-t-2 border-muted-light pt-4'>
-        <p>On a shared computer? Forget your bracket here when you’re done.</p>
+        <p>On a shared device? Forget your bracket here when you’re done.</p>
         <ForgetButton
           forgetPath={forgetPath}
           playerId={playerId}
@@ -445,7 +445,7 @@ const PickProgress = ({
 const describeCleared = (cleared: BattleRef[]): string | null =>
   cleared.length === 0
     ? null
-    : `Your change cleared ${formatCount(cleared.length, `later pick`)} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
+    : `Your change cleared ${formatCount(cleared.length, `later pick`)} that depended on it: ${cleared.map(readBattleName).join(`; `)}`
 
 /** How a player comes back to their bracket once the browser forgets them */
 const describeComeBack = (

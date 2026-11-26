@@ -17,5 +17,5 @@ export const action = ({
   saveForm(request, contestNameSchema(freeTextSchema), async ({ name }) =>
     (await renameContestAsAdmin(params.contestId, name))
       ? null
-      : { formErrors: [`This contest is gone, so its name wasn’t saved`] },
+      : { formErrors: [`This contest is gone. Reload the page`] },
   )

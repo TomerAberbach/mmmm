@@ -208,7 +208,7 @@ test(`changing the name shows it in the header`, async ({ page }) => {
   await page.getByLabel(`Full name`).fill(`Valerie Frizzle`)
   await page.getByRole(`button`, { name: `Save name` }).click()
 
-  await expect(page.getByRole(`status`)).toContainText(`Your name is saved`)
+  await expect(page.getByRole(`status`)).toContainText(`Saved your name`)
   await expect(page.getByRole(`banner`)).toContainText(`Valerie Frizzle`)
 })
 

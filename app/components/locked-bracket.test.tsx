@@ -58,15 +58,15 @@ const renderLocked = async (
 test.each([
   [
     `APPROVED`,
-    `Submissions are closed. Your bracket is in, and your educator approved it.`,
+    `Submissions are closed. Your bracket is in, and your educator approved it`,
   ],
   [
     `PENDING`,
-    `Submissions are closed. Your bracket is in, and your educator will approve it before it counts.`,
+    `Submissions are closed. Your bracket is in, and it counts once your educator approves it`,
   ],
   [
     `REJECTED`,
-    `Submissions are closed. Your educator didn’t approve your bracket. You can ask them about it.`,
+    `Submissions are closed. Your educator didn’t approve your bracket. You can ask them about it`,
   ],
 ] as const)(
   `a locked %s bracket says where it stands`,
@@ -82,11 +82,11 @@ test.each([
 test.each([
   [
     `PENDING`,
-    `Submissions are closed. Your educator left MMMM, so no one can approve your bracket.`,
+    `Submissions are closed. Your educator left MMMM, so no one can approve your bracket`,
   ],
   [
     `REJECTED`,
-    `Submissions are closed. Your educator didn’t approve your bracket.`,
+    `Submissions are closed. Your educator didn’t approve your bracket`,
   ],
 ] as const)(
   `a locked %s bracket of an orphaned contest says nothing of asking the educator`,
@@ -104,7 +104,7 @@ test.each([
   [
     `submission`,
     `APPROVED`,
-    `The bracket changed after submissions closed, so some of your picks were cleared.`,
+    `The bracket changed after submissions closed, so some of your picks were cleared`,
   ],
   [`draft`, null, `The bracket changed, so some of your picks were cleared`],
 ] as const)(
@@ -246,7 +246,7 @@ test(`a pending bracket of a past year was never approved`, async () => {
   await expect
     .element(
       page.getByText(
-        `Submissions are closed. Your educator didn’t approve your bracket in time, so it doesn’t count.`,
+        `Submissions are closed. Your educator didn’t approve your bracket in time, so it doesn’t count`,
       ),
     )
     .toBeVisible()
