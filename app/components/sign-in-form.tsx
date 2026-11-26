@@ -3,6 +3,7 @@ import type { SubmissionResult } from '@conform-to/react'
 import { Form, href, Link } from 'react-router'
 import { signInSchema } from '../auth-forms.ts'
 import { signInWithPasskey } from '../passkeys.ts'
+import { withReturnPath } from '../return-path.ts'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { Notice } from './notice.tsx'
@@ -49,10 +50,13 @@ export type SignInNotice = keyof typeof NOTICES
 export const SignInForm = ({
   lastResult,
   notice,
+  returnPath = null,
 }: {
   /** Its form error never says which of the email and password was wrong */
   lastResult?: SubmissionResult
   notice?: SignInNotice
+  /** Where signing in leads instead of the dashboard */
+  returnPath?: string | null
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
     signInSchema,
@@ -69,7 +73,7 @@ export const SignInForm = ({
       ) : null}
       <Form
         method='post'
-        action={href(`/sign-in`)}
+        action={withReturnPath(href(`/sign-in`), returnPath)}
         {...getFormProps(form)}
         className='flex flex-col gap-5'
       >
@@ -96,7 +100,7 @@ export const SignInForm = ({
         <p>Have a passkey?</p>
         <PasskeyButton
           ceremony={signInWithPasskey}
-          successTo={href(`/contests`)}
+          successTo={returnPath ?? href(`/contests`)}
           variant='secondary'
         >
           Sign in with a passkey

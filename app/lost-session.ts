@@ -9,13 +9,14 @@ export const readLostSessionMessage = (error: unknown): string | undefined => {
   if (!(error instanceof Response)) {
     return undefined
   }
-  switch (error.headers.get(`Location`)) {
+  const location = error.headers.get(`Location`)
+  switch (location?.split(`?`)[0]) {
     case href(`/admin/verify`):
     case href(`/admin/setup`):
       return `The admin area needs your second factor again. Open the admin area in another tab, use your second factor there, then save here again`
     case href(`/sign-in`):
       return `You’re signed out. Sign in again in another tab, then save here again`
-    case null:
+    case undefined:
     default:
       return undefined
   }

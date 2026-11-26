@@ -6,6 +6,7 @@ test.each([
   [`/admin/verify`, `second factor`],
   [`/admin/setup`, `second factor`],
   [`/sign-in`, `signed out`],
+  [`/sign-in?to=%2Fadmin%2Fbracket`, `signed out`],
 ])(`a redirect to %s mentions %s`, (location, reason) => {
   expect(readLostSessionMessage(redirect(location))).toContain(reason)
 })

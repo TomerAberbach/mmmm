@@ -85,6 +85,9 @@ app
   `requireSignedInEducator` middleware, as `routes/settings.tsx` does, and read
   the educator there with `readRequiredEducator` and the session with
   `readRequiredSession`
+- Signing in returns to a page listed in `return-path.ts`. List each new page
+  under `requireSignedInEducator` there, unless its address holds a secret.
+  Validate every return path with `toReturnPath` or `readReturnPath`
 - Nest pages a signed-in educator shouldn't see, such as sign-in, under the
   `routes/signed-out.tsx` layout. A layout whose middleware must run on
   client-side navigation needs a loader, because React Router runs server

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { RouterContextProvider } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { waitForBlockedQuery } from '../test/locks.ts'
 import {
@@ -37,6 +38,12 @@ import { action as changeApp } from './routes/settings.authenticator-app.ts'
 import { action as removePasskeyAction } from './routes/settings.remove-passkey.ts'
 import { action as enterCode } from './routes/sign-in.code.tsx'
 import { action as enterRecoveryCode } from './routes/sign-in.recovery-code.tsx'
+import { action as signIn } from './routes/sign-in.tsx'
+import {
+  loadSignedInEducator,
+  requireSignedInEducator,
+  requireSignedOut,
+} from './session.server.ts'
 
 const readLocation = (result: unknown): string | null =>
   result instanceof Response ? result.headers.get(`location`) : null
@@ -99,6 +106,7 @@ test(`a form posted after 12 hours runs no action`, async () => {
 const startSignIn = async (
   email: string,
   fields: Record<string, string>,
+  url?: string,
 ): Promise<Request> => {
   const ip = randomIp()
   const { headers } = await auth.api.signInEmail({
@@ -106,7 +114,7 @@ const startSignIn = async (
     headers: new Headers({ [CLIENT_IP_HEADER]: ip }),
     returnHeaders: true,
   })
-  const request = formPost(fields)
+  const request = formPost(fields, url)
   for (const [name, value] of withCookies(headers, ip)) {
     request.headers.set(name, value)
   }
@@ -126,6 +134,130 @@ test.each([
     const response = await action({ request } as never)
 
     expect(readLocation(response)).toBe(`/sign-in?challenge-expired`)
+  },
+)
+
+const RETURN_URL = `http://localhost/sign-in?to=%2Fsettings`
+
+test.each([
+  { to: `/settings`, location: `/settings` },
+  { to: `//evil.example`, location: `/contests` },
+  { to: `/api/auth/get-session`, location: `/contests` },
+])(`signing in to go to $to opens $location`, async ({ to, location }) => {
+  const { email } = await signInConfirmed()
+  const request = formPost(
+    { email, password: PASSWORD },
+    `http://localhost/sign-in?to=${encodeURIComponent(to)}`,
+  )
+  request.headers.set(CLIENT_IP_HEADER, randomIp())
+
+  const response = await signIn({ request } as never)
+
+  expect(readLocation(response)).toBe(location)
+})
+
+test(`signing in with an authenticator app keeps where the educator was going`, async () => {
+  const { email } = await signInWithApp()
+  const request = formPost({ email, password: PASSWORD }, RETURN_URL)
+  request.headers.set(CLIENT_IP_HEADER, randomIp())
+
+  const response = await signIn({ request } as never)
+
+  expect(readLocation(response)).toBe(`/sign-in/code?to=%2Fsettings`)
+})
+
+test(`a security code opens the page the educator was going to`, async () => {
+  const admin = await signInAdmin()
+  await redeemNewSetupLink(admin)
+  const { totpUri } = await turnOnAuthenticatorApp(admin)
+  const request = await startSignIn(
+    admin.email,
+    { code: readTotpCode(totpUri) },
+    `http://localhost/sign-in/code?to=%2Fsettings`,
+  )
+
+  const response = await enterCode({ request } as never)
+
+  expect(readLocation(response)).toBe(`/settings`)
+})
+
+test(`a recovery code opens the page the educator was going to`, async () => {
+  const { educatorId, email, headers } = await signInWithApp()
+  const { backupCodes } = await auth.api.viewBackupCodes({
+    body: { userId: educatorId },
+    headers,
+  })
+  const request = await startSignIn(
+    email,
+    { code: backupCodes[0]! },
+    `http://localhost/sign-in/recovery-code?to=%2Fsettings`,
+  )
+
+  const response = await enterRecoveryCode({ request } as never)
+
+  expect(readLocation(response)).toBe(`/settings`)
+})
+
+test(`starting a sign-in over keeps where the educator was going`, async () => {
+  const { educatorId, email } = await signInWithApp()
+  const request = await startSignIn(
+    email,
+    { code: `123456` },
+    `http://localhost/sign-in/code?to=%2Fsettings`,
+  )
+  await prisma.authenticatorApp.deleteMany({ where: { educatorId } })
+
+  const response = await enterCode({ request } as never)
+
+  expect(readLocation(response)).toBe(
+    `/sign-in?challenge-expired&to=%2Fsettings`,
+  )
+})
+
+test.each([
+  { path: `/settings`, location: `/sign-in?to=%2Fsettings` },
+  {
+    path: `/admin/setup?token=secret`,
+    location: `/sign-in?to=%2Fadmin%2Fsetup`,
+  },
+  { path: `/settings/delete-account`, location: `/sign-in` },
+])(
+  `a signed-out visitor to $path is sent to $location`,
+  async ({ path, location }) => {
+    const context = new RouterContextProvider()
+    const args = {
+      request: new Request(`http://localhost${path}`),
+      url: new URL(path, `http://localhost`),
+      context,
+    } as never
+    let redirected: unknown
+
+    await loadSignedInEducator(args, async () => {
+      redirected = await requireSignedInEducator(args, () =>
+        Promise.resolve(new Response()),
+      )
+      return new Response()
+    })
+
+    expect(readLocation(redirected)).toBe(location)
+  },
+)
+
+test.each([
+  { to: `%2Fsettings`, location: `/settings` },
+  { to: `%2F%2Fevil.example`, location: `/contests` },
+])(
+  `a signed-in educator who opens sign-in to go to $to opens $location`,
+  async ({ to, location }) => {
+    const educator = await signInConfirmed()
+
+    const response = await runSignedIn(
+      educator,
+      requireSignedOut as never,
+      new Request(`http://localhost/sign-in?to=${to}`),
+    )
+
+    expect(readLocation(response)).toBe(location)
   },
 )
 

@@ -143,7 +143,8 @@ export const runSignedIn = async (
   for (const [name, value] of headers) {
     request.headers.set(name, value)
   }
-  const args = { request, context, params } as never
+  const url = new URL(request.url)
+  const args = { request, url, context, params } as never
   let result: unknown
   await loadSignedInEducator(
     args,

@@ -74,6 +74,33 @@ test(`an admin adds a passkey and signs in with it`, async ({ page }) => {
   await expect(page.getByRole(`heading`, { name: `Admin` })).toBeVisible()
 })
 
+test(`a passkey returns to the admin page the visitor was going to`, async ({
+  page,
+}) => {
+  await signInAsAdmin(page, ADMINS.returnPath)
+  await signOut(page)
+  await page.goto(`/admin/educators`)
+  await expect(page).toHaveURL(`/sign-in?to=%2Fadmin%2Feducators`)
+
+  await page.getByRole(`button`, { name: `Sign in with a passkey` }).click()
+
+  await expect(page).toHaveURL(`/admin/educators`)
+})
+
+test(`a password returns an admin only as far as their second factor`, async ({
+  page,
+}) => {
+  await signInAsAdmin(page, ADMINS.returnPathPassword)
+  await signOut(page)
+  await page.goto(`/admin/educators`)
+  await page.getByLabel(`Email address`).fill(ADMINS.returnPathPassword)
+  await page.getByLabel(`Password`, { exact: true }).fill(PASSWORD)
+
+  await page.getByRole(`button`, { name: `Sign in`, exact: true }).click()
+
+  await expect(page).toHaveURL(`/admin/verify`)
+})
+
 test(`a setup link opened in another browser doesn't start setup there`, async ({
   page,
   browser,
@@ -92,7 +119,7 @@ test(`a setup link opened in another browser doesn't start setup there`, async (
   const other = await otherContext.newPage()
 
   await other.goto(link)
-  await expect(other).toHaveURL(`/sign-in`)
+  await expect(other).toHaveURL(`/sign-in?to=%2Fadmin%2Fsetup`)
   await otherContext.close()
   await page.goto(link)
 

@@ -9,9 +9,11 @@ import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
+import { readReturnPath, withReturnPath } from '~/return-path.ts'
 
 export const loader = ({ request }: Route.LoaderArgs) => ({
   notice: readNotice(new URL(request.url).searchParams),
+  returnPath: readReturnPath(request),
 })
 
 /**
@@ -56,8 +58,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
     })
     // An educator with an authenticator app enters its code next, and
     // Better Auth makes the session only then
+    const returnPath = readReturnPath(request)
     return redirect(
-      href(`twoFactorRedirect` in response ? `/sign-in/code` : `/contests`),
+      `twoFactorRedirect` in response
+        ? withReturnPath(href(`/sign-in/code`), returnPath)
+        : (returnPath ?? href(`/contests`)),
       { headers },
     )
   } catch (error) {
@@ -84,6 +89,10 @@ const SignIn = ({ loaderData, actionData }: Route.ComponentProps) =>
   actionData && `unconfirmed` in actionData ? (
     <CheckEmail email={actionData.unconfirmed} reason='unconfirmed' />
   ) : (
-    <SignInForm lastResult={actionData?.result} notice={loaderData.notice} />
+    <SignInForm
+      lastResult={actionData?.result}
+      notice={loaderData.notice}
+      returnPath={loaderData.returnPath}
+    />
   )
 export default SignIn
