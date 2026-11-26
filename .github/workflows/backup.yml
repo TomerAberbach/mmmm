@@ -8,7 +8,14 @@ on:
 
 jobs:
   backup:
-    name: Dump staging
+    name: Dump ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Production's runs start once its app exists and the variable is set
+        name:
+          ${{ fromJSON(vars.BACK_UP_PRODUCTION == 'true' && '["staging",
+          "production"]' || '["staging"]') }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions: {}
@@ -25,7 +32,9 @@ jobs:
       - name: Dump, encrypt, and upload
         shell: bash
         env:
-          DATABASE_URL: ${{ secrets.STAGING_BACKUP_DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_BACKUP_DATABASE_URL }}
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_BACKUP_DATABASE_URL }}
+          NAME: ${{ matrix.name }}
           AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
           BUCKET: ${{ vars.BACKUP_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
@@ -36,8 +45,11 @@ jobs:
         # read a dump. The bucket deletes dumps after 30 days
         run: |
           set -euo pipefail
-          key="staging/$(date -u +%Y-%m-%dT%H%M%SZ).dump.age"
-          pg_dump --format=custom --no-owner "$DATABASE_URL" \
+          # Never falls back to the other database
+          url_variable="${NAME^^}_DATABASE_URL"
+          url="${!url_variable:?Set the ${NAME^^}_BACKUP_DATABASE_URL secret}"
+          key="$NAME/$(date -u +%Y-%m-%dT%H%M%SZ).dump.age"
+          pg_dump --format=custom --no-owner "$url" \
             | age --recipient "$AGE_RECIPIENT" \
             | aws s3 cp - "s3://$BUCKET/$key"
           echo "Uploaded $key"

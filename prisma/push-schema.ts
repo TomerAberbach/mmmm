@@ -25,15 +25,23 @@ export const pushSchema = async ({
   forceReset?: boolean
   env?: NodeJS.ProcessEnv
 } = {}): Promise<void> => {
+  // Fly sets the name, and `fly deploy --app` takes any app's with this config
+  if (forceReset && env.FLY_APP_NAME && env.FLY_APP_NAME !== `mmmm-staging`) {
+    throw new Error(`Refusing to empty the database of ${env.FLY_APP_NAME}`)
+  }
   await runPrisma([`db`, `push`, ...(forceReset ? [`--force-reset`] : [])], env)
   await runPrisma([`db`, `execute`, `--stdin`], env, readConstraintsSql())
 }
+
+/** Applies the migrations, which create what `pushSchema` does */
+export const migrate = (env: NodeJS.ProcessEnv): Promise<void> =>
+  runPrisma([`migrate`, `deploy`], env)
 
 /**
  * Each constraint drops first, so the SQL reruns safely. The limits come from
  * the app's own constants, so the database and the app can't disagree
  */
-const readConstraintsSql = (): string =>
+export const readConstraintsSql = (): string =>
   [
     check(`SeedSlot`, `seed`, `seed BETWEEN 1 AND ${SEEDS_PER_DIVISION}`),
     check(

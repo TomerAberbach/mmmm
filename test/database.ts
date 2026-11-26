@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { requireEnv } from '../app/env.server.ts'
 import { PrismaClient } from '../app/generated/prisma/client.ts'
-import { pushSchema } from '../prisma/push-schema.ts'
+import { migrate, pushSchema } from '../prisma/push-schema.ts'
 
 // This module imports nothing that loads `app/db.server.ts`, whose `prisma`
 // connects to `DATABASE_URL` on import, before `test/setup.ts` sets it
@@ -20,19 +20,34 @@ const CREATE_YEAR_SEQUENCE_SQL = `CREATE SEQUENCE test_year START 2100`
  * Creates an empty database with the schema and the sequence that
  * `test/years.ts` reads, on the server that `DATABASE_URL` points to
  */
-export const createTestDatabase = async (): Promise<TestDatabase> => {
-  const database = await createDatabase(
-    `mmmm_test_${randomUUID().replaceAll(`-`, ``)}`,
+export const createTestDatabase = (): Promise<TestDatabase> =>
+  createDatabaseWith(`mmmm_test_${randomId()}`, async ({ url }) => {
+    await pushSchema({ env: { ...process.env, DATABASE_URL: url } })
+    await runSql(new URL(url), CREATE_YEAR_SEQUENCE_SQL)
+  })
+
+/** Creates a database as production's is, by applying the migrations */
+export const createMigratedDatabase = (): Promise<TestDatabase> =>
+  createDatabaseWith(`mmmm_test_migrated_${randomId()}`, ({ url }) =>
+    migrate({ ...process.env, DATABASE_URL: url }),
   )
+
+/** Drops the database when setting it up fails */
+const createDatabaseWith = async (
+  name: string,
+  setUp: (database: TestDatabase) => Promise<void>,
+): Promise<TestDatabase> => {
+  const database = await createDatabase(name)
   try {
-    await pushSchema({ env: { ...process.env, DATABASE_URL: database.url } })
-    await runSql(new URL(database.url), CREATE_YEAR_SEQUENCE_SQL)
+    await setUp(database)
   } catch (error) {
     await database.drop()
     throw error
   }
   return database
 }
+
+const randomId = (): string => randomUUID().replaceAll(`-`, ``)
 
 /**
  * Returns the URL of the template's copy named for `suffix`, creating the copy
@@ -96,13 +111,44 @@ const runSql = async (databaseUrl: URL, sql: string): Promise<void> => {
   await withClient(databaseUrl, prisma => prisma.$executeRawUnsafe(sql))
 }
 
-const querySql = (
+/** What the database declares, apart from its rows, one line for each part */
+export const readDeclarations = async (url: string): Promise<string[]> => {
+  const rows = await querySql<{ declaration: string }>(
+    new URL(url),
+    READ_DECLARATIONS_SQL,
+  )
+  return rows.map(({ declaration }) => declaration)
+}
+
+/** Leaves out Prisma's own table of applied migrations */
+const READ_DECLARATIONS_SQL = `
+  SELECT declaration FROM (
+    SELECT concat_ws(' ', 'column', table_name, column_name, udt_name,
+      is_nullable, column_default, character_maximum_length,
+      datetime_precision, numeric_precision, numeric_scale) AS declaration,
+      table_name::text AS relation
+    FROM information_schema.columns WHERE table_schema = 'public'
+    UNION ALL
+    SELECT concat_ws(' ', 'index', indexdef), tablename::text
+    FROM pg_indexes WHERE schemaname = 'public'
+    UNION ALL
+    SELECT concat_ws(' ', 'constraint', conrelid::regclass, conname,
+      pg_get_constraintdef(oid)), conrelid::regclass::text
+    FROM pg_constraint WHERE connamespace = 'public'::regnamespace
+    UNION ALL
+    SELECT concat_ws(' ', 'enum', enumtypid::regtype, row_number() OVER (
+      PARTITION BY enumtypid ORDER BY enumsortorder), enumlabel), ''
+    FROM pg_enum
+  ) declarations
+  WHERE relation NOT IN ('_prisma_migrations') ORDER BY declaration`
+
+const querySql = <Row = { datname: string }>(
   databaseUrl: URL,
   sql: string,
   ...values: unknown[]
-): Promise<{ datname: string }[]> =>
+): Promise<Row[]> =>
   withClient(databaseUrl, prisma =>
-    prisma.$queryRawUnsafe<{ datname: string }[]>(sql, ...values),
+    prisma.$queryRawUnsafe<Row[]>(sql, ...values),
   )
 
 const withClient = async <Result>(
