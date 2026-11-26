@@ -13,7 +13,12 @@ const renderSettings = async ({
   passwordErrors = {},
 }: { passwordErrors?: Record<string, string[]> } = {}) => {
   await renderRoutes([
-    { path: `/`, Component: () => <EducatorSettings name='Ms. Frizzle' /> },
+    {
+      path: `/`,
+      Component: () => (
+        <EducatorSettings organization={null} name='Ms. Frizzle' />
+      ),
+    },
     {
       path: `/settings/name`,
       action: async ({ request }) => ({

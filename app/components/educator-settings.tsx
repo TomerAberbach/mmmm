@@ -16,12 +16,16 @@ import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
+import type { Organization } from '~/organizations.server.ts'
 
 export const EducatorSettings = ({
   name,
+  organization,
   secondFactors,
 }: {
   name: string
+  /** Null without an organization */
+  organization: Organization | null
   /** Only for admins and educators who have a second factor */
   secondFactors?: SecondFactorSettingsData
 }) => (
@@ -29,6 +33,7 @@ export const EducatorSettings = ({
     <PageTitle>Account settings</PageTitle>
     <div className='flex flex-col divide-y-2 divide-ink'>
       <NameSettings name={name} />
+      <OrganizationSettings organization={organization} />
       <PasswordSettings />
       <SessionSettings />
       {secondFactors ? <SecondFactorSettings {...secondFactors} /> : null}
@@ -68,6 +73,32 @@ const NameSettings = ({ name }: { name: string }) => {
     </SettingsSection>
   )
 }
+
+const OrganizationSettings = ({
+  organization,
+}: {
+  organization: Organization | null
+}) => (
+  <SettingsSection title='Organization'>
+    {organization ? (
+      <p>
+        {organization.name ? (
+          <>
+            <strong>{organization.name}</strong>
+            {`, from your ${organization.domain} address. To change its name, email support.`}
+          </>
+        ) : (
+          `Your ${organization.domain} organization has no name yet. Name it on your contests page.`
+        )}
+      </p>
+    ) : (
+      <p>
+        Your email address is from a free provider, so you have no organization
+        and no organization leaderboard.
+      </p>
+    )}
+  </SettingsSection>
+)
 
 const PasswordSettings = () => {
   const fetcher = useFetcher<SavedResult>()

@@ -1,4 +1,3 @@
-import { getFormProps } from '@conform-to/react'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, ReactElement } from 'react'
 import { Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components'
@@ -8,7 +7,7 @@ import { Button } from './button.tsx'
 import { Checkbox } from './checkbox.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { FetcherError } from './fetcher-error.tsx'
-import { FormError } from './form-error.tsx'
+import { InlineEditForm } from './inline-edit-form.tsx'
 import { LocalTime } from './local-time.tsx'
 import { NewPersonalLink } from './new-personal-link.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
@@ -781,23 +780,15 @@ const RenameForm = ({
     fetcher.data?.result,
     { displayName: player.displayName },
   )
-  const cancelOnEscape = (event: KeyboardEvent) => {
-    if (event.key === `Escape`) {
-      // Keeps the list from also clearing the selection
-      event.preventDefault()
-      onCancel()
-    }
-  }
   return (
-    <fetcher.Form
-      method='post'
+    <InlineEditForm
+      form={form}
+      fetcher={fetcher}
       action={href(`/contests/:contestId/players/:playerId/name`, {
         contestId,
         playerId: player.id,
       })}
-      {...getFormProps(form)}
-      onKeyDown={cancelOnEscape}
-      className='flex flex-col gap-2'
+      onCancel={onCancel}
     >
       <TextField
         {...fieldProps(fields.displayName)}
@@ -808,15 +799,6 @@ const RenameForm = ({
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
       />
-      <div className='flex gap-2'>
-        <Button type='submit' isPending={fetcher.state !== `idle`}>
-          Save
-        </Button>
-        <Button variant='secondary' onPress={onCancel}>
-          Cancel
-        </Button>
-      </div>
-      <FormError form={form} />
-    </fetcher.Form>
+    </InlineEditForm>
   )
 }

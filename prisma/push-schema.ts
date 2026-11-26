@@ -10,6 +10,7 @@ import {
   CONTEST_NAME,
   DISPLAY_NAME,
   DIVISION_NAME,
+  ORGANIZATION_NAME,
 } from '../app/free-text.ts'
 
 /**
@@ -44,6 +45,7 @@ const readConstraintsSql = (): string =>
     checkName(`Division`, DIVISION_NAME.maxLength),
     checkName(`Combatant`, COMBATANT_NAME.maxLength),
     checkName(`Contest`, CONTEST_NAME.maxLength),
+    checkName(`Organization`, ORGANIZATION_NAME.maxLength),
     checkName(`Player`, DISPLAY_NAME.maxLength, `displayName`),
     check(
       `Player`,

@@ -1,6 +1,8 @@
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
+  # Its list is all the app reads, and the script fetches a newer one
+  free-email-domains: false
   prisma: true
   unrs-resolver: true
 minimumReleaseAgeExclude:

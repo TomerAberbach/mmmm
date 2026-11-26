@@ -1,16 +1,21 @@
 import { href, Link } from 'react-router'
 import { CopyButton } from './copy-button.tsx'
 import { CreateContestDialog } from './create-contest-dialog.tsx'
+import { OrganizationNameCard } from './organization-name-card.tsx'
 import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { SubmissionsClosed } from './submissions-closed.tsx'
 import type { ContestSummary } from '~/contests.server.ts'
+import type { Organization } from '~/organizations.server.ts'
 
 /**
  * Contests open once a bracket is published, so there's no current year yet
  * when `current` is null
  */
-export type EducatorDashboardView =
+export type EducatorDashboardView = {
+  /** Null without an organization */
+  organization: Organization | null
+} & (
   | { current: null; upcomingYear: number }
   | {
       current: {
@@ -20,23 +25,27 @@ export type EducatorDashboardView =
         deletedCount: number
       }
     }
+)
 
 export const EducatorDashboard = ({
   view,
 }: {
   view: EducatorDashboardView
 }) => {
-  const { current } = view
+  const { current, organization } = view
   const hasContests = Boolean(current?.contests.length)
   return (
     <div className='flex max-w-3xl flex-col gap-8'>
       <PageHeader
-        label={current ? String(current.year) : undefined}
+        label={[current?.year, organization?.name].filter(Boolean).join(` · `)}
         title='Your contests'
         action={
           hasContests && !current?.isLocked ? <CreateContestDialog /> : null
         }
       />
+      {organization?.name === null ? (
+        <OrganizationNameCard domain={organization.domain} />
+      ) : null}
       {current?.isLocked ? (
         <SubmissionsClosed>
           {`The first ${current.year} result is in, so you can create contests again once the ${current.year + 1} bracket is published.`}

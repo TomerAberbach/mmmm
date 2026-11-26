@@ -1,9 +1,7 @@
-import { getFormProps } from '@conform-to/react'
-import type { KeyboardEvent } from 'react'
 import { href } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
-import { FormError } from './form-error.tsx'
+import { InlineEditForm } from './inline-edit-form.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
@@ -149,18 +147,12 @@ const RenameForm = ({
     fetcher.data?.result,
     { year, name },
   )
-  const cancelOnEscape = (event: KeyboardEvent) => {
-    if (event.key === `Escape`) {
-      onCancel()
-    }
-  }
   return (
-    <fetcher.Form
-      method='post'
+    <InlineEditForm
+      form={form}
+      fetcher={fetcher}
       action={href(`/admin/bracket/rename`)}
-      {...getFormProps(form)}
-      onKeyDown={cancelOnEscape}
-      className='flex flex-col gap-2'
+      onCancel={onCancel}
     >
       <input type='hidden' name={fields.year.name} value={year} />
       <input type='hidden' name={fields.combatantId.name} value={id} />
@@ -171,15 +163,6 @@ const RenameForm = ({
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
       />
-      <div className='flex gap-2'>
-        <Button type='submit' isPending={fetcher.state !== `idle`}>
-          Save
-        </Button>
-        <Button variant='secondary' onPress={onCancel}>
-          Cancel
-        </Button>
-      </div>
-      <FormError form={form} />
-    </fetcher.Form>
+    </InlineEditForm>
   )
 }

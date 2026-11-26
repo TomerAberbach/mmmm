@@ -1,4 +1,4 @@
-import { href } from 'react-router'
+import { href, Link } from 'react-router'
 import type { Route } from './+types/admin._index.ts'
 import { readAdminYears, readBracketSummary } from '~/brackets.server.ts'
 import type { BracketSummary } from '~/brackets.server.ts'
@@ -45,6 +45,9 @@ const Admin = ({ loaderData: { current, setup } }: Route.ComponentProps) => (
         </ButtonLink>
       </YearCard>
     ) : null}
+    <Link to={href(`/admin/organizations`)} className='self-start'>
+      Organizations
+    </Link>
   </div>
 )
 export default Admin
