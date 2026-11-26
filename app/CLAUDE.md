@@ -154,6 +154,9 @@ app
   It lasts only while its result does, so results store and remove merges with
   `replaceResults`. Compare a side with a winner through `didAdvance`, since the
   winner may be a merge of the side
+- Move combatants in a published bracket with `moveCombatants`, which clears the
+  picks and results that `listDisturbedBattles` names. Send `readArrangement`
+  with a write that depends on who meets in a battle, and refuse another one
 - Decide which picks are right only in `listRightWinners` in `scoring.ts`. The
   marks, from `buildMarkedBracketView`, and the stored scores, from
   `storeScores`, both read it. Rank by score in the query that lists

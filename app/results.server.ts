@@ -6,6 +6,7 @@ import {
   withCurrentYearAlone,
 } from './brackets.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
+import { readArrangement } from './moves.ts'
 import { isContender } from './picks.ts'
 import type { ResultRequest } from './result-request.ts'
 import {
@@ -36,6 +37,9 @@ export const saveResult = (
       return { refusal: `NOT_CURRENT_YEAR` }
     }
     const { bracket: stored, battleIdByKey } = await readBracketRows(year, tx)
+    if (readArrangement(stored) !== request.arrangement) {
+      return { refusal: `STALE` }
+    }
     const key = toBattleKey(battle)
     const results = await readResultRows(year, tx)
     const battleId = battleIdByKey.get(key)
@@ -56,7 +60,11 @@ export const saveResult = (
     ) {
       return { refusal: `STALE` }
     }
-    await replaceResults(tx, year, battleIdByKey, applied)
+    await replaceResults(tx, year, battleIdByKey, {
+      bracket: applied.bracket,
+      results: applied.change.results,
+      ...(applied.merge && { merge: applied.merge }),
+    })
     if (!current.isLocked) {
       await tx.bracket.update({
         where: { year },
@@ -81,7 +89,17 @@ const replaceResults = async (
   tx: Prisma.TransactionClient,
   year: number,
   battleIdByKey: ReadonlyMap<string, string>,
-  { bracket, change: { results }, merge }: AppliedRequest,
+  {
+    bracket,
+    results,
+    merge,
+  }: {
+    /** With `merge`, if any */
+    bracket: SeededBracket
+    results: Results
+    /** A merge that the results record for the first time */
+    merge?: StoredMerge
+  },
 ): Promise<void> => {
   await tx.result.deleteMany({ where: { battle: { year } } })
   await tx.combatant.deleteMany({
@@ -158,6 +176,24 @@ const buildMerge = (
 
 const hasSameKeys = (keys: string[], otherKeys: string[]): boolean =>
   keys.length === otherKeys.length && keys.every(key => otherKeys.includes(key))
+
+/** Clears the results, by battle key, of the year's bracket, if any */
+export const clearResults = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  bracket: SeededBracket,
+  battleIdByKey: ReadonlyMap<string, string>,
+  keys: ReadonlySet<string>,
+): Promise<void> => {
+  const entries = Object.entries(await readResultRows(year, tx))
+  const kept = entries.filter(([key]) => !keys.has(key))
+  if (kept.length < entries.length) {
+    await replaceResults(tx, year, battleIdByKey, {
+      bracket,
+      results: Object.fromEntries(kept),
+    })
+  }
+}
 
 /**
  * Lets players submit and educators create contests again, once every result is

@@ -70,6 +70,7 @@ test(`a saved draft reads back, with no submission`, async () => {
   await expect(readDraftAndSubmission(playerId)).resolves.toStrictEqual({
     draft: picks.changed,
     submission: null,
+    hasClearedPicks: false,
   })
 })
 
@@ -256,4 +257,15 @@ test(`a renamed combatant's picks show the new name`, async () => {
   const { draft } = await readDraftAndSubmission(playerId)
   const view = buildBracketView(year, await readSeededBracket(year), draft)
   expect(view.battles.ROUND_1[0]?.winner?.name).toBe(`Nile Croc`)
+})
+
+test.each([
+  [`a draft`, savePlayerDraft],
+  [`a submission`, submitPlayerPicks],
+])(`%s of another arrangement is refused`, async (_, write) => {
+  const { playerId, picks } = await createPlayerWithPicks()
+
+  const result = await write(playerId, picks.complete, `another`)
+
+  expect(result).toStrictEqual({ refusal: `MOVED` })
 })

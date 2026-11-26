@@ -26,6 +26,7 @@ import type { BattleRef } from '~/bracket.ts'
 import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
+import { readArrangement } from '~/moves.ts'
 import type { PicksRequest } from '~/picks-request.ts'
 import {
   arePicksEqual,
@@ -48,6 +49,7 @@ export const PlayerBracket = ({
   bracket: stored,
   initialDraft,
   submitted,
+  hasClearedPicks,
   picksPath,
   forgetPath,
   deletePath,
@@ -58,6 +60,8 @@ export const PlayerBracket = ({
   initialDraft: Picks
   /** Null until the player submits */
   submitted: Submitted | null
+  /** Whether a move of combatants cleared picks since the player submitted */
+  hasClearedPicks: boolean
   picksPath: string
   forgetPath: string
   deletePath: string
@@ -65,6 +69,7 @@ export const PlayerBracket = ({
 }) => {
   const submission = submitted?.submission ?? null
   const bracket = useMemo(() => toSeededBracket(stored), [stored])
+  const arrangement = useMemo(() => readArrangement(stored), [stored])
   const [picks, setPicks] = useState(initialDraft)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   // Every battle a change has cleared. One picked again shows as picked
@@ -96,7 +101,7 @@ export const PlayerBracket = ({
             ? { kind: `cleared`, battles: next.cleared }
             : null,
         )
-        send({ intent: `save`, picks: next.picks })
+        send({ intent: `save`, picks: next.picks, arrangement })
       },
       listContenders: battle => listContenders(bracket, battle),
       isCleared: battle => {
@@ -104,7 +109,7 @@ export const PlayerBracket = ({
         return cleared.has(key) && picks[key] === undefined
       },
     }),
-    [bracket, picks, cleared, send],
+    [bracket, arrangement, picks, cleared, send],
   )
 
   const unpicked = listBattles().filter(
@@ -119,7 +124,7 @@ export const PlayerBracket = ({
     }
     // Shows the submission once the page has reloaded it
     const changeCountAtSubmit = changeCount.current
-    send({ intent: `submit`, picks }, async () => {
+    send({ intent: `submit`, picks, arrangement }, async () => {
       await revalidator.revalidate()
       if (changeCount.current === changeCountAtSubmit) {
         setOutcome({
@@ -144,12 +149,12 @@ export const PlayerBracket = ({
 
   /** Sends what the player would send now, not the picks that failed */
   const retries: Record<PicksRequest[`intent`], () => void> = {
-    save: () => send({ intent: `save`, picks }),
+    save: () => send({ intent: `save`, picks, arrangement }),
     submit: () => {
       // A change made after the submit failed may have left battles to pick,
       // and its own save may have failed
       if (unpicked.length > 0) {
-        send({ intent: `save`, picks })
+        send({ intent: `save`, picks, arrangement })
       }
       submit()
     },
@@ -167,6 +172,14 @@ export const PlayerBracket = ({
           forgetPath={forgetPath}
           isSending={isSending}
         />
+      ) : null}
+      {hasClearedPicks ? (
+        <div className='max-w-prose'>
+          <Notice kind='alert'>
+            The bracket changed, so some of your picks were cleared. Finish your
+            bracket, then submit it.
+          </Notice>
+        </div>
       ) : null}
       {submission?.status === `REJECTED` && outcome?.kind !== `submitted` ? (
         <div className='max-w-prose'>

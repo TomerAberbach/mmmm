@@ -5,10 +5,12 @@ import {
   readAdminYears,
   readBracketAndResults,
 } from '~/brackets.server.ts'
+import { CombatantMoves } from '~/components/combatant-moves.tsx'
 import { CombatantRenames } from '~/components/combatant-renames.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { ResultsEditor } from '~/components/results-editor.tsx'
+import { readArrangement } from '~/moves.ts'
 import { listMerges, toSeededBracket } from '~/seeded-bracket.ts'
 
 /** The diagram needs more room than other pages */
@@ -41,14 +43,21 @@ const AdminResults = ({
       <PhaseSection year={year} summary={summary} />
     </div>
     <ResultsEditor
-      key={year}
+      // A move can clear results, so the editor starts again from the saved ones
+      key={`${year} ${readArrangement(bracket)}`}
       year={year}
       bracket={bracket}
       initialResults={results}
       isLocked={summary.phase !== `OPEN`}
     />
-    <div className='mx-auto w-full max-w-6xl'>
+    <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
       <CombatantRenames divisions={divisions} merges={merges} />
+      <CombatantMoves
+        key={year}
+        year={year}
+        bracket={bracket}
+        isLocked={summary.phase !== `OPEN`}
+      />
     </div>
   </div>
 )

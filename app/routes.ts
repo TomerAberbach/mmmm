@@ -80,6 +80,7 @@ export default [
       route(`results/reopen`, `routes/admin.results.reopen.ts`),
       route(`bracket/delete`, `routes/admin.bracket.delete.ts`),
       route(`bracket/publication`, `routes/admin.bracket.publication.ts`),
+      route(`bracket/move`, `routes/admin.bracket.move.ts`),
       route(`bracket/rename`, `routes/admin.bracket.rename.ts`),
       route(
         `bracket/expected-lock-date`,

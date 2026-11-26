@@ -62,12 +62,16 @@ const recordSubmission = (server: Server, submission: Submission): void => {
   server.submitted = { submission, personalLink: PERSONAL_LINK }
 }
 
+/** The bodies sent, without the arrangement that every write of picks holds */
 const readSentBodies = (
   fetchSpy: ReturnType<typeof answerRequests>,
 ): unknown[] =>
-  fetchSpy.mock.calls.map(([, init]): unknown =>
-    JSON.parse(typeof init?.body === `string` ? init.body : ``),
-  )
+  fetchSpy.mock.calls.map(([, init]): unknown => {
+    const { arrangement: _, ...body } = JSON.parse(
+      typeof init?.body === `string` ? init.body : ``,
+    ) as Record<string, unknown>
+    return body
+  })
 
 /**
  * What the page's loader returns. A test changes it to stand in for the server
@@ -77,7 +81,12 @@ type Server = { draft: Picks; submitted: Submitted | null }
 const renderBracket = async ({
   draft = {},
   submission = null,
-}: { draft?: Picks; submission?: Submission | null } = {}) => {
+  hasClearedPicks = false,
+}: {
+  draft?: Picks
+  submission?: Submission | null
+  hasClearedPicks?: boolean
+} = {}) => {
   await page.viewport(390, 844)
   const server: Server = {
     draft,
@@ -92,6 +101,7 @@ const renderBracket = async ({
         const data = useLoaderData<Server>()
         return (
           <PlayerBracket
+            hasClearedPicks={hasClearedPicks}
             year={2025}
             bracket={STORED_BRACKET}
             initialDraft={data.draft}
@@ -525,4 +535,14 @@ test(`submitting as submissions close says so and reloads the page`, async () =>
   await expect
     .element(page.getByRole(`button`, { name: `Reload` }))
     .toBeVisible()
+})
+
+test(`picks that a move cleared are said to need finishing`, async () => {
+  await renderBracket({ hasClearedPicks: true })
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(
+      `The bracket changed, so some of your picks were cleared. Finish your bracket, then submit it.`,
+    )
 })

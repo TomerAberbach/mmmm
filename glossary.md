@@ -19,6 +19,8 @@ for a **Player**'s **Draft** or **Submission**.
 | **Seed slot**          | A position from 1 to 16 within a **Division**                                                                                          | Seed position, leaf                     |
 | **Combatant**          | An entrant in the **Bracket**, with a name and a seed                                                                                  | Animal, mammal, contestant, entry, team |
 | **Wild card**          | The play-in **Battle** of 2 to 4 entrants whose winner fills one **Seed slot**                                                         | Play-in, wild card competition          |
+| **Arrangement**        | Which **Combatant** is in each **Seed slot** and **Wild card** place                                                                   | Layout, seeding                         |
+| **Move**               | To put **Combatants** of a published **Bracket** in each other's places                                                                | Reseed, rearrange                       |
 | **Round**              | One stage of the **Bracket**: Wild card, Round 1, Round 2, Sweet 16, Elite Trait, Final Roar, or Championship                          | Elite 8, Final Four, finals             |
 | **Battle**             | One matchup in a **Round**                                                                                                             | Game, match, matchup                    |
 | **Side**               | One of a **Battle**'s places, filled by a **Combatant** or by an earlier **Battle**'s winner                                           | Slot, competitor                        |
