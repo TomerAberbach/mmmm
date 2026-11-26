@@ -25,6 +25,14 @@ const NOTICES = {
     kind: `alert`,
     text: `Your sign-in timed out before the code was accepted. Sign in again.`,
   },
+  'too-many-codes': {
+    kind: `alert`,
+    text: `You entered too many incorrect codes. Sign in again`,
+  },
+  'address-changed': {
+    kind: `status`,
+    text: `Your email address is changed. Sign in with your new address`,
+  },
   'link-invalid': {
     kind: `alert`,
     text: `That confirmation link has expired or doesn’t work. Sign in to get a new one.`,
@@ -33,8 +41,8 @@ const NOTICES = {
 
 /**
  * Where a link left the educator: confirmed, with a confirmation link that
- * expired or was altered, or with a new password. Or the code page ran out of
- * time or attempts
+ * expired or was altered, with a new address, or with a new password. Or the
+ * code page ran out of time or attempts
  */
 export type SignInNotice = keyof typeof NOTICES
 

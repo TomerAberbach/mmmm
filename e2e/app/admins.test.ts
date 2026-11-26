@@ -9,6 +9,7 @@ import {
   signInConfirmed,
   signOut,
 } from '../auth.ts'
+import { fillBracketForm } from '../brackets.ts'
 import { readNewestActionLink } from '../mailbox.ts'
 
 /** Reads the key under "Can’t scan it?", as an educator would type it */
@@ -98,4 +99,29 @@ test(`a setup link opened in another browser doesn't start setup there`, async (
   await expect(
     page.getByRole(`heading`, { name: `Authenticator app` }),
   ).toBeVisible()
+})
+
+test(`an unsaved bracket stays on the page when its session ran out`, async ({
+  page,
+  context,
+}) => {
+  await signInAsAdmin(page, ADMINS.lostSession)
+  await page.goto(`/admin/bracket`)
+  await fillBracketForm(page)
+  const other = await context.newPage()
+  await other.goto(`/admin`)
+  await signOut(other)
+
+  await page.getByRole(`button`, { name: `Save bracket` }).click()
+  await expect(page.getByText(`You’re signed out`)).toBeVisible()
+  await expect(page.getByLabel(`Seed 1`).first()).toHaveValue(`Combatant 1`)
+
+  await signIn(other, ADMINS.lostSession)
+  await expect(other.getByRole(`banner`)).toContainText(`Ms. Frizzle`)
+  await page.getByRole(`button`, { name: `Save bracket` }).click()
+  await expect(
+    page.getByText(`The admin area needs your second factor again`),
+  ).toBeVisible()
+
+  await expect(page.getByLabel(`Seed 1`).first()).toHaveValue(`Combatant 1`)
 })

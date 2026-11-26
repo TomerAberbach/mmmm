@@ -12,11 +12,14 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     readRequiredEducator(context).id,
   )
   return hasSecondFactor(secondFactors)
-    ? { hasPasskey: secondFactors.passkeys.length > 0 }
+    ? {
+        hasPasskey: secondFactors.passkeys.length > 0,
+        hasAuthenticatorApp: secondFactors.hasAuthenticatorApp,
+      }
     : redirect(href(`/admin`))
 }
 
 const AdminVerify = ({ loaderData }: Route.ComponentProps) => (
-  <VerifySecondFactor hasPasskey={loaderData.hasPasskey} />
+  <VerifySecondFactor {...loaderData} />
 )
 export default AdminVerify

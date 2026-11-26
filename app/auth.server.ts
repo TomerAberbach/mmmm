@@ -10,14 +10,18 @@ import {
 import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
-import { refuse } from './app-refusal.server.ts'
+import { readRefusal, refuse } from './app-refusal.server.ts'
 import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
   RESET_EXPIRES_IN_HOURS,
 } from './auth-forms.ts'
-import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
+import {
+  limitAuthRequest,
+  PASSWORD_PROMPT_PATHS,
+  refundAuthRequest,
+} from './auth-limits.server.ts'
 import { prisma } from './db.server.ts'
 import { freeAddress } from './educator-deletion.server.ts'
 import { sendEmail, sendEmailOrLog, sendNoticeOrLog } from './email.server.ts'
@@ -32,9 +36,12 @@ import { SessionAssurance } from './generated/prisma/enums.ts'
 import { joinOrganization } from './organizations.server.ts'
 import {
   guardSecondFactorChange,
+  LAST_SECOND_FACTOR_MESSAGE,
   markSecondFactorUsed,
+  releaseAuthenticatorApp,
   SECOND_FACTOR_SIGN_IN_PATHS,
 } from './second-factor.server.ts'
+import type { SessionProof } from './second-factor.server.ts'
 
 const BASE_URL = requireEnv(`BETTER_AUTH_URL`)
 const CONFIRMATION_EXPIRES_IN_SECONDS =
@@ -91,11 +98,11 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
 
-/** A password change has no address, so it counts for the signed-in educator's */
+/** A password prompt has no address, so it counts for the signed-in educator's */
 const readLimitedEmail = async (
   ctx: GenericEndpointContext,
 ): Promise<unknown> =>
-  ctx.path === `/change-password`
+  PASSWORD_PROMPT_PATHS.has(ctx.path)
     ? (await getSessionFromCtx(ctx))?.user.email
     : (ctx.body as Record<string, unknown> | undefined)?.email
 
@@ -142,21 +149,27 @@ const readConfirmationToken = async (
 }
 
 /**
- * Refunds the attempts of a request that made a session. Notifies the owner
+ * Refunds the attempts of a request whose password was right. Notifies the owner
  * however the password or a passkey changed, so a stolen session can't change
  * either quietly
  */
 const afterAuthRequest = createAuthMiddleware(async ctx => {
-  if (ctx.context.returned instanceof APIError) {
-    return
-  }
-  // Only a request that made a session succeeded, whatever the response says
-  if (ctx.context.newSession) {
+  const { returned, newSession } = ctx.context
+  const failed = returned instanceof APIError
+  // Only a sign-in that made a session succeeded, whatever the response says. A
+  // password prompt answers a wrong password with an error
+  const hadRightPassword = PASSWORD_PROMPT_PATHS.has(ctx.path)
+    ? !failed || followsRightPassword(returned)
+    : !failed && newSession
+  if (hadRightPassword) {
     await refundAuthRequest({
       path: ctx.path,
       email: await readLimitedEmail(ctx),
       headers: ctx.headers,
     })
+  }
+  if (failed) {
+    return
   }
   const educator = ctx.context.session?.user
   if (!educator) {
@@ -169,10 +182,15 @@ const afterAuthRequest = createAuthMiddleware(async ctx => {
     await markPasskeyUsed(ctx)
     notifySecondFactorChanged(educator.email, `passkey-added`)
   }
-  if (ctx.path === `/passkey/delete-passkey`) {
-    notifySecondFactorChanged(educator.email, `passkey-removed`)
-  }
 })
+
+/**
+ * Whether a password prompt's error comes only after the right password. Any
+ * other error may follow a wrong one, or come before the attempt was counted
+ */
+const followsRightPassword = (error: APIError): boolean =>
+  error.body?.code === `TOTP_ALREADY_ENABLED` ||
+  readRefusal(error) === LAST_SECOND_FACTOR_MESSAGE
 
 /**
  * The session that adds a passkey counts as having used it, so setting up the
@@ -208,6 +226,20 @@ const BASE_ORIGIN = new URL(BASE_URL)
 /** Doesn't wait for the email, which can't undo the change */
 const notifyPasswordChanged = (to: string): void => {
   void sendNoticeOrLog(passwordChangedEmail({ to }))
+}
+
+/**
+ * Changing the password replaces the session that changed it, and the new
+ * session keeps exactly what the old one proved
+ */
+const readProof = (
+  ctx: GenericEndpointContext,
+): Pick<SessionProof, `assurance` | `secondFactorUsedAt`> => {
+  const session: SessionProof | undefined = ctx.context.session?.session
+  return {
+    assurance: session?.assurance ?? `PASSWORD`,
+    secondFactorUsedAt: session?.secondFactorUsedAt ?? null,
+  }
 }
 
 export const auth = betterAuth({
@@ -338,12 +370,18 @@ export const auth = betterAuth({
                     secondFactorUsedAt: new Date(),
                   }
                 : {}),
+              ...(ctx?.path === `/change-password` && readProof(ctx)),
             },
           }),
       },
     },
     user: {
       update: {
+        before: async (_changes, ctx) => {
+          if (ctx?.path === `/two-factor/disable` && ctx.context.session) {
+            await releaseAuthenticatorApp(ctx.context.session.user.id)
+          }
+        },
         after: (educator, ctx) => {
           const change = ctx && AUTHENTICATOR_APP_CHANGES[ctx.path]
           if (change) {

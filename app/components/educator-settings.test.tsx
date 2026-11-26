@@ -11,7 +11,11 @@ import type { ConfirmResult } from '~/form-replies.server.ts'
 /** Renders the page with actions that answer like the server would */
 const renderSettings = async ({
   passwordErrors = {},
-}: { passwordErrors?: Record<string, string[]> } = {}) => {
+  canDelete = true,
+}: {
+  passwordErrors?: Record<string, string[]>
+  canDelete?: boolean
+} = {}) => {
   await renderRoutes([
     {
       path: `/`,
@@ -22,6 +26,7 @@ const renderSettings = async ({
             contestCount: 1,
             isConfirmed: true,
           }}
+          canDelete={canDelete}
           organization={null}
           name='Ms. Frizzle'
         />
@@ -122,4 +127,24 @@ test(`signing out other sessions asks first, then confirms`, async () => {
   await expect
     .element(page.getByRole(`status`))
     .toHaveTextContent(`Every other session is signed out.`)
+})
+
+test(`the password section links to resetting a forgotten password`, async () => {
+  await renderSettings()
+
+  await expect
+    .element(page.getByRole(`link`, { name: `Forgot password?` }))
+    .toHaveAttribute(`href`, `/forgot-password`)
+})
+
+test(`a session that can't delete the account learns how before any dialog`, async () => {
+  await renderSettings({ canDelete: false })
+
+  await expect
+    .element(page.getByRole(`status`))
+    .toMatchTextContent(`sign in with your passkey or authenticator app`)
+  await expect
+    .element(page.getByRole(`button`, { name: `Delete account` }))
+    .not.toBeInTheDocument()
+  await expectNoAxeViolations()
 })

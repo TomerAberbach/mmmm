@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { createEducator, createMember } from '../test/educators.ts'
 import {
   confirmAddressChange,
@@ -7,6 +7,8 @@ import {
   requestAddressChange,
 } from './address-changes.server.ts'
 import { prisma } from './db.server.ts'
+import { sendEmail } from './email.server.ts'
+import { passwordChangedEmail } from './emails/password-changed.server.tsx'
 import { readMailbox } from './mailbox.server.ts'
 import { readOrganization } from './organizations.server.ts'
 
@@ -38,7 +40,7 @@ test(`the address changes only once the educator confirms it`, async () => {
   await expect(readEmail(id)).resolves.toBe(email)
   await expect(readAddressChange(secret)).resolves.toBe(newEmail)
 
-  await expect(confirmAddressChange(secret)).resolves.toBe(true)
+  await expect(confirmAddressChange(secret)).resolves.toBe(`CHANGED`)
 
   await expect(readEmail(id)).resolves.toBe(newEmail)
   await expect(readOrganization(id)).resolves.toMatchObject({ domain })
@@ -52,7 +54,7 @@ test(`a link works once`, async () => {
   const secret = readSecret(newEmail)
   await confirmAddressChange(secret)
 
-  await expect(confirmAddressChange(secret)).resolves.toBe(false)
+  await expect(confirmAddressChange(secret)).resolves.toBe(`INVALID`)
   await expect(readAddressChange(secret)).resolves.toBeNull()
 })
 
@@ -94,9 +96,42 @@ test(`a new request turns off the earlier link`, async () => {
   await requestAddressChange(id, `new@${randomUUID()}.edu`)
 
   await expect(confirmAddressChange(readSecret(wrongEmail))).resolves.toBe(
-    false,
+    `INVALID`,
   )
   await expect(readEmail(id)).resolves.toBe(email)
+})
+
+test(`a new link over the hourly email limit leaves the earlier one working`, async () => {
+  const { id } = await createEducatorWithAddress()
+  const newEmail = `new@${randomUUID()}.edu`
+  await requestAddressChange(id, newEmail)
+  const secret = readSecret(newEmail)
+  const fullEmail = `full@${randomUUID()}.edu`
+  for (let sent = 0; sent < 10; sent++) {
+    await sendEmail(passwordChangedEmail({ to: fullEmail }))
+  }
+
+  const refusal = await requestAddressChange(id, fullEmail)
+
+  expect(refusal).toBe(`EMAIL_LIMIT`)
+  await expect(
+    prisma.verification.count({ where: { value: { contains: id } } }),
+  ).resolves.toBe(1)
+  await expect(readAddressChange(secret)).resolves.toBe(newEmail)
+})
+
+test(`a link that wasn't stored isn't sent`, async () => {
+  const { id } = await createEducatorWithAddress()
+  const newEmail = `new@${randomUUID()}.edu`
+  vi.spyOn(prisma.verification, `create`).mockImplementationOnce(() => {
+    throw new Error(`The database is down`)
+  })
+
+  await expect(requestAddressChange(id, newEmail)).rejects.toThrow(
+    `The database is down`,
+  )
+
+  expect(readMailbox().some(({ to }) => to === newEmail)).toBe(false)
 })
 
 test(`an unconfirmed educator's address can't be changed`, async () => {
@@ -123,7 +158,9 @@ test(`an address confirmed by another educator meanwhile stays theirs`, async ()
     data: { emailVerified: true },
   })
 
-  await expect(confirmAddressChange(readSecret(newEmail))).resolves.toBe(false)
+  await expect(confirmAddressChange(readSecret(newEmail))).resolves.toBe(
+    `TAKEN`,
+  )
 
   await expect(readEmail(id)).resolves.toBe(email)
 })
@@ -135,7 +172,9 @@ test(`an unconfirmed sign-up with the address makes way`, async () => {
   const newEmail = `${otherId}@${domain}`
   await requestAddressChange(id, newEmail)
 
-  await expect(confirmAddressChange(readSecret(newEmail))).resolves.toBe(true)
+  await expect(confirmAddressChange(readSecret(newEmail))).resolves.toBe(
+    `CHANGED`,
+  )
 
   await expect(readEmail(id)).resolves.toBe(newEmail)
   await expect(readEmail(otherId)).resolves.toBeUndefined()
@@ -151,6 +190,6 @@ test(`an expired link changes nothing`, async () => {
     data: { expiresAt: new Date(0) },
   })
 
-  await expect(confirmAddressChange(secret)).resolves.toBe(false)
+  await expect(confirmAddressChange(secret)).resolves.toBe(`INVALID`)
   await expect(readEmail(id)).resolves.toBe(email)
 })

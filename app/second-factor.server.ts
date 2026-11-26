@@ -5,6 +5,9 @@ import { getSessionFromCtx } from 'better-auth/api'
 import { isAdmin } from './admins.server.ts'
 import { refuse } from './app-refusal.server.ts'
 import { prisma } from './db.server.ts'
+import { sendNoticeOrLog } from './email.server.ts'
+import { secondFactorChangedEmail } from './emails/second-factor-changed.server.tsx'
+import type { Prisma } from './generated/prisma/client.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
 import {
   SECOND_FACTOR_EXPIRES_IN_HOURS,
@@ -27,11 +30,6 @@ const ADDING_PATHS = new Set([
   `/passkey/verify-registration`,
 ])
 
-const REMOVING_PATHS = new Set([
-  `/passkey/delete-passkey`,
-  `/two-factor/disable`,
-])
-
 const PASSKEY_SIGN_IN_PATHS = new Set([
   `/passkey/generate-authenticate-options`,
   `/passkey/verify-authentication`,
@@ -40,9 +38,9 @@ const PASSKEY_SIGN_IN_PATHS = new Set([
 /**
  * Refuses a change to an educator's second factors unless their session used
  * one, so a stolen password alone can't add or remove one. A session that a
- * setup link proved may add the first. Only admins add second factors, and an
- * admin keeps at least one. Better Auth's two-factor paths without a session
- * are the sign-in challenge, which this leaves alone
+ * setup link proved may add the first. Only admins add second factors. Better
+ * Auth's two-factor paths without a session are the sign-in challenge, which
+ * this leaves alone
  */
 export const guardSecondFactorChange = async (
   ctx: GenericEndpointContext,
@@ -50,36 +48,118 @@ export const guardSecondFactorChange = async (
   if (!changesSecondFactors(ctx.path)) {
     return
   }
+  if (ctx.path === `/passkey/delete-passkey`) {
+    throw new Error(`Remove a passkey with removePasskey, which keeps the last`)
+  }
   const signedIn = await getSessionFromCtx(ctx)
   if (!signedIn) {
     return
   }
   const { user: educator, session } = signedIn
   const secondFactors = await readSecondFactors(educator.id)
-  if (!mayChangeSecondFactors(readAssurance(session), secondFactors)) {
-    throw refuse(`FORBIDDEN`, `Use your second factor before changing it`)
-  }
+  requireMayChange(readAssurance(session), secondFactors)
   if (ADDING_PATHS.has(ctx.path) && !isAdmin(educator)) {
     throw refuse(`FORBIDDEN`, `Only admins add second factors`)
   }
-  if (
-    REMOVING_PATHS.has(ctx.path) &&
-    isAdmin(educator) &&
-    countSecondFactors(secondFactors) <= 1
-  ) {
-    throw refuse(
-      `BAD_REQUEST`,
-      `Admins keep at least one second factor. Add another before removing this one`,
-    )
+}
+
+const requireMayChange = (
+  assurance: SessionAssurance,
+  secondFactors: SecondFactors,
+): void => {
+  if (!mayChangeSecondFactors(assurance, secondFactors)) {
+    throw refuse(`FORBIDDEN`, `Use your second factor before changing it`)
   }
 }
 
 /**
- * A session Better Auth just created can lack `assurance`, which the database
- * defaults to PASSWORD. A session that used its second factor too long ago counts
- * as having used only a password
+ * Removes one of the educator's passkeys, and emails them about it. Resolves
+ * to whether they had it
  */
-export const readAssurance = (session: {
+export const removePasskey = async (
+  passkeyId: string,
+  educatorId: string,
+  assurance: SessionAssurance,
+): Promise<boolean> => {
+  const email = await prisma.$transaction(async tx => {
+    const { educator, secondFactors } = await lockSecondFactors(educatorId, tx)
+    requireMayChange(assurance, secondFactors)
+    if (!secondFactors.passkeys.some(({ id }) => id === passkeyId)) {
+      return null
+    }
+    keepLastSecondFactor(educator, secondFactors)
+    await tx.passkey.delete({ where: { id: passkeyId } })
+    return educator.email
+  })
+  if (email === null) {
+    return false
+  }
+  // Doesn't wait for the email, which can't undo the change
+  void sendNoticeOrLog(
+    secondFactorChangedEmail({ to: email, change: `passkey-removed` }),
+  )
+  return true
+}
+
+/**
+ * Stops counting the authenticator app as one of the educator's second factors,
+ * before Better Auth deletes it
+ */
+export const releaseAuthenticatorApp = (educatorId: string): Promise<void> =>
+  prisma.$transaction(async tx => {
+    const { educator, secondFactors } = await lockSecondFactors(educatorId, tx)
+    if (secondFactors.hasAuthenticatorApp) {
+      keepLastSecondFactor(educator, secondFactors)
+      await tx.educator.update({
+        where: { id: educatorId },
+        data: { twoFactorEnabled: false },
+      })
+    }
+  })
+
+/**
+ * Deletes the row of an authenticator app that's off, such as one left when
+ * turning it off failed partway, which Better Auth refuses to set up again.
+ * Resolves to whether the app was off
+ */
+export const deleteTurnedOffApp = (educatorId: string): Promise<boolean> =>
+  prisma.$transaction(async tx => {
+    const { secondFactors } = await lockSecondFactors(educatorId, tx)
+    if (secondFactors.hasAuthenticatorApp) {
+      return false
+    }
+    await tx.authenticatorApp.deleteMany({ where: { educatorId } })
+    return true
+  })
+
+/** Two removals at once would otherwise each count the other's second factor */
+const lockSecondFactors = async (
+  educatorId: string,
+  tx: Prisma.TransactionClient,
+) => {
+  await tx.$queryRaw`
+    SELECT 1 FROM "Educator" WHERE "id" = ${educatorId} FOR NO KEY UPDATE
+  `
+  const educator = await tx.educator.findUniqueOrThrow({
+    where: { id: educatorId },
+    select: { email: true, emailVerified: true },
+  })
+  return { educator, secondFactors: await readSecondFactors(educatorId, tx) }
+}
+
+export const LAST_SECOND_FACTOR_MESSAGE = `Admins keep at least one second factor. Add another before removing this one`
+
+const keepLastSecondFactor = (
+  educator: Parameters<typeof isAdmin>[0],
+  secondFactors: SecondFactors,
+): void => {
+  if (isAdmin(educator) && countSecondFactors(secondFactors) <= 1) {
+    throw refuse(`BAD_REQUEST`, LAST_SECOND_FACTOR_MESSAGE)
+  }
+}
+
+/** What a session proved, and when */
+export type SessionProof = {
   /**
    * Without a required field, TypeScript refuses Better Auth's session type,
    * which lacks `assurance`
@@ -87,7 +167,14 @@ export const readAssurance = (session: {
   id: string
   assurance?: SessionAssurance | null
   secondFactorUsedAt?: Date | null
-}): SessionAssurance =>
+}
+
+/**
+ * A session Better Auth just created can lack `assurance`, which the database
+ * defaults to PASSWORD. A session that used its second factor too long ago counts
+ * as having used only a password
+ */
+export const readAssurance = (session: SessionProof): SessionAssurance =>
   session.assurance === `SECOND_FACTOR` && !isFresh(session.secondFactorUsedAt)
     ? `PASSWORD`
     : (session.assurance ?? `PASSWORD`)
@@ -132,8 +219,9 @@ export type SecondFactors = {
 
 export const readSecondFactors = async (
   educatorId: string,
+  db: Prisma.TransactionClient = prisma,
 ): Promise<SecondFactors> => {
-  const educator = await prisma.educator.findUniqueOrThrow({
+  const educator = await db.educator.findUniqueOrThrow({
     where: { id: educatorId },
     select: {
       twoFactorEnabled: true,

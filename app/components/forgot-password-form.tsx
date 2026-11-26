@@ -12,10 +12,12 @@ import { useValidatedForm } from './use-validated-form.ts'
 export const ForgotPasswordForm = ({
   lastResult,
   linkInvalid = false,
+  isSignedIn = false,
 }: {
   lastResult?: SubmissionResult
   /** Set when a reset link that expired or was used sent the educator here */
   linkInvalid?: boolean
+  isSignedIn?: boolean
 }) => {
   const { form, fields, isSubmitting } = useValidatedForm(
     forgotPasswordSchema,
@@ -55,7 +57,13 @@ export const ForgotPasswordForm = ({
         <FormError form={form} />
       </Form>
       <p>
-        Remembered it? <Link to={href(`/sign-in`)}>Sign in</Link>
+        {isSignedIn ? (
+          <Link to={href(`/settings`)}>Back to account settings</Link>
+        ) : (
+          <>
+            Remembered it? <Link to={href(`/sign-in`)}>Sign in</Link>
+          </>
+        )}
       </p>
     </div>
   )
@@ -65,7 +73,13 @@ export const ForgotPasswordForm = ({
  * Every address gets this same answer, so it never reveals which belong to
  * educators
  */
-export const ResetLinkSent = ({ email }: { email: string }) => (
+export const ResetLinkSent = ({
+  email,
+  isSignedIn = false,
+}: {
+  email: string
+  isSignedIn?: boolean
+}) => (
   <div className='flex max-w-xl flex-col gap-4'>
     <PageTitle>Check your email</PageTitle>
     <p>
@@ -74,7 +88,11 @@ export const ResetLinkSent = ({ email }: { email: string }) => (
       {RESET_EXPIRES_IN_HOURS} hour. Check your spam folder too.
     </p>
     <p>
-      <Link to={href(`/sign-in`)}>Back to sign in</Link>
+      {isSignedIn ? (
+        <Link to={href(`/settings`)}>Back to account settings</Link>
+      ) : (
+        <Link to={href(`/sign-in`)}>Back to sign in</Link>
+      )}
     </p>
   </div>
 )

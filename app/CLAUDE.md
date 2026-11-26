@@ -98,8 +98,9 @@ app
   `requireAdmin` answers everyone but an admin with the not-found page
 - `guardSecondFactorChange` in `second-factor.server.ts` checks every
   `/two-factor/*` and `/passkey/*` request. When adding a Better Auth endpoint
-  that adds or removes a second factor, list it in `ADDING_PATHS` or
-  `REMOVING_PATHS` there
+  that adds a second factor, list it in `ADDING_PATHS` there. Remove a second
+  factor only after `lockSecondFactors`, which keeps two removals at once from
+  each counting the other's
 - Better Auth copies a session's fields when it replaces the session, such as
   when an authenticator app turns on. Leave `assurance` without a Better Auth
   `defaultValue`, which would reset the copy to `PASSWORD`
