@@ -38,10 +38,20 @@ export const ContestDetails = ({
     {isOpen ? (
       <ContestLink contest={contest} />
     ) : (
-      <SubmissionsClosed>
-        The contest link no longer starts brackets. You can still approve,
-        reject, and rename.
-      </SubmissionsClosed>
+      <>
+        <SubmissionsClosed>
+          The contest link no longer starts brackets. You can still approve,
+          reject, and rename.
+        </SubmissionsClosed>
+        <Link
+          to={href(`/contests/:contestId/leaderboard`, {
+            contestId: contest.id,
+          })}
+          className='self-start font-semibold print:hidden'
+        >
+          Leaderboard
+        </Link>
+      </>
     )}
     <ContestPlayers contestId={contest.id} players={players} isOpen={isOpen} />
     <div className='flex flex-wrap items-center justify-between gap-4 border-t-2 border-ink pt-4 print:hidden'>

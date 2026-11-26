@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router'
 import { Bracket } from './bracket.tsx'
+import { MarkedBracket } from './marked-bracket.tsx'
 import { Notice } from './notice.tsx'
 import {
   DeleteButton,
@@ -8,17 +10,11 @@ import {
   PicksChanged,
 } from './player-controls.tsx'
 import type { Submitted } from './player-controls.tsx'
-import { Scoreboard } from './scoreboard.tsx'
-import {
-  buildMarkedBracketView,
-  buildPicksView,
-  isMarked,
-} from '~/bracket-view.ts'
+import { buildPicksView } from '~/bracket-view.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import { arePicksEqual } from '~/picks.ts'
 import type { Picks } from '~/picks.ts'
 import type { Results } from '~/results.ts'
-import { readScorecard } from '~/scorecard.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
 
@@ -32,6 +28,7 @@ export const LockedBracket = ({
   draft,
   submitted,
   results,
+  leaderboardPath,
   forgetPath,
   deletePath,
   playerId,
@@ -41,69 +38,114 @@ export const LockedBracket = ({
   draft: Picks
   submitted: Submitted | null
   results: Results
+  leaderboardPath: string
   forgetPath: string
   deletePath: string
   playerId: string
+}) => (
+  <>
+    {submitted ? (
+      <SubmittedBracket
+        year={year}
+        bracket={bracket}
+        draft={draft}
+        submitted={submitted}
+        results={results}
+        leaderboardPath={leaderboardPath}
+        forgetPath={forgetPath}
+      />
+    ) : (
+      <UnsubmittedBracket year={year} bracket={bracket} draft={draft} />
+    )}
+    <div className='print:hidden'>
+      <DeleteButton
+        deletePath={deletePath}
+        playerId={playerId}
+        isSending={false}
+        isOpen={false}
+      />
+    </div>
+  </>
+)
+
+const SubmittedBracket = ({
+  year,
+  bracket,
+  draft,
+  submitted: { submission, personalLink },
+  results,
+  leaderboardPath,
+  forgetPath,
+}: {
+  year: number
+  bracket: StoredBracket
+  draft: Picks
+  submitted: Submitted
+  results: Results
+  leaderboardPath: string
+  forgetPath: string
+}) => (
+  <>
+    <div className='max-w-prose'>
+      <Notice kind={submission.status === `REJECTED` ? `alert` : `status`}>
+        {`Submissions are closed. ${
+          arePicksEqual(draft, submission.picks)
+            ? ``
+            : `The changes you made after submitting weren’t submitted. `
+        }${STATUS_NOTES[submission.status]}`}
+      </Notice>
+    </div>
+    {submission.status === `APPROVED` ? (
+      <Link
+        to={leaderboardPath}
+        className='self-start font-semibold print:hidden'
+      >
+        Leaderboard
+      </Link>
+    ) : null}
+    <MarkedBracket
+      year={year}
+      bracket={bracket}
+      picks={submission.picks}
+      results={results}
+    >
+      <PicksChanged at={submission.picksChangedAt} />
+      <div className='flex flex-wrap gap-3 print:hidden'>
+        <PersonalLinkButton personalLink={personalLink} isOpen={false} />
+        <ForgetButton
+          forgetPath={forgetPath}
+          variant='quiet'
+          isSending={false}
+        />
+      </div>
+    </MarkedBracket>
+  </>
+)
+
+/** A draft never submitted has no score */
+const UnsubmittedBracket = ({
+  year,
+  bracket,
+  draft,
+}: {
+  year: number
+  bracket: StoredBracket
+  draft: Picks
 }) => {
-  const picks = submitted ? submitted.submission.picks : draft
-  const view = useMemo(() => {
-    const seededBracket = toSeededBracket(bracket)
-    // A draft never submitted has no score
-    return submitted
-      ? buildMarkedBracketView(year, seededBracket, picks, results)
-      : buildPicksView(year, seededBracket, picks)
-  }, [year, bracket, picks, submitted, results])
+  const view = useMemo(
+    () => buildPicksView(year, toSeededBracket(bracket), draft),
+    [year, bracket, draft],
+  )
   return (
     <>
       <div className='max-w-prose'>
-        {submitted ? (
-          <Notice
-            kind={
-              submitted.submission.status === `REJECTED` ? `alert` : `status`
-            }
-          >
-            {`Submissions are closed. ${
-              arePicksEqual(draft, picks)
-                ? ``
-                : `The changes you made after submitting weren’t submitted. `
-            }${STATUS_NOTES[submitted.submission.status]}`}
-          </Notice>
-        ) : (
-          <Notice kind='alert'>
-            Submissions closed before this bracket was submitted, so it doesn’t
-            count
-          </Notice>
-        )}
+        <Notice kind='alert'>
+          Submissions closed before this bracket was submitted, so it doesn’t
+          count
+        </Notice>
       </div>
-      {submitted ? (
-        <>
-          {isMarked(view) ? (
-            <Scoreboard scorecard={readScorecard(view)} />
-          ) : null}
-          <PicksChanged at={submitted.submission.picksChangedAt} />
-          <div className='flex flex-wrap gap-3 print:hidden'>
-            <PersonalLinkButton
-              personalLink={submitted.personalLink}
-              isOpen={false}
-            />
-            <ForgetButton
-              forgetPath={forgetPath}
-              variant='quiet'
-              isSending={false}
-            />
-          </div>
-        </>
-      ) : null}
       <div className='print:page-landscape'>
         <Bracket view={view} />
-      </div>
-      <div className='print:hidden'>
-        <DeleteButton
-          deletePath={deletePath}
-          playerId={playerId}
-          isSending={false}
-          isOpen={false}
-        />
       </div>
     </>
   )

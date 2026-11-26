@@ -34,3 +34,11 @@ export const addYear = async ({
   }
   return year
 }
+
+/** Locks the year without a result, for tests that set scores themselves */
+export const setLocked = async (year: number): Promise<void> => {
+  await prisma.bracket.update({
+    where: { year },
+    data: { lockedAt: new Date() },
+  })
+}

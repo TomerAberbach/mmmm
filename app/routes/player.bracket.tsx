@@ -56,7 +56,13 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
           picksPath={href(`/player/:contestId/bracket/picks`, params)}
         />
       ) : (
-        <LockedBracket {...shared} {...paths} draft={draft} results={results} />
+        <LockedBracket
+          {...shared}
+          {...paths}
+          draft={draft}
+          results={results}
+          leaderboardPath={href(`/player/:contestId/leaderboard`, params)}
+        />
       )}
     </div>
   )
