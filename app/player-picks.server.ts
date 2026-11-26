@@ -7,6 +7,7 @@ import {
   readSnapshot,
   withCurrentYear,
 } from './brackets.server.ts'
+import { prisma } from './db.server.ts'
 import type {
   PickStage,
   Prisma,
@@ -54,6 +55,17 @@ export const readPlayerBracket = (
     ...(await readBracketAndResultRows(year, tx)),
     ...(await readDraftAndSubmissionRows(playerId, tx)),
   }))
+
+/** Null until the player submits */
+export const readSubmissionStatus = async (
+  playerId: string,
+): Promise<SubmissionStatus | null> =>
+  (
+    await prisma.submission.findUnique({
+      where: { playerId },
+      select: { status: true },
+    })
+  )?.status ?? null
 
 const readDraftAndSubmissionRows = async (
   playerId: string,
@@ -133,7 +145,7 @@ export const submitPlayerPicks = (
         return { refusal: `INCOMPLETE` } as const
       }
       const isChanged = !arePicksEqual(
-        await readPicks(tx, playerId, `SUBMISSION`),
+        await readSubmissionPicks(playerId, tx),
         picks,
       )
       await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
@@ -239,13 +251,15 @@ const PICK_SELECT = {
   combatantId: true,
 } as const
 
-const readPicks = async (
-  tx: Prisma.TransactionClient,
+export const readSubmissionPicks = async (
   playerId: string,
-  stage: PickStage,
+  tx: Prisma.TransactionClient,
 ): Promise<Picks> =>
   toPicks(
-    await tx.pick.findMany({ where: { playerId, stage }, select: PICK_SELECT }),
+    await tx.pick.findMany({
+      where: { playerId, stage: `SUBMISSION` },
+      select: PICK_SELECT,
+    }),
   )
 
 const toPicks = (picks: { battle: BattleRef; combatantId: string }[]): Picks =>

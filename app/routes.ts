@@ -28,11 +28,21 @@ export default [
     route(`trash`, `routes/contests.trash.tsx`),
     route(`trash/restore`, `routes/contests.trash.restore.ts`),
     route(`trash/erase`, `routes/contests.trash.erase.ts`),
-    route(`:contestId`, `routes/contests.$contestId.tsx`),
+    layout(`routes/contests.contest.tsx`, [
+      route(`:contestId`, `routes/contests.$contestId.tsx`),
+      route(`:contestId/trash`, `routes/contests.$contestId.trash.tsx`),
+      route(
+        `:contestId/leaderboard`,
+        `routes/contests.$contestId.leaderboard.tsx`,
+      ),
+      route(
+        `:contestId/leaderboard/:playerId`,
+        `routes/contests.$contestId.leaderboard.$playerId.tsx`,
+      ),
+    ]),
     route(`:contestId/name`, `routes/contests.$contestId.name.ts`),
     route(`:contestId/link`, `routes/contests.$contestId.link.ts`),
     route(`:contestId/delete`, `routes/contests.$contestId.delete.ts`),
-    route(`:contestId/trash`, `routes/contests.$contestId.trash.tsx`),
     route(
       `:contestId/trash/restore`,
       `routes/contests.$contestId.trash.restore.ts`,
@@ -66,6 +76,13 @@ export default [
     layout(`routes/player.remembered.tsx`, [
       route(`bracket`, `routes/player.bracket.tsx`),
       route(`bracket/picks`, `routes/player.bracket.picks.ts`),
+      layout(`routes/player.approved.tsx`, [
+        route(`leaderboard`, `routes/player.leaderboard.tsx`),
+        route(
+          `leaderboard/:playerId`,
+          `routes/player.leaderboard.$playerId.tsx`,
+        ),
+      ]),
     ]),
     route(`forgotten`, `routes/player.forgotten.tsx`),
     route(`delete`, `routes/player.delete.ts`),

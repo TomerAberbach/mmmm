@@ -4,10 +4,12 @@ import type {
   Params,
   RouterContextProvider,
 } from 'react-router'
+import { isOpenYear } from './brackets.server.ts'
 import { brokenLink } from './broken-link.ts'
 import { readContestById, readContestByLink } from './contests.server.ts'
 import type { PlayContest } from './contests.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
+import { readSubmissionStatus } from './player-picks.server.ts'
 
 const contestContext = createContext<PlayContest>()
 
@@ -85,6 +87,25 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
     await rememberPlayer(contest.id, player.secret),
   )
   return response
+}
+
+/**
+ * Sends a player whose submission isn't approved, or whose year isn't locked,
+ * back to their bracket, since leaderboards are only for approved players and
+ * start at the lock. Nest it after `requirePlayer`
+ */
+export const requireApprovedPlayer: MiddlewareFunction<Response> = async (
+  { context },
+  next,
+) => {
+  const { id: contestId, year } = readPlayContest(context)
+  const [status, isOpen] = await Promise.all([
+    readSubmissionStatus(readRequiredPlayer(context).id),
+    isOpenYear(year),
+  ])
+  return status === `APPROVED` && !isOpen
+    ? next()
+    : redirect(href(`/player/:contestId/bracket`, { contestId }))
 }
 
 export const readRequiredPlayer = (

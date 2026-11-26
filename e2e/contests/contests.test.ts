@@ -34,6 +34,7 @@ test(`another educator's contest page is not found`, async ({
   const response = await page.goto(new URL(other.url()).pathname)
 
   expect(response?.status()).toBe(404)
+  await expect(page.getByRole(`button`, { name: `Sign out` })).toBeVisible()
 })
 
 test(`a bracket with a contest stays published`, async ({ page, browser }) => {
@@ -446,4 +447,31 @@ test(`a player who started with a replaced contest link gets no new one by delet
   await expect(
     page.getByRole(`link`, { name: `Start a new bracket` }),
   ).not.toBeAttached()
+})
+
+test(`a player goes back to their bracket from the leaderboard while submissions are open`, async ({
+  page,
+  browser,
+}) => {
+  await startBracketAsMaya(page, await createContestLink(browser))
+  const { pathname } = new URL(page.url())
+
+  await page.goto(pathname.replace(`/bracket`, `/leaderboard`))
+
+  await expect(page).toHaveURL(new RegExp(`${pathname}$`, `u`))
+})
+
+test(`a leaderboard opens only for a player the browser remembers`, async ({
+  page,
+  browser,
+}) => {
+  const player = await browser.newPage()
+  await startBracketAsMaya(player, await createContestLink(browser))
+  const { pathname } = new URL(player.url())
+
+  await page.goto(pathname.replace(`/bracket`, `/leaderboard`))
+
+  await expect(page).toHaveURL(
+    new RegExp(`${pathname.replace(`/bracket`, `/forgotten`)}$`, `u`),
+  )
 })

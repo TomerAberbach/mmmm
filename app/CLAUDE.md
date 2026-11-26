@@ -219,6 +219,10 @@ app
   from `play-context.server.ts`. The layout restarts the player's 15 minutes on
   each response, so leave it off a page that asks who the player is, such as the
   contest link's "Continue as" prompt
+- Read leaderboards and the brackets their rows open from
+  `leaderboards.server.ts`, which hides names by viewer on the server and
+  returns nothing while the year is open. Nest a player's leaderboard pages
+  under `routes/player.approved.tsx`
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
   `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`
