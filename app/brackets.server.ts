@@ -52,6 +52,14 @@ export const saveUnpublishedBracket = async (
   }, LOCKED_YEARS_LIMITS)
 }
 
+/** Inserts an unpublished bracket for a year without one */
+export const insertBracket = (
+  tx: Prisma.TransactionClient,
+  year: number,
+  input: BracketInput,
+): Promise<void> =>
+  insertBracketRows(tx, year, buildBracketRows(year, input), null)
+
 const insertBracketRows = async (
   tx: Prisma.TransactionClient,
   year: number,
@@ -485,7 +493,7 @@ type LockMode = `SHARE` | `UPDATE`
  * and writes that change them take `UPDATE`. One advisory lock covers every
  * year, including a bracket inserted after the lock is taken
  */
-const lockYears = async (
+export const lockYears = async (
   tx: Prisma.TransactionClient,
   mode: LockMode,
 ): Promise<void> => {
