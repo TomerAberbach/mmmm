@@ -6,7 +6,10 @@ import { isAdmin } from './admins.server.ts'
 import { refuse } from './app-refusal.server.ts'
 import { prisma } from './db.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
-import { SETUP_LINK_EXPIRES_IN_HOURS } from './second-factor.ts'
+import {
+  SECOND_FACTOR_EXPIRES_IN_HOURS,
+  SETUP_LINK_EXPIRES_IN_HOURS,
+} from './second-factor.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
 /** Sessions these paths create used a second factor */
@@ -73,7 +76,8 @@ export const guardSecondFactorChange = async (
 
 /**
  * A session Better Auth just created can lack `assurance`, which the database
- * defaults to PASSWORD
+ * defaults to PASSWORD. A session that used its second factor too long ago counts
+ * as having used only a password
  */
 export const readAssurance = (session: {
   /**
@@ -82,7 +86,18 @@ export const readAssurance = (session: {
    */
   id: string
   assurance?: SessionAssurance | null
-}): SessionAssurance => session.assurance ?? `PASSWORD`
+  secondFactorUsedAt?: Date | null
+}): SessionAssurance =>
+  session.assurance === `SECOND_FACTOR` && !isFresh(session.secondFactorUsedAt)
+    ? `PASSWORD`
+    : (session.assurance ?? `PASSWORD`)
+
+const isFresh = (usedAt: Date | null | undefined): boolean =>
+  usedAt !== null && usedAt !== undefined && usedAt > readFreshCutoff()
+
+/** A second factor used by then must be used again */
+const readFreshCutoff = (): Date =>
+  new Date(Date.now() - SECOND_FACTOR_EXPIRES_IN_HOURS * 60 * 60 * 1000)
 
 const changesSecondFactors = (path: string): boolean =>
   path.startsWith(`/two-factor/`) ||
@@ -182,7 +197,7 @@ export const storeSetupLinkToken = async (
 /**
  * Uses up the token, so its link works once, and only for its own educator.
  * The link proves the session's educator reads their email. A session that
- * already used a second factor keeps that
+ * used a second factor lately keeps that
  */
 export const redeemSetupLink = (
   token: string,
@@ -201,7 +216,16 @@ export const redeemSetupLink = (
       return false
     }
     await tx.session.updateMany({
-      where: { id: sessionId, assurance: `PASSWORD` },
+      where: {
+        id: sessionId,
+        OR: [
+          { assurance: `PASSWORD` },
+          {
+            assurance: `SECOND_FACTOR`,
+            secondFactorUsedAt: { lte: readFreshCutoff() },
+          },
+        ],
+      },
       data: { assurance: `SETUP_LINK` },
     })
     return true
@@ -219,6 +243,6 @@ export const markSecondFactorUsed = async (
 ): Promise<void> => {
   await prisma.session.update({
     where: { id: sessionId },
-    data: { assurance: `SECOND_FACTOR` },
+    data: { assurance: `SECOND_FACTOR`, secondFactorUsedAt: new Date() },
   })
 }

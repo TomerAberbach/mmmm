@@ -77,7 +77,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Share**              | An **Educator**'s grant of one colleague's full view of a **Contest**                                                                | Collaborator, co-teacher                  |
 | **Trash**              | The holding place for deleted **Contests**, **Drafts**, and **Submissions** until they're **Restored** or **Erased**                 | Recycle bin, archive                      |
 | **Restore**            | To move a **Contest**, **Draft**, or **Submission** out of the **Trash**, which turns its links back on                              | Undelete, recover                         |
-| **Erase**              | To delete a **Contest**, **Draft**, or **Submission** in the **Trash** for good                                                      | Purge, destroy                            |
+| **Erase**              | To delete a **Contest**, **Draft**, or **Submission** in the **Trash** for good. An **Admin** can also do so outside the **Trash**   | Purge, destroy                            |
 
 ## Leaderboards
 

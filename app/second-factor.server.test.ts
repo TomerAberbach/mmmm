@@ -8,6 +8,7 @@ import {
   createSetupLinkToken,
   mayChangeSecondFactors,
   mayDeleteAccount,
+  readAssurance,
   redeemSetupLink,
   storeSetupLinkToken,
 } from './second-factor.server.ts'
@@ -115,6 +116,22 @@ test.each([
     const secondFactors = { passkeys: [], hasAuthenticatorApp }
 
     expect(mayChangeSecondFactors(assurance, secondFactors)).toBe(mayChange)
+  },
+)
+
+test.each([
+  { assurance: `SECOND_FACTOR`, hours: 11, counted: `SECOND_FACTOR` },
+  { assurance: `SECOND_FACTOR`, hours: 12, counted: `PASSWORD` },
+  { assurance: `SETUP_LINK`, hours: 12, counted: `SETUP_LINK` },
+  { assurance: null, hours: 0, counted: `PASSWORD` },
+] as const)(
+  `a $assurance session that used a second factor $hours hours ago counts as $counted`,
+  ({ assurance, hours, counted }) => {
+    const secondFactorUsedAt = new Date(Date.now() - hours * 60 * 60 * 1000)
+
+    expect(
+      readAssurance({ id: `session-1`, assurance, secondFactorUsedAt }),
+    ).toBe(counted)
   },
 )
 
@@ -277,4 +294,22 @@ test(`a setup link expires after an hour`, async () => {
   )
 
   expect(redeemed).toBe(false)
+})
+
+test(`a setup link works in a session whose second factor was used too long ago`, async () => {
+  const admin = await signInAdmin()
+  const { id: sessionId } = await prisma.session.findFirstOrThrow({
+    where: { educatorId: admin.educatorId },
+  })
+  await prisma.session.update({
+    where: { id: sessionId },
+    data: { assurance: `SECOND_FACTOR`, secondFactorUsedAt: new Date(0) },
+  })
+  const token = await addSetupLink(admin.educatorId)
+
+  await redeemSetupLink(token, admin.educatorId, sessionId)
+
+  await expect(readAssurances(admin.educatorId)).resolves.toStrictEqual([
+    `SETUP_LINK`,
+  ])
 })

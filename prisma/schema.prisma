@@ -56,16 +56,18 @@ enum SessionAssurance {
 }
 
 model Session {
-  id         String           @id
-  expiresAt  DateTime
-  token      String           @unique
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  ipAddress  String?
-  userAgent  String?
-  assurance  SessionAssurance @default(PASSWORD)
-  educatorId String
-  educator   Educator         @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+  id                 String           @id
+  expiresAt          DateTime
+  token              String           @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  ipAddress          String?
+  userAgent          String?
+  assurance          SessionAssurance @default(PASSWORD)
+  /// When the session last used a second factor
+  secondFactorUsedAt DateTime?
+  educatorId         String
+  educator           Educator         @relation(fields: [educatorId], references: [id], onDelete: Cascade)
 
   @@index([educatorId])
 }

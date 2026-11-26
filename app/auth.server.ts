@@ -321,6 +321,7 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      secondFactorUsedAt: { type: `date`, required: false, input: false },
     },
   },
   plugins: [
@@ -375,7 +376,10 @@ export const auth = betterAuth({
               ipAddress: null,
               userAgent: null,
               ...(ctx && SECOND_FACTOR_SIGN_IN_PATHS.has(ctx.path)
-                ? { assurance: `SECOND_FACTOR` }
+                ? {
+                    assurance: `SECOND_FACTOR`,
+                    secondFactorUsedAt: new Date(),
+                  }
                 : {}),
             },
           }),

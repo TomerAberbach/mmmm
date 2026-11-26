@@ -143,6 +143,11 @@ export default [
       route(`organizations/delete`, `routes/admin.organizations.delete.ts`),
       route(`contests/hand-over`, `routes/admin.contests.hand-over.ts`),
       route(`contests`, `routes/admin.contests.tsx`),
+      route(`contests/:contestId`, `routes/admin.contests.$contestId.tsx`),
+      route(
+        `contests/:contestId/erase`,
+        `routes/admin.contests.$contestId.erase.ts`,
+      ),
       route(`contests/hidden`, `routes/admin.contests.hidden.ts`),
       route(`organizations`, `routes/admin.organizations.tsx`),
       route(`organizations/rename`, `routes/admin.organizations.rename.ts`),

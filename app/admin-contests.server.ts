@@ -76,6 +76,38 @@ export const readAdminContests = async (
 const describe = (organization: Organization | null): string | null =>
   organization && describeOrganization(organization)
 
+export type AdminPlayer = {
+  id: string
+  displayName: string
+  isInTrash: boolean
+}
+
+/** A contest's players by name, with those in the trash. Null when it's gone */
+export const readAdminPlayers = async (
+  contestId: string,
+): Promise<{ name: string; year: number; players: AdminPlayer[] } | null> => {
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId, ...CONTEST_OUTSIDE_TRASH },
+    select: {
+      name: true,
+      year: true,
+      players: {
+        orderBy: [{ displayName: `asc` }, { id: `asc` }],
+        select: { id: true, displayName: true, deletedAt: true },
+      },
+    },
+  })
+  return (
+    contest && {
+      ...contest,
+      players: contest.players.map(({ deletedAt, ...player }) => ({
+        ...player,
+        isInTrash: deletedAt !== null,
+      })),
+    }
+  )
+}
+
 /** Returns whether the contest is outside the trash */
 export const setContestHidden = async (
   contestId: string,
