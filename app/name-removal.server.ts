@@ -1,9 +1,8 @@
-import { withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { UNNAMED_PLAYER } from './leaderboard-row.ts'
-import { lockPlayers } from './lock-players.server.ts'
 import { readArizonaDate } from './year.ts'
+import { withCurrentYearAlone } from './years.server.ts'
 
 /**
  * Removes the display names of players in tournaments that ended two years ago
@@ -24,7 +23,6 @@ export const removeExpiredNames = async (now: Date): Promise<number> => {
   }
   // Alone, since a submission locks its rows in another order
   return withCurrentYearAlone(async tx => {
-    await lockPlayers(tx)
     await tx.report.deleteMany({ where: { player: expired } })
     const { count } = await tx.player.updateMany({
       where: expired,

@@ -1,4 +1,3 @@
-import { withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { changeContests, editablePlayers } from './editable-contests.server.ts'
 import type { EditableContests } from './editable-contests.server.ts'
@@ -12,6 +11,7 @@ import {
   PLAYER_OUTSIDE_TRASH,
 } from './outside-trash.server.ts'
 import { readEraseCutoff } from './trash.ts'
+import { withCurrentYearAlone } from './years.server.ts'
 
 /** A player in a contest's trash. `status` is null for a draft */
 export type DeletedPlayer = {

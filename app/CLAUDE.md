@@ -161,11 +161,12 @@ app
   champion
 - Only an open year, current and not locked, takes new contests, players, and
   picks. Run a transaction that depends on it with `withCurrentYear` from
-  `brackets.server.ts`, and check it with `isOpen`. Such writes share one lock,
+  `years.server.ts`, and check it with `isOpen`. Such writes share one lock,
   which publishing, results, renames, and moves take alone with
-  `withCurrentYearAlone`, so none interleaves with them.
-  `saveUnpublishedBracket` shares it and takes a lock on its year, so saves of
-  different years and pick writes run alongside it
+  `withCurrentYearAlone`, so none interleaves with them. Writes to many players
+  at once take it alone too, since they lock rows in another order than one
+  contest's changes do. `saveUnpublishedBracket` shares it and takes a lock on
+  its year, so saves of different years and pick writes run alongside it
 - Post the year an admin page shows with each of its forms, and refuse another
   one, since the years the admin manages move on with results
 - Change results only through `results.server.ts`. A request holds what the

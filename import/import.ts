@@ -2,24 +2,20 @@ import { emailSchema } from '../app/auth-forms.ts'
 import { bracketInputSchema } from '../app/bracket-input.ts'
 import type { BracketInput, CombatantPlace } from '../app/bracket-input.ts'
 import { toSeedSlotKey } from '../app/bracket.ts'
-import {
-  insertBracket,
-  lockYears,
-  readBracketRows,
-} from '../app/brackets.server.ts'
+import { insertBracket, readBracketRows } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import { freeAddress } from '../app/educator-deletion.server.ts'
 import { CONTEST_NAME, DISPLAY_NAME } from '../app/free-text.ts'
 import type { Prisma } from '../app/generated/prisma/client.ts'
 import { UNNAMED_PLAYER } from '../app/leaderboard-row.ts'
 import { normalizeEmail } from '../app/limits.server.ts'
-import { lockPlayers } from '../app/lock-players.server.ts'
 import { readNameRemovalYear } from '../app/name-removal.server.ts'
 import { ensureOrganization } from '../app/organizations.server.ts'
 import { storeScores } from '../app/scores.server.ts'
 import { createSecret, hashSecret } from '../app/secrets.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket } from '../app/seeded-bracket.ts'
+import { lockYears } from '../app/years.server.ts'
 import type {
   OldBracket,
   OldClass,
@@ -90,7 +86,6 @@ const importInTransaction = async (
 ): Promise<void> => {
   // The import changes which years exist, are current, and are locked
   await lockYears(tx, `UPDATE`)
-  await lockPlayers(tx)
   await refuseOnceInUse(tx, data)
   await removeEarlierImport(tx, data)
   const educatorIds = await importEducators(tx, data, report)

@@ -1,6 +1,5 @@
 import { href, Link } from 'react-router'
 import type { Route } from './+types/contests.$contestId.ts'
-import { isOpenYear } from '~/brackets.server.ts'
 import { ContestDetails } from '~/components/contest-details.tsx'
 import { ContestShares } from '~/components/contest-shares.tsx'
 import { ReadOnlyContest } from '~/components/read-only-contest.tsx'
@@ -11,6 +10,7 @@ import { readPastYear } from '~/past-years.server.ts'
 import { readColleagues } from '~/shares.server.ts'
 import type { Colleague } from '~/shares.server.ts'
 import { countDeletedPlayers } from '~/trash.server.ts'
+import { isOpenYear } from '~/years.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const { access, contest } = readViewableContest(context)

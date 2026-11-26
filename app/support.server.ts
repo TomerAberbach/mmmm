@@ -1,11 +1,10 @@
-import { withCurrentYear, withCurrentYearAlone } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { deleteEmailedLinks } from './educator-deletion.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
-import { lockPlayers } from './lock-players.server.ts'
 import { describeOrganization } from './organizations.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
+import { withCurrentYear, withCurrentYearAlone } from './years.server.ts'
 
 export type FoundEducator = {
   id: string
@@ -95,7 +94,6 @@ const deleteOrganizationRows = (
 ): Promise<{ educatorIds: string[] } | `GONE` | `OWN`> =>
   // Alone, since changes to one contest lock its rows in another order
   withCurrentYearAlone(async tx => {
-    await lockPlayers(tx)
     // A contest created or orphaned meanwhile would keep the organization
     await tx.$queryRaw`
       SELECT 1 FROM "Educator"

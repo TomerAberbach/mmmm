@@ -2,7 +2,6 @@ import type { Submission } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
-import { isOpenYear } from '~/brackets.server.ts'
 import { brokenLink } from '~/broken-link.ts'
 import {
   NOT_OPEN_MESSAGE,
@@ -22,6 +21,7 @@ import {
 import { displayNameSchema } from '~/player-forms.ts'
 import { limitNewPlayer } from '~/player-limits.server.ts'
 import { createPlayer } from '~/players.server.ts'
+import { isOpenYear } from '~/years.server.ts'
 
 /**
  * The prompt leaves the player's cookie as it is, because the next person on

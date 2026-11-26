@@ -1,9 +1,9 @@
 import { data } from 'react-router'
-import { readCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { sharedWith } from './shares.server.ts'
+import { readCurrentYear } from './years.server.ts'
 
 /** A past year, and the current year its banner links back to */
 export type PastYear = { year: number; currentYear: number }

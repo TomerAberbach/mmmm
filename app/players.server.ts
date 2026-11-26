@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
-import { isOpen, isOpenYear, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
 import type { LimitRefusal } from './limits.server.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 import { readEraseTime } from './trash.ts'
+import { isOpen, isOpenYear, withCurrentYear } from './years.server.ts'
 
 export type NewPlayer =
   | { secret: string }

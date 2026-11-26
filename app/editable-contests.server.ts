@@ -1,6 +1,6 @@
-import { withCurrentYear } from './brackets.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
+import { withCurrentYear } from './years.server.ts'
 
 declare const EDITABLE: unique symbol
 

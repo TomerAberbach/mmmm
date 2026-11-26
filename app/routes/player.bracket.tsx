@@ -1,6 +1,5 @@
 import { href } from 'react-router'
 import type { Route } from './+types/player.bracket.ts'
-import { isOpenYear } from '~/brackets.server.ts'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
@@ -11,6 +10,7 @@ import { readPastYear } from '~/past-years.server.ts'
 import { readPlayContest, readRequiredPlayer } from '~/play-context.server.ts'
 import { readPlayerBracket } from '~/player-picks.server.ts'
 import { toPersonalLink } from '~/players.server.ts'
+import { isOpenYear } from '~/years.server.ts'
 
 /** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }
