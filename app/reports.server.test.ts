@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { addContest, addPlayer } from '../test/contests.ts'
+import { addContest, addPlayer } from '../prisma/fixtures.ts'
 import { createEducator } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
 import { prisma } from './db.server.ts'

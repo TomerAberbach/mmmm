@@ -5,7 +5,6 @@ import {
   bracketInputSchema,
   describeTakenName,
   isSameName,
-  listDivisionSeedSlots,
   listSeedSlots,
   toBracketSchema,
 } from './bracket-input.ts'
@@ -17,11 +16,11 @@ import {
   toBattleId,
   toBattleKey,
 } from './bracket.ts'
-import type { BattleRef, DivisionPosition } from './bracket.ts'
+import type { BattleRef } from './bracket.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
-import type { Combatant, StoredBracket } from './seeded-bracket.ts'
+import type { StoredBracket } from './seeded-bracket.ts'
 import { readUpcomingYear } from './year.ts'
 import {
   CURRENT_BRACKET,
@@ -498,30 +497,6 @@ export const replacePlaces = async (
     await tx.seedSlot.updateMany({ where, data: { combatantId } })
   }
 }
-
-export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
-
-/**
- * Each division's combatants in seed order, with the wild card's entrants at
- * its seed
- */
-export const listBracketCombatants = (
-  bracket: StoredBracket,
-): { position: DivisionPosition; name: string; combatants: CombatantRow[] }[] =>
-  DIVISION_POSITIONS.map(position => ({
-    position,
-    name: bracket.divisions[position].name,
-    combatants: listDivisionSeedSlots(bracket, position).flatMap(
-      ({ seed, combatant }): CombatantRow[] =>
-        combatant === undefined
-          ? bracket.wildCard.entrants.map(entrant => ({
-              ...entrant,
-              seed,
-              isWildCardEntrant: true,
-            }))
-          : [{ ...combatant, seed, isWildCardEntrant: false }],
-    ),
-  }))
 
 /**
  * Names the combatant `name`, which the route has checked, unless another

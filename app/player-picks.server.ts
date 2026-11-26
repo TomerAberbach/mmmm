@@ -33,14 +33,6 @@ type DraftAndSubmission = {
   hasClearedPicks: boolean
 }
 
-/** The player's draft, and their submission once they've submitted */
-export const readDraftAndSubmission = (
-  playerId: string,
-): Promise<DraftAndSubmission> =>
-  // One snapshot, so a concurrent submit can't pair one submission with
-  // another's picks
-  readSnapshot(tx => readDraftAndSubmissionRows(playerId, tx))
-
 /**
  * The player's picks with the bracket and results of their year, which must
  * have a bracket. One snapshot, so a concurrent move can't pair one
@@ -112,7 +104,7 @@ export type PicksRefusal = {
 export const savePlayerDraft = (
   playerId: string,
   picks: Picks,
-  arrangement?: string,
+  arrangement: string,
 ): Promise<{ saved: true } | PicksRefusal> =>
   withPlayerBracket(playerId, arrangement, async (tx, bracket, year) => {
     if (!arePicksConsistent(bracket, picks)) {
@@ -130,7 +122,7 @@ export const savePlayerDraft = (
 export const submitPlayerPicks = (
   playerId: string,
   picks: Picks,
-  arrangement?: string,
+  arrangement: string,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
   withPlayerBracket(playerId, arrangement, async (tx, bracket, year) => {
     if (!arePicksComplete(bracket, picks)) {
@@ -296,7 +288,7 @@ const withCurrentPlayer = <Result>(
  */
 const withPlayerBracket = <Result>(
   playerId: string,
-  arrangement: string | undefined,
+  arrangement: string,
   change: (
     tx: Prisma.TransactionClient,
     bracket: SeededBracket,
@@ -305,7 +297,7 @@ const withPlayerBracket = <Result>(
 ): Promise<Result | PicksRefusal> =>
   withCurrentPlayer(playerId, async (tx, year) => {
     const bracket = await readBracketRows(year, tx)
-    return arrangement !== undefined && arrangement !== readArrangement(bracket)
-      ? ({ refusal: `MOVED` } as const)
-      : change(tx, toSeededBracket(bracket), year)
+    return arrangement === readArrangement(bracket)
+      ? change(tx, toSeededBracket(bracket), year)
+      : ({ refusal: `MOVED` } as const)
   })

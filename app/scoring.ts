@@ -1,9 +1,9 @@
 import { BATTLE_COUNTS, ROUNDS, toBattleKey } from './bracket.ts'
 import type { BattleRef, Round } from './bracket.ts'
-import { listContenders } from './picks.ts'
 import type { Results } from './results.ts'
 import { listOriginalIds } from './seeded-bracket.ts'
 import type { SeededBracket } from './seeded-bracket.ts'
+import { listContenders } from './winners.ts'
 
 /** The points for a right pick of one of the round's battles */
 export const ROUND_POINTS: Record<Round, number> = {

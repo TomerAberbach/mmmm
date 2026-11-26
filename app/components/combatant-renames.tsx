@@ -7,56 +7,76 @@ import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
 import { useValidatedForm } from './use-validated-form.ts'
 import { renameSchema } from '~/bracket-admin-forms.ts'
-import { POSITION_LABELS, ROUND_NAMES } from '~/bracket.ts'
+import { listDivisionSeedSlots } from '~/bracket-input.ts'
+import { DIVISION_POSITIONS, POSITION_LABELS, ROUND_NAMES } from '~/bracket.ts'
 import type { DivisionPosition } from '~/bracket.ts'
-import type { CombatantRow } from '~/brackets.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
-import type { Combatant } from '~/seeded-bracket.ts'
-
-type DivisionCombatants = {
-  position: DivisionPosition
-  name: string
-  combatants: CombatantRow[]
-}
+import { listMerges, toSeededBracket } from '~/seeded-bracket.ts'
+import type { Combatant, StoredBracket } from '~/seeded-bracket.ts'
 
 /** Renames a published bracket's combatants */
 export const CombatantRenames = ({
   year,
-  divisions,
-  merges,
+  bracket,
 }: {
   year: number
-  divisions: DivisionCombatants[]
-  merges: Combatant[]
-}) => (
-  <section className='flex flex-col gap-4'>
-    <h2 className={SECTION_HEADING_CLASS_NAME}>Combatants</h2>
-    <p className='max-w-prose text-muted'>
-      Rename a combatant to fix a typo or match ASU’s spelling. Every bracket
-      shows the new name.
-    </p>
-    <div className='grid items-start gap-6 lg:grid-cols-2'>
-      {divisions.map(({ position, name, combatants }) => (
-        <RenameGroup
-          key={position}
-          legend={`${POSITION_LABELS[position]}: ${name}`}
-          combatants={combatants}
-          year={year}
-        />
-      ))}
-      {merges.length > 0 ? (
-        <RenameGroup
-          legend='Merges'
-          combatants={merges.map(merge => ({
-            ...merge,
-            isWildCardEntrant: false,
-          }))}
-          year={year}
-        />
-      ) : null}
-    </div>
-  </section>
-)
+  bracket: StoredBracket
+}) => {
+  const merges = listMerges(toSeededBracket(bracket))
+  return (
+    <section className='flex flex-col gap-4'>
+      <h2 className={SECTION_HEADING_CLASS_NAME}>Combatants</h2>
+      <p className='max-w-prose text-muted'>
+        Rename a combatant to fix a typo or match ASU’s spelling. Every bracket
+        shows the new name.
+      </p>
+      <div className='grid items-start gap-6 lg:grid-cols-2'>
+        {listDivisions(bracket).map(({ position, name, combatants }) => (
+          <RenameGroup
+            key={position}
+            legend={`${POSITION_LABELS[position]}: ${name}`}
+            combatants={combatants}
+            year={year}
+          />
+        ))}
+        {merges.length > 0 ? (
+          <RenameGroup
+            legend='Merges'
+            combatants={merges.map(merge => ({
+              ...merge,
+              isWildCardEntrant: false,
+            }))}
+            year={year}
+          />
+        ) : null}
+      </div>
+    </section>
+  )
+}
+
+type CombatantRow = Combatant & { isWildCardEntrant: boolean }
+
+/**
+ * Each division's combatants in seed order, with the wild card's entrants at
+ * its seed
+ */
+const listDivisions = (
+  bracket: StoredBracket,
+): { position: DivisionPosition; name: string; combatants: CombatantRow[] }[] =>
+  DIVISION_POSITIONS.map(position => ({
+    position,
+    name: bracket.divisions[position].name,
+    combatants: listDivisionSeedSlots(bracket, position).flatMap(
+      ({ seed, combatant }): CombatantRow[] =>
+        combatant === undefined
+          ? bracket.wildCard.entrants.map(entrant => ({
+              ...entrant,
+              seed,
+              isWildCardEntrant: true,
+            }))
+          : [{ ...combatant, seed, isWildCardEntrant: false }],
+    ),
+  }))
 
 const RenameGroup = ({
   legend,

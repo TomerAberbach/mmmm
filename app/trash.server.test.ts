@@ -1,13 +1,12 @@
 import { expect, test } from 'vitest'
+import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
 import {
-  addContest,
-  addPlayer,
   addSubmission,
   createContestInNewYear,
   readEducatorId,
-  readLinkSecret,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
+import { saveDraft } from '../test/player-picks.ts'
 import { addYear } from '../test/years.ts'
 import {
   readContestPlayers,
@@ -16,7 +15,6 @@ import {
 } from './contest-players.server.ts'
 import { readEducatorContest, readEducatorContests } from './contests.server.ts'
 import { prisma } from './db.server.ts'
-import { savePlayerDraft } from './player-picks.server.ts'
 import {
   createPlayer,
   readContestPlayer,
@@ -79,7 +77,7 @@ test(`a deleted player can't be changed outside the trash`, async () => {
     `REJECTED`,
   )
   const renamed = await renamePlayer(educatorId, contestId, playerId, `Bo`)
-  const saved = await savePlayerDraft(playerId, {})
+  const saved = await saveDraft(playerId, {})
 
   expect([changed, renamed, saved]).toStrictEqual([
     0,
@@ -294,7 +292,7 @@ test(`a deleted contest takes no players or picks`, async () => {
     `Jonah K.`,
     () => Promise.resolve(undefined),
   )
-  const saved = await savePlayerDraft(playerId, {})
+  const saved = await saveDraft(playerId, {})
 
   expect([created, saved]).toStrictEqual([
     { refusal: `CONTEST_DELETED` },

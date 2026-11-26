@@ -1,7 +1,6 @@
 import { expect, test } from 'vitest'
+import { addContest, addPlayer } from '../prisma/fixtures.ts'
 import {
-  addContest,
-  addPlayer,
   addSubmission,
   createContestInNewYear,
   readEducatorId,

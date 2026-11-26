@@ -1,22 +1,14 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import type { ComponentProps } from 'react'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
+import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { storeTestBracket } from '../../test/picks.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import { renameSchema } from '../bracket-admin-forms.ts'
 import { CombatantRenames } from './combatant-renames.tsx'
 
-const DIVISIONS: ComponentProps<typeof CombatantRenames>[`divisions`] = [
-  {
-    position: `TOP_LEFT`,
-    name: `Same & Different`,
-    combatants: [
-      { id: `deer`, name: `Thorold’s Deer`, seed: 1, isWildCardEntrant: false },
-      { id: `bear`, name: `Sun Bear`, seed: 2, isWildCardEntrant: false },
-    ],
-  },
-]
+const BRACKET = storeTestBracket(BRACKET_2025)
 
 /**
  * Renders the list with a rename action that refuses every name with `error`,
@@ -27,9 +19,7 @@ const renderRenames = async (error?: string) => {
     [
       {
         path: `/admin/bracket`,
-        Component: () => (
-          <CombatantRenames year={2026} merges={[]} divisions={DIVISIONS} />
-        ),
+        Component: () => <CombatantRenames year={2026} bracket={BRACKET} />,
       },
       {
         path: `/admin/bracket/rename`,
@@ -50,12 +40,10 @@ const renderRenames = async (error?: string) => {
 test(`renaming one combatant keeps another's name open`, async () => {
   await renderRenames()
 
-  await page.getByRole(`button`, { name: `Rename Thorold’s Deer` }).click()
+  await page.getByRole(`button`, { name: `Rename Gelada` }).click()
   await page.getByRole(`button`, { name: `Rename Sun Bear` }).click()
 
-  await expect
-    .element(page.getByLabelText(`New name for Thorold’s Deer`))
-    .toBeVisible()
+  await expect.element(page.getByLabelText(`New name for Gelada`)).toBeVisible()
   await expect
     .element(page.getByLabelText(`New name for Sun Bear`))
     .toHaveFocus()
@@ -78,12 +66,9 @@ test(`a refused rename shows why under the name`, async () => {
   await renderRenames(
     `Sun Bear is already a combatant. Give each combatant its own name`,
   )
-  await page.getByRole(`button`, { name: `Rename Thorold’s Deer` }).click()
+  await page.getByRole(`button`, { name: `Rename Gelada` }).click()
 
-  await userEvent.fill(
-    page.getByLabelText(`New name for Thorold’s Deer`),
-    `sun bear`,
-  )
+  await userEvent.fill(page.getByLabelText(`New name for Gelada`), `sun bear`)
   await page.getByRole(`button`, { name: `Save` }).click()
 
   await expect
@@ -91,4 +76,17 @@ test(`a refused rename shows why under the name`, async () => {
       page.getByText(`Sun Bear is already a combatant`, { exact: false }),
     )
     .toBeVisible()
+})
+
+test(`the wild card's entrants are listed at its seed`, async () => {
+  await renderRenames()
+
+  const rows = page.getByRole(`listitem`)
+
+  await expect
+    .element(rows.filter({ hasText: `Northern Flying Squirrel` }))
+    .toHaveTextContent(`14Northern Flying SquirrelWild cardRename`)
+  await expect
+    .element(rows.filter({ hasText: `Flying Frog` }))
+    .toHaveTextContent(`14Flying FrogWild cardRename`)
 })

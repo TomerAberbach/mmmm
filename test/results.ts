@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto'
 import type { BattleRef } from '../app/bracket.ts'
 import { readBracket, readResultRows } from '../app/brackets.server.ts'
 import { readArrangement } from '../app/moves.ts'
-import { listContenders } from '../app/picks.ts'
 import type { ResultRequest } from '../app/result-request.ts'
 import { saveResult } from '../app/results.server.ts'
 import { readMergeMembers } from '../app/results.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket } from '../app/seeded-bracket.ts'
+import { listContenders } from '../app/winners.ts'
 import { CHAMPIONSHIP, ROUND_1_FIRST } from './picks.ts'
 
 /** The year must have a bracket */

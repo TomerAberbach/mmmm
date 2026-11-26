@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from 'vitest'
-import {
-  addContest,
-  addPlayer,
-  addSubmission,
-  readLinkSecret,
-} from '../test/contests.ts'
+import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
+import { addSubmission } from '../test/contests.ts'
 import { createEducator, createMember } from '../test/educators.ts'
 import { addYear, setLocked } from '../test/years.ts'
 import { prisma } from './db.server.ts'

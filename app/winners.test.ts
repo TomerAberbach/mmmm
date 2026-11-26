@@ -1,0 +1,118 @@
+import { expect, test } from 'vitest'
+import { BRACKET_2025 } from '../prisma/brackets.ts'
+import {
+  CHAMPIONSHIP,
+  findCombatantId,
+  ROUND_1_FIRST,
+  seedTestBracket,
+} from '../test/picks.ts'
+import { toBattleKey } from './bracket.ts'
+import type { BattleRef } from './bracket.ts'
+import { listContenders, setWinner } from './winners.ts'
+
+const BRACKET = seedTestBracket(BRACKET_2025)
+
+const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
+/**
+ * 2025's wild card fills seed 14 of the top left division, which plays seed 3
+ */
+const WILD_CARD_ROUND_1: BattleRef = { round: `ROUND_1`, index: 5 }
+
+const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST).map(
+  ({ id }) => id,
+) as [string, string]
+
+test(`picking a Round 1 winner picks only that battle`, () => {
+  const { winners: picks, cleared } = setWinner(
+    BRACKET,
+    {},
+    ROUND_1_FIRST,
+    SEED_1,
+  )
+
+  expect(picks).toStrictEqual({ [toBattleKey(ROUND_1_FIRST)]: SEED_1 })
+  expect(cleared).toStrictEqual([])
+})
+
+test(`picking a champion also picks every earlier win on its way there`, () => {
+  const { winners: picks } = setWinner(BRACKET, {}, CHAMPIONSHIP, SEED_16)
+
+  expect(picks).toStrictEqual({
+    'ROUND_1:0': SEED_16,
+    'ROUND_2:0': SEED_16,
+    'SWEET_16:0': SEED_16,
+    'ELITE_TRAIT:0': SEED_16,
+    'FINAL_ROAR:0': SEED_16,
+    'CHAMPIONSHIP:0': SEED_16,
+  })
+})
+
+test(`picking a wild card entrant past Round 1 also picks the wild card`, () => {
+  const entrant = findCombatantId(BRACKET, `Northern Flying Squirrel`)
+
+  const { winners: picks } = setWinner(BRACKET, {}, WILD_CARD_ROUND_1, entrant)
+
+  expect(picks).toStrictEqual({
+    'WILD_CARD:0': entrant,
+    'ROUND_1:5': entrant,
+  })
+})
+
+test(`changing a pick clears the later picks that depended on it`, () => {
+  const { winners: championPicks } = setWinner(
+    BRACKET,
+    {},
+    CHAMPIONSHIP,
+    SEED_1,
+  )
+
+  const { winners: picks, cleared } = setWinner(
+    BRACKET,
+    championPicks,
+    ROUND_1_FIRST,
+    SEED_16,
+  )
+
+  expect(picks).toStrictEqual({ 'ROUND_1:0': SEED_16 })
+  expect(cleared.map(toBattleKey)).toStrictEqual([
+    `ROUND_2:0`,
+    `SWEET_16:0`,
+    `ELITE_TRAIT:0`,
+    `FINAL_ROAR:0`,
+    `CHAMPIONSHIP:0`,
+  ])
+})
+
+test(`changing a pick keeps the later picks that don't depend on it`, () => {
+  const otherWinner = findCombatantId(BRACKET, `Gelada`)
+  const { winners: before } = setWinner(BRACKET, {}, ROUND_2_FIRST, otherWinner)
+
+  const { winners: picks, cleared } = setWinner(
+    BRACKET,
+    before,
+    ROUND_1_FIRST,
+    SEED_1,
+  )
+
+  expect(picks[toBattleKey(ROUND_2_FIRST)]).toBe(otherWinner)
+  expect(cleared).toStrictEqual([])
+})
+
+test(`a combatant who can't reach a battle can't be picked to win it`, () => {
+  const gelada = findCombatantId(BRACKET, `Gelada`)
+
+  expect(() => setWinner(BRACKET, {}, ROUND_1_FIRST, gelada)).toThrow(
+    `${gelada} can't reach ROUND_1:0`,
+  )
+})
+
+test(`a battle lists every combatant who could win it`, () => {
+  const contenders = listContenders(BRACKET, ROUND_2_FIRST)
+
+  expect(contenders).toMatchObject([
+    { name: `Thorold’s Deer`, seed: 1 },
+    { name: `Olympic Marmot`, seed: 16 },
+    { name: `Gelada`, seed: 8 },
+    { name: `Eastern Grey Kangaroo`, seed: 9 },
+  ])
+})

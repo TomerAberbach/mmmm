@@ -1,15 +1,9 @@
 import { expect, test } from 'vitest'
-import {
-  addPlayer,
-  createContestInNewYear,
-  readEducatorId,
-} from '../test/contests.ts'
-import {
-  CHAMPIONSHIP,
-  pickEveryBattle,
-  ROUND_1_FIRST,
-  ROUND_2_FIRST,
-} from '../test/picks.ts'
+import { addPlayer } from '../prisma/fixtures.ts'
+import { pickEveryBattle } from '../prisma/pick-every-battle.ts'
+import { createContestInNewYear, readEducatorId } from '../test/contests.ts'
+import { CHAMPIONSHIP, ROUND_1_FIRST, ROUND_2_FIRST } from '../test/picks.ts'
+import { submitPicks } from '../test/player-picks.ts'
 import {
   crownChampion,
   makeFirstResult,
@@ -20,16 +14,15 @@ import { buildMarkedBracketView } from './bracket-view.ts'
 import { readResultRows } from './brackets.server.ts'
 import { readContestPlayers } from './contest-players.server.ts'
 import { prisma } from './db.server.ts'
-import { listContenders, pickWinner } from './picks.ts'
-import { submitPlayerPicks } from './player-picks.server.ts'
 import { saveResult } from './results.server.ts'
 import { readScorecard } from './scorecard.ts'
 import { deletePlayers } from './trash.server.ts'
+import { listContenders, setWinner } from './winners.ts'
 
 /** Submits the first contender of every battle */
 const submitFirstContenders = async (year: number, playerId: string) => {
   const picks = pickEveryBattle(await readSeededBracket(year))
-  await submitPlayerPicks(playerId, picks)
+  await submitPicks(playerId, picks)
   return picks
 }
 
@@ -104,15 +97,15 @@ test(`players are listed by score, then by when their picks last changed`, async
   const bracket = await readSeededBracket(year)
   const picks = pickEveryBattle(bracket)
   const upset = listContenders(bracket, ROUND_1_FIRST)[1]!.id
-  const upsetPicks = pickWinner(bracket, picks, CHAMPIONSHIP, upset).picks
+  const upsetPicks = setWinner(bracket, picks, CHAMPIONSHIP, upset).winners
   const [low, tied, tiedEarlier] = [
     await addPlayer(contestId, `Low`),
     await addPlayer(contestId, `Tied`),
     await addPlayer(contestId, `Tied earlier`),
   ]
-  await submitPlayerPicks(low.id, upsetPicks)
-  await submitPlayerPicks(tiedEarlier.id, picks)
-  await submitPlayerPicks(tied.id, picks)
+  await submitPicks(low.id, upsetPicks)
+  await submitPicks(tiedEarlier.id, picks)
+  await submitPicks(tied.id, picks)
 
   await saveResult(await makeFirstResult(year))
 
@@ -134,9 +127,9 @@ test(`a pick of either side of a merge scores wherever the merge wins`, async ()
   const playerIds = await Promise.all(
     [first, second].map(async combatant => {
       const { id } = await addPlayer(contestId)
-      await submitPlayerPicks(
+      await submitPicks(
         id,
-        pickWinner(bracket, picks, CHAMPIONSHIP, combatant!.id).picks,
+        setWinner(bracket, picks, CHAMPIONSHIP, combatant!.id).winners,
       )
       return id
     }),

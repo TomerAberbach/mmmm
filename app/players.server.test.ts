@@ -1,11 +1,6 @@
 import { expect, test, vi } from 'vitest'
-import {
-  addContest,
-  addPlayer,
-  createContestInNewYear,
-  readEducatorId,
-  readLinkSecret,
-} from '../test/contests.ts'
+import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
+import { createContestInNewYear, readEducatorId } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
 import { replaceContestLink } from './contests.server.ts'

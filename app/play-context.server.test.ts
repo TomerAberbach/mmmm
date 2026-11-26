@@ -1,10 +1,7 @@
 import { href, RouterContextProvider } from 'react-router'
 import { expect, test } from 'vitest'
-import {
-  addPlayer,
-  addSubmission,
-  createContestInNewYear,
-} from '../test/contests.ts'
+import { addPlayer } from '../prisma/fixtures.ts'
+import { addSubmission, createContestInNewYear } from '../test/contests.ts'
 import { setLocked } from '../test/years.ts'
 import type { SubmissionStatus } from './generated/prisma/client.ts'
 import {

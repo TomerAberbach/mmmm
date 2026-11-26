@@ -1,17 +1,12 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.results.ts'
-import {
-  listBracketCombatants,
-  readAdminYears,
-  readBracketAndResults,
-} from '~/brackets.server.ts'
+import { readAdminYears, readBracketAndResults } from '~/brackets.server.ts'
 import { CombatantMoves } from '~/components/combatant-moves.tsx'
 import { CombatantRenames } from '~/components/combatant-renames.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { ResultsEditor } from '~/components/results-editor.tsx'
 import { readArrangement } from '~/moves.ts'
-import { listMerges, toSeededBracket } from '~/seeded-bracket.ts'
 
 /** The diagram needs more room than other pages */
 export const handle = { fullWidth: true }
@@ -23,19 +18,11 @@ export const loader = async () => {
     return redirect(href(`/admin`))
   }
   const { year, summary } = current
-  const { bracket, results } = await readBracketAndResults(year)
-  return {
-    year,
-    summary,
-    bracket,
-    results,
-    divisions: listBracketCombatants(bracket),
-    merges: listMerges(toSeededBracket(bracket)),
-  }
+  return { year, summary, ...(await readBracketAndResults(year)) }
 }
 
 const AdminResults = ({
-  loaderData: { year, summary, bracket, results, divisions, merges },
+  loaderData: { year, summary, bracket, results },
 }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
@@ -51,7 +38,7 @@ const AdminResults = ({
       isLocked={summary.phase !== `OPEN`}
     />
     <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
-      <CombatantRenames year={year} divisions={divisions} merges={merges} />
+      <CombatantRenames year={year} bracket={bracket} />
       <CombatantMoves
         key={year}
         year={year}
