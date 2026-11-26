@@ -36,9 +36,11 @@ export const AdminPlayerList = ({
             fields={{ playerId: id }}
           >
             <p>
-              Their bracket and score leave every leaderboard, and their
-              personal link stops working. This can’t be undone, though backups
-              keep the data for up to 30 days.
+              {isInTrash
+                ? null
+                : `Their bracket and score leave every leaderboard, and their personal link stops working. `}
+              This can’t be undone, though backups keep the data for up to 30
+              days.
             </p>
           </ConfirmDialog>
         </li>
