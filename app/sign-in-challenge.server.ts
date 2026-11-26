@@ -11,6 +11,9 @@ import type { FormRejection } from './form-replies.server.ts'
  */
 const SIGN_IN_AGAIN = `${href(`/sign-in`)}?challenge-expired`
 
+/** The notice for a sign-in that ran out of codes */
+const TOO_MANY_CODES = `${href(`/sign-in`)}?too-many-codes`
+
 /** Signs in once `verify` accepts the code, or answers why it didn't */
 export const answerSignInChallenge = async (
   submission: Submission<{ code: string }>,
@@ -29,8 +32,9 @@ export const answerSignInChallenge = async (
 }
 
 /**
- * Answers a code Better Auth refused: a wrong code, a challenge that ran out,
- * or an account locked after too many wrong codes
+ * Answers a code Better Auth refused: a wrong code, a challenge that ran out
+ * of time or codes, an authenticator app that was removed meanwhile, a recovery
+ * code another tab was using, or an account locked after too many wrong codes
  */
 const rejectChallenge = (
   submission: Submission<{ code: string }>,
@@ -43,9 +47,16 @@ const rejectChallenge = (
       fieldErrors: { code: [invalidMessage] },
     })
   }
+  if (code === `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE`) {
+    return redirect(TOO_MANY_CODES)
+  }
   if (
     code === `INVALID_TWO_FACTOR_COOKIE` ||
-    code === `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE`
+    code === `TOTP_NOT_ENABLED` ||
+    code === `BACKUP_CODES_NOT_ENABLED` ||
+    // Another sign-in used a recovery code meanwhile. Better Auth refuses every
+    // later code of this one
+    (error instanceof APIError && error.status === `CONFLICT`)
   ) {
     return redirect(SIGN_IN_AGAIN)
   }
@@ -53,7 +64,9 @@ const rejectChallenge = (
     ? rejectForm(
         submission,
         {
-          formErrors: [`Too many incorrect codes. Try again in 15 minutes`],
+          formErrors: [
+            `Too many incorrect codes. Wait up to 15 minutes, then try again`,
+          ],
         },
         { status: 429 },
       )

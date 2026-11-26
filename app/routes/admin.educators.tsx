@@ -1,16 +1,22 @@
 import { getFormProps } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
-import { Form } from 'react-router'
+import { Form, href } from 'react-router'
 import type { Route } from './+types/admin.educators.ts'
 import { Button } from '~/components/button.tsx'
 import { EducatorSupport } from '~/components/educator-support.tsx'
 import { FormError } from '~/components/form-error.tsx'
+import { Notice } from '~/components/notice.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { fieldProps, TextField } from '~/components/text-field.tsx'
 import { useValidatedForm } from '~/components/use-validated-form.ts'
 import { rejectForm } from '~/form-replies.server.ts'
 import { addressSchema } from '~/support-forms.ts'
 import { findEducator } from '~/support.server.ts'
+
+/** Deleting an account returns here with `deleted` */
+export const loader = ({ request }: Route.LoaderArgs) => ({
+  isDeleted: new URL(request.url).searchParams.has(`deleted`),
+})
 
 /** A form's post, so an address never appears in the page's own address */
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -28,7 +34,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       })
 }
 
-const AdminEducators = ({ actionData }: Route.ComponentProps) => {
+const AdminEducators = ({ loaderData, actionData }: Route.ComponentProps) => {
   const { form, fields, isSubmitting } = useValidatedForm(
     addressSchema,
     actionData?.result,
@@ -38,8 +44,12 @@ const AdminEducators = ({ actionData }: Route.ComponentProps) => {
   return (
     <div className='flex max-w-xl flex-col gap-8'>
       <PageTitle>Educators</PageTitle>
+      {loaderData.isDeleted && !actionData ? (
+        <Notice kind='status'>The account is deleted</Notice>
+      ) : null}
       <Form
         method='post'
+        action={href(`/admin/educators`)}
         {...getFormProps(form)}
         className='flex flex-col gap-4'
       >

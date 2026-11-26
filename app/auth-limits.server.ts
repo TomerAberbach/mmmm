@@ -36,37 +36,55 @@ const EMAIL_SENDING_LIMIT: Limit = {
   duration: HOUR,
 }
 
+const PASSWORD_LIMIT: Limit = {
+  perEmailAndIp: 10,
+  perIp: 100,
+  duration: 15 * MINUTE,
+  refundsSuccess: true,
+}
+
 const LIMITS: Record<string, Limit> = {
-  '/sign-in/email': {
-    perEmailAndIp: 10,
-    perIp: 100,
-    duration: 15 * MINUTE,
-    refundsSuccess: true,
-  },
-  '/change-password': {
-    perEmailAndIp: 10,
-    perIp: 100,
-    duration: 15 * MINUTE,
-    refundsSuccess: true,
-  },
+  '/sign-in/email': PASSWORD_LIMIT,
   '/sign-up/email': EMAIL_SENDING_LIMIT,
   '/request-password-reset': EMAIL_SENDING_LIMIT,
   '/send-verification-email': EMAIL_SENDING_LIMIT,
 }
 
+/**
+ * Every path that checks a signed-in educator's password. They share one count,
+ * since each guess at any of them is a guess at the same password
+ */
+export const PASSWORD_PROMPT_PATHS: ReadonlySet<string> = new Set([
+  `/change-password`,
+  `/verify-password`,
+  `/two-factor/enable`,
+  `/two-factor/disable`,
+  `/two-factor/generate-backup-codes`,
+  `/two-factor/get-totp-uri`,
+])
+
 /** Counts stay in memory only, so no IP address is ever stored */
-const LIMITERS = new Map(
-  Object.entries(LIMITS).map(
-    ([path, { perEmailAndIp, perIp, duration, refundsSuccess = false }]) => [
-      path,
-      {
-        refundsSuccess,
-        emailAndIp: new RateLimiterMemory({ points: perEmailAndIp, duration }),
-        ip: new RateLimiterMemory({ points: perIp, duration }),
-      },
-    ],
+const createLimiters = ({
+  perEmailAndIp,
+  perIp,
+  duration,
+  refundsSuccess,
+}: Limit) => ({
+  refundsSuccess,
+  emailAndIp: new RateLimiterMemory({ points: perEmailAndIp, duration }),
+  ip: new RateLimiterMemory({ points: perIp, duration }),
+})
+
+const PASSWORD_PROMPT_LIMITERS = createLimiters(PASSWORD_LIMIT)
+
+const LIMITERS = new Map([
+  ...Object.entries(LIMITS).map(
+    ([path, limit]) => [path, createLimiters(limit)] as const,
   ),
-)
+  ...[...PASSWORD_PROMPT_PATHS].map(
+    path => [path, PASSWORD_PROMPT_LIMITERS] as const,
+  ),
+])
 
 type AuthRequest = {
   path: string

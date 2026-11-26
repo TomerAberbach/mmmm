@@ -1,5 +1,5 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { href, redirect } from 'react-router'
+import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/admin.bracket.ts'
 import {
   bracketFormSchema,
@@ -17,6 +17,7 @@ import { BracketSetupForm } from '~/components/bracket-setup-form.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
+import { readLostSessionMessage } from '~/lost-session.ts'
 
 /** Only for a year to set up. The current year's bracket is with its results */
 export const loader = async () => {
@@ -50,6 +51,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
     : rejectForm(submission, {
         formErrors: [`This bracket can’t change here now. Reload the page`],
       })
+}
+
+/**
+ * Keeps the typed names when the session ran out. The error status stops the
+ * loaders from running again, whose redirect would leave the page
+ */
+export const clientAction = async ({
+  request,
+  serverAction,
+}: Route.ClientActionArgs) => {
+  const formData = await request.clone().formData()
+  try {
+    return await serverAction()
+  } catch (error) {
+    const message = readLostSessionMessage(error)
+    if (message === undefined) {
+      throw error
+    }
+    const submission = parseWithZod(formData, { schema: bracketFormSchema })
+    return data(
+      { result: submission.reply({ formErrors: [message] }) },
+      { status: 401 },
+    )
+  }
 }
 
 const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (

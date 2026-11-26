@@ -18,17 +18,19 @@ const WHY = `Admins sign in with a second step, so a stolen password alone canâ€
 export const SetupLinkRequest = ({
   email,
   linkInvalid,
-  isSent,
+  sending,
 }: {
   email: string
   /** Whether the page opened from a link that expired or was used */
   linkInvalid: boolean
-  isSent: boolean
+  /** Whether the last submission sent a link. Missing before the first */
+  sending?: `sent` | `email-limit`
 }) => {
   const isSubmitting = useIsSubmitting()
   // A new submission hides the last one's result until it answers
   const state =
-    isSent && !isSubmitting ? `sent` : linkInvalid ? `link-invalid` : `unsent`
+    (isSubmitting ? undefined : sending) ??
+    (linkInvalid ? `link-invalid` : `unsent`)
   return (
     <div className='flex max-w-md flex-col gap-6'>
       <PageTitle>Set up a second factor</PageTitle>
@@ -58,6 +60,11 @@ export const SetupLinkRequest = ({
           <Notice kind='status'>
             We emailed you a setup link. It expires in{` `}
             {SETUP_LINK_EXPIRES_IN_HOURS} hour.
+          </Notice>
+        ) : null}
+        {state === `email-limit` ? (
+          <Notice kind='alert'>
+            This address got too many emails. Try again in an hour
           </Notice>
         ) : null}
       </Form>

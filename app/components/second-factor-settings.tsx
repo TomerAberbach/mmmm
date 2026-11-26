@@ -28,6 +28,7 @@ export const SecondFactorSettings = ({
   recoveryCodesLeft,
 }: SecondFactorSettingsData) => {
   const canAdd = isAdmin && canChange
+  const hasSecondFactor = passkeys.length > 0 || recoveryCodesLeft !== undefined
   return (
     <SettingsSection title='Second factor'>
       {isAdmin ? (
@@ -39,8 +40,10 @@ export const SecondFactorSettings = ({
         <Notice kind='status'>
           {isAdmin ? (
             <>
-              Open the <Link to={href(`/admin`)}>admin area</Link> and use your
-              second factor before changing these.
+              Open the <Link to={href(`/admin`)}>admin area</Link>
+              {hasSecondFactor
+                ? ` and use your second factor before changing these.`
+                : ` to set one up.`}
             </>
           ) : (
             `Sign in with your passkey or authenticator app before changing these.`

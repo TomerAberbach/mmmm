@@ -63,7 +63,7 @@ export const action = async ({ context }: Route.ActionArgs) => {
   if (isSent) {
     await storeSetupLinkToken(educator.id, token)
   }
-  return { sent: true } as const
+  return { isSent }
 }
 
 const AdminSetup = ({ loaderData, actionData }: Route.ComponentProps) =>
@@ -71,7 +71,7 @@ const AdminSetup = ({ loaderData, actionData }: Route.ComponentProps) =>
     <SetupLinkRequest
       email={loaderData.email}
       linkInvalid={loaderData.linkInvalid}
-      isSent={actionData?.sent === true}
+      sending={actionData && (actionData.isSent ? `sent` : `email-limit`)}
     />
   ) : (
     <SecondFactorChoice />

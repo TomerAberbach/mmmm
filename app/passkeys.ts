@@ -23,14 +23,20 @@ export const addPasskey: PasskeyCeremony = () =>
 export const signInWithPasskey: PasskeyCeremony = () =>
   runCeremony(
     `That didn’t sign you in. Try again, or use your password`,
-    async () => {
-      const options = await fetchJson<PublicKeyCredentialRequestOptionsJSON>(
-        `/api/auth/passkey/generate-authenticate-options`,
-      )
-      const response = await startAuthentication({ optionsJSON: options })
-      await fetchJson(`/api/auth/passkey/verify-authentication`, { response })
-    },
+    authenticate,
   )
+
+/** For a signed-in educator, whose password can't stand in for the passkey */
+export const verifyPasskey: PasskeyCeremony = () =>
+  runCeremony(`Your passkey wasn’t accepted. Try again`, authenticate)
+
+const authenticate = async (): Promise<void> => {
+  const options = await fetchJson<PublicKeyCredentialRequestOptionsJSON>(
+    `/api/auth/passkey/generate-authenticate-options`,
+  )
+  const response = await startAuthentication({ optionsJSON: options })
+  await fetchJson(`/api/auth/passkey/verify-authentication`, { response })
+}
 
 const runCeremony = async (
   fallbackMessage: string,

@@ -8,15 +8,16 @@ const requireSecondFactor: Route.MiddlewareFunction = async (
   { context },
   next,
 ) => {
-  if (readRequiredSession(context).assurance === `SECOND_FACTOR`) {
-    return next()
-  }
+  // A session can outlast its educator's second factors
   const secondFactors = await readSecondFactors(
     readRequiredEducator(context).id,
   )
-  return redirect(
-    href(hasSecondFactor(secondFactors) ? `/admin/verify` : `/admin/setup`),
-  )
+  if (!hasSecondFactor(secondFactors)) {
+    return redirect(href(`/admin/setup`))
+  }
+  return readRequiredSession(context).assurance === `SECOND_FACTOR`
+    ? next()
+    : redirect(href(`/admin/verify`))
 }
 
 export const middleware: Route.MiddlewareFunction[] = [requireSecondFactor]

@@ -1,5 +1,4 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { href, redirect } from 'react-router'
 import type { Route } from './+types/forgot-password.ts'
 import { forgotPasswordSchema } from '~/auth-forms.ts'
 import { rejectAuthError } from '~/auth-replies.server.ts'
@@ -11,10 +10,10 @@ import {
 import { rejectForm } from '~/form-replies.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
-export const loader = async ({ request, context }: Route.LoaderArgs) =>
-  (await readSignedInEducator(context))
-    ? redirect(href(`/settings`))
-    : { linkInvalid: new URL(request.url).searchParams.has(`link-invalid`) }
+export const loader = async ({ request, context }: Route.LoaderArgs) => ({
+  linkInvalid: new URL(request.url).searchParams.has(`link-invalid`),
+  isSignedIn: (await readSignedInEducator(context)) !== null,
+})
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const submission = parseWithZod(await request.formData(), {
@@ -38,11 +37,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 const ForgotPassword = ({ loaderData, actionData }: Route.ComponentProps) =>
   actionData && `sentTo` in actionData ? (
-    <ResetLinkSent email={actionData.sentTo} />
+    <ResetLinkSent
+      email={actionData.sentTo}
+      isSignedIn={loaderData.isSignedIn}
+    />
   ) : (
     <ForgotPasswordForm
       lastResult={actionData?.result}
       linkInvalid={loaderData.linkInvalid}
+      isSignedIn={loaderData.isSignedIn}
     />
   )
 export default ForgotPassword

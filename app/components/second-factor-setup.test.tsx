@@ -6,7 +6,7 @@ import { SecondFactorChoice, SetupLinkRequest } from './second-factor-setup.tsx'
 
 const renderRequest = async (state: {
   linkInvalid: boolean
-  isSent: boolean
+  sending?: `sent` | `email-limit`
 }) => {
   await renderRoutes([
     {
@@ -19,7 +19,7 @@ const renderRequest = async (state: {
 }
 
 test(`before the link is sent, the page offers to email it`, async () => {
-  await renderRequest({ linkInvalid: false, isSent: false })
+  await renderRequest({ linkInvalid: false })
 
   await expect
     .element(page.getByRole(`button`, { name: `Email me a setup link` }))
@@ -28,7 +28,7 @@ test(`before the link is sent, the page offers to email it`, async () => {
 })
 
 test(`once the link is sent, the page says so and offers to send it again`, async () => {
-  await renderRequest({ linkInvalid: false, isSent: true })
+  await renderRequest({ linkInvalid: false, sending: `sent` })
 
   await expect
     .element(page.getByRole(`status`))
@@ -39,8 +39,16 @@ test(`once the link is sent, the page says so and offers to send it again`, asyn
   await expectNoAxeViolations()
 })
 
+test(`a link that wasn't sent says so`, async () => {
+  await renderRequest({ linkInvalid: false, sending: `email-limit` })
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`This address got too many emails. Try again in an hour`)
+})
+
 test(`a used or expired link asks for a new one`, async () => {
-  await renderRequest({ linkInvalid: true, isSent: false })
+  await renderRequest({ linkInvalid: true })
 
   await expect
     .element(page.getByRole(`alert`))

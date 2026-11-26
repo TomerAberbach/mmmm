@@ -16,8 +16,9 @@ export const loader = ({ request }: Route.LoaderArgs) => ({
 
 /**
  * A confirmation link returns here with `confirmed`, plus an `error` when it
- * fails. A password reset returns here with `password-reset`, and a sign-in
- * whose code page ran out with `challenge-expired`
+ * fails. An address change returns here with `address-changed`, a password
+ * reset with `password-reset`, and a sign-in whose code page ran out with
+ * `challenge-expired` or `too-many-codes`
  */
 const readNotice = (params: URLSearchParams): SignInNotice | undefined => {
   if (params.has(`error`)) {
@@ -28,6 +29,12 @@ const readNotice = (params: URLSearchParams): SignInNotice | undefined => {
   }
   if (params.has(`challenge-expired`)) {
     return `challenge-expired`
+  }
+  if (params.has(`too-many-codes`)) {
+    return `too-many-codes`
+  }
+  if (params.has(`address-changed`)) {
+    return `address-changed`
   }
   return params.has(`confirmed`) ? `confirmed` : undefined
 }

@@ -1,5 +1,5 @@
 import { getFormProps } from '@conform-to/react'
-import { href, useFetcher } from 'react-router'
+import { href, Link, useFetcher } from 'react-router'
 import {
   changePasswordSchema,
   MIN_PASSWORD_LENGTH,
@@ -11,6 +11,7 @@ import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { DeleteAccountDialog } from './delete-account-dialog.tsx'
 import type { DeletableEducator } from './delete-account-dialog.tsx'
+import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { SavedNotice } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
@@ -23,11 +24,14 @@ import type { Organization } from '~/organizations.ts'
 export const EducatorSettings = ({
   name,
   account,
+  canDelete,
   organization,
   secondFactors,
 }: {
   name: string
   account: DeletableEducator
+  /** Whether this session used the second factor that deleting needs */
+  canDelete: boolean
   /** Null without an organization */
   organization: Organization | null
   /** Only for admins and educators who have a second factor */
@@ -41,7 +45,11 @@ export const EducatorSettings = ({
       <PasswordSettings />
       <SessionSettings />
       {secondFactors ? <SecondFactorSettings {...secondFactors} /> : null}
-      <DeleteAccount account={account} />
+      <DeleteAccount
+        account={account}
+        canDelete={canDelete}
+        isAdmin={secondFactors?.isAdmin ?? false}
+      />
     </div>
   </div>
 )
@@ -136,10 +144,11 @@ const PasswordSettings = () => {
           description={`At least ${MIN_PASSWORD_LENGTH} characters`}
           autoComplete='new-password'
         />
-        <div>
+        <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
           <Button type='submit' isPending={fetcher.state !== `idle`}>
             Change password
           </Button>
+          <Link to={href(`/forgot-password`)}>Forgot password?</Link>
         </div>
         <SavedNotice fetcher={fetcher} isFormValid={form.valid}>
           Your password is changed, and every other session is signed out. We
@@ -171,16 +180,37 @@ const SessionSettings = () => (
   </SettingsSection>
 )
 
-const DeleteAccount = ({ account }: { account: DeletableEducator }) => (
+const DeleteAccount = ({
+  account,
+  canDelete,
+  isAdmin,
+}: {
+  account: DeletableEducator
+  canDelete: boolean
+  isAdmin: boolean
+}) => (
   <SettingsSection title='Delete account'>
     <p>Deletes your account and leaves your contests to their players.</p>
-    <div>
-      <DeleteAccountDialog
-        trigger={<Button variant='danger'>Delete account</Button>}
-        title='Delete your account?'
-        account={account}
-        action={href(`/settings/delete-account`)}
-      />
-    </div>
+    {canDelete ? (
+      <div>
+        <DeleteAccountDialog
+          trigger={<Button variant='danger'>Delete account</Button>}
+          title='Delete your account?'
+          account={account}
+          action={href(`/settings/delete-account`)}
+        />
+      </div>
+    ) : (
+      <Notice kind='status'>
+        {isAdmin ? (
+          <>
+            Open the <Link to={href(`/admin`)}>admin area</Link> and use your
+            second factor before deleting your account.
+          </>
+        ) : (
+          `Sign out, then sign in with your passkey or authenticator app before deleting your account.`
+        )}
+      </Notice>
+    )}
   </SettingsSection>
 )

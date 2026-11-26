@@ -83,6 +83,21 @@ test(`an address gets 10 sign-ins every 15 minutes from one IP address`, async (
   await expect(next).rejects.toBeInstanceOf(APIError)
 })
 
+test.each([
+  `/change-password`,
+  `/two-factor/enable`,
+  `/two-factor/disable`,
+  `/two-factor/generate-backup-codes`,
+])(`10 wrong passwords at one prompt use up the attempts at %s`, async path => {
+  const email = uniqueEmail()
+  const ip = uniqueIp()
+  await attemptTimes(10, `/verify-password`, email, ip)
+
+  const next = attempt(path, email, ip)
+
+  await expect(next).rejects.toBeInstanceOf(APIError)
+})
+
 test(`failed sign-ins from one IP address don't lock out the educator elsewhere`, async () => {
   const email = uniqueEmail()
   const attacker = uniqueIp()

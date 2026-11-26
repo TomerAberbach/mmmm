@@ -1,4 +1,5 @@
 import { parseWithZod } from '@conform-to/zod/v4'
+import { APIError } from 'better-auth/api'
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/settings.authenticator-app.ts'
 import { confirmPasswordSchema } from '~/auth-forms.ts'
@@ -31,6 +32,14 @@ export const action = async ({
           recoveryCodes: await makeNewCodes(password, request.headers),
         })
   } catch (error) {
+    if (
+      error instanceof APIError &&
+      error.body?.code === `TWO_FACTOR_NOT_ENABLED`
+    ) {
+      return rejectForm(submission, {
+        formErrors: [`Your authenticator app is off. Reload the page`],
+      })
+    }
     return rejectAuthError(submission, error, { passwordField: `password` })
   }
 }

@@ -13,12 +13,16 @@ import { normalizeEmail } from './limits.server.ts'
 import { joinOrganization } from './organizations.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
+/** `TAKEN` when the address gained an account after the link was sent */
+export type AddressConfirmation = `CHANGED` | `INVALID` | `TAKEN`
+
 export type AddressRefusal = `NO_EDUCATOR` | `TAKEN` | `EMAIL_LIMIT`
 
 /**
  * Emails the new address a link that changes the educator's address to it. The
  * educator keeps the old address, confirmed, until they use the link. A new
- * request turns off earlier links. Resolves to null once sent
+ * link turns off earlier ones once it's sent, so an unsent one leaves them
+ * working. Resolves to null once sent
  */
 export const requestAddressChange = async (
   educatorId: string,
@@ -35,26 +39,32 @@ export const requestAddressChange = async (
   if (!(await isAddressFree(email))) {
     return `TAKEN`
   }
-  // An earlier request's address may have been a mistake
-  await prisma.verification.deleteMany({
+  const secret = createSecret()
+  const earlier = await prisma.verification.findMany({
     where: {
       identifier: { startsWith: IDENTIFIER_PREFIX },
       value: { contains: educatorId },
     },
+    select: { id: true },
   })
-  const secret = createSecret()
+  // Stored before it's sent, so the link works once it arrives
+  const id = randomUUID()
   await prisma.verification.create({
     data: {
-      id: randomUUID(),
+      id,
       identifier: toIdentifier(secret),
       value: JSON.stringify({ educatorId, email }),
       expiresAt: new Date(Date.now() + EXPIRES_IN_MS),
     },
   })
   const url = toAppUrl(href(`/confirm-address/:secret`, { secret })).href
-  return (await sendEmail(confirmAddressEmail({ to: email, url })))
-    ? null
-    : `EMAIL_LIMIT`
+  const isSent = await sendEmail(confirmAddressEmail({ to: email, url }))
+  // An earlier request's address may have been a mistake
+  const unwanted = isSent ? earlier : [{ id }]
+  await prisma.verification.deleteMany({
+    where: { id: { in: unwanted.map(link => link.id) } },
+  })
+  return isSent ? null : `EMAIL_LIMIT`
 }
 
 const EXPIRES_IN_MS = CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000
@@ -82,15 +92,14 @@ export const readAddressChange = async (
 
 /**
  * Changes the educator's address, signs them out everywhere, and moves them to
- * the new address's organization. Returns whether the link still worked and the
- * address is free
+ * the new address's organization
  */
 export const confirmAddressChange = async (
   secret: string,
-): Promise<boolean> => {
+): Promise<AddressConfirmation> => {
   const changed = await changeAddress(secret)
-  if (!changed) {
-    return false
+  if (typeof changed === `string`) {
+    return changed
   }
   await sendNoticeOrLog(addressChangedEmail({ to: changed.oldEmail }))
   try {
@@ -99,35 +108,41 @@ export const confirmAddressChange = async (
     // The address has changed, and the next sign-in joins again
     console.error(`Joining an organization failed`, error)
   }
-  return true
+  return `CHANGED`
 }
 
 type AddressChange = { educatorId: string; oldEmail: string }
 
-/**
- * Null when the link stopped working, or the address was taken or the educator
- * deleted, also meanwhile
- */
-const changeAddress = async (secret: string): Promise<AddressChange | null> => {
+type AddressChangeFailure = Exclude<AddressConfirmation, `CHANGED`>
+
+/** Another request may take the address or delete the educator meanwhile */
+const changeAddress = async (
+  secret: string,
+): Promise<AddressChange | AddressChangeFailure> => {
   try {
     return await prisma.$transaction(tx => spendLink(secret, tx))
   } catch (error) {
-    if (isLostRace(error)) {
-      return null
+    const failure =
+      error instanceof Prisma.PrismaClientKnownRequestError
+        ? LOST_RACES[error.code]
+        : undefined
+    if (failure) {
+      return failure
     }
     throw error
   }
 }
 
 /** The address now has another educator, or the educator is gone */
-const isLostRace = (error: unknown): boolean =>
-  error instanceof Prisma.PrismaClientKnownRequestError &&
-  (error.code === `P2002` || error.code === `P2025`)
+const LOST_RACES: Record<string, AddressChangeFailure> = {
+  P2002: `TAKEN`,
+  P2025: `INVALID`,
+}
 
 const spendLink = async (
   secret: string,
   tx: Prisma.TransactionClient,
-): Promise<AddressChange | null> => {
+): Promise<AddressChange | AddressChangeFailure> => {
   // Deleting it first lets only one request use the link
   const [verification] = await tx.$queryRaw<{ value: string }[]>`
       DELETE FROM "Verification"
@@ -135,15 +150,18 @@ const spendLink = async (
       RETURNING "value"
     `
   if (!verification) {
-    return null
+    return `INVALID`
   }
   const { educatorId, email } = parseChange(verification.value)
   const educator = await tx.educator.findUnique({
     where: { id: educatorId, emailVerified: true },
     select: { email: true },
   })
-  if (!educator || !(await freeAddress(email, tx))) {
-    return null
+  if (!educator) {
+    return `INVALID`
+  }
+  if (!(await freeAddress(email, tx))) {
+    return `TAKEN`
   }
   await tx.educator.update({ where: { id: educatorId }, data: { email } })
   await tx.session.deleteMany({ where: { educatorId } })

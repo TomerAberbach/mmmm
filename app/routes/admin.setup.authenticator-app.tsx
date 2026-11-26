@@ -1,3 +1,4 @@
+import type { Submission } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
 import { APIError } from 'better-auth/api'
 import { data, href, redirect } from 'react-router'
@@ -11,6 +12,10 @@ import {
 import { rejectAuthError } from '~/auth-replies.server.ts'
 import { auth } from '~/auth.server.ts'
 import {
+  isCurrentSetup,
+  isUnfinishedSetup,
+} from '~/authenticator-app-setup.server.ts'
+import {
   ConfirmPasswordStep,
   ScanStep,
 } from '~/components/authenticator-app-setup.tsx'
@@ -18,6 +23,7 @@ import { RecoveryCodes } from '~/components/recovery-codes.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
 import type { FormRejection } from '~/form-replies.server.ts'
 import {
+  deleteTurnedOffApp,
   mayChangeSecondFactors,
   readSecondFactors,
 } from '~/second-factor.server.ts'
@@ -60,31 +66,68 @@ const rejectPassword = ({ data: reply, init }: FormRejection) =>
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
   const formData = await request.formData()
+  const educatorId = readRequiredEducator(context).id
   return formData.get(`intent`) === `turn-on`
-    ? turnOn(request, formData, readRequiredEducator(context).id)
-    : start(request, formData)
+    ? turnOn(request, formData, educatorId)
+    : start(request, formData, educatorId)
 }
 
 /** Makes the app's secret, which stays off until a code from the app matches */
-const start = async (request: Request, formData: FormData) => {
+const start = async (
+  request: Request,
+  formData: FormData,
+  educatorId: string,
+) => {
   const submission = parseWithZod(formData, { schema: confirmPasswordSchema })
   if (submission.status !== `success`) {
     return rejectPassword(rejectForm(submission))
   }
   try {
-    const enabled = await auth.api.enableTwoFactor({
-      body: { password: submission.value.password, method: `totp` },
-      headers: request.headers,
-    })
-    if (enabled.method !== `totp`) {
-      throw new Error(`Better Auth enabled ${enabled.method} instead of TOTP`)
-    }
-    return { step: `scan`, totpUri: enabled.totpURI } as const
+    const totpUri = await createTotpUri(
+      submission.value.password,
+      request.headers,
+      educatorId,
+    )
+    return totpUri === null
+      ? redirect(href(`/admin`))
+      : ({ step: `scan`, totpUri } as const)
   } catch (error) {
     return rejectPassword(
       rejectAuthError(submission, error, { passwordField: `password` }),
     )
   }
+}
+
+/** Resolves to null if another tab turned the app on */
+const createTotpUri = async (
+  password: string,
+  headers: Headers,
+  educatorId: string,
+): Promise<string | null> => {
+  try {
+    return await enableApp(password, headers)
+  } catch (error) {
+    if (readErrorCode(error) !== `TOTP_ALREADY_ENABLED`) {
+      throw error
+    }
+    return (await deleteTurnedOffApp(educatorId))
+      ? enableApp(password, headers)
+      : null
+  }
+}
+
+const enableApp = async (
+  password: string,
+  headers: Headers,
+): Promise<string> => {
+  const enabled = await auth.api.enableTwoFactor({
+    body: { password, method: `totp` },
+    headers,
+  })
+  if (enabled.method !== `totp`) {
+    throw new Error(`Better Auth enabled ${enabled.method} instead of TOTP`)
+  }
+  return enabled.totpURI
 }
 
 /**
@@ -110,6 +153,15 @@ const turnOn = async (
   if (submission.status !== `success`) {
     return rejectScan(rejectForm(submission))
   }
+  // Better Auth would accept a code of an app that's already on, and the
+  // recovery codes would follow without a password
+  const { hasAuthenticatorApp } = await readSecondFactors(educatorId)
+  if (hasAuthenticatorApp) {
+    return redirect(href(`/admin`))
+  }
+  if (!(await isUnfinishedSetup(educatorId))) {
+    return rejectStartedOver(submission)
+  }
   try {
     const { headers } = await auth.api.verifyTOTP({
       body: { code: submission.value.code },
@@ -124,8 +176,15 @@ const turnOn = async (
       headers,
     })
   } catch (error) {
+    const code = readErrorCode(error)
+    if (
+      code === `TOTP_NOT_ENABLED` ||
+      (code === `INVALID_CODE` && !(await isCurrentSetup(educatorId, totpUri)))
+    ) {
+      return rejectStartedOver(submission)
+    }
     return rejectScan(
-      error instanceof APIError && error.body?.code === `INVALID_CODE`
+      code === `INVALID_CODE`
         ? rejectForm(submission, {
             fieldErrors: { code: [INCORRECT_CODE_MESSAGE] },
           })
@@ -133,6 +192,14 @@ const turnOn = async (
     )
   }
 }
+
+const rejectStartedOver = (submission: Submission<unknown>) =>
+  rejectPassword(rejectForm(submission, { formErrors: [STARTED_OVER_MESSAGE] }))
+
+const STARTED_OVER_MESSAGE = `That QR code no longer works, since setup changed in another tab. Enter your password for a new one`
+
+const readErrorCode = (error: unknown): string | undefined =>
+  error instanceof APIError ? error.body?.code : undefined
 
 const AuthenticatorAppSetup = ({ actionData }: Route.ComponentProps) => {
   switch (actionData?.step) {
