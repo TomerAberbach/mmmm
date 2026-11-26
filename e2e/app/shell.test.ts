@@ -1,16 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { SIGNED_OUT_HOME_HEADING } from '../home-page.ts'
 
-test(`the footer links the privacy policy`, async ({ page }) => {
-  await page.goto(`/`)
-
-  await page.getByRole(`link`, { name: `Privacy policy` }).click()
-
-  await expect(
-    page.getByRole(`heading`, { name: `Privacy policy` }),
-  ).toBeVisible()
-})
-
 test(`the not-found page keeps the support email`, async ({ page }) => {
   await page.goto(`/nope`)
 

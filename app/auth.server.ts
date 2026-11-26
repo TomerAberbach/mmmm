@@ -40,6 +40,9 @@ const BASE_URL = requireEnv(`BETTER_AUTH_URL`)
 const CONFIRMATION_EXPIRES_IN_SECONDS =
   CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60
 
+/** Counted from the last renewal, which an educator's visits trigger */
+const SESSION_EXPIRES_IN_SECONDS = 30 * 24 * 60 * 60
+
 /**
  * Every confirmation link returns to sign-in, whatever the request asked for.
  * Sign-in shows whether the link worked
@@ -289,6 +292,7 @@ export const auth = betterAuth({
     },
   },
   session: {
+    expiresIn: SESSION_EXPIRES_IN_SECONDS,
     fields: { userId: `educatorId` },
     // No default, so a session Better Auth makes in place of another keeps
     // its assurance. The database defaults a new one to PASSWORD
@@ -344,12 +348,13 @@ export const auth = betterAuth({
       create: {
         // However an educator confirms their address, they sign in after
         after: session => joinOrganization(session.userId),
-        // Nothing stores IP addresses
+        // Nothing stores IP addresses or browsers
         before: (session, ctx) =>
           Promise.resolve({
             data: {
               ...session,
               ipAddress: null,
+              userAgent: null,
               ...(ctx && SECOND_FACTOR_SIGN_IN_PATHS.has(ctx.path)
                 ? { assurance: `SECOND_FACTOR` }
                 : {}),
