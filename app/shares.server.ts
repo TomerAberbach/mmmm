@@ -1,5 +1,6 @@
 import type { Contest } from './contests.server.ts'
 import { prisma } from './db.server.ts'
+import { changeContests } from './editable-contests.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { normalizeEmail } from './limits.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
@@ -10,7 +11,7 @@ export type Colleague = { id: string; name: string; email: string }
 export type SharedContest = Omit<Contest, `link`> & { educatorName: string }
 
 /** Matches contests shared with the educator, in their organization */
-const sharedWith = (educatorId: string): Prisma.ContestWhereInput => ({
+export const sharedWith = (educatorId: string): Prisma.ContestWhereInput => ({
   ...CONTEST_OUTSIDE_TRASH,
   educator: { organization: { educators: { some: { id: educatorId } } } },
   shares: { some: { educatorId } },
@@ -95,13 +96,13 @@ export const shareContest = (
   contestId: string,
   address: string,
 ): Promise<ShareRefusal | null> =>
-  prisma.$transaction(async tx => {
+  changeContests<ShareRefusal | null>(educatorId, async (tx, contests) => {
     // The lock keeps the contest out of the trash until the share is added
     await tx.$queryRaw`
       SELECT 1 FROM "Contest" WHERE "id" = ${contestId} FOR SHARE
     `
     const contest = await tx.contest.findFirst({
-      where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
+      where: { ...contests, id: contestId, ...CONTEST_OUTSIDE_TRASH },
       select: { educator: { select: { organizationDomain: true } } },
     })
     if (!contest) {

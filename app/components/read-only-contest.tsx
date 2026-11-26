@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import type { ReactNode } from 'react'
 import { href, Link } from 'react-router'
 import { LocalTime } from './local-time.tsx'
 import { PageHeader } from './page-header.tsx'
@@ -8,19 +9,23 @@ import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
 import { CONTEST_TARGET } from '~/report-forms.ts'
-import type { SharedContest } from '~/shares.server.ts'
 import { describeStatus, SUBMISSION_SECTIONS } from '~/submission-status.ts'
 
-/** A colleague's view of a contest, which changes nothing */
-export const SharedContestDetails = ({
+/** A contest for someone who can't change it */
+export const ReadOnlyContest = ({
   contest,
+  sharedBy,
   players,
   isOpen,
+  children,
 }: {
-  contest: SharedContest
+  contest: { id: string; name: string; year: number }
+  /** The educator whose contest it is, for a colleague who can report names */
+  sharedBy: string | null
   players: ContestPlayer[]
   /** Whether the contest's year takes players and picks */
   isOpen: boolean
+  children?: ReactNode
 }) => (
   <div className='flex max-w-3xl flex-col gap-8'>
     <Link to={href(`/contests`)} className='self-start print:hidden'>
@@ -28,7 +33,11 @@ export const SharedContestDetails = ({
     </Link>
     <div className='flex flex-col gap-3'>
       <PageHeader label={`${contest.year} contest`} title={contest.name} />
-      <p className='text-muted'>{`Shared by ${contest.educatorName}. You can see it but not change it.`}</p>
+      {sharedBy === null ? null : (
+        <p className='text-muted'>
+          {`Shared by ${sharedBy}. You can see it but not change it.`}
+        </p>
+      )}
     </div>
     {isOpen ? null : (
       <Link
@@ -38,9 +47,7 @@ export const SharedContestDetails = ({
         Leaderboard
       </Link>
     )}
-    {players.length === 0 ? (
-      <p className='text-muted'>No one has started a bracket.</p>
-    ) : null}
+    {players.length === 0 ? <p className='text-muted'>No players.</p> : null}
     {SUBMISSION_SECTIONS.map(status => {
       const sectionPlayers = players.filter(player => player.status === status)
       return sectionPlayers.length > 0 ? (
@@ -52,13 +59,16 @@ export const SharedContestDetails = ({
         />
       ) : null
     })}
-    <ReportDialog
-      action={href(`/contests/:contestId/report`, { contestId: contest.id })}
-      targets={[
-        CONTEST_TARGET,
-        ...players.map(({ id, displayName }) => ({ id, label: displayName })),
-      ]}
-    />
+    {children}
+    {sharedBy === null ? null : (
+      <ReportDialog
+        action={href(`/contests/:contestId/report`, { contestId: contest.id })}
+        targets={[
+          CONTEST_TARGET,
+          ...players.map(({ id, displayName }) => ({ id, label: displayName })),
+        ]}
+      />
+    )}
   </div>
 )
 

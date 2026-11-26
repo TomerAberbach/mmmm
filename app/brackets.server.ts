@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import { eraseArchivedYear } from './archive.server.ts'
 import {
   bracketInputSchema,
   describeTakenName,
@@ -380,7 +381,8 @@ export type PublicationChange =
 
 /**
  * Publishing moves the year from Setup to Open, and unpublishing moves it back
- * until the year has a contest or locks. A newer year waits for the current
+ * until the year has a contest or locks. Publishing a newer year erases the
+ * current year's trash and unsubmitted drafts. A newer year waits for the current
  * year's champion, since publishing it archives the current year's results.
  * `PAST` means a newer year is current. `UNCHANGED` means the year has no
  * bracket, or its bracket is already in that state
@@ -414,7 +416,13 @@ export const setBracketPublished = (
       where: { year, publishedAt: published ? null : { not: null } },
       data: { publishedAt: published ? new Date() : null },
     })
-    return count > 0 ? `CHANGED` : `UNCHANGED`
+    if (count === 0) {
+      return `UNCHANGED`
+    }
+    if (published && current) {
+      await eraseArchivedYear(tx, current.year)
+    }
+    return `CHANGED`
   })
 
 /**

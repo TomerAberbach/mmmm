@@ -13,6 +13,7 @@ import type {
   Prisma,
   SubmissionStatus,
 } from './generated/prisma/client.ts'
+import { lockPlayers } from './lock-players.server.ts'
 import { readArrangement } from './moves.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
@@ -233,16 +234,6 @@ const deleteClearedSubmissions = async (
   await tx.pick.deleteMany({
     where: { stage: `SUBMISSION`, player: { contest, submission: null } },
   })
-}
-
-/**
- * Approving, deleting, and erasing players lock their rows in their own order,
- * so one running alongside this could deadlock with it. Erasing locks players
- * before their submissions, so this does too
- */
-const lockPlayers = async (tx: Prisma.TransactionClient): Promise<void> => {
-  await tx.$executeRaw`LOCK TABLE "Player" IN SHARE ROW EXCLUSIVE MODE`
-  await tx.$executeRaw`LOCK TABLE "Submission" IN SHARE ROW EXCLUSIVE MODE`
 }
 
 const PICK_SELECT = {

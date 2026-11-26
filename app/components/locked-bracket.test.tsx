@@ -23,6 +23,7 @@ const renderLocked = async (
   status: SubmissionStatus | null,
   draft: Picks = PICKS,
   results: Results = {},
+  isPast = false,
 ) => {
   await renderRoutes([
     {
@@ -43,6 +44,7 @@ const renderLocked = async (
               personalLink: `https://mmmm.test/my-bracket/secret`,
             }
           }
+          isPast={isPast}
           ranks={<p>Ranks</p>}
           forgetPath='/forgotten'
           deletePath='/deleted'
@@ -199,4 +201,16 @@ test(`a draft never submitted describes its picks as picks`, async () => {
         .getByText(/^Round 1, battle 1: .* Picked [^,]+$/u),
     )
     .toBeInTheDocument()
+})
+
+test(`a pending bracket of a past year was never approved`, async () => {
+  await renderLocked(`PENDING`, PICKS, {}, true)
+
+  await expect
+    .element(
+      page.getByText(
+        `Submissions are closed. Your educator didn’t approve your bracket in time, so it doesn’t count.`,
+      ),
+    )
+    .toBeVisible()
 })

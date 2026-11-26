@@ -1,6 +1,7 @@
 import { href, Link } from 'react-router'
 import { CopyButton } from './copy-button.tsx'
 import { CreateContestDialog } from './create-contest-dialog.tsx'
+import { LeaderboardLinks } from './leaderboard-links.tsx'
 import { OrganizationNameCard } from './organization-name-card.tsx'
 import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
@@ -25,6 +26,7 @@ export type EducatorDashboardView = {
         contests: ContestSummary[]
         sharedContests: SharedContest[]
         deletedCount: number
+        hasPastYears: boolean
       }
     }
 )
@@ -66,22 +68,19 @@ export const EducatorDashboard = ({
         <SharedContests contests={current.sharedContests} />
       ) : null}
       {current?.isLocked ? (
-        <ul className='flex flex-col gap-2 print:hidden'>
-          {organization ? (
-            <li>
-              <Link to={href(`/contests/leaderboard`)}>
-                Organization leaderboard
-              </Link>
-            </li>
-          ) : null}
-          <li>
-            <Link to={href(`/contests/global`)}>Global leaderboard</Link>
-          </li>
-        </ul>
+        <LeaderboardLinks
+          year={current.year}
+          hasOrganization={organization !== null}
+        />
       ) : null}
       {current && current.deletedCount > 0 ? (
         <Link to={href(`/contests/trash`)} className='self-start print:hidden'>
           {`Deleted contests (${current.deletedCount})`}
+        </Link>
+      ) : null}
+      {current?.hasPastYears ? (
+        <Link to={href(`/contests/past`)} className='self-start print:hidden'>
+          Past years
         </Link>
       ) : null}
     </div>

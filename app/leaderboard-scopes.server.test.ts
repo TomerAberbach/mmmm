@@ -18,7 +18,7 @@ test(`a row's contest is found only on the reporter's leaderboards`, async () =>
   const { id: pendingId } = await addPlayer(contestId)
   await addSubmission(pendingId, `PENDING`)
   await setLocked(year)
-  const scopes = await readEducatorScopes(educatorId)
+  const scopes = await readEducatorScopes(educatorId, year)
   const otherScope = toContestScope({ id: `other`, name: `Other`, year })
 
   await expect(findRankedContestId(scopes, approvedId)).resolves.toBe(contestId)

@@ -27,9 +27,12 @@ const PHASE_LABELS: Record<Phase, string> = {
 export const PhaseSection = ({
   year,
   summary,
+  archivedYear = null,
 }: {
   year: number
   summary: BracketSummary
+  /** The year that publishing this one archives */
+  archivedYear?: number | null
 }) => (
   <section className='flex max-w-3xl flex-col gap-3 border-2 border-ink p-5'>
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
@@ -51,7 +54,7 @@ export const PhaseSection = ({
       />
     ) : null}
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-      <PhaseAction year={year} summary={summary} />
+      <PhaseAction year={year} summary={summary} archivedYear={archivedYear} />
     </div>
   </section>
 )
@@ -77,13 +80,15 @@ const describePhase = (year: number, summary: BracketSummary): string => {
 const PhaseAction = ({
   year,
   summary,
+  archivedYear,
 }: {
   year: number
   summary: BracketSummary
+  archivedYear: number | null
 }) => {
   switch (summary.phase) {
     case `SETUP`:
-      return <PublishButton year={year} />
+      return <PublishButton year={year} archivedYear={archivedYear} />
     case `OPEN`:
       return <UnpublishControls year={year} hasContests={summary.hasContests} />
     case `IN_PROGRESS`:
@@ -94,7 +99,13 @@ const PhaseAction = ({
   }
 }
 
-const PublishButton = ({ year }: { year: number }) => (
+const PublishButton = ({
+  year,
+  archivedYear,
+}: {
+  year: number
+  archivedYear: number | null
+}) => (
   <ConfirmDialog
     trigger={<Button>{`Publish ${year} bracket`}</Button>}
     title={`Publish the ${year} bracket?`}
@@ -108,6 +119,11 @@ const PublishButton = ({ year }: { year: number }) => (
         Educators can then create contests with it, and it becomes the current
         bracket on the home page.
       </p>
+      {archivedYear === null ? null : (
+        <p>
+          {`${archivedYear} becomes read-only. Everything in its trash, and every bracket its players never submitted, is deleted for good. Unpublishing doesn’t bring it back.`}
+        </p>
+      )}
       <p>
         After publishing, you can rename and move combatants. You can unpublish
         until an educator creates a contest.

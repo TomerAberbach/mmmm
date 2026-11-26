@@ -52,6 +52,9 @@ const Admin = ({
         </ButtonLink>
       </YearCard>
     ) : null}
+    <Link to={href(`/contests/past`)} className='self-start'>
+      Past years
+    </Link>
     <Link to={href(`/admin/reports`)} className='self-start'>
       {`Reports (${reportCount})`}
     </Link>

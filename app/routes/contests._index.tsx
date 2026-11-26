@@ -4,6 +4,7 @@ import { EducatorDashboard } from '~/components/educator-dashboard.tsx'
 import type { EducatorDashboardView } from '~/components/educator-dashboard.tsx'
 import { readEducatorContests } from '~/contests.server.ts'
 import { readOrganization } from '~/organizations.server.ts'
+import { hasPastYears } from '~/past-years.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 import { readSharedContests } from '~/shares.server.ts'
 import { countDeletedContests } from '~/trash.server.ts'
@@ -25,14 +26,22 @@ export const loader = async ({
     }
   }
   const { year, isLocked } = current
-  const [contests, sharedContests, deletedCount] = await Promise.all([
+  const [contests, sharedContests, deletedCount, hasPast] = await Promise.all([
     readEducatorContests(educator.id, year),
     readSharedContests(educator.id, year),
     countDeletedContests(educator.id, year),
+    hasPastYears(year),
   ])
   return {
     organization,
-    current: { year, isLocked, contests, sharedContests, deletedCount },
+    current: {
+      year,
+      isLocked,
+      contests,
+      sharedContests,
+      deletedCount,
+      hasPastYears: hasPast,
+    },
   }
 }
 

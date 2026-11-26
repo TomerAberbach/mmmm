@@ -1,6 +1,5 @@
 import { data, redirect } from 'react-router'
 import type { RouterContextProvider } from 'react-router'
-import { readCurrentYear } from './brackets.server.ts'
 import type { LeaderboardPage, PlayerRank } from './leaderboard-row.ts'
 import {
   readLeaderboard,
@@ -37,12 +36,6 @@ export const toContestScope = ({
   scope: { kind: `contest`, contestId: id, year },
   name,
 })
-
-/** Null before any bracket is published */
-export const readGlobalScope = async (): Promise<NamedScope | null> => {
-  const current = await readCurrentYear()
-  return current && toGlobalScope(current.year)
-}
 
 export const toGlobalScope = (year: number): NamedScope => ({
   scope: { kind: `global`, year },
@@ -88,10 +81,11 @@ export const readPlayerRanks = async (
 /** The educator's organization if any, then everyone */
 export const readEducatorScopes = async (
   educatorId: string,
+  year: number,
 ): Promise<NamedScope[]> =>
   [
-    await readEducatorOrganizationScope(educatorId),
-    await readGlobalScope(),
+    await readEducatorOrganizationScope(educatorId, year),
+    toGlobalScope(year),
   ].filter(named => named !== null)
 
 /** Null unless the player has a row in one of the scopes */
@@ -111,17 +105,13 @@ export const findRankedContestId = async (
   return null
 }
 
-/** Null without an organization, or before any bracket is published */
+/** Null without an organization */
 export const readEducatorOrganizationScope = async (
   educatorId: string,
+  year: number,
 ): Promise<NamedScope | null> => {
-  const [organization, current] = await Promise.all([
-    readOrganization(educatorId),
-    readCurrentYear(),
-  ])
-  return organization && current
-    ? toOrganizationScope(organization, current.year)
-    : null
+  const organization = await readOrganization(educatorId)
+  return organization && toOrganizationScope(organization, year)
 }
 
 /** Null when the contest counts toward no organization */

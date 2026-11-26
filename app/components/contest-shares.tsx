@@ -15,9 +15,12 @@ import type { Colleague } from '~/shares.server.ts'
 export const ContestShares = ({
   contest,
   colleagues,
+  isPast = false,
 }: {
   contest: { id: string; name: string }
-  colleagues: Colleague[]
+  colleagues: readonly Colleague[]
+  /** Whether a newer year is current, so only Stop sharing is left */
+  isPast?: boolean
 }) => (
   <div className='print:hidden'>
     <SettingsSection title='Shared with'>
@@ -36,12 +39,16 @@ export const ContestShares = ({
                 <p className='font-semibold wrap-anywhere'>{colleague.name}</p>
                 <p className='wrap-anywhere text-muted'>{colleague.email}</p>
               </div>
-              <StopSharing contest={contest} colleague={colleague} />
+              <StopSharing
+                contest={contest}
+                colleague={colleague}
+                isPast={isPast}
+              />
             </li>
           ))}
         </ul>
       ) : null}
-      <ShareForm contestId={contest.id} />
+      {isPast ? null : <ShareForm contestId={contest.id} />}
     </SettingsSection>
   </div>
 )
@@ -49,9 +56,11 @@ export const ContestShares = ({
 const StopSharing = ({
   contest,
   colleague: { id, name },
+  isPast,
 }: {
   contest: { id: string; name: string }
   colleague: Colleague
+  isPast: boolean
 }) => (
   <ConfirmDialog
     trigger={
@@ -64,7 +73,7 @@ const StopSharing = ({
     action={href(`/contests/:contestId/shares/stop`, { contestId: contest.id })}
     fields={{ colleagueId: id }}
   >
-    <p>{`They’ll no longer see the players in ${contest.name}. You can share it with them again.`}</p>
+    <p>{`They’ll no longer see the players in ${contest.name}. You ${isPast ? `can’t` : `can`} share it with them again.`}</p>
   </ConfirmDialog>
 )
 
