@@ -53,10 +53,12 @@ export const PersonalLinkButton = (
 
 export const ForgetButton = ({
   forgetPath,
+  playerId,
   variant,
   isSending,
 }: {
   forgetPath: string
+  playerId: string
   variant: `quiet` | `secondary`
   /** A response still in flight would make this computer remember again */
   isSending: boolean
@@ -71,6 +73,8 @@ export const ForgetButton = ({
     confirmLabel='Forget this computer'
     confirmVariant='primary'
     action={forgetPath}
+    // The browser may have remembered another player since the page loaded
+    fields={{ playerId }}
   >
     <p>
       This computer will stop opening your bracket. To come back to it, you’ll

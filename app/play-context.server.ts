@@ -8,6 +8,7 @@ import { brokenLink } from './broken-link.ts'
 import { readContestById, readContestByLink } from './contests.server.ts'
 import type { PlayContest } from './contests.server.ts'
 import type { LeaderboardViewer } from './leaderboards.server.ts'
+import { OTHER_PLAYER_STATUS } from './other-player.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 import { readSubmissionStatus } from './player-picks.server.ts'
 import { isOpenYear } from './years.server.ts'
@@ -63,8 +64,9 @@ const playerContext = createContext<RequiredPlayer>()
 
 /**
  * Sends anyone the browser doesn't remember to a page that says how to come
- * back. Each response restarts the remembered player's 15 minutes. Nest it
- * after `loadContestById`, and read the player with `readRequiredPlayer`
+ * back. Each response restarts the remembered player's 15 minutes, unless it
+ * refuses a page that shows another player. Nest it after `loadContestById`, and
+ * read the player with `readRequiredPlayer`
  */
 export const requirePlayer: MiddlewareFunction<Response> = async (
   { request, context },
@@ -83,10 +85,12 @@ export const requirePlayer: MiddlewareFunction<Response> = async (
     personalLinkSecret: player.secret,
   })
   const response = await next()
-  response.headers.append(
-    `Set-Cookie`,
-    await rememberPlayer(contest.id, player.secret),
-  )
+  if (response.status !== OTHER_PLAYER_STATUS) {
+    response.headers.append(
+      `Set-Cookie`,
+      await rememberPlayer(contest.id, player.secret),
+    )
+  }
   return response
 }
 

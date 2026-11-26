@@ -9,10 +9,23 @@ const picksSchema = z
 /** The arrangement of the bracket the player picked */
 const arrangement = z.string()
 
+/** The player whose bracket the page shows */
+const playerId = z.string()
+
 export const picksRequestSchema = z.discriminatedUnion(`intent`, [
-  z.object({ intent: z.literal(`save`), picks: picksSchema, arrangement }),
-  z.object({ intent: z.literal(`submit`), picks: picksSchema, arrangement }),
-  z.object({ intent: z.literal(`discard`) }),
+  z.object({
+    intent: z.literal(`save`),
+    playerId,
+    picks: picksSchema,
+    arrangement,
+  }),
+  z.object({
+    intent: z.literal(`submit`),
+    playerId,
+    picks: picksSchema,
+    arrangement,
+  }),
+  z.object({ intent: z.literal(`discard`), playerId }),
 ])
 
 export type PicksRequest = z.infer<typeof picksRequestSchema>

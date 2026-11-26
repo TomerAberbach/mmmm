@@ -73,8 +73,9 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
       <PageTitle>{`${displayName}’s bracket`}</PageTitle>
       {isOpen ? (
         <PlayerBracket
-          // A move can clear picks, so the picker starts again from the saved ones
-          key={readArrangement(shared.bracket)}
+          // A move can clear picks, and the browser may remember another player
+          // by the next load, so the picker starts again from the saved picks
+          key={`${shared.playerId} ${readArrangement(shared.bracket)}`}
           {...shared}
           {...paths}
           initialDraft={draft}

@@ -3,6 +3,7 @@ import { listBattles } from '../app/bracket.ts'
 import { readBracket } from '../app/brackets.server.ts'
 import { readArrangement } from '../app/moves.ts'
 import type { Picks } from '../app/picks.ts'
+import { readRememberedPlayer } from '../app/player-cookie.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import { listContenders, setWinner } from '../app/winners.ts'
 import { toContestId, toLinkSecret, YEAR } from './data.ts'
@@ -41,6 +42,7 @@ export const runPicking = async (): Promise<void> => {
       }
       const client: Client = { ...stranger, cookie: readCookie(started) }
       const path = `/player/${toContestId(contest)}/bracket`
+      const playerId = await readPlayerId(client, toContestId(contest))
       await measure(measurements, `bracket page`, () => send(client, path))
       for (const picks of drafts) {
         if (Date.now() >= end) {
@@ -51,7 +53,12 @@ export const runPicking = async (): Promise<void> => {
           send(client, `${path}/picks`, {
             method: `POST`,
             headers: { 'content-type': `application/json` },
-            body: JSON.stringify({ intent: `save`, picks, arrangement }),
+            body: JSON.stringify({
+              intent: `save`,
+              playerId,
+              picks,
+              arrangement,
+            }),
           }),
         )
       }
@@ -62,6 +69,14 @@ export const runPicking = async (): Promise<void> => {
     measurements,
     PICKING_SECONDS,
   )
+}
+
+const readPlayerId = async (
+  { cookie }: Client,
+  contestId: string,
+): Promise<string> => {
+  const request = new Request(`http://localhost`, { headers: { cookie } })
+  return (await readRememberedPlayer(request, contestId))!.id
 }
 
 /** The draft after each of a player's picks, in the order of the battles */
