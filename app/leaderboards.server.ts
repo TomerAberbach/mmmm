@@ -49,9 +49,8 @@ export const readLeaderboard = (
     if (isOpen(await readCurrentYear(tx), scope.year)) {
       return null
     }
-    const pages = isPaged(scope)
-      ? toPageNumber(page, await countRanked(tx, scope))
-      : null
+    const totals = isPaged(scope) ? await readTotals(tx, scope) : null
+    const pages = totals && toPageNumber(page, totals.total)
     const rows = await tx.$queryRaw<RankedSubmission[]>(
       withNamesSql(Prisma.sql`
         SELECT * FROM (${rankedSql(scope)}) AS "Ranked"
@@ -63,21 +62,27 @@ export const readLeaderboard = (
         }
       `),
     )
-    return { rows: rows.map(await labelRows(tx, scope, viewer)), page: pages }
+    return {
+      rows: rows.map(await labelRows(tx, scope, viewer)),
+      page: pages,
+      topScore: totals?.topScore ?? rows[0]?.score ?? 0,
+    }
   })
 
 /** A contest's rows all fit on one page, so it prints whole */
 const isPaged = ({ kind }: LeaderboardScope): boolean => kind !== `contest`
 
-const countRanked = async (
+const readTotals = async (
   tx: Prisma.TransactionClient,
   scope: LeaderboardScope,
-): Promise<number> => {
-  const [row] = await tx.$queryRaw<{ total: number }[]>`
-    SELECT count(*)::int AS "total"
+): Promise<{ total: number; topScore: number }> => {
+  const [row] = await tx.$queryRaw<{ total: number; topScore: number }[]>`
+    SELECT
+      count(*)::int AS "total",
+      coalesce(max("Submission"."score"), 0)::int AS "topScore"
     ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
   `
-  return row!.total
+  return row!
 }
 
 export type LeaderboardSubmission = {

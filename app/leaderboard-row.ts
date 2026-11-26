@@ -18,6 +18,8 @@ export type LeaderboardPage = {
   rows: LeaderboardRow[]
   /** Null for a leaderboard without pages */
   page: PageNumber | null
+  /** The highest score on any page. 0 without rows */
+  topScore: number
 }
 
 /** Where a player ranks among a leaderboard's players */

@@ -87,6 +87,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Score tier**  | Every **Submission** with the same **Score**                                                                                | Score group, tie group |
 | **Hide**        | An **Admin**'s removal of a **Contest** from the **Organization** and global **Leaderboards**, which the **Admin** can undo | Block, ban             |
 | **Leaderboard** | Approved **Submissions** ranked by **Score**, for a **Contest**, an **Organization**, or everyone                           | Standings, rankings    |
+| **Podium**      | The **Submissions** with points in a **Leaderboard**'s top 3 ranks, shown above the others                                  |                        |
 
 ## Views
 

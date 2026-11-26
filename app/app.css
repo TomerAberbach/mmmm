@@ -7,7 +7,8 @@
 @plugin '@tailwindcss/forms';
 
 /* From the colors that recur in March Mammal Madness brackets. Text colors
-   pass WCAG AA on white, and accent-soft is only for decoration */
+   pass WCAG AA on white, and accent-soft is only for decoration and behind
+   ink text */
 @theme {
   /* Only these fonts and colors exist, so Tailwind's defaults can't creep in */
   --font-*: initial;

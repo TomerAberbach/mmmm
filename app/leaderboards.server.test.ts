@@ -309,7 +309,7 @@ const addManyScored = async (contestId: string): Promise<void> => {
 test.each([
   { page: 2, scenario: `the last page` },
   { page: 9, scenario: `a page past it` },
-])(`$scenario continues the ranks`, async ({ page }) => {
+])(`$scenario keeps the ranks and top score`, async ({ page }) => {
   const { scope, own } = await createOrganizationContests()
   await addManyScored(own)
   await setLocked(scope.year)
@@ -319,7 +319,23 @@ test.each([
   expect(leaderboard).toMatchObject({
     page: { number: 2, count: 2 },
     rows: [{ rank: MANY, label: `Player 100` }],
+    topScore: MANY,
   })
+})
+
+test(`a contest's leaderboard has its highest score`, async () => {
+  const { contestId, year } = await createContestInNewYear()
+  await addScored(contestId, `Second`, 40)
+  await addScored(contestId, `Best`, 64)
+  await setLocked(year)
+
+  const leaderboard = await readLeaderboard(
+    toScope({ contestId, year }),
+    await asEducator(contestId),
+    1,
+  )
+
+  expect(leaderboard?.topScore).toBe(64)
 })
 
 test(`a contest's leaderboard is one page`, async () => {
