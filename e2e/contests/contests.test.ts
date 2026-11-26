@@ -456,7 +456,7 @@ test(`a player goes back to their bracket from the leaderboard while submissions
   await startBracketAsMaya(page, await createContestLink(browser))
   const { pathname } = new URL(page.url())
 
-  await page.goto(pathname.replace(`/bracket`, `/leaderboard`))
+  await page.goto(pathname.replace(`/bracket`, `/leaderboards/contest`))
 
   await expect(page).toHaveURL(new RegExp(`${pathname}$`, `u`))
 })
@@ -469,7 +469,7 @@ test(`a leaderboard opens only for a player the browser remembers`, async ({
   await startBracketAsMaya(player, await createContestLink(browser))
   const { pathname } = new URL(player.url())
 
-  await page.goto(pathname.replace(`/bracket`, `/leaderboard`))
+  await page.goto(pathname.replace(`/bracket`, `/leaderboards/contest`))
 
   await expect(page).toHaveURL(
     new RegExp(`${pathname.replace(`/bracket`, `/forgotten`)}$`, `u`),

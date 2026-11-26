@@ -35,13 +35,14 @@ export default [
     route(`years/:year`, `routes/contests.year.tsx`, [
       index(`routes/contests.year._index.tsx`),
       route(`report`, `routes/contests.year.report.ts`),
-      route(`organization`, `routes/contests.year.organization.tsx`),
       route(
-        `organization/:playerId`,
-        `routes/contests.year.organization.$playerId.tsx`,
+        `leaderboards/:kind`,
+        `routes/contests.year.leaderboards.$kind.tsx`,
       ),
-      route(`global`, `routes/contests.year.global.tsx`),
-      route(`global/:playerId`, `routes/contests.year.global.$playerId.tsx`),
+      route(
+        `leaderboards/:kind/:playerId`,
+        `routes/contests.year.leaderboards.$kind.$playerId.tsx`,
+      ),
     ]),
     route(`reports`, `routes/contests.reports.tsx`),
     route(`reports/dismiss`, `routes/contests.reports.dismiss.ts`),
@@ -104,19 +105,12 @@ export default [
       route(`bracket`, `routes/player.bracket.tsx`),
       route(`bracket/picks`, `routes/player.bracket.picks.ts`),
       layout(`routes/player.approved.tsx`, [
-        route(`leaderboard`, `routes/player.leaderboard.tsx`),
+        route(`leaderboards/:kind`, `routes/player.leaderboards.$kind.tsx`),
         route(
-          `leaderboard/:playerId`,
-          `routes/player.leaderboard.$playerId.tsx`,
+          `leaderboards/:kind/:playerId`,
+          `routes/player.leaderboards.$kind.$playerId.tsx`,
         ),
         route(`report`, `routes/player.report.ts`),
-        route(`global`, `routes/player.global.tsx`),
-        route(`global/:playerId`, `routes/player.global.$playerId.tsx`),
-        route(`organization`, `routes/player.organization.tsx`),
-        route(
-          `organization/:playerId`,
-          `routes/player.organization.$playerId.tsx`,
-        ),
       ]),
     ]),
     route(`forgotten`, `routes/player.forgotten.tsx`),

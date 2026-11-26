@@ -188,7 +188,12 @@ const runReading = async (): Promise<void> => {
     )
     const client: Client = { ...stranger, cookie: readCookie(opened) }
     while (!state.isDone) {
-      for (const page of [`bracket`, `leaderboard`, `organization`, `global`]) {
+      for (const page of [
+        `bracket`,
+        `leaderboards/contest`,
+        `leaderboards/organization`,
+        `leaderboards/global`,
+      ]) {
         const measurements = state.current
         await measure(measurements, page, () =>
           send(client, `/player/${contest}/${page}`),

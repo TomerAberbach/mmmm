@@ -9,7 +9,12 @@ import { readPlayContest } from '~/play-context.server.ts'
 import { answerReport } from '~/report-replies.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
-  redirect(href(`/player/:contestId/leaderboard`, params))
+  redirect(
+    href(`/player/:contestId/leaderboards/:kind`, {
+      ...params,
+      kind: `contest`,
+    }),
+  )
 
 /** Reports a row of any of the player's leaderboards */
 export const action = ({

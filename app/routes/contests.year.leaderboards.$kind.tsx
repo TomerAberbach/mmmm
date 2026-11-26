@@ -1,44 +1,51 @@
 import { href, Link } from 'react-router'
-import type { Route } from './+types/contests.year.organization.ts'
+import type { Route } from './+types/contests.year.leaderboards.$kind.ts'
 import { Leaderboard } from '~/components/leaderboard.tsx'
 import { PageHeader } from '~/components/page-header.tsx'
 import {
-  readEducatorOrganizationScope,
+  findScope,
+  LEADERBOARD_TITLES,
+  readEducatorScopes,
   readEducatorViewer,
   readRequiredLeaderboard,
 } from '~/leaderboard-scopes.server.ts'
 import { readRequiredYear } from '~/past-years.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
-/** The educator's organization's leaderboard for the year */
-export const loader = async ({ request, context, params }: Route.LoaderArgs) =>
-  readRequiredLeaderboard(
+/** The educator's organization's leaderboard for the year, or everyone's */
+export const loader = async ({
+  request,
+  context,
+  params,
+}: Route.LoaderArgs) => {
+  const scopes = await readEducatorScopes(
+    readRequiredEducator(context).id,
+    await readRequiredYear(params.year),
+  )
+  const { kind, ...loaded } = await readRequiredLeaderboard(
     request,
-    await readEducatorOrganizationScope(
-      readRequiredEducator(context).id,
-      await readRequiredYear(params.year),
-    ),
+    findScope(scopes, params.kind),
     readEducatorViewer(context),
     href(`/contests`),
   )
+  return { ...loaded, title: LEADERBOARD_TITLES[kind] }
+}
 
-const OrganizationLeaderboard = ({
-  loaderData,
-  params,
-}: Route.ComponentProps) => (
+const YearLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <Link to={href(`/contests`)} className='self-start print:hidden'>
       All contests
     </Link>
     <PageHeader
       label={`${loaderData.year} · ${loaderData.name}`}
-      title='Organization leaderboard'
+      title={loaderData.title}
     />
     <Leaderboard
+      key={params.kind}
       leaderboard={loaderData.leaderboard}
       reportPath={href(`/contests/years/:year/report`, params)}
       toBracketPath={playerId =>
-        href(`/contests/years/:year/organization/:playerId`, {
+        href(`/contests/years/:year/leaderboards/:kind/:playerId`, {
           ...params,
           playerId,
         })
@@ -46,4 +53,4 @@ const OrganizationLeaderboard = ({
     />
   </div>
 )
-export default OrganizationLeaderboard
+export default YearLeaderboard

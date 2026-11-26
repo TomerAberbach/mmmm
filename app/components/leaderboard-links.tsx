@@ -13,13 +13,23 @@ export const LeaderboardLinks = ({
     <ul className='flex flex-wrap gap-x-6 gap-y-2 print:hidden'>
       {hasOrganization ? (
         <li>
-          <Link to={href(`/contests/years/:year/organization`, params)}>
+          <Link
+            to={href(`/contests/years/:year/leaderboards/:kind`, {
+              ...params,
+              kind: `organization`,
+            })}
+          >
             Organization leaderboard
           </Link>
         </li>
       ) : null}
       <li>
-        <Link to={href(`/contests/years/:year/global`, params)}>
+        <Link
+          to={href(`/contests/years/:year/leaderboards/:kind`, {
+            ...params,
+            kind: `global`,
+          })}
+        >
           Global leaderboard
         </Link>
       </li>

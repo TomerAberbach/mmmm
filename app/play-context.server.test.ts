@@ -27,14 +27,16 @@ const openAsPlayer = async (
   if (isLocked) {
     await setLocked(year)
   }
-  const url = new URL(`https://mmmm.test/player/${contestId}/leaderboard`)
+  const url = new URL(
+    `https://mmmm.test/player/${contestId}/leaderboards/contest`,
+  )
   const args = {
     request: new Request(url, {
       headers: { cookie: await rememberPlayer(contestId, secret) },
     }),
     url,
     params: { contestId },
-    pattern: `/player/:contestId/leaderboard`,
+    pattern: `/player/:contestId/leaderboards/:kind`,
     context: new RouterContextProvider(),
   }
   const opened = () => Promise.resolve(new Response(`Opened`))

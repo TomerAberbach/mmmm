@@ -23,7 +23,10 @@ const renderRanks = (globalRank: PlayerRank | null) =>
         />
       ),
     },
-    { path: `/player/period-2/global`, Component: () => <p>Opened</p> },
+    {
+      path: `/player/period-2/leaderboards/global`,
+      Component: () => <p>Opened</p>,
+    },
   ])
 
 test(`each rank opens its leaderboard`, async () => {
