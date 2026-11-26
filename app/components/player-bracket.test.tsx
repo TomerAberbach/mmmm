@@ -82,10 +82,12 @@ const renderBracket = async ({
   draft = {},
   submission = null,
   hasClearedPicks = false,
+  isOrphaned = false,
 }: {
   draft?: Picks
   submission?: Submission | null
   hasClearedPicks?: boolean
+  isOrphaned?: boolean
 } = {}) => {
   await page.viewport(390, 844)
   const server: Server = {
@@ -101,7 +103,7 @@ const renderBracket = async ({
         const data = useLoaderData<Server>()
         return (
           <PlayerBracket
-            isOrphaned={false}
+            isOrphaned={isOrphaned}
             hasClearedPicks={hasClearedPicks}
             year={2025}
             bracket={STORED_BRACKET}
@@ -117,8 +119,8 @@ const renderBracket = async ({
     },
     {
       path: `/forgotten`,
-      action: () => {
-        forgotten.push(true)
+      action: async ({ request }) => {
+        forgotten.push(Object.fromEntries(await request.formData()))
         return redirect(`/forgotten`)
       },
       Component: () => <p>Forgotten</p>,
@@ -146,6 +148,7 @@ test(`picking a winner saves the picks and counts them`, async () => {
   expect(readSentBodies(fetchSpy)).toStrictEqual([
     {
       intent: `save`,
+      playerId: `maya`,
       picks: { 'ROUND_1:0': SEED_1.id },
     },
   ])
@@ -207,6 +210,38 @@ test(`a save the server refuses asks for a reload instead of a retry`, async () 
     .element(page.getByRole(`button`, { name: `Try again` }))
     .not.toBeInTheDocument()
 })
+
+test.each([
+  [
+    `a draft`,
+    { draft: {} },
+    `Couldn’t save. This device opens another player’s bracket now. Ask your educator for your personal link to go back to yours`,
+  ],
+  [
+    `a draft of an orphaned contest`,
+    { draft: {}, isOrphaned: true },
+    `Couldn’t save. This device opens another player’s bracket now`,
+  ],
+  [
+    `a submission`,
+    { draft: COMPLETE_PICKS, submission: SUBMISSION },
+    `Couldn’t save. This device opens another player’s bracket now. Open your personal link to go back to yours`,
+  ],
+])(
+  `a save of %s from a page another player replaced says how to come back`,
+  async (_, bracket, text) => {
+    answerRequests(new Response(null, { status: 409 }))
+    await renderBracket(bracket)
+    await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+
+    await firstBattle().getByText(SEED_16.name).click()
+
+    await expect.element(page.getByRole(`alert`)).toHaveTextContent(text)
+    await expect
+      .element(page.getByRole(`button`, { name: `Try again` }))
+      .not.toBeInTheDocument()
+  },
+)
 
 test(`changing a pick says which later picks it cleared`, async () => {
   answerRequests(Response.json({ ok: true }))
@@ -288,7 +323,7 @@ test(`submitting every pick shows the personal link and how to keep it`, async (
     .element(page.getByText(`Submitted · waiting for approval`))
     .toBeVisible()
   expect(readSentBodies(fetchSpy)).toStrictEqual([
-    { intent: `submit`, picks: COMPLETE_PICKS },
+    { intent: `submit`, playerId: `maya`, picks: COMPLETE_PICKS },
   ])
   await expectNoAxeViolations()
 })
@@ -428,7 +463,9 @@ test(`discarding changes brings back the submitted picks`, async () => {
   await expect
     .element(page.getByText(`Submitted · waiting for approval`))
     .toBeVisible()
-  expect(readSentBodies(fetchSpy)).toStrictEqual([{ intent: `discard` }])
+  expect(readSentBodies(fetchSpy)).toStrictEqual([
+    { intent: `discard`, playerId: `maya` },
+  ])
 })
 
 test(`forgetting this computer asks first, then forgets`, async () => {
@@ -441,7 +478,7 @@ test(`forgetting this computer asks first, then forgets`, async () => {
   await page.getByRole(`button`, { name: `Forget this computer` }).click()
 
   await expect.element(page.getByText(`Forgotten`)).toBeVisible()
-  expect(forgotten).toStrictEqual([true])
+  expect(forgotten).toStrictEqual([{ playerId: `maya` }])
 })
 
 test(`the picker passes accessibility checks`, async () => {
@@ -491,7 +528,11 @@ test(`trying a failed submit again submits the picks as they are now`, async () 
     picks: Picks
   }[]
   expect(saved!.picks).not.toStrictEqual(COMPLETE_PICKS)
-  expect(submitted).toStrictEqual({ intent: `submit`, picks: saved!.picks })
+  expect(submitted).toStrictEqual({
+    intent: `submit`,
+    playerId: `maya`,
+    picks: saved!.picks,
+  })
 })
 
 test(`discarding waits for a submit in flight`, async () => {

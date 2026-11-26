@@ -50,6 +50,36 @@ const openAsPlayer = async (
   }
 }
 
+test.each([
+  [200, true],
+  [409, false],
+])(
+  `a %i response restarts the remembered player's time: %s`,
+  async (status, isRestarted) => {
+    const { contestId } = await createContestInNewYear()
+    const { secret } = await addPlayer(contestId)
+    const url = new URL(`https://mmmm.test/player/${contestId}/bracket/picks`)
+    const args = {
+      request: new Request(url, {
+        headers: { cookie: await rememberPlayer(contestId, secret) },
+      }),
+      url,
+      params: { contestId },
+      pattern: `/player/:contestId/bracket/picks`,
+      context: new RouterContextProvider(),
+    }
+
+    const response = await loadContestById(args, async () => {
+      const reply = await requirePlayer(args, () =>
+        Promise.resolve(new Response(null, { status })),
+      )
+      return reply as Response
+    })
+
+    expect((response as Response).headers.has(`Set-Cookie`)).toBe(isRestarted)
+  },
+)
+
 test(`an approved player's page opens once the year locks`, async () => {
   const { location } = await openAsPlayer(`APPROVED`, { isLocked: true })
 

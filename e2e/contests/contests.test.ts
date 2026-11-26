@@ -72,14 +72,18 @@ const createContestAsEducator = async (
   return { educator, link }
 }
 
-/** Picks every battle by keyboard, then submits */
-const submitEveryPick = async (page: Page): Promise<void> => {
+/** By keyboard */
+const pickEveryBattle = async (page: Page): Promise<void> => {
   const nextBattle = page.getByRole(`button`, { name: `Next battle to pick` })
   while (await nextBattle.isVisible()) {
     await nextBattle.click()
     await page.keyboard.press(`Space`)
   }
   await expect(page.getByText(`64 of 64 picked`)).toBeVisible()
+}
+
+const submitEveryPick = async (page: Page): Promise<void> => {
+  await pickEveryBattle(page)
   await page.getByRole(`button`, { name: `Submit bracket` }).click()
   await expect(
     page.getByRole(`heading`, { name: `Bracket submitted` }),
@@ -326,12 +330,8 @@ test(`a deleted contest turns off its links until it's restored`, async ({
   ).toBeVisible()
 })
 
-test(`deleting from a page left open by another player deletes neither bracket`, async ({
-  page,
-  browser,
-}) => {
-  const link = await createContestLink(browser)
-  await startBracketAsMaya(page, link)
+/** Starts another player's bracket in a new tab of the page's browser */
+const startNextPlayer = async (page: Page, link: string): Promise<Page> => {
   const nextPlayer = await page.context().newPage()
   await nextPlayer.goto(link)
   await nextPlayer
@@ -341,6 +341,191 @@ test(`deleting from a page left open by another player deletes neither bracket`,
     nextPlayer.getByRole(`button`, { name: `Start my bracket` }),
   ).toBeVisible()
   await startBracketAsMaya(nextPlayer, link)
+  return nextPlayer
+}
+
+test(`picking on a page left open by another player changes neither bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const secret = await readPersonalLinkSecret(page)
+  const nextPlayer = await startNextPlayer(page, link)
+  const readFirstBattle = (player: Page) =>
+    player.getByRole(`radiogroup`, { name: `Round 1, battle 1` })
+  await readFirstBattle(nextPlayer).locator(`label`).last().click()
+  await expect(nextPlayer.getByText(/^Saved at/u)).toBeVisible()
+
+  await readFirstBattle(page).locator(`label`).first().click()
+
+  await expect(
+    page.getByText(
+      `Couldn’t save. This device opens another player’s bracket now. Ask your educator for your personal link to go back to yours`,
+    ),
+  ).toBeVisible()
+  await nextPlayer.reload()
+  await expect(
+    readFirstBattle(nextPlayer).getByRole(`radio`).last(),
+  ).toBeChecked()
+  await page.goto(`/my-bracket/${secret}`)
+  await expect(page.getByText(`0 of 64 picked`)).toBeVisible()
+})
+
+test(`submitting on a page left open by another player submits neither bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  await pickEveryBattle(page)
+  const nextPlayer = await startNextPlayer(page, link)
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+
+  await expect(
+    page.getByText(/^Couldn’t submit\. This device opens another/u),
+  ).toBeVisible()
+  await nextPlayer.reload()
+  await expect(nextPlayer.getByText(`0 of 64 picked`)).toBeVisible()
+})
+
+test(`discarding on a page left open by another player keeps the next player's draft`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  await submitEveryPick(page)
+  await page
+    .getByRole(`radiogroup`, { name: `Round 1, battle 1` })
+    .locator(`label`)
+    .last()
+    .click()
+  await expect(page.getByText(`Changes not submitted`)).toBeVisible()
+  const nextPlayer = await startNextPlayer(page, link)
+  await nextPlayer
+    .getByRole(`radiogroup`, { name: `Round 1, battle 1` })
+    .locator(`label`)
+    .last()
+    .click()
+  await expect(nextPlayer.getByText(/^Saved at/u)).toBeVisible()
+
+  await confirmDialog(page, `Discard changes`)
+
+  await expect(
+    page.getByText(
+      /^Couldn’t discard your changes\. This device opens another/u,
+    ),
+  ).toBeVisible()
+  await nextPlayer.reload()
+  await expect(nextPlayer.getByText(`1 of 64 picked`)).toBeVisible()
+})
+
+test(`forgetting from a page left open by another player keeps the next player's bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  await submitEveryPick(page)
+  await page.reload()
+  const nextPlayer = await startNextPlayer(page, link)
+
+  await confirmDialog(
+    page,
+    `Done, forget this computer`,
+    `Forget this computer`,
+  )
+
+  await expect(
+    page.getByText(
+      `This device already forgot your bracket, and opens another player’s now`,
+    ),
+  ).toBeVisible()
+  await nextPlayer.reload()
+  await expect(nextPlayer.getByText(`0 of 64 picked`)).toBeVisible()
+})
+
+/** Confirms in a page loaded before its forms named the player */
+const confirmWithoutPlayer = async (
+  page: Page,
+  trigger: string,
+  action = trigger,
+): Promise<void> => {
+  await page.getByRole(`button`, { name: trigger, exact: true }).click()
+  const dialog = page.getByRole(`alertdialog`)
+  await dialog
+    .locator(`input[name="playerId"]`)
+    .evaluate(input => input.remove())
+  await dialog.getByRole(`button`, { name: action, exact: true }).click()
+}
+
+test(`forgetting and deleting from a page that names no player ask for a reload`, async ({
+  page,
+  browser,
+}) => {
+  await startBracketAsMaya(page, await createContestLink(browser))
+  await submitEveryPick(page)
+  await page.reload()
+
+  await confirmWithoutPlayer(
+    page,
+    `Done, forget this computer`,
+    `Forget this computer`,
+  )
+  await expect(
+    page.getByText(
+      `This device wasn’t forgotten. Reload the page and try again`,
+    ),
+  ).toBeVisible()
+  await page.getByRole(`button`, { name: `Cancel` }).click()
+  await confirmWithoutPlayer(page, `Delete my bracket`)
+  await expect(
+    page.getByText(
+      `Your bracket wasn’t deleted. Reload the page and try again`,
+    ),
+  ).toBeVisible()
+
+  await page.reload()
+  await expect(
+    page.getByRole(`heading`, { name: `Maya R.’s bracket` }),
+  ).toBeVisible()
+})
+
+test(`a page that stays open through a new personal link keeps saving once the link opens`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, link)
+  await educator.reload()
+  await educator.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await educator.getByRole(`menuitem`, { name: `New personal link` }).click()
+  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  const newLink = await educator
+    .getByRole(`dialog`)
+    .getByText(/\/my-bracket\//u)
+    .textContent()
+  const newTab = await page.context().newPage()
+  await newTab.goto(newLink!)
+
+  await page
+    .getByRole(`radiogroup`, { name: `Round 1, battle 1` })
+    .locator(`label`)
+    .first()
+    .click()
+
+  await expect(page.getByText(/^Saved at/u)).toBeVisible()
+})
+
+test(`deleting from a page left open by another player deletes neither bracket`, async ({
+  page,
+  browser,
+}) => {
+  const link = await createContestLink(browser)
+  await startBracketAsMaya(page, link)
+  const nextPlayer = await startNextPlayer(page, link)
 
   await confirmDialog(page, `Delete my bracket`)
 

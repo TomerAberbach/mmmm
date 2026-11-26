@@ -27,6 +27,7 @@ import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import { readArrangement } from '~/moves.ts'
+import { OTHER_PLAYER_STATUS } from '~/other-player.ts'
 import type { PicksRequest } from '~/picks-request.ts'
 import { arePicksEqual } from '~/picks.ts'
 import type { Picks } from '~/picks.ts'
@@ -100,7 +101,7 @@ export const PlayerBracket = ({
             ? { kind: `cleared`, battles: next.cleared }
             : null,
         )
-        send({ intent: `save`, picks: next.winners, arrangement })
+        send({ intent: `save`, playerId, picks: next.winners, arrangement })
       },
       listContenders: battle => listContenders(bracket, battle),
       isCleared: battle => {
@@ -108,7 +109,7 @@ export const PlayerBracket = ({
         return cleared.has(key) && picks[key] === undefined
       },
     }),
-    [bracket, arrangement, picks, cleared, send],
+    [bracket, arrangement, playerId, picks, cleared, send],
   )
 
   const unpicked = listBattles().filter(
@@ -123,7 +124,7 @@ export const PlayerBracket = ({
     }
     // Shows the submission once the page has reloaded it
     const changeCountAtSubmit = changeCount.current
-    send({ intent: `submit`, picks, arrangement }, async () => {
+    send({ intent: `submit`, playerId, picks, arrangement }, async () => {
       await revalidator.revalidate()
       if (changeCount.current === changeCountAtSubmit) {
         setOutcome({
@@ -143,23 +144,24 @@ export const PlayerBracket = ({
     setPicks(submission.picks)
     setCleared(new Set())
     setOutcome(null)
-    send({ intent: `discard` })
+    send({ intent: `discard`, playerId })
   }
 
   /** Sends what the player would send now, not the picks that failed */
   const retries: Record<PicksRequest[`intent`], () => void> = {
-    save: () => send({ intent: `save`, picks, arrangement }),
+    save: () => send({ intent: `save`, playerId, picks, arrangement }),
     submit: () => {
       // A change made after the submit failed may have left battles to pick,
       // and its own save may have failed
       if (unpicked.length > 0) {
-        send({ intent: `save`, picks, arrangement })
+        send({ intent: `save`, playerId, picks, arrangement })
       }
       submit()
     },
     discard,
   }
 
+  const comeBack = describeComeBack(submitted !== null, isOrphaned)
   const hasChanges =
     submission !== null && !arePicksEqual(picks, submission.picks)
   return (
@@ -169,6 +171,7 @@ export const PlayerBracket = ({
           {...submitted}
           kind={outcome.submitted}
           forgetPath={forgetPath}
+          playerId={playerId}
           isSending={isSending}
         />
       ) : null}
@@ -192,6 +195,7 @@ export const PlayerBracket = ({
             <BarLabel>{`Submitted · ${STATUS_TEXT[submitted.submission.status].label}`}</BarLabel>
             <RequestStatus
               state={state}
+              comeBack={comeBack}
               onRetry={intent => retries[intent]()}
               onReload={() => void revalidator.revalidate()}
             />
@@ -199,6 +203,7 @@ export const PlayerBracket = ({
               <PersonalLinkButton personalLink={submitted.personalLink} />
               <ForgetButton
                 forgetPath={forgetPath}
+                playerId={playerId}
                 variant='quiet'
                 isSending={isSending}
               />
@@ -210,6 +215,7 @@ export const PlayerBracket = ({
             <PickProgress unpicked={unpicked} onShowBattle={showBattle} />
             <RequestStatus
               state={state}
+              comeBack={comeBack}
               onRetry={intent => retries[intent]()}
               onReload={() => void revalidator.revalidate()}
             />
@@ -315,10 +321,12 @@ const SubmittedPanel = ({
   personalLink,
   kind,
   forgetPath,
+  playerId,
   isSending,
 }: Submitted & {
   kind: `bracket` | `changes`
   forgetPath: string
+  playerId: string
   isSending: boolean
 }) => {
   const headingId = useId()
@@ -354,6 +362,7 @@ const SubmittedPanel = ({
         <p>On a shared computer? Forget your bracket here when you’re done.</p>
         <ForgetButton
           forgetPath={forgetPath}
+          playerId={playerId}
           variant='secondary'
           isSending={isSending}
         />
@@ -414,12 +423,28 @@ const describeCleared = (cleared: BattleRef[]): string | null =>
     ? null
     : `Your change cleared ${formatCount(cleared.length, `later pick`)} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
 
+/** How a player comes back to their bracket once the browser forgets them */
+const describeComeBack = (
+  hasPersonalLink: boolean,
+  isOrphaned: boolean,
+): string => {
+  if (hasPersonalLink) {
+    return `. Open your personal link to go back to yours`
+  }
+  // Without an educator, a player who hasn't submitted has no way back
+  return isOrphaned
+    ? ``
+    : `. Ask your educator for your personal link to go back to yours`
+}
+
 const RequestStatus = ({
   state,
+  comeBack,
   onRetry,
   onReload,
 }: {
   state: RequestState<PicksRequest>
+  comeBack: string
   onRetry: (intent: PicksRequest[`intent`]) => void
   onReload: () => void
 }) => {
@@ -453,7 +478,9 @@ const RequestStatus = ({
     case `refused`:
       return (
         <RequestAlert>
-          {`${INTENT_TEXT[state.request.intent].failed}. Reload the page to keep picking`}
+          {state.status === OTHER_PLAYER_STATUS
+            ? `${INTENT_TEXT[state.request.intent].failed}. This device opens another player’s bracket now${comeBack}`
+            : `${INTENT_TEXT[state.request.intent].failed}. Reload the page to keep picking`}
         </RequestAlert>
       )
   }

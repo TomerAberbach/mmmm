@@ -1,5 +1,6 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/player.bracket.picks.ts'
+import { OTHER_PLAYER_STATUS } from '~/other-player.ts'
 import { picksRequestSchema } from '~/picks-request.ts'
 import type { PicksRequest } from '~/picks-request.ts'
 import { readRequiredPlayer } from '~/play-context.server.ts'
@@ -14,8 +15,9 @@ export const loader = ({ params }: Route.LoaderArgs): Response =>
   redirect(href(`/player/:contestId/bracket`, params))
 
 /**
- * Saves the player's draft, submits it, or discards it for their submission.
- * The picker reads only the status
+ * Saves the player's draft, submits it, or discards it for their submission,
+ * unless the page showed another player. On a shared computer, the next player
+ * may have started since. The picker reads only the status
  */
 export const action = async ({
   request,
@@ -28,6 +30,9 @@ export const action = async ({
     return refuse()
   }
   const { id } = readRequiredPlayer(context)
+  if (parsed.data.playerId !== id) {
+    return new Response(null, { status: OTHER_PLAYER_STATUS })
+  }
   const result = await writePicks(id, parsed.data)
   if (`refusal` in result) {
     return result.refusal === `NOT_OPEN`

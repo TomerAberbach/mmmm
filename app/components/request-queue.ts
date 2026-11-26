@@ -9,7 +9,7 @@ export type RequestState<Sent> =
   // The year locked before the request arrived
   | { kind: `locked`; request: Sent }
   // The server refused the request, so sending it again fails the same way
-  | { kind: `refused`; request: Sent }
+  | { kind: `refused`; request: Sent; status: number }
 
 type Queued<Sent> = {
   request: Sent
@@ -59,7 +59,9 @@ export const useRequestQueue = <Sent>(
         setStateUnlessKept({ kind: `sending`, request: sent })
         void postRequest(path, sent)
           .then(async outcome => {
-            if (outcome === `sent`) {
+            if (typeof outcome === `object`) {
+              setState({ ...outcome, request: sent })
+            } else if (outcome === `sent`) {
               // The request reached the server even when what follows fails
               await Promise.resolve(queued.onSent()).catch(ignore)
               setStateUnlessKept({ kind: `sent`, at: new Date() })
@@ -99,14 +101,16 @@ export const useRequestQueue = <Sent>(
 const ignore = () => {}
 
 /**
- * A redirect means the server no longer remembers who sent it, and a 4xx other
- * than a 429 that the bracket changed since the page loaded. Reloading resolves
- * both
+ * A 4xx other than a 429 refuses the request for good, such as one built on an
+ * older bracket or sent for another player than the browser remembers. So does a
+ * redirect, which means the server no longer remembers who sent it
  */
 const postRequest = async (
   path: string,
   request: unknown,
-): Promise<`sent` | `refused` | `locked` | `failed`> => {
+): Promise<
+  `sent` | `locked` | `failed` | { kind: `refused`; status: number }
+> => {
   try {
     const response = await fetch(path, {
       method: `POST`,
@@ -121,7 +125,9 @@ const postRequest = async (
     if (response.status === LOCKED_STATUS) {
       return `locked`
     }
-    return canPass(response) ? `failed` : `refused`
+    return canPass(response)
+      ? `failed`
+      : { kind: `refused`, status: response.status }
   } catch {
     return `failed`
   }

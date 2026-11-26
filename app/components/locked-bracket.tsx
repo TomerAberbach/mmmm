@@ -61,6 +61,7 @@ export const LockedBracket = ({
         results={results}
         ranks={ranks}
         forgetPath={forgetPath}
+        playerId={playerId}
       />
     ) : (
       <UnsubmittedBracket year={year} bracket={bracket} draft={draft} />
@@ -86,6 +87,7 @@ const SubmittedBracket = ({
   results,
   ranks,
   forgetPath,
+  playerId,
 }: {
   year: number
   canBeApproved: boolean
@@ -96,6 +98,7 @@ const SubmittedBracket = ({
   /** Null unless the submission is approved */
   ranks: ReactNode
   forgetPath: string
+  playerId: string
 }) => (
   <>
     <div className='max-w-prose'>
@@ -119,6 +122,7 @@ const SubmittedBracket = ({
         <PersonalLinkButton personalLink={personalLink} isOpen={false} />
         <ForgetButton
           forgetPath={forgetPath}
+          playerId={playerId}
           variant='quiet'
           isSending={false}
         />
