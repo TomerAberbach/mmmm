@@ -9,8 +9,6 @@ import { freeTextSchema } from '../free-text.ts'
 import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
-import type { ConfirmResult } from './confirm-dialog.tsx'
-import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { SavedNotice } from './saved-notice.tsx'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
@@ -116,33 +114,23 @@ const PasswordSettings = () => {
   )
 }
 
-const SIGN_OUT_OTHERS_KEY = `sign-out-others`
-
-const SessionSettings = () => {
-  const signOut = useFetcher<ConfirmResult>({ key: SIGN_OUT_OTHERS_KEY })
-  const signedOut =
-    signOut.state === `idle` && signOut.data && `ok` in signOut.data
-  return (
-    <SettingsSection title='Sessions'>
-      <p>
-        Signed in on a shared or lost computer? Sign out everywhere except this
-        browser.
-      </p>
-      <div>
-        <ConfirmDialog
-          trigger={<Button variant='secondary'>Sign out other sessions</Button>}
-          title='Sign out other sessions?'
-          confirmLabel='Sign out other sessions'
-          action={href(`/settings/sign-out-others`)}
-          fetcherKey={SIGN_OUT_OTHERS_KEY}
-        >
-          Every browser and device signed in to your account, except this one,
-          will need to sign in again.
-        </ConfirmDialog>
-      </div>
-      {signedOut ? (
-        <Notice kind='status'>Every other session is signed out.</Notice>
-      ) : null}
-    </SettingsSection>
-  )
-}
+const SessionSettings = () => (
+  <SettingsSection title='Sessions'>
+    <p>
+      Signed in on a shared or lost computer? Sign out everywhere except this
+      browser.
+    </p>
+    <div className='flex flex-col items-start gap-3'>
+      <ConfirmDialog
+        trigger={<Button variant='secondary'>Sign out other sessions</Button>}
+        title='Sign out other sessions?'
+        confirmLabel='Sign out other sessions'
+        action={href(`/settings/sign-out-others`)}
+        successNotice='Every other session is signed out.'
+      >
+        Every browser and device signed in to your account, except this one,
+        will need to sign in again.
+      </ConfirmDialog>
+    </div>
+  </SettingsSection>
+)

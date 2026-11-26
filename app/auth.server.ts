@@ -7,6 +7,7 @@ import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
 import { z } from 'zod'
+import { refuse } from './app-refusal.server.ts'
 import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
@@ -23,7 +24,7 @@ import { passwordChangedEmail } from './emails/password-changed.server.tsx'
 import { resetPasswordEmail } from './emails/reset-password.server.tsx'
 import { secondFactorChangedEmail } from './emails/second-factor-changed.server.tsx'
 import type { SecondFactorChange } from './emails/second-factor-changed.server.tsx'
-import { requireEnv, toAppUrl } from './env.server.ts'
+import { requireEnv } from './env.server.ts'
 import { serverFreeTextSchema } from './free-text.server.ts'
 import { EDUCATOR_NAME } from './free-text.ts'
 import { SessionAssurance } from './generated/prisma/enums.ts'
@@ -37,14 +38,11 @@ const BASE_URL = requireEnv(`BETTER_AUTH_URL`)
 const CONFIRMATION_EXPIRES_IN_SECONDS =
   CONFIRMATION_EXPIRES_IN_DAYS * 24 * 60 * 60
 
-const SIGN_IN_URL = toAppUrl(href(`/sign-in`))
-const SETTINGS_URL = toAppUrl(href(`/settings`))
-const FORGOT_PASSWORD_URL = toAppUrl(href(`/forgot-password`))
 /**
  * Every confirmation link returns to sign-in, whatever the request asked for.
  * Sign-in shows whether the link worked
  */
-const CONFIRMED_CALLBACK_URL = `${SIGN_IN_URL.pathname}?confirmed`
+const CONFIRMED_CALLBACK_URL = `${href(`/sign-in`)}?confirmed`
 
 /**
  * Clients can't choose where emailed links return, or keep their other
@@ -161,9 +159,7 @@ const parseBody = async <Body extends Record<string, unknown>>(
 ): Promise<Body> => {
   const parsed = await schema.safeParseAsync(body)
   if (!parsed.success) {
-    throw new APIError(`BAD_REQUEST`, {
-      message: parsed.error.issues[0]?.message,
-    })
+    throw refuse(`BAD_REQUEST`, parsed.error.issues[0]!.message)
   }
   return parsed.data
 }
@@ -234,9 +230,7 @@ const notifySecondFactorChanged = (
   to: string,
   change: SecondFactorChange,
 ): void => {
-  void sendNoticeOrLog(
-    secondFactorChangedEmail({ to, change, settingsUrl: SETTINGS_URL.href }),
-  )
+  void sendNoticeOrLog(secondFactorChangedEmail({ to, change }))
 }
 
 /**
@@ -252,9 +246,7 @@ const BASE_ORIGIN = new URL(BASE_URL)
 
 /** Doesn't wait for the email, which can't undo the change */
 const notifyPasswordChanged = (to: string): void => {
-  void sendNoticeOrLog(
-    passwordChangedEmail({ to, resetUrl: FORGOT_PASSWORD_URL.href }),
-  )
+  void sendNoticeOrLog(passwordChangedEmail({ to }))
 }
 
 export const auth = betterAuth({
@@ -274,13 +266,7 @@ export const auth = betterAuth({
     // Only confirmed educators reach this, since sign-up deletes unconfirmed
     // ones first
     onExistingUserSignUp: async ({ user }) => {
-      await sendEmail(
-        alreadySignedUpEmail({
-          to: user.email,
-          signInUrl: SIGN_IN_URL.href,
-          resetUrl: FORGOT_PASSWORD_URL.href,
-        }),
-      )
+      await sendEmail(alreadySignedUpEmail({ to: user.email }))
     },
     resetPasswordTokenExpiresIn: RESET_EXPIRES_IN_HOURS * 60 * 60,
     // Doesn't wait for the email, so a known address answers as fast as an
@@ -397,8 +383,9 @@ export const auth = betterAuth({
 
 const requireUserVerified = (userVerified: boolean | undefined): void => {
   if (!userVerified) {
-    throw new APIError(`BAD_REQUEST`, {
-      message: `Use a passkey that checks your fingerprint, face, or PIN`,
-    })
+    throw refuse(
+      `BAD_REQUEST`,
+      `Use a passkey that checks your fingerprint, face, or PIN`,
+    )
   }
 }

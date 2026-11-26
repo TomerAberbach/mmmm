@@ -1,6 +1,6 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.delete.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 import { deleteContest } from '~/trash.server.ts'
 

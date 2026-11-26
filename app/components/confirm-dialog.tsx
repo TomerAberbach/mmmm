@@ -5,6 +5,8 @@ import { useFetcher } from 'react-router'
 import { Button } from './button.tsx'
 import { FetcherError } from './fetcher-error.tsx'
 import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
+import { Notice } from './notice.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 
 type ConfirmDialogProps = {
   /** A question that names the change, such as "Delete Period 5 Biology?" */
@@ -22,11 +24,6 @@ type ConfirmDialogProps = {
       /** The route action that makes the change. It returns a ConfirmResult */
       action: string
       fields?: Record<string, string>
-      /**
-       * Lets the page read the result with `useFetcher({ key })` once the
-       * dialog closes
-       */
-      fetcherKey?: string
     }
   // Makes the change in the page. The dialog closes when it settles
   | { onConfirm: () => void | Promise<void> }
@@ -35,12 +32,12 @@ type ConfirmDialogProps = {
     | {
         /** The button that opens the dialog */
         trigger: ReactElement
+        /** Shown after the trigger once the route action makes the change */
+        successNotice?: string
       }
     // Opens the dialog from elsewhere, such as a menu
     | { isOpen: boolean; onOpenChange: (isOpen: boolean) => void }
   )
-
-export type ConfirmResult = { ok: true } | { error: string }
 
 const NO_FIELDS: Record<string, string> = {}
 
@@ -62,9 +59,7 @@ export const ConfirmDialog = ({
     `trigger` in props
       ? [isTriggerOpen, setIsTriggerOpen]
       : [props.isOpen, props.onOpenChange]
-  const fetcher = useFetcher<ConfirmResult>({
-    key: `fetcherKey` in props ? props.fetcherKey : undefined,
-  })
+  const fetcher = useFetcher<ConfirmResult>()
   const result = fetcher.state === `idle` ? fetcher.data : undefined
   const descriptionId = useId()
 
@@ -108,7 +103,9 @@ export const ConfirmDialog = ({
       {confirmButton}
     </>
   )
-  const isShown = isOpen && !(result && `ok` in result)
+  // Resetting a fetcher sets its data to null
+  const isDone = Boolean(result && `ok` in result)
+  const isShown = isOpen && !isDone
   const frame = (
     <ModalFrame
       isOpen={isShown}
@@ -153,11 +150,18 @@ export const ConfirmDialog = ({
       )}
     </ModalFrame>
   )
+  const notice =
+    isDone && `successNotice` in props && props.successNotice ? (
+      <Notice kind='status'>{props.successNotice}</Notice>
+    ) : null
   return `trigger` in props ? (
-    <DialogTrigger isOpen={isShown} onOpenChange={changeOpen}>
-      {props.trigger}
-      {frame}
-    </DialogTrigger>
+    <>
+      <DialogTrigger isOpen={isShown} onOpenChange={changeOpen}>
+        {props.trigger}
+        {frame}
+      </DialogTrigger>
+      {notice}
+    </>
   ) : (
     frame
   )

@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.link.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { replaceContestLink } from '~/contests.server.ts'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>

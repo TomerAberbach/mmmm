@@ -1,8 +1,7 @@
-import { href, Link, useFetcher } from 'react-router'
+import { href, Link } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
-import type { ConfirmResult } from './confirm-dialog.tsx'
 import { ContestNameForm } from './contest-name-form.tsx'
 import { ContestPlayers } from './contest-players.tsx'
 import { CopyButton } from './copy-button.tsx'
@@ -136,33 +135,23 @@ const ContestLink = ({ contest: { id, link } }: { contest: Contest }) => (
         </p>
       </div>
     </details>
-    <NewContestLink contestId={id} />
+    <NewContestLink key={id} contestId={id} />
   </SettingsSection>
 )
 
-const NewContestLink = ({ contestId }: { contestId: string }) => {
-  const fetcherKey = `new-contest-link-${contestId}`
-  const { state, data } = useFetcher<ConfirmResult>({ key: fetcherKey })
-  return (
-    <div className='flex flex-col items-start gap-3'>
-      <ConfirmDialog
-        trigger={<Button variant='secondary'>New contest link</Button>}
-        title='Replace the contest link?'
-        confirmLabel='Create new link'
-        action={href(`/contests/:contestId/link`, { contestId })}
-        fetcherKey={fetcherKey}
-      >
-        <p>
-          The old link stops working, so share the new one with your players.
-          Players who already started keep their personal links.
-        </p>
-      </ConfirmDialog>
-      {/* Idle once the page shows the new link */}
-      {state === `idle` && data && `ok` in data ? (
-        <Notice kind='status'>
-          Created a new contest link. The old one no longer works
-        </Notice>
-      ) : null}
-    </div>
-  )
-}
+const NewContestLink = ({ contestId }: { contestId: string }) => (
+  <div className='flex flex-col items-start gap-3'>
+    <ConfirmDialog
+      trigger={<Button variant='secondary'>New contest link</Button>}
+      title='Replace the contest link?'
+      confirmLabel='Create new link'
+      action={href(`/contests/:contestId/link`, { contestId })}
+      successNotice='Created a new contest link. The old one no longer works'
+    >
+      <p>
+        The old link stops working, so share the new one with your players.
+        Players who already started keep their personal links.
+      </p>
+    </ConfirmDialog>
+  </div>
+)

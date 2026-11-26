@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/settings.sign-out-others.ts'
 import { auth } from '~/auth.server.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 
 export const loader = (): Response => redirect(href(`/settings`))
 

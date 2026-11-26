@@ -1,27 +1,17 @@
-import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/settings.name.ts'
 import { nameSchema } from '~/auth-forms.ts'
 import { auth } from '~/auth.server.ts'
-import type { SavedResult } from '~/form-replies.server.ts'
-import { acceptForm, rejectForm } from '~/form-replies.server.ts'
+import type { FormRejection, SavedResult } from '~/form-replies.server.ts'
+import { saveForm } from '~/form-replies.server.ts'
 import { serverFreeTextSchema } from '~/free-text.server.ts'
 
 export const loader = (): Response => redirect(href(`/settings`))
 
-export const action = async ({
+export const action = ({
   request,
-}: Route.ActionArgs): Promise<SavedResult | ReturnType<typeof rejectForm>> => {
-  const submission = parseWithZod(await request.formData(), {
-    schema: nameSchema(serverFreeTextSchema),
+}: Route.ActionArgs): Promise<SavedResult | FormRejection> =>
+  saveForm(request, nameSchema(serverFreeTextSchema), async ({ name }) => {
+    await auth.api.updateUser({ body: { name }, headers: request.headers })
+    return null
   })
-  if (submission.status !== `success`) {
-    return rejectForm(submission)
-  }
-
-  await auth.api.updateUser({
-    body: { name: submission.value.name },
-    headers: request.headers,
-  })
-  return acceptForm(submission)
-}

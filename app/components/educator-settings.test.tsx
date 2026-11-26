@@ -6,8 +6,8 @@ import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { changePasswordSchema, nameSchema } from '../auth-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
-import type { ConfirmResult } from './confirm-dialog.tsx'
 import { EducatorSettings } from './educator-settings.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 
 /** Renders the page with actions that answer like the server would */
 const renderSettings = async ({
@@ -88,13 +88,13 @@ test(`changing the password confirms it and clears the fields`, async () => {
 
 test(`a wrong current password shows under that field`, async () => {
   await renderSettings({
-    passwordErrors: { currentPassword: [`Your current password is incorrect`] },
+    passwordErrors: { currentPassword: [`Your password is incorrect`] },
   })
 
   await fillPasswords()
 
   await expect
-    .element(page.getByText(`Your current password is incorrect`))
+    .element(page.getByText(`Your password is incorrect`))
     .toBeVisible()
   await expectNoAxeViolations()
 })

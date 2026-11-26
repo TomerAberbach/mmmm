@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.trash.restore.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
-import { changeListed } from '~/listed-change.server.ts'
+import type { ConfirmResult } from '~/form-replies.server.ts'
+import { changeListed } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 import { restoreContests } from '~/trash.server.ts'
 

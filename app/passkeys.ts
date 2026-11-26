@@ -3,7 +3,7 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/browser'
-import { isSecondFactorRefusal } from './second-factor.ts'
+import { readRefusalMessage } from './app-refusal.ts'
 
 /**
  * Resolves to an error message, or undefined once the ceremony succeeds. The
@@ -44,10 +44,7 @@ const runCeremony = async (
   }
 }
 
-/**
- * Better Auth's message for a refusal the app adds, such as a missing second
- * factor
- */
+/** A refusal whose message the app wrote */
 class RefusalError extends Error {
   public override readonly name = `RefusalError`
 }
@@ -68,18 +65,8 @@ const fetchJson = async <Result>(
   )
   const json: unknown = await response.json().catch(() => undefined)
   if (!response.ok) {
-    const message = readAppMessage(json)
+    const message = readRefusalMessage(json)
     throw message ? new RefusalError(message) : new Error(response.statusText)
   }
   return json as Result
-}
-
-const readAppMessage = (json: unknown): string | undefined => {
-  if (typeof json !== `object` || json === null) {
-    return undefined
-  }
-  const { code, message } = json as { code?: unknown; message?: unknown }
-  return isSecondFactorRefusal(code) && typeof message === `string`
-    ? message
-    : undefined
 }

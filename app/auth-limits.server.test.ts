@@ -1,10 +1,7 @@
 import { APIError } from 'better-auth/api'
 import { expect, test } from 'vitest'
-import {
-  limitAuthRequest,
-  refundAuthRequest,
-  TOO_MANY_ATTEMPTS,
-} from './auth-limits.server.ts'
+import { APP_REFUSAL } from './app-refusal.ts'
+import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
 import { CLIENT_IP_HEADER } from './client-ip.ts'
 
 /**
@@ -47,7 +44,7 @@ test(`an address gets 3 sign-ups an hour from one IP address`, async () => {
   await expect(fourth).rejects.toMatchObject({
     statusCode: 429,
     body: {
-      code: TOO_MANY_ATTEMPTS,
+      code: APP_REFUSAL,
       message: `Too many attempts. Try again in 60 minutes.`,
     },
   })

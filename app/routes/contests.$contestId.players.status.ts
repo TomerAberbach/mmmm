@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.players.status.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
 import { setSubmissionStatus } from '~/contest-players.server.ts'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 import { submissionStatusSchema } from '~/player-forms.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 

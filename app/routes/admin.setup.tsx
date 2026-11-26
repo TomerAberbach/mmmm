@@ -10,9 +10,8 @@ import { toAppUrl } from '~/env.server.ts'
 import {
   createSetupLinkToken,
   hasSecondFactor,
-  markSetupLinkUsed,
   readSecondFactors,
-  redeemSetupLinkToken,
+  redeemSetupLink,
   storeSetupLinkToken,
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
@@ -37,8 +36,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
       : ({ step: `choose` } as const)
   }
   const token = new URL(request.url).searchParams.get(`token`)
-  if (token !== null && (await redeemSetupLinkToken(token, educator.id))) {
-    await markSetupLinkUsed(session.id)
+  if (
+    token !== null &&
+    (await redeemSetupLink(token, educator.id, session.id))
+  ) {
     return redirect(href(`/admin/setup`))
   }
   return {

@@ -10,7 +10,7 @@ export const RESET_EXPIRES_IN_HOURS = 1
 /** The longest address RFC 5321 allows */
 export const MAX_EMAIL_LENGTH = 254
 
-export const INVALID_EMAIL_MESSAGE = `Enter an email address like name@school.org`
+const INVALID_EMAIL_MESSAGE = `Enter an email address like name@school.org`
 const SHORT_PASSWORD_MESSAGE = `Enter a password of at least ${MIN_PASSWORD_LENGTH} characters`
 
 export const emailSchema = z

@@ -5,7 +5,7 @@ import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
-import type { ConfirmResult } from './confirm-dialog.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 
 const SUCCESS: ConfirmResult = { ok: true }
 

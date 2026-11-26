@@ -1,12 +1,19 @@
 import type { Submission, SubmissionResult } from '@conform-to/react'
-import { APIError } from 'better-auth/api'
+import { parseWithZod } from '@conform-to/zod/v4'
 import { data } from 'react-router'
-import { INVALID_EMAIL_MESSAGE } from './auth-forms.ts'
-import { isTooManyAttempts } from './auth-limits.server.ts'
-import { isSecondFactorRefusal } from './second-factor.ts'
+import type { z } from 'zod'
+import { idsSchema } from './id-list.ts'
 
 /** What an action answers once it saves a form submitted through a fetcher */
 export type SavedResult = { result: SubmissionResult; saved?: true }
+
+/** What an action answers a change that a page confirms */
+export type ConfirmResult = { ok: true } | { error: string }
+
+type FormErrors = {
+  formErrors?: string[]
+  fieldErrors?: Record<string, string[]>
+}
 
 const BAD_REQUEST: ResponseInit = { status: 400 }
 
@@ -16,10 +23,7 @@ const BAD_REQUEST: ResponseInit = { status: 400 }
  */
 export const rejectForm = (
   submission: Submission<unknown>,
-  errors: {
-    formErrors?: string[]
-    fieldErrors?: Record<string, string[]>
-  } = {},
+  errors: FormErrors = {},
   init: ResponseInit = BAD_REQUEST,
 ): ReturnType<typeof data<{ result: SubmissionResult }>> =>
   data(
@@ -32,52 +36,47 @@ export const rejectForm = (
     init,
   )
 
+export type FormRejection = ReturnType<typeof rejectForm>
+
+const readPasswordFields = (submission: Submission<unknown>): string[] =>
+  Object.keys(submission.payload).filter(name => /password/iu.test(name))
+
 export const acceptForm = (
   submission: Submission<unknown>,
   options?: { resetForm?: boolean },
 ): SavedResult => ({ result: submission.reply(options), saved: true })
 
 /**
- * Answers each refusal Better Auth gives a form, and rethrows any other error:
- * too many attempts, an address it checks more strictly than `emailSchema`, a
- * second-factor change the app refuses, or a wrong password in
- * `passwordField`
+ * Answers a form submitted through a fetcher. `save` runs on a valid form, and
+ * resolves to the errors that kept it from saving, or to null
  */
-export const rejectAuthError = (
-  submission: Submission<unknown>,
-  error: unknown,
-  { passwordField }: { passwordField?: string } = {},
-): ReturnType<typeof rejectForm> => {
-  if (isTooManyAttempts(error)) {
-    return rejectForm(
-      submission,
-      { formErrors: [error.body.message] },
-      { status: 429, headers: error.headers },
-    )
+export const saveForm = async <Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+  save: (value: z.output<Schema>) => Promise<FormErrors | null>,
+): Promise<SavedResult | FormRejection> => {
+  const submission = parseWithZod(await request.formData(), { schema })
+  if (submission.status !== `success`) {
+    return rejectForm(submission)
   }
-  if (error instanceof APIError && error.body?.code === `INVALID_EMAIL`) {
-    return rejectForm(submission, {
-      fieldErrors: { email: [INVALID_EMAIL_MESSAGE] },
-    })
-  }
-  if (
-    passwordField &&
-    error instanceof APIError &&
-    error.body?.code === `INVALID_PASSWORD`
-  ) {
-    return rejectForm(submission, {
-      fieldErrors: { [passwordField]: [`Your password is incorrect`] },
-    })
-  }
-  if (error instanceof APIError && isSecondFactorRefusal(error.body?.code)) {
-    return rejectForm(
-      submission,
-      { formErrors: [error.body?.message ?? error.message] },
-      { status: error.statusCode },
-    )
-  }
-  throw error
+  const errors = await save(submission.value)
+  return errors ? rejectForm(submission, errors) : acceptForm(submission)
 }
 
-const readPasswordFields = (submission: Submission<unknown>): string[] =>
-  Object.keys(submission.payload).filter(name => /password/iu.test(name))
+/**
+ * Runs `change` on the IDs the form lists, and reports an error when it changed
+ * nothing. `done` names the change, such as "deleted"
+ */
+export const changeListed = async (
+  request: Request,
+  change: (ids: string[]) => Promise<number>,
+  done: string,
+): Promise<ConfirmResult> => {
+  const parsed = idsSchema.safeParse(
+    Object.fromEntries(await request.formData()),
+  )
+  const count = parsed.success ? await change(parsed.data.ids) : 0
+  return count > 0
+    ? { ok: true }
+    : { error: `Nothing was ${done}. Reload the page and try again` }
+}

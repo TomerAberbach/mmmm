@@ -1,4 +1,6 @@
+import { href } from 'react-router'
 import type { Email } from '../email.server.ts'
+import { toAppUrl } from '../env.server.ts'
 import { EmailAction, EmailLayout, EmailParagraph } from './layout.server.tsx'
 
 export type SecondFactorChange =
@@ -17,11 +19,9 @@ const SUMMARIES: Record<SecondFactorChange, string> = {
 export const secondFactorChangedEmail = ({
   to,
   change,
-  settingsUrl,
 }: {
   to: string
   change: SecondFactorChange
-  settingsUrl: string
 }): Email => ({
   to,
   subject: `${SUMMARIES[change]} on your MMMM account`,
@@ -37,7 +37,9 @@ export const secondFactorChangedEmail = ({
         If you didn&apos;t make this change, check your second factors and reset
         your password.
       </EmailParagraph>
-      <EmailAction href={settingsUrl}>Check your second factors</EmailAction>
+      <EmailAction href={toAppUrl(href(`/settings`)).href}>
+        Check your second factors
+      </EmailAction>
     </EmailLayout>
   ),
 })
