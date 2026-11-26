@@ -16,7 +16,7 @@ import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
-import type { Organization } from '~/organizations.server.ts'
+import type { Organization } from '~/organizations.ts'
 
 export const EducatorSettings = ({
   name,

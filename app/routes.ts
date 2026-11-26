@@ -26,6 +26,8 @@ export default [
     index(`routes/contests._index.tsx`),
     route(`new`, `routes/contests.new.ts`),
     route(`organization`, `routes/contests.organization.ts`),
+    route(`leaderboard`, `routes/contests.leaderboard.tsx`),
+    route(`leaderboard/:playerId`, `routes/contests.leaderboard.$playerId.tsx`),
     route(`trash`, `routes/contests.trash.tsx`),
     route(`trash/restore`, `routes/contests.trash.restore.ts`),
     route(`trash/erase`, `routes/contests.trash.erase.ts`),
@@ -82,6 +84,11 @@ export default [
         route(
           `leaderboard/:playerId`,
           `routes/player.leaderboard.$playerId.tsx`,
+        ),
+        route(`organization`, `routes/player.organization.tsx`),
+        route(
+          `organization/:playerId`,
+          `routes/player.organization.$playerId.tsx`,
         ),
       ]),
     ]),

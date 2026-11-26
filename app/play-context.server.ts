@@ -8,6 +8,7 @@ import { isOpenYear } from './brackets.server.ts'
 import { brokenLink } from './broken-link.ts'
 import { readContestById, readContestByLink } from './contests.server.ts'
 import type { PlayContest } from './contests.server.ts'
+import type { LeaderboardViewer } from './leaderboards.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 import { readSubmissionStatus } from './player-picks.server.ts'
 
@@ -107,6 +108,15 @@ export const requireApprovedPlayer: MiddlewareFunction<Response> = async (
     ? next()
     : redirect(href(`/player/:contestId/bracket`, { contestId }))
 }
+
+/** The remembered player, as a leaderboard's viewer */
+export const readPlayerViewer = (
+  context: Readonly<RouterContextProvider>,
+): LeaderboardViewer => ({
+  kind: `player`,
+  contestId: readPlayContest(context).id,
+  playerId: readRequiredPlayer(context).id,
+})
 
 export const readRequiredPlayer = (
   context: Readonly<RouterContextProvider>,
