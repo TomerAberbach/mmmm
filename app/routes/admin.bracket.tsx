@@ -20,7 +20,7 @@ import { rejectForm } from '~/form-replies.server.ts'
 
 /** Only for a year to set up. The current year's bracket is with its results */
 export const loader = async () => {
-  const { setupYear: year } = await readAdminYears()
+  const { current, setupYear: year } = await readAdminYears()
   if (year === null) {
     return redirect(href(`/admin/results`))
   }
@@ -28,6 +28,7 @@ export const loader = async () => {
   const bracket = summary && (await readBracket(year))
   return {
     year,
+    archivedYear: current?.year ?? null,
     summary,
     defaultValue: bracket ? toBracketForm(toNames(bracket)) : undefined,
   }
@@ -56,7 +57,11 @@ const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (
     <PageTitle>{`${loaderData.year} bracket`}</PageTitle>
     {/* A bracket can be published once it's saved */}
     {loaderData.summary ? (
-      <PhaseSection year={loaderData.year} summary={loaderData.summary} />
+      <PhaseSection
+        year={loaderData.year}
+        archivedYear={loaderData.archivedYear}
+        summary={loaderData.summary}
+      />
     ) : null}
     <BracketSetupForm
       year={loaderData.year}

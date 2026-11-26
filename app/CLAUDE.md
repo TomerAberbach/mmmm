@@ -251,9 +251,14 @@ app
   the signed-in educator's ID, so another educator's request changes nothing
 - Deleting a contest or player sets `deletedAt`, which moves it to the trash.
   Filter each query of either with `CONTEST_OUTSIDE_TRASH`,
-  `PLAYER_OUTSIDE_TRASH`, or `educatorPlayers` from `outside-trash.server.ts`,
-  unless it reads the trash, and recheck `deletedAt` inside a transaction that
-  adds to them. Delete, restore, and erase only through `trash.server.ts`
+  `PLAYER_OUTSIDE_TRASH` from `outside-trash.server.ts`, or `editablePlayers`
+  from `editable-contests.server.ts`, unless it reads the trash, and recheck
+  `deletedAt` inside a transaction that adds to them. Delete, restore, and erase
+  only through `trash.server.ts`, or `archive.server.ts` when a year is archived
+- Change an educator's contests and their players inside `changeContests` from
+  `editable-contests.server.ts`, which refuses a past year's. Only Stop sharing,
+  a player's own delete, and restoring or erasing what they deleted also work in
+  a past year
 - Answer a link that can work again, such as a deleted player's, with a 404.
   Chromium caches a 410 forever
 - Send the picker's requests and results through `useRequestQueue` in

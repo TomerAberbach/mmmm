@@ -1,9 +1,7 @@
 import { prisma } from './db.server.ts'
+import { changeContests, editablePlayers } from './editable-contests.server.ts'
 import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
-import {
-  educatorPlayers,
-  PLAYER_OUTSIDE_TRASH,
-} from './outside-trash.server.ts'
+import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import type { Decision } from './player-forms.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
@@ -62,52 +60,55 @@ const SCORE_ORDER = [
 
 /**
  * Returns how many of the players have a submission in a contest the educator
- * runs. An educator can change a submission's status at any time
+ * runs. An educator can change a submission's status until the year is past
  */
-export const setSubmissionStatus = async (
+export const setSubmissionStatus = (
   educatorId: string,
   contestId: string,
   playerIds: string[],
   status: Decision,
-): Promise<number> => {
-  const { count } = await prisma.submission.updateMany({
-    where: {
-      playerId: { in: playerIds },
-      player: educatorPlayers(educatorId, contestId),
-    },
-    data: { status },
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.submission.updateMany({
+      where: {
+        playerId: { in: playerIds },
+        player: editablePlayers(contests, contestId),
+      },
+      data: { status },
+    })
+    return count
   })
-  return count
-}
 
 /** Returns whether the player is in a contest the educator runs */
-export const renamePlayer = async (
+export const renamePlayer = (
   educatorId: string,
   contestId: string,
   playerId: string,
   displayName: string,
-): Promise<boolean> => {
-  const { count } = await prisma.player.updateMany({
-    where: { id: playerId, ...educatorPlayers(educatorId, contestId) },
-    data: { displayName },
+): Promise<boolean> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.player.updateMany({
+      where: { id: playerId, ...editablePlayers(contests, contestId) },
+      data: { displayName },
+    })
+    return count > 0
   })
-  return count > 0
-}
 
 /**
  * Replaces the player's personal link, so the old one stops working, also in
  * browsers that remember it. Returns the new link's secret, or null unless the
  * player is in a contest the educator runs
  */
-export const replacePersonalLink = async (
+export const replacePersonalLink = (
   educatorId: string,
   contestId: string,
   playerId: string,
-): Promise<string | null> => {
-  const secret = createSecret()
-  const { count } = await prisma.player.updateMany({
-    where: { id: playerId, ...educatorPlayers(educatorId, contestId) },
-    data: { personalLinkHash: hashSecret(secret) },
+): Promise<string | null> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const secret = createSecret()
+    const { count } = await tx.player.updateMany({
+      where: { id: playerId, ...editablePlayers(contests, contestId) },
+      data: { personalLinkHash: hashSecret(secret) },
+    })
+    return count > 0 ? secret : null
   })
-  return count > 0 ? secret : null
-}

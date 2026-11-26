@@ -1,11 +1,12 @@
 import { prisma } from './db.server.ts'
+import { changeContests, editablePlayers } from './editable-contests.server.ts'
+import type { EditableContests } from './editable-contests.server.ts'
 import type {
   PlayerDeleter,
   SubmissionStatus,
 } from './generated/prisma/client.ts'
 import {
   CONTEST_OUTSIDE_TRASH,
-  educatorPlayers,
   PLAYER_OUTSIDE_TRASH,
 } from './outside-trash.server.ts'
 import { readEraseCutoff } from './trash.ts'
@@ -50,57 +51,69 @@ export const countDeletedPlayers = (contestId: string): Promise<number> =>
  * Moves the players to the contest's trash, which turns off their personal
  * links. Returns how many it moved
  */
-export const deletePlayers = async (
+export const deletePlayers = (
   educatorId: string,
   contestId: string,
   playerIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.player.updateMany({
-    where: {
-      id: { in: playerIds },
-      ...educatorPlayers(educatorId, contestId),
-    },
-    data: { deletedAt: new Date(), deletedBy: `EDUCATOR` },
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.player.updateMany({
+      where: {
+        id: { in: playerIds },
+        ...editablePlayers(contests, contestId),
+      },
+      data: { deletedAt: new Date(), deletedBy: `EDUCATOR` },
+    })
+    return count
   })
-  return count
-}
 
-/** Matches players in the trash, only in a contest the educator runs */
-const educatorTrash = (
-  educatorId: string,
+/**
+ * Matches players in the trash of one of the contests. A player can delete
+ * themselves in a past year, so it matches those in any of the educator's
+ */
+const deletedPlayers = (
+  contests: EditableContests,
   contestId: string,
   playerIds: string[],
 ) => ({
   id: { in: playerIds },
   contestId,
-  contest: { educatorId, ...CONTEST_OUTSIDE_TRASH },
   deletedAt: { not: null },
+  OR: [
+    { contest: { ...contests, ...CONTEST_OUTSIDE_TRASH } },
+    {
+      deletedBy: `PLAYER` as const,
+      contest: { educatorId: contests.educatorId, ...CONTEST_OUTSIDE_TRASH },
+    },
+  ],
 })
 
 /** Returns how many players it restored */
-export const restorePlayers = async (
+export const restorePlayers = (
   educatorId: string,
   contestId: string,
   playerIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.player.updateMany({
-    where: educatorTrash(educatorId, contestId, playerIds),
-    data: { deletedAt: null, deletedBy: null },
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.player.updateMany({
+      where: deletedPlayers(contests, contestId, playerIds),
+      data: { deletedAt: null, deletedBy: null },
+    })
+    return count
   })
-  return count
-}
 
 /** Deletes players in the trash for good. Returns how many it erased */
-export const erasePlayers = async (
+export const erasePlayers = (
   educatorId: string,
   contestId: string,
   playerIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.player.deleteMany({
-    where: educatorTrash(educatorId, contestId, playerIds),
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.player.deleteMany({
+      where: deletedPlayers(contests, contestId, playerIds),
+    })
+    return count
   })
-  return count
-}
 
 /**
  * A player moves their own draft or submission to the trash. Returns whether it
@@ -126,16 +139,17 @@ export const eraseExpiredPlayers = async (now: Date): Promise<number> => {
 }
 
 /** Returns whether it moved the contest, with its players, to the trash */
-export const deleteContest = async (
+export const deleteContest = (
   educatorId: string,
   contestId: string,
-): Promise<boolean> => {
-  const { count } = await prisma.contest.updateMany({
-    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
-    data: { deletedAt: new Date() },
+): Promise<boolean> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.contest.updateMany({
+      where: { id: contestId, ...contests, ...CONTEST_OUTSIDE_TRASH },
+      data: { deletedAt: new Date() },
+    })
+    return count > 0
   })
-  return count > 0
-}
 
 /** The counts leave out players in the contest's own trash */
 export type DeletedContest = {
@@ -185,35 +199,37 @@ export const countDeletedContests = (
     where: { educatorId, year, deletedAt: { not: null } },
   })
 
-/** Matches contests in the educator's trash */
-const educatorContestTrash = (educatorId: string, contestIds: string[]) => ({
+/** Matches those of the contests in the trash */
+const deletedContests = (contests: EditableContests, contestIds: string[]) => ({
+  ...contests,
   id: { in: contestIds },
-  educatorId,
   deletedAt: { not: null },
 })
 
 /** Returns how many contests it restored, with their players */
-export const restoreContests = async (
+export const restoreContests = (
   educatorId: string,
   contestIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.contest.updateMany({
-    where: educatorContestTrash(educatorId, contestIds),
-    data: { deletedAt: null },
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.contest.updateMany({
+      where: deletedContests(contests, contestIds),
+      data: { deletedAt: null },
+    })
+    return count
   })
-  return count
-}
 
 /**
  * Deletes contests in the trash for good, with their players. Returns how many
  * it erased
  */
-export const eraseContests = async (
+export const eraseContests = (
   educatorId: string,
   contestIds: string[],
-): Promise<number> => {
-  const { count } = await prisma.contest.deleteMany({
-    where: educatorContestTrash(educatorId, contestIds),
+): Promise<number> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.contest.deleteMany({
+      where: deletedContests(contests, contestIds),
+    })
+    return count
   })
-  return count
-}

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
 import { withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
+import { changeContests } from './editable-contests.server.ts'
 import { toAppUrl } from './env.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret } from './secrets.server.ts'
@@ -73,17 +74,18 @@ export const readEducatorContest = async (
 }
 
 /** Returns whether the educator runs the contest */
-export const renameContest = async (
+export const renameContest = (
   educatorId: string,
   contestId: string,
   name: string,
-): Promise<boolean> => {
-  const { count } = await prisma.contest.updateMany({
-    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
-    data: { name },
+): Promise<boolean> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.contest.updateMany({
+      where: { id: contestId, ...contests, ...CONTEST_OUTSIDE_TRASH },
+      data: { name },
+    })
+    return count > 0
   })
-  return count > 0
-}
 
 /** A contest as its players see it, without its contest link */
 export type PlayContest = {
@@ -133,16 +135,20 @@ const readPlayedContest = async (
  * Replaces the contest link, so the old one stops working. Players keep their
  * personal links. Returns whether the educator runs the contest
  */
-export const replaceContestLink = async (
+export const replaceContestLink = (
   educatorId: string,
   contestId: string,
-): Promise<boolean> => {
-  const { count } = await prisma.contest.updateMany({
-    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
-    data: { linkSecret: createContestSecret(), linkVersion: { increment: 1 } },
+): Promise<boolean> =>
+  changeContests(educatorId, async (tx, contests) => {
+    const { count } = await tx.contest.updateMany({
+      where: { id: contestId, ...contests, ...CONTEST_OUTSIDE_TRASH },
+      data: {
+        linkSecret: createContestSecret(),
+        linkVersion: { increment: 1 },
+      },
+    })
+    return count > 0
   })
-  return count > 0
-}
 
 /** 144 random bits keep the contest link short */
 const createContestSecret = (): string => createSecret(18)

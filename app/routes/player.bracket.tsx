@@ -7,6 +7,7 @@ import { PlayerBracket } from '~/components/player-bracket.tsx'
 import { PlayerRanks } from '~/components/player-ranks.tsx'
 import { readPlayerRanks } from '~/leaderboard-scopes.server.ts'
 import { readArrangement } from '~/moves.ts'
+import { readPastYear } from '~/past-years.server.ts'
 import { readPlayContest, readRequiredPlayer } from '~/play-context.server.ts'
 import { readPlayerBracket } from '~/player-picks.server.ts'
 import { toPersonalLink } from '~/players.server.ts'
@@ -19,8 +20,15 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const contest = readPlayContest(context)
   const { year } = contest
   // A contest exists only while its year's bracket is published
-  const [{ bracket, results, draft, submission, hasClearedPicks }, isOpen] =
-    await Promise.all([readPlayerBracket(player.id, year), isOpenYear(year)])
+  const [
+    { bracket, results, draft, submission, hasClearedPicks },
+    isOpen,
+    pastYear,
+  ] = await Promise.all([
+    readPlayerBracket(player.id, year),
+    isOpenYear(year),
+    readPastYear(year),
+  ])
   const ranks =
     !isOpen && submission?.status === `APPROVED`
       ? await readPlayerRanks(contest, player.id)
@@ -31,6 +39,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     displayName: player.displayName,
     year,
     isOpen,
+    isPast: pastYear !== null,
     bracket,
     draft,
     results,
@@ -51,6 +60,7 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
     results,
     hasClearedPicks,
     ranks,
+    isPast,
     ...shared
   } = loaderData
   const paths = {
@@ -74,6 +84,7 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
         <LockedBracket
           {...shared}
           {...paths}
+          isPast={isPast}
           draft={draft}
           results={results}
           ranks={

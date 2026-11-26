@@ -1,44 +1,88 @@
+import { href, Link } from 'react-router'
 import type { Route } from './+types/contests.$contestId.ts'
 import { isOpenYear } from '~/brackets.server.ts'
 import { ContestDetails } from '~/components/contest-details.tsx'
-import { SharedContestDetails } from '~/components/shared-contest.tsx'
+import { ContestShares } from '~/components/contest-shares.tsx'
+import { ReadOnlyContest } from '~/components/read-only-contest.tsx'
 import { readViewableContest } from '~/contest-context.server.ts'
 import { readContestPlayers } from '~/contest-players.server.ts'
 import { readContestOrganization } from '~/organizations.server.ts'
+import { readPastYear } from '~/past-years.server.ts'
 import { readColleagues } from '~/shares.server.ts'
+import type { Colleague } from '~/shares.server.ts'
 import { countDeletedPlayers } from '~/trash.server.ts'
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
   const { access, contest } = readViewableContest(context)
-  const isOpen = await isOpenYear(contest.year)
-  const readPlayers = () =>
-    readContestPlayers(
-      contest.id,
-      isOpen ? `OLDEST_FIRST` : `HIGHEST_SCORE_FIRST`,
-    )
+  const [isOpen, pastYear] = await Promise.all([
+    isOpenYear(contest.year),
+    readPastYear(contest.year),
+  ])
+  const players = await readContestPlayers(
+    contest.id,
+    isOpen ? `OLDEST_FIRST` : `HIGHEST_SCORE_FIRST`,
+  )
   if (access === `shared`) {
-    return { access, contest, isOpen, players: await readPlayers() }
+    return {
+      view: `shared`,
+      contest,
+      sharedBy: contest.educatorName,
+      isOpen,
+      players,
+    } as const
   }
-  const [players, deletedCount, organization, colleagues] = await Promise.all([
-    readPlayers(),
+  const [deletedCount, organization, colleagues] = await Promise.all([
     countDeletedPlayers(contest.id),
     readContestOrganization(contest.id),
     readColleagues(contest.id),
   ])
   return {
-    access,
+    view: pastYear ? `past` : `own`,
     contest,
     isOpen,
     players,
     deletedCount,
     colleagues: organization && colleagues,
-  }
+  } as const
 }
 
-const ContestPage = ({ loaderData }: Route.ComponentProps) =>
-  loaderData.access === `shared` ? (
-    <SharedContestDetails {...loaderData} />
-  ) : (
-    <ContestDetails {...loaderData} />
-  )
+const ContestPage = ({ loaderData }: Route.ComponentProps) => {
+  switch (loaderData.view) {
+    case `own`:
+      return <ContestDetails {...loaderData} />
+    case `shared`:
+      return <ReadOnlyContest {...loaderData} />
+    case `past`:
+      return (
+        <ReadOnlyContest {...loaderData} sharedBy={null}>
+          <PastContestControls {...loaderData} />
+        </ReadOnlyContest>
+      )
+  }
+}
 export default ContestPage
+
+/** What an educator can still do, while there's something to do it to */
+const PastContestControls = ({
+  contest,
+  deletedCount,
+  colleagues,
+}: {
+  contest: { id: string; name: string }
+  deletedCount: number
+  colleagues: Colleague[] | null
+}) => (
+  <>
+    {colleagues && colleagues.length > 0 ? (
+      <ContestShares contest={contest} colleagues={colleagues} isPast />
+    ) : null}
+    {deletedCount > 0 ? (
+      <Link
+        to={href(`/contests/:contestId/trash`, { contestId: contest.id })}
+        className='self-start print:hidden'
+      >
+        {`Trash (${deletedCount})`}
+      </Link>
+    ) : null}
+  </>
+)

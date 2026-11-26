@@ -24,6 +24,7 @@ import type { StoredBracket } from '~/seeded-bracket.ts'
  */
 export const LockedBracket = ({
   year,
+  isPast,
   bracket,
   draft,
   submitted,
@@ -34,6 +35,8 @@ export const LockedBracket = ({
   playerId,
 }: {
   year: number
+  /** Whether a newer year is current, so no educator approves it anymore */
+  isPast: boolean
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted | null
@@ -48,6 +51,7 @@ export const LockedBracket = ({
     {submitted ? (
       <SubmittedBracket
         year={year}
+        isPast={isPast}
         bracket={bracket}
         draft={draft}
         submitted={submitted}
@@ -71,6 +75,7 @@ export const LockedBracket = ({
 
 const SubmittedBracket = ({
   year,
+  isPast,
   bracket,
   draft,
   submitted: { submission, personalLink },
@@ -79,6 +84,7 @@ const SubmittedBracket = ({
   forgetPath,
 }: {
   year: number
+  isPast: boolean
   bracket: StoredBracket
   draft: Picks
   submitted: Submitted
@@ -94,7 +100,7 @@ const SubmittedBracket = ({
           arePicksEqual(draft, submission.picks)
             ? ``
             : `The changes you made after submitting weren’t submitted. `
-        }${STATUS_NOTES[submission.status]}`}
+        }${isPast && submission.status === `PENDING` ? NEVER_APPROVED : STATUS_NOTES[submission.status]}`}
       </Notice>
     </div>
     {ranks}
@@ -151,3 +157,5 @@ const STATUS_NOTES: Record<SubmissionStatus, string> = {
   APPROVED: `Your bracket is in, and your educator approved it.`,
   REJECTED: `Your educator didn’t approve your bracket. You can ask them about it.`,
 }
+
+const NEVER_APPROVED = `Your educator didn’t approve your bracket in time, so it doesn’t count.`
