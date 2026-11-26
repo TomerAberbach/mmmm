@@ -8,6 +8,7 @@ import { ScoreCell } from './score-cell.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
+import { UNNAMED_PLAYER } from '~/leaderboard-row.ts'
 import { CONTEST_TARGET } from '~/report-forms.ts'
 import { describeStatus, SUBMISSION_SECTIONS } from '~/submission-status.ts'
 
@@ -65,7 +66,9 @@ export const ReadOnlyContest = ({
         action={href(`/contests/:contestId/report`, { contestId: contest.id })}
         targets={[
           CONTEST_TARGET,
-          ...players.map(({ id, displayName }) => ({ id, label: displayName })),
+          ...players
+            .filter(({ displayName }) => displayName !== UNNAMED_PLAYER)
+            .map(({ id, displayName }) => ({ id, label: displayName })),
         ]}
       />
     )}

@@ -7,6 +7,7 @@ import {
 } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
+import { UNNAMED_PLAYER } from './leaderboard-row.ts'
 import type {
   LeaderboardPage,
   LeaderboardRow,
@@ -173,12 +174,12 @@ const describeHidden = (
 ): string => {
   switch (scope.kind) {
     case `contest`:
-      return `Player`
+      return UNNAMED_PLAYER
     case `organization`:
       return `Player from ${contestName} (${educatorName})`
     case `global`:
       return organizationName === null
-        ? `Player`
+        ? UNNAMED_PLAYER
         : `Player from ${organizationName}`
   }
 }

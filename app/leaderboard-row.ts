@@ -1,5 +1,8 @@
 import type { PageNumber } from './page-number.ts'
 
+/** Stands in for a display name that's hidden or removed */
+export const UNNAMED_PLAYER = `Player`
+
 /** A leaderboard's row as one viewer sees it */
 export type LeaderboardRow = {
   playerId: string
