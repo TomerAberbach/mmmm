@@ -1,7 +1,7 @@
 # Operations
 
-How staging is set up, deployed, and backed up. Production follows the same
-shape at cutover.
+How staging is set up, deployed, and backed up. [cutover.md](cutover.md) creates
+production the same way.
 
 ## Accounts
 
@@ -24,14 +24,15 @@ value.
 
 ### Fly (`fly secrets list --app mmmm-staging`)
 
-| Secret               | Value                                                                            |
-| -------------------- | -------------------------------------------------------------------------------- |
-| `DATABASE_URL`       | Neon's pooled connection string                                                  |
-| `BETTER_AUTH_SECRET` | Random. Set with `fly secrets set BETTER_AUTH_SECRET=$(openssl rand -base64 32)` |
-| `STAGING_PASSWORD`   | The password testers enter in the browser. Any username works                    |
-| `RESEND_API_KEY`     | A Resend API key with sending access                                             |
-| `SUPPORT_EMAIL`      | `support@mmmm.onl`, which Cloudflare forwards                                    |
-| `ADMIN_LIST`         | The admins' addresses, separated by commas. A secret only to keep them private   |
+| Secret                | Value                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`        | Neon's pooled connection string                                                  |
+| `DIRECT_DATABASE_URL` | Production only. Neon's direct connection string, for migrations                 |
+| `BETTER_AUTH_SECRET`  | Random. Set with `fly secrets set BETTER_AUTH_SECRET=$(openssl rand -base64 32)` |
+| `STAGING_PASSWORD`    | The password testers enter in the browser. Any username works                    |
+| `RESEND_API_KEY`      | A Resend API key with sending access                                             |
+| `SUPPORT_EMAIL`       | `support@mmmm.onl`, which Cloudflare forwards                                    |
+| `ADMIN_LIST`          | The admins' addresses, separated by commas. A secret only to keep them private   |
 
 `fly.toml` sets `APP_ENV`, `BETTER_AUTH_URL`, `EMAIL_TRANSPORT`, and
 `EMAIL_FROM`, which aren't secret. With `APP_ENV=staging`, the app refuses to
@@ -40,13 +41,15 @@ production serves the same files.
 
 ### GitHub (repository settings, Secrets and variables, Actions)
 
-| Name                           | Kind     | Value                                           |
-| ------------------------------ | -------- | ----------------------------------------------- |
-| `STAGING_BACKUP_DATABASE_URL`  | Secret   | Neon's direct (unpooled) connection string      |
-| `BACKUP_AWS_ACCESS_KEY_ID`     | Secret   | The Tigris access key from `fly storage create` |
-| `BACKUP_AWS_SECRET_ACCESS_KEY` | Secret   | Its secret                                      |
-| `BACKUP_BUCKET`                | Variable | `mmmm-backups`                                  |
-| `BACKUP_AGE_RECIPIENT`         | Variable | The age public key, starting `age1`             |
+| Name                             | Kind     | Value                                           |
+| -------------------------------- | -------- | ----------------------------------------------- |
+| `STAGING_BACKUP_DATABASE_URL`    | Secret   | Neon's direct (unpooled) connection string      |
+| `PRODUCTION_BACKUP_DATABASE_URL` | Secret   | Production's direct connection string           |
+| `BACK_UP_PRODUCTION`             | Variable | `true` once production exists                   |
+| `BACKUP_AWS_ACCESS_KEY_ID`       | Secret   | The Tigris access key from `fly storage create` |
+| `BACKUP_AWS_SECRET_ACCESS_KEY`   | Secret   | Its secret                                      |
+| `BACKUP_BUCKET`                  | Variable | `mmmm-backups`                                  |
+| `BACKUP_AGE_RECIPIENT`           | Variable | The age public key, starting `age1`             |
 
 ### Password manager
 
@@ -67,6 +70,15 @@ strangers out. Each release empties the database, pushes the schema, and seeds
 it, so staging starts from fresh data. The seed creates `educator@example.com`
 and `admin@example.com`, both with the password `password`, the 2025 bracket
 with contests and players, and the upcoming year's bracket, unpublished.
+
+## Deploying production
+
+```sh
+fly deploy --config fly.production.toml --ha=false
+```
+
+Always pass the config. `fly.toml` is staging's, and its release empties the
+database, so it refuses to run on any other Fly app.
 
 ## Admins
 
@@ -105,8 +117,9 @@ delivery on staging, sign up there with your own address.
 `.github/workflows/backup.yml` runs at 08:00 UTC each night and on demand from
 the Actions tab. It runs `pg_dump` from the `postgres:18` image, encrypts the
 dump with age to `BACKUP_AGE_RECIPIENT`, and uploads it to
-`s3://mmmm-backups/staging/`. A lifecycle rule on the bucket deletes dumps after
-30 days. The workflow never holds the key that decrypts them.
+`s3://mmmm-backups/staging/`, and the same for production once
+`BACK_UP_PRODUCTION` is `true`. A lifecycle rule on the bucket deletes dumps
+after 30 days. The workflow never holds the key that decrypts them.
 
 GitHub emails you when a run fails.
 
@@ -116,7 +129,7 @@ GitHub emails you when a run fails.
 docker compose up -d
 AGE_IDENTITY_FILE=mmmm-backup.key BACKUP_BUCKET=mmmm-backups \
   AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=… \
-  scripts/restore-backup.sh
+  scripts/restore-backup.sh  # Add `production` for its newest dump
 ```
 
 The script restores the newest dump into a new database on the local Postgres
@@ -158,8 +171,10 @@ The steps that created staging, for redoing them or setting up production.
 
 ## Rotating a secret
 
-- **Neon password:** reset it in Neon under Roles, then update `DATABASE_URL` on
-  Fly and `STAGING_BACKUP_DATABASE_URL` on GitHub, and deploy
+- **Neon password:** reset it in Neon under Roles, then update that app's
+  `DATABASE_URL` and, on production, `DIRECT_DATABASE_URL` on Fly. Update its
+  `STAGING_BACKUP_DATABASE_URL` or `PRODUCTION_BACKUP_DATABASE_URL` on GitHub,
+  and deploy
 - **`BETTER_AUTH_SECRET`:** set a new random value and deploy. Every session
   signs out
 - **Tigris key:** create a new one in the dashboard, update both GitHub secrets,

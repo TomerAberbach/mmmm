@@ -26,6 +26,7 @@ mmmm
 ├── prisma/             # Schema and seed. Has its own CLAUDE.md
 ├── test/database.ts    # Creates throwaway databases for each Vitest worker and Playwright run
 ├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins
+├── docs/cutover.md     # The runbook for replacing mmmm-old
 └── e2e/                # Playwright tests against the production build. Has its own CLAUDE.md
 ```
 
@@ -43,6 +44,7 @@ pnpm typecheck  # Generate route types, then run tsc
 pnpm knip       # Find unused files, dependencies, and exports
 pnpm db:reset   # Push the schema to an empty database, regenerate the client, and reseed
 pnpm db:seed
+pnpm db:baseline  # Rewrite production's first migration. Only until production exists
 pnpm job:daily  # Run the daily job by hand. It also runs at startup and each night
 fly deploy --ha=false   # Deploy staging. See docs/operations.md
 
