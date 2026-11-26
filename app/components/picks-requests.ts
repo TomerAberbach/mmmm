@@ -7,7 +7,7 @@ export type RequestState =
   | { kind: `idle` }
   | { kind: `sending`; intent: Intent }
   | { kind: `sent`; at: Date }
-  | { kind: `failed`; intent: Intent; retry: () => void }
+  | { kind: `failed`; intent: Intent }
   // The server refused the request, so sending it again fails the same way
   | { kind: `refused`; intent: Intent }
 
@@ -26,10 +26,13 @@ export const usePicksRequests = (
   path: string,
 ): {
   state: RequestState
+  /** Whether any request is in flight, which a failed state doesn't show */
+  isSending: boolean
   send: (request: PicksRequest, onSent?: () => void | Promise<void>) => void
 } => {
   const [state, setState] = useState<RequestState>({ kind: `idle` })
-  const isSending = useRef(false)
+  const [isSending, setIsSending] = useState(false)
+  const isInFlight = useRef(false)
   const waiting = useRef<Queued[]>([])
 
   const send = useCallback(
@@ -39,7 +42,8 @@ export const usePicksRequests = (
     ): void => {
       const sendNow = (queued: Queued): void => {
         const { intent } = queued.request
-        isSending.current = true
+        isInFlight.current = true
+        setIsSending(true)
         setState(previous =>
           keepsFailure(previous, intent)
             ? previous
@@ -58,19 +62,21 @@ export const usePicksRequests = (
             } else if (outcome === `refused`) {
               setState({ kind: `refused`, intent })
             } else {
-              setState({ kind: `failed`, intent, retry: () => sendNow(queued) })
+              setState({ kind: `failed`, intent })
             }
           })
           .finally(() => {
-            isSending.current = false
+            isInFlight.current = false
             const next = waiting.current.shift()
             if (next) {
               sendNow(next)
+            } else {
+              setIsSending(false)
             }
           })
       }
       const queued = { request, onSent }
-      if (isSending.current) {
+      if (isInFlight.current) {
         waiting.current = [
           ...waiting.current.filter(({ request }) => request.intent !== `save`),
           queued,
@@ -81,17 +87,20 @@ export const usePicksRequests = (
     },
     [path],
   )
-  return { state, send }
+  return { state, isSending, send }
 }
 
 const ignore = () => {}
 
 /**
- * A failed submit or discard stays shown past later saves, since a save doesn't
- * do what the player asked
+ * A failed submit stays shown past later saves, since a save doesn't submit. A
+ * save after a failed discard builds on the submitted picks and replaces the
+ * draft, so discarding again would lose the player's newer picks
  */
 const keepsFailure = (previous: RequestState, intent: Intent): boolean =>
-  previous.kind === `failed` && previous.intent !== `save` && intent === `save`
+  previous.kind === `failed` &&
+  previous.intent === `submit` &&
+  intent === `save`
 
 /**
  * A redirect means the server no longer remembers the player, and a 4xx that

@@ -28,8 +28,8 @@ type ConfirmDialogProps = {
        */
       fetcherKey?: string
     }
-  // Makes the change in the page. The dialog closes when it's called
-  | { onConfirm: () => void }
+  // Makes the change in the page. The dialog closes when it settles
+  | { onConfirm: () => void | Promise<void> }
 ) &
   (
     | {
@@ -46,8 +46,9 @@ const NO_FIELDS: Record<string, string> = {}
 
 /**
  * Confirms a destructive or hard-to-undo action, which the route action or
- * `onConfirm` then performs. Focus starts on Cancel, and Escape cancels. The
- * dialog stays open to show an error the route action returns
+ * `onConfirm` then performs. Focus starts on Cancel, and Escape cancels until
+ * `onConfirm` starts. The dialog stays open to show an error the route action
+ * returns
  */
 export const ConfirmDialog = ({
   title,
@@ -67,7 +68,13 @@ export const ConfirmDialog = ({
   const result = fetcher.state === `idle` ? fetcher.data : undefined
   const descriptionId = useId()
 
+  const [isConfirming, setIsConfirming] = useState(false)
+
   const changeOpen = (open: boolean) => {
+    // Closing can't take back a change already under way
+    if (isConfirming) {
+      return
+    }
     if (open) {
       // Each opening starts without the last attempt's result
       fetcher.reset()
@@ -75,12 +82,27 @@ export const ConfirmDialog = ({
     setIsOpen(open)
   }
 
+  const confirm = async (onConfirm: () => void | Promise<void>) => {
+    setIsConfirming(true)
+    try {
+      await onConfirm()
+    } finally {
+      setIsConfirming(false)
+      setIsOpen(false)
+    }
+  }
+
   const buttons = (confirmButton: ReactElement) => (
     <>
       {/* The least destructive choice gets focus, as the WAI-ARIA alert dialog
         pattern advises */}
-      {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-      <Button slot='close' variant='secondary' autoFocus>
+      <Button
+        slot='close'
+        variant='secondary'
+        isDisabled={isConfirming}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus
+      >
         Cancel
       </Button>
       {confirmButton}
@@ -101,9 +123,9 @@ export const ConfirmDialog = ({
         <div className={BUTTONS_CLASS_NAME}>
           {buttons(
             <Button
-              slot='close'
               variant={confirmVariant}
-              onPress={props.onConfirm}
+              isPending={isConfirming}
+              onPress={() => void confirm(props.onConfirm)}
             >
               {confirmLabel}
             </Button>,

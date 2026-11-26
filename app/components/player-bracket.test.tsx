@@ -10,11 +10,12 @@ import {
   ROUND_1_FIRST,
   storeTestBracket,
 } from '../../test/picks.ts'
+import { toBattleKey } from '../bracket.ts'
 import { formatDateTime } from '../dates.ts'
 import { listContenders, pickWinner } from '../picks.ts'
 import type { Picks } from '../picks.ts'
 import type { Submission } from '../player-picks.server.ts'
-import { toSeededBracket } from '../seeded-bracket.ts'
+import { fillSides, toSeededBracket } from '../seeded-bracket.ts'
 import type { Combatant } from '../seeded-bracket.ts'
 import { PlayerBracket } from './player-bracket.tsx'
 import type { Submitted } from './player-bracket.tsx'
@@ -33,6 +34,10 @@ const COMPLETE_CHANGED_PICKS = pickWinner(
   CHAMPIONSHIP,
   SEED_16.id,
 ).picks
+/** The finalist the complete picks don't choose as champion */
+const RUNNER_UP = fillSides(BRACKET, CHAMPIONSHIP, COMPLETE_PICKS)
+  .flatMap(side => (side.kind === `combatant` ? [side.combatant] : []))
+  .find(({ id }) => id !== COMPLETE_PICKS[toBattleKey(CHAMPIONSHIP)])!
 const PERSONAL_LINK = `https://mmmm.test/my-bracket/secret`
 const SUBMISSION: Submission = {
   status: `PENDING`,
@@ -403,4 +408,70 @@ test(`a player deletes their bracket after confirming`, async () => {
     .click()
 
   await expect.element(page.getByText(`Deleted`, { exact: true })).toBeVisible()
+})
+
+test(`trying a failed submit again submits the picks as they are now`, async () => {
+  const fetchSpy = vi
+    .spyOn(globalThis, `fetch`)
+    .mockRejectedValueOnce(new TypeError(`Failed to fetch`))
+    .mockResolvedValue(Response.json({ ok: true }))
+  await renderBracket({ draft: COMPLETE_PICKS })
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+  await expect
+    .element(page.getByRole(`button`, { name: `Try again` }))
+    .toBeVisible()
+  await page.getByRole(`tab`, { name: /^Championship/u }).click()
+  await page.getByRole(`tabpanel`).getByText(RUNNER_UP.name).first().click()
+  await expect.poll(() => fetchSpy.mock.calls.length).toBe(2)
+
+  await page.getByRole(`button`, { name: `Try again` }).click()
+
+  await expect.poll(() => fetchSpy.mock.calls.length).toBe(3)
+  const [, saved, submitted] = readSentBodies(fetchSpy) as {
+    intent: string
+    picks: Picks
+  }[]
+  expect(saved!.picks).not.toStrictEqual(COMPLETE_PICKS)
+  expect(submitted).toStrictEqual({ intent: `submit`, picks: saved!.picks })
+})
+
+test(`discarding waits for a submit in flight`, async () => {
+  const answer = Promise.withResolvers<Response>()
+  vi.spyOn(globalThis, `fetch`).mockReturnValue(answer.promise)
+  await renderBracket({
+    draft: COMPLETE_CHANGED_PICKS,
+    submission: SUBMISSION,
+  })
+
+  await page.getByRole(`button`, { name: `Submit changes` }).click()
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Discard changes` }))
+    .toBeDisabled()
+  answer.resolve(Response.json({ ok: true }))
+})
+
+test(`forgetting and deleting wait for a request in flight`, async () => {
+  const answer = Promise.withResolvers<Response>()
+  vi.spyOn(globalThis, `fetch`).mockReturnValue(answer.promise)
+  await renderBracket({
+    draft: COMPLETE_CHANGED_PICKS,
+    submission: SUBMISSION,
+  })
+  await page.getByRole(`button`, { name: `Discard changes` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Discard changes` })
+    .click()
+  const forget = page.getByRole(`button`, {
+    name: `Done, forget this computer`,
+  })
+  const deleteBracket = page.getByRole(`button`, { name: `Delete my bracket` })
+  await expect.element(forget).toBeDisabled()
+  await expect.element(deleteBracket).toBeDisabled()
+
+  answer.resolve(Response.json({ ok: true }))
+
+  await expect.element(forget).toBeEnabled()
+  await expect.element(deleteBracket).toBeEnabled()
 })

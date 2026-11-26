@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Form, href, useNavigation } from 'react-router'
+import { Form, href } from 'react-router'
 import { addPasskey } from '../passkeys.ts'
 import { SETUP_LINK_EXPIRES_IN_HOURS } from '../second-factor.ts'
 import { Button, ButtonLink } from './button.tsx'
@@ -7,6 +7,7 @@ import { Notice } from './notice.tsx'
 import { PageTitle } from './page-title.tsx'
 import { PasskeyButton } from './passkey-button.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
+import { useIsSubmitting } from './use-validated-form.ts'
 
 const WHY = `Admins sign in with a second step, so a stolen password alone can't change results.`
 
@@ -24,7 +25,7 @@ export const SetupLinkRequest = ({
   linkInvalid: boolean
   isSent: boolean
 }) => {
-  const isSubmitting = useNavigation().state === `submitting`
+  const isSubmitting = useIsSubmitting()
   // A new submission hides the last one's result until it answers
   const state =
     isSent && !isSubmitting ? `sent` : linkInvalid ? `link-invalid` : `unsent`

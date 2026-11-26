@@ -9,6 +9,7 @@ import {
   markSetupLinkUsed,
   mayChangeSecondFactors,
   redeemSetupLinkToken,
+  storeSetupLinkToken,
 } from './second-factor.server.ts'
 import { LAST_SECOND_FACTOR, SECOND_FACTOR_REQUIRED } from './second-factor.ts'
 
@@ -63,8 +64,15 @@ const readAssurances = async (educatorId: string) =>
     ({ assurance }) => assurance,
   )
 
+/** Returns the stored link's token */
+const addSetupLink = async (educatorId: string): Promise<string> => {
+  const token = createSetupLinkToken()
+  await storeSetupLinkToken(educatorId, token)
+  return token
+}
+
 const useSetupLink = async ({ educatorId }: SignedIn): Promise<void> => {
-  const token = await createSetupLinkToken(educatorId)
+  const token = await addSetupLink(educatorId)
   await redeemSetupLinkToken(token, educatorId)
   const session = await prisma.session.findFirstOrThrow({
     where: { educatorId },
@@ -201,7 +209,7 @@ test(`a former admin removes their last second factor`, async () => {
 
 test(`a setup link works once`, async () => {
   const { educatorId } = await signInConfirmed()
-  const token = await createSetupLinkToken(educatorId)
+  const token = await addSetupLink(educatorId)
 
   const redeemed = [
     await redeemSetupLinkToken(token, educatorId),
@@ -214,7 +222,7 @@ test(`a setup link works once`, async () => {
 test(`a setup link works only for its own educator`, async () => {
   const owner = await signInConfirmed()
   const other = await signInConfirmed()
-  const token = await createSetupLinkToken(owner.educatorId)
+  const token = await addSetupLink(owner.educatorId)
 
   const redeemed = await redeemSetupLinkToken(token, other.educatorId)
 
@@ -223,8 +231,8 @@ test(`a setup link works only for its own educator`, async () => {
 
 test(`a new setup link replaces the educator's earlier one`, async () => {
   const { educatorId } = await signInConfirmed()
-  const earlier = await createSetupLinkToken(educatorId)
-  await createSetupLinkToken(educatorId)
+  const earlier = await addSetupLink(educatorId)
+  await addSetupLink(educatorId)
 
   const redeemed = await redeemSetupLinkToken(earlier, educatorId)
 
@@ -233,7 +241,7 @@ test(`a new setup link replaces the educator's earlier one`, async () => {
 
 test(`a setup link expires after an hour`, async () => {
   const { educatorId } = await signInConfirmed()
-  const token = await createSetupLinkToken(educatorId)
+  const token = await addSetupLink(educatorId)
   vi.useFakeTimers({ now: Date.now() + 61 * 60 * 1000, toFake: [`Date`] })
 
   const redeemed = await redeemSetupLinkToken(token, educatorId)

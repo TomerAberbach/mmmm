@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, ButtonLink } from './button.tsx'
 import { Checkbox } from './checkbox.tsx'
+import { copyText } from './copy-text.ts'
 import { PageTitle } from './page-title.tsx'
 
 /**
@@ -37,14 +38,13 @@ export const RecoveryCodes = ({
 }
 
 export const RecoveryCodeList = ({ codes }: { codes: string[] }) => {
-  const [isCopied, setIsCopied] = useState(false)
+  const [copied, setCopied] = useState<`copied` | `failed`>()
   const text = codes.join(`\n`)
 
   const copy = async () => {
-    // Runs only in the browser, so Node's support doesn't apply
-    // eslint-disable-next-line node/no-unsupported-features/node-builtins
-    await navigator.clipboard.writeText(text)
-    setIsCopied(true)
+    // A screen reader announces a repeated failure only if its message reappears
+    setCopied(undefined)
+    setCopied((await copyText(text)) ? `copied` : `failed`)
   }
 
   return (
@@ -65,7 +65,12 @@ export const RecoveryCodeList = ({ codes }: { codes: string[] }) => {
         >
           Download
         </ButtonLink>
-        {isCopied ? <output>Copied</output> : null}
+        {copied === `copied` ? <output>Copied</output> : null}
+        {copied === `failed` ? (
+          <p role='alert' className='font-semibold text-danger'>
+            Couldn’t copy. Download or write down the codes instead
+          </p>
+        ) : null}
       </div>
     </div>
   )
