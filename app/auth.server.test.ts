@@ -33,7 +33,9 @@ test(`sessions don't store the client's IP address`, async () => {
     where: { educatorId: user.id },
   })
 
-  expect(sessions.map(session => session.ipAddress)).toStrictEqual([null])
+  expect(
+    sessions.map(({ ipAddress, userAgent }) => ({ ipAddress, userAgent })),
+  ).toStrictEqual([{ ipAddress: null, userAgent: null }])
 })
 
 test.each<[string, object, string]>([

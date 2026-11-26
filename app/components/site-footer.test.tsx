@@ -20,3 +20,14 @@ test(`the footer links the support email and privacy policy`, async () => {
     .toHaveAttribute(`href`, `/privacy`)
   await expectNoAxeViolations()
 })
+
+test.each([
+  [`Terms`, `/terms`],
+  [`Retention schedule`, `/retention`],
+])(`%s is linked`, async (label, path) => {
+  await renderRoutes([{ path: `/`, Component: () => <SiteFooter /> }])
+
+  await expect
+    .element(page.getByRole(`link`, { name: label }))
+    .toHaveAttribute(`href`, path)
+})

@@ -11,9 +11,17 @@ export const SiteFooter = ({ supportEmail }: { supportEmail?: string }) => (
           {supportEmail}
         </a>
       ) : null}
-      <Link to={href(`/privacy`)} className='no-underline hover:underline'>
-        Privacy policy
-      </Link>
+      {LINKS.map(([path, label]) => (
+        <Link key={path} to={path} className='no-underline hover:underline'>
+          {label}
+        </Link>
+      ))}
     </div>
   </footer>
 )
+
+const LINKS: [path: string, label: string][] = [
+  [href(`/privacy`), `Privacy policy`],
+  [href(`/terms`), `Terms`],
+  [href(`/retention`), `Retention schedule`],
+]

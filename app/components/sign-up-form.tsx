@@ -55,7 +55,8 @@ export const SignUpForm = ({
           </Button>
           <p className='text-sm text-muted'>
             By signing up, you agree to the{` `}
-            <Link to={href(`/privacy`)}>privacy policy</Link> and confirm that
+            <Link to={href(`/terms`)}>terms</Link> and the{` `}
+            <Link to={href(`/privacy`)}>privacy policy</Link>, and confirm that
             you or your school consent for players under 13 to use MMMM.
           </p>
         </div>

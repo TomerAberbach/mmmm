@@ -5,6 +5,8 @@ export default [
   index(`routes/home.tsx`),
   route(`bracket`, `routes/bracket.tsx`),
   route(`privacy`, `routes/privacy.tsx`),
+  route(`terms`, `routes/terms.tsx`),
+  route(`retention`, `routes/retention.tsx`),
   layout(`routes/signed-out.tsx`, [
     route(`sign-up`, `routes/sign-up.tsx`),
     route(`sign-in`, `routes/sign-in.tsx`),

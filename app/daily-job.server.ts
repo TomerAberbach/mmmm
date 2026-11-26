@@ -1,12 +1,14 @@
 import { Cron } from 'croner'
 import { ARIZONA_TIME_ZONE } from './dates.ts'
 import { prisma } from './db.server.ts'
+import { deleteExpiredSignIns } from './expired-sign-ins.server.ts'
 import { removeExpiredNames } from './name-removal.server.ts'
 import { eraseExpiredPlayers } from './trash.server.ts'
 
 /** Each step of the job resolves to how many rows it changed */
 const STEPS: Record<string, (now: Date) => Promise<number>> = {
   'erase brackets their players deleted': eraseExpiredPlayers,
+  'delete expired sessions and links': deleteExpiredSignIns,
   'remove display names two years after their tournament': removeExpiredNames,
 }
 
