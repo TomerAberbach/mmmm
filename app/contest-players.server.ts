@@ -5,6 +5,7 @@ import {
   PLAYER_OUTSIDE_TRASH,
 } from './outside-trash.server.ts'
 import type { Decision } from './player-forms.ts'
+import { createSecret, hashSecret } from './secrets.server.ts'
 
 /** A player in an educator's contest. `status` is null for a draft */
 export type ContestPlayer = {
@@ -89,4 +90,22 @@ export const renamePlayer = async (
     data: { displayName },
   })
   return count > 0
+}
+
+/**
+ * Replaces the player's personal link, so the old one stops working, also in
+ * browsers that remember it. Returns the new link's secret, or null unless the
+ * player is in a contest the educator runs
+ */
+export const replacePersonalLink = async (
+  educatorId: string,
+  contestId: string,
+  playerId: string,
+): Promise<string | null> => {
+  const secret = createSecret()
+  const { count } = await prisma.player.updateMany({
+    where: { id: playerId, ...educatorPlayers(educatorId, contestId) },
+    data: { personalLinkHash: hashSecret(secret) },
+  })
+  return count > 0 ? secret : null
 }

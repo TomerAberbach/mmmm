@@ -183,12 +183,15 @@ app
 - Players have no accounts. The browser remembers one in a `player-<contestId>`
   cookie that holds their personal link's secret. Create link secrets with
   `createSecret` and store only `hashSecret`'s hash, from `secrets.server.ts`
-- Nest the pages a player opens under `routes/play.tsx`, whose `loadPlayContest`
-  middleware answers an unknown contest link with the not-found page. Require
-  the remembered player with `requirePlayer` and read them with
-  `readRequiredPlayer` from `play-context.server.ts`. It restarts the player's
-  15 minutes on each response, so leave it off a page that asks who the player
-  is, such as the contest link's "Continue as" prompt
+- Nest only what a contest link opens under `routes/play.tsx`, and a player's
+  own pages under `routes/player.tsx`, whose addresses hold the contest's ID. A
+  player who keeps their personal link after the contest link is replaced must
+  never see the new one, so give a player a contest link only from
+  `readPersonalLink`'s `startLinkSecret`. Require the remembered player with
+  `requirePlayer` and read them with `readRequiredPlayer` from
+  `play-context.server.ts`. It restarts the player's 15 minutes on each
+  response, so leave it off a page that asks who the player is, such as the
+  contest link's "Continue as" prompt
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
   `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`

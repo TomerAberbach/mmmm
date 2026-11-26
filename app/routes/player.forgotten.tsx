@@ -1,5 +1,5 @@
 import { href, redirect } from 'react-router'
-import type { Route } from './+types/play.forgotten.ts'
+import type { Route } from './+types/player.forgotten.ts'
 import { PageTitle } from '~/components/page-title.tsx'
 import { readPlayContest } from '~/play-context.server.ts'
 import { forgetPlayer } from '~/player-cookie.server.ts'
@@ -9,7 +9,7 @@ import { forgetPlayer } from '~/player-cookie.server.ts'
  * computers
  */
 export const action = async ({ params, context }: Route.ActionArgs) => {
-  throw redirect(href(`/play/:linkSecret/forgotten`, params), {
+  throw redirect(href(`/player/:contestId/forgotten`, params), {
     headers: { 'Set-Cookie': await forgetPlayer(readPlayContest(context).id) },
   })
 }
@@ -18,7 +18,8 @@ const ForgottenPage = () => (
   <div className='flex max-w-xl flex-col gap-3'>
     <PageTitle>This computer forgot your bracket</PageTitle>
     <p>
-      Your bracket is still saved. Open your personal link to come back to it.
+      Open your personal link to come back to your bracket. If you don’t have
+      one, open the contest link your educator shared to start a new bracket.
     </p>
   </div>
 )

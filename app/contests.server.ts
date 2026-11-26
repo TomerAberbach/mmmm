@@ -31,8 +31,7 @@ export const createContest = (
         year,
         educatorId,
         name,
-        // 144 random bits keep the contest link short
-        linkSecret: createSecret(18),
+        linkSecret: createContestSecret(),
       },
       select: { id: true },
     })
@@ -97,11 +96,19 @@ export type ContestByLink = {
   isDeleted: boolean
 }
 
-export const readContestByLink = async (
+export const readContestByLink = (
   linkSecret: string,
+): Promise<ContestByLink | null> => readPlayedContest({ linkSecret })
+
+/** What the contest's own players see, without its contest link */
+export const readContestById = (id: string): Promise<ContestByLink | null> =>
+  readPlayedContest({ id })
+
+const readPlayedContest = async (
+  where: { linkSecret: string } | { id: string },
 ): Promise<ContestByLink | null> => {
   const contest = await prisma.contest.findUnique({
-    where: { linkSecret },
+    where,
     select: {
       id: true,
       name: true,
@@ -120,3 +127,21 @@ export const readContestByLink = async (
     }
   )
 }
+
+/**
+ * Replaces the contest link, so the old one stops working. Players keep their
+ * personal links. Returns whether the educator runs the contest
+ */
+export const replaceContestLink = async (
+  educatorId: string,
+  contestId: string,
+): Promise<boolean> => {
+  const { count } = await prisma.contest.updateMany({
+    where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
+    data: { linkSecret: createContestSecret(), linkVersion: { increment: 1 } },
+  })
+  return count > 0
+}
+
+/** 144 random bits keep the contest link short */
+const createContestSecret = (): string => createSecret(18)

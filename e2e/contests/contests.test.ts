@@ -163,7 +163,9 @@ test(`a personal link opens the player's bracket in another browser`, async ({
   await expect(
     otherBrowser.getByRole(`heading`, { name: `Maya R.’s bracket` }),
   ).toBeVisible()
-  expect(new URL(otherBrowser.url()).pathname).toMatch(/^\/play\/.+\/bracket$/u)
+  expect(new URL(otherBrowser.url()).pathname).toMatch(
+    /^\/player\/.+\/bracket$/u,
+  )
 })
 
 test(`a player's picks save and follow their personal link`, async ({
@@ -361,4 +363,104 @@ test(`deleting from a page left open by another player deletes neither bracket`,
   await expect(
     nextPlayer.getByRole(`heading`, { name: `Maya R.’s bracket` }),
   ).toBeVisible()
+})
+
+test(`a replaced personal link stops working, also in a browser that has it open`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, link)
+  const oldSecret = await readPersonalLinkSecret(page)
+  await educator.reload()
+  await educator.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await educator.getByRole(`menuitem`, { name: `New personal link` }).click()
+  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  const newLink = await educator
+    .getByRole(`dialog`)
+    .getByText(/\/my-bracket\//u)
+    .textContent()
+
+  await page.reload()
+  await expect(
+    page.getByRole(`heading`, { name: `This computer forgot your bracket` }),
+  ).toBeVisible()
+  await page.goto(`/my-bracket/${oldSecret}`)
+  await expect(
+    page.getByRole(`heading`, { name: `This link no longer works` }),
+  ).toBeVisible()
+  await page.goto(newLink!)
+
+  await expect(
+    page.getByRole(`heading`, { name: `Maya R.’s bracket` }),
+  ).toBeVisible()
+})
+
+test(`replacing the contest link keeps players' brackets without showing them the new link`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link: oldLink } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, oldLink)
+  const secret = await readPersonalLinkSecret(page)
+  await educator.getByRole(`button`, { name: `New contest link` }).click()
+  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await expect(
+    educator.getByText(
+      `Created a new contest link. The old one no longer works`,
+    ),
+  ).toBeVisible()
+  const newLink = await educator
+    .getByRole(`textbox`, { name: `Contest link` })
+    .inputValue()
+  expect(newLink).not.toBe(oldLink)
+
+  const firstBattle = page.getByRole(`radiogroup`, {
+    name: `Round 1, battle 1`,
+  })
+  await firstBattle.locator(`label`).first().click()
+  await expect(page.getByText(/^Saved at/u)).toBeVisible()
+  await page.goto(`/my-bracket/${secret}`)
+  await expect(page.getByText(`1 of 64 picked`)).toBeVisible()
+  const newSecret = new URL(newLink).pathname.split(`/`).at(-1)!
+  expect(page.url()).not.toContain(newSecret)
+  expect(await page.content()).not.toContain(newSecret)
+  const response = await page.goto(oldLink)
+
+  expect(response?.status()).toBe(404)
+  await expect(
+    page.getByRole(`heading`, { name: `This link no longer works` }),
+  ).toBeVisible()
+})
+
+test(`a player who started with a replaced contest link gets no new one by deleting their bracket`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(browser)
+  await startBracketAsMaya(page, link)
+  const secret = await readPersonalLinkSecret(page)
+  await educator.getByRole(`button`, { name: `New contest link` }).click()
+  await educator.getByRole(`button`, { name: `Create new link` }).click()
+  await expect(educator.getByText(/^Created a new contest link/u)).toBeVisible()
+
+  await page.getByRole(`button`, { name: `Delete my bracket` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete my bracket` })
+    .click()
+  await expect(
+    page.getByRole(`heading`, { name: `Your bracket is deleted` }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole(`link`, { name: `Start a new bracket` }),
+  ).not.toBeAttached()
+  await page.goto(`/my-bracket/${secret}`)
+
+  await expect(
+    page.getByRole(`heading`, { name: `This bracket was deleted` }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole(`link`, { name: `Start a new bracket` }),
+  ).not.toBeAttached()
 })

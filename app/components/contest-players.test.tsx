@@ -1,6 +1,6 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import { createRoutesStub, useLoaderData } from 'react-router'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -584,5 +584,22 @@ test(`a contest without players says to share its link`, async () => {
         `No one has started a bracket yet. Share the contest link with your players.`,
       ),
     )
+    .toBeVisible()
+})
+
+test(`a new personal link stays shown when the player's row moves`, async () => {
+  const answer = Promise.withResolvers<Response>()
+  vi.spyOn(globalThis, `fetch`).mockReturnValue(answer.promise)
+  await renderPlayers([MAYA])
+  await page.getByRole(`button`, { name: `More for Maya R.` }).click()
+  await page.getByRole(`menuitem`, { name: `New personal link` }).click()
+  await page.getByRole(`button`, { name: `Create new link` }).click()
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+  await expect.element(section(/^Approved/u).getByText(`Maya R.`)).toBeVisible()
+
+  answer.resolve(Response.json({ link: `https://mmmm.onl/my-bracket/new` }))
+
+  await expect
+    .element(page.getByText(`https://mmmm.onl/my-bracket/new`))
     .toBeVisible()
 })

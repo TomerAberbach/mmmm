@@ -1,36 +1,54 @@
-import { createContext, data, href, redirect } from 'react-router'
-import type { MiddlewareFunction, RouterContextProvider } from 'react-router'
-import { readContestByLink } from './contests.server.ts'
+import { createContext, href, redirect } from 'react-router'
+import type {
+  MiddlewareFunction,
+  Params,
+  RouterContextProvider,
+} from 'react-router'
+import { brokenLink } from './broken-link.ts'
+import { readContestById, readContestByLink } from './contests.server.ts'
 import type { ContestByLink } from './contests.server.ts'
 import { readRememberedPlayer, rememberPlayer } from './player-cookie.server.ts'
 
-/** A contest outside the trash, which its contest link opened */
+/** A contest outside the trash, as its players see it */
 export type PlayContest = Omit<ContestByLink, `isDeleted`>
 
 const contestContext = createContext<PlayContest>()
 
 /**
- * Answers a link that matches no contest with the not-found page, and sends a
- * deleted contest's players to a page that says so. Routes below it read the
- * contest with `readPlayContest`
+ * Answers a contest `read` doesn't find with the broken link page, and a deleted
+ * one with a page that says so. Routes below it read the contest with
+ * `readPlayContest`
  */
-export const loadPlayContest: MiddlewareFunction<Response> = async (
-  { params, context },
-  next,
-) => {
-  const contest = await readContestByLink(params.linkSecret ?? ``)
-  if (!contest) {
-    // React Router renders a thrown response with the error page
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw data(null, { status: 404 })
+const loadContest =
+  (
+    read: (params: Params) => Promise<ContestByLink | null>,
+  ): MiddlewareFunction<Response> =>
+  async ({ params, context }, next) => {
+    const contest = await read(params)
+    if (!contest) {
+      // React Router renders a thrown response with the error page
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw brokenLink()
+    }
+    const { isDeleted, ...playContest } = contest
+    if (isDeleted) {
+      return redirect(href(`/contest-removed`))
+    }
+    context.set(contestContext, playContest)
+    return next()
   }
-  const { isDeleted, ...playContest } = contest
-  if (isDeleted) {
-    return redirect(href(`/contest-removed`))
-  }
-  context.set(contestContext, playContest)
-  return next()
-}
+
+export const loadContestByLink = loadContest(({ linkSecret = `` }) =>
+  readContestByLink(linkSecret),
+)
+
+/**
+ * For a player's own pages, whose addresses leave out the contest link, so they
+ * work after it's replaced and don't reveal the new one
+ */
+export const loadContestById = loadContest(({ contestId = `` }) =>
+  readContestById(contestId),
+)
 
 export const readPlayContest = (
   context: Readonly<RouterContextProvider>,
@@ -45,19 +63,19 @@ export type RequiredPlayer = {
 const playerContext = createContext<RequiredPlayer>()
 
 /**
- * Sends anyone the browser doesn't remember to the contest link. Each response
- * restarts the remembered player's 15 minutes. Nest it after
- * `loadPlayContest`, and read the player with `readRequiredPlayer`
+ * Sends anyone the browser doesn't remember to a page that says how to come
+ * back. Each response restarts the remembered player's 15 minutes. Nest it
+ * after `loadContestById`, and read the player with `readRequiredPlayer`
  */
 export const requirePlayer: MiddlewareFunction<Response> = async (
-  { request, params, context },
+  { request, context },
   next,
 ) => {
   const contest = readPlayContest(context)
   const player = await readRememberedPlayer(request, contest.id)
   if (!player) {
     return redirect(
-      href(`/play/:linkSecret`, { linkSecret: params.linkSecret ?? `` }),
+      href(`/player/:contestId/forgotten`, { contestId: contest.id }),
     )
   }
   context.set(playerContext, {

@@ -40,3 +40,6 @@ export const ModalFrame = ({
     </Modal>
   </ModalOverlay>
 )
+
+/** A dialog's last row */
+export const BUTTONS_CLASS_NAME = `mt-2 flex flex-wrap justify-end gap-3`

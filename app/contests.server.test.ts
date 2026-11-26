@@ -7,6 +7,7 @@ import {
   readEducatorContest,
   readEducatorContests,
   renameContest,
+  replaceContestLink,
 } from './contests.server.ts'
 
 const readLinkSecret = (link: string): string =>
@@ -100,4 +101,34 @@ test(`another educator can't read or rename a contest`, async () => {
   await expect(
     readEducatorContest(educatorId, contestId),
   ).resolves.toMatchObject({ name: `Period 2 Biology` })
+})
+
+test(`a new contest link replaces the old one`, async () => {
+  const educatorId = await createEducator()
+  await addYear({ published: true })
+  const contestId = await addContest(educatorId, `Period 2 Biology`)
+  const { link: oldLink } = (await readEducatorContest(educatorId, contestId))!
+
+  const replaced = await replaceContestLink(educatorId, contestId)
+
+  expect(replaced).toBe(true)
+  const { link: newLink } = (await readEducatorContest(educatorId, contestId))!
+  await expect(readContestByLink(readLinkSecret(oldLink))).resolves.toBeNull()
+  await expect(
+    readContestByLink(readLinkSecret(newLink)),
+  ).resolves.toMatchObject({ id: contestId })
+})
+
+test(`another educator can't replace a contest's link`, async () => {
+  const educatorId = await createEducator()
+  await addYear({ published: true })
+  const contestId = await addContest(educatorId, `Period 2 Biology`)
+  const { link } = (await readEducatorContest(educatorId, contestId))!
+
+  const replaced = await replaceContestLink(await createEducator(), contestId)
+
+  expect(replaced).toBe(false)
+  await expect(readContestByLink(readLinkSecret(link))).resolves.toMatchObject({
+    id: contestId,
+  })
 })

@@ -35,8 +35,10 @@ export const addPlayer = async (
   contestId: string,
   displayName = `Maya R.`,
 ): Promise<{ id: string; secret: string }> => {
-  const player = await createPlayer(contestId, displayName, () =>
-    Promise.resolve(undefined),
+  const player = await createPlayer(
+    await readLinkSecret(contestId),
+    displayName,
+    () => Promise.resolve(undefined),
   )
   if (!(`secret` in player)) {
     throw new Error(`The contest refused the player: ${player.refusal}`)
@@ -70,6 +72,14 @@ export const addSubmission = async (
     data: { playerId, status, picksChangedAt: new Date() },
   })
 }
+
+export const readLinkSecret = async (contestId: string): Promise<string> =>
+  (
+    await prisma.contest.findUniqueOrThrow({
+      where: { id: contestId },
+      select: { linkSecret: true },
+    })
+  ).linkSecret
 
 export const readEducatorId = async (contestId: string): Promise<string> =>
   (

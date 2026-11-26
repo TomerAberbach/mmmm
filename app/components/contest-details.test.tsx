@@ -44,6 +44,13 @@ const renderContest = async () => {
       ),
     },
     {
+      path: `/contests/period-2/link`,
+      action: () => {
+        contest = { ...contest, link: `https://mmmm.onl/play/new-secret` }
+        return { ok: true }
+      },
+    },
+    {
       path: `/contests/period-2/name`,
       action: async ({ request }) => {
         const submission = parseWithZod(await request.formData(), {
@@ -128,4 +135,25 @@ test(`the contest page links its trash`, async () => {
   await expect
     .element(page.getByRole(`link`, { name: `Trash (2)` }))
     .toHaveAttribute(`href`, `/contests/period-2/trash`)
+})
+
+test(`a new contest link shows in place of the old one after confirming`, async () => {
+  await renderContest()
+  await page.getByRole(`button`, { name: `New contest link` }).click()
+  await expect
+    .element(page.getByRole(`alertdialog`))
+    .toHaveTextContent(
+      `Replace the contest link?The old link stops working, so share the new one with your players. Players who already started keep their personal links.CancelCreate new link`,
+    )
+
+  await page.getByRole(`button`, { name: `Create new link` }).click()
+
+  await expect
+    .element(page.getByRole(`textbox`, { name: `Contest link` }))
+    .toHaveValue(`https://mmmm.onl/play/new-secret`)
+  await expect
+    .element(
+      page.getByText(`Created a new contest link. The old one no longer works`),
+    )
+    .toBeVisible()
 })

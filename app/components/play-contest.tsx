@@ -1,6 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
-import { Form } from 'react-router'
+import { Form, Outlet } from 'react-router'
 import { Button, ButtonLink } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { PAGE_LABEL_CLASS_NAME } from './page-header.tsx'
@@ -38,6 +38,18 @@ export const PlayContestPage = ({
   ) : (
     <ContestClosed />
   )
+
+/**
+ * Pages under a contest, which search engines skip, since their addresses open a
+ * contest or a player's bracket
+ */
+export const PlayLayout = ({ contest }: { contest: PlayContest }) => (
+  <div className='flex flex-col gap-6'>
+    <meta name='robots' content='noindex' />
+    <ContestContext contest={contest} />
+    <Outlet />
+  </div>
+)
 
 export const ContestContext = ({ contest }: { contest: PlayContest }) => (
   <div className='flex flex-col items-start gap-2'>

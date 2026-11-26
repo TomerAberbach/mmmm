@@ -11,8 +11,11 @@ import {
   approvePendingSubmissions,
   readContestPlayers,
   renamePlayer,
+  replacePersonalLink,
   setSubmissionStatus,
 } from './contest-players.server.ts'
+import { readContestPlayer } from './players.server.ts'
+import { deletePlayers } from './trash.server.ts'
 
 const readStatuses = async (
   contestId: string,
@@ -195,4 +198,47 @@ test(`an educator renames a player in their contest`, async () => {
   await expect(readStatuses(contestId)).resolves.toStrictEqual({
     'Maya R.': null,
   })
+})
+
+test(`a new personal link replaces the old one`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const { id, secret: oldSecret } = await addPlayer(contestId)
+
+  const newSecret = await replacePersonalLink(
+    await readEducatorId(contestId),
+    contestId,
+    id,
+  )
+
+  await expect(readContestPlayer(contestId, oldSecret)).resolves.toBeNull()
+  await expect(readContestPlayer(contestId, newSecret!)).resolves.toMatchObject(
+    { id },
+  )
+})
+
+test(`another educator can't replace a player's personal link`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const { id, secret } = await addPlayer(contestId)
+
+  const newSecret = await replacePersonalLink(
+    await createEducator(),
+    contestId,
+    id,
+  )
+
+  expect(newSecret).toBeNull()
+  await expect(readContestPlayer(contestId, secret)).resolves.toMatchObject({
+    id,
+  })
+})
+
+test(`a deleted player gets no new personal link`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const educatorId = await readEducatorId(contestId)
+  const { id } = await addPlayer(contestId)
+  await deletePlayers(educatorId, contestId, [id])
+
+  const newSecret = await replacePersonalLink(educatorId, contestId, id)
+
+  expect(newSecret).toBeNull()
 })

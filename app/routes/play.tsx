@@ -1,22 +1,15 @@
-import { Outlet } from 'react-router'
 import type { Route } from './+types/play.ts'
-import { ContestContext } from '~/components/play-contest.tsx'
-import { loadPlayContest, readPlayContest } from '~/play-context.server.ts'
+import { PlayLayout } from '~/components/play-contest.tsx'
+import { loadContestByLink, readPlayContest } from '~/play-context.server.ts'
 
-export const middleware: Route.MiddlewareFunction[] = [loadPlayContest]
+export const middleware: Route.MiddlewareFunction[] = [loadContestByLink]
 
 export const loader = ({ context }: Route.LoaderArgs) => {
   const { id: _, ...contest } = readPlayContest(context)
   return contest
 }
 
-const PlayLayout = ({ loaderData }: Route.ComponentProps) => (
-  <div className='flex flex-col gap-6'>
-    {/* Search engines skip these pages, since their URLs hold the contest
-        link's secret */}
-    <meta name='robots' content='noindex' />
-    <ContestContext contest={loaderData} />
-    <Outlet />
-  </div>
+const PlayRoute = ({ loaderData }: Route.ComponentProps) => (
+  <PlayLayout contest={loaderData} />
 )
-export default PlayLayout
+export default PlayRoute

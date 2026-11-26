@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from './button.tsx'
+import { copyText } from './copy-text.ts'
 import { StableLabel } from './stable-label.tsx'
 
 type CopyState = `idle` | `copied` | `failed`
@@ -31,14 +32,7 @@ export const CopyButton = ({
 }) => {
   const [state, show] = useTemporaryState<CopyState>(`idle`, 2000)
   const copy = async () => {
-    try {
-      // Runs only in the browser, so Node's support doesn't apply
-      // eslint-disable-next-line node/no-unsupported-features/node-builtins
-      await navigator.clipboard.writeText(text)
-      show(`copied`)
-    } catch {
-      show(`failed`)
-    }
+    show((await copyText(text)) ? `copied` : `failed`)
   }
   return (
     <>

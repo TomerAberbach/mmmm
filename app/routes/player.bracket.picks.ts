@@ -1,5 +1,5 @@
 import { href, redirect } from 'react-router'
-import type { Route } from './+types/play.bracket.picks.ts'
+import type { Route } from './+types/player.bracket.picks.ts'
 import { picksRequestSchema } from '~/picks-request.ts'
 import type { PicksRequest } from '~/picks-request.ts'
 import {
@@ -16,7 +16,7 @@ import {
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
-  redirect(href(`/play/:linkSecret/bracket`, params))
+  redirect(href(`/player/:contestId/bracket`, params))
 
 /**
  * Saves the player's draft, submits it, or discards it for their submission.

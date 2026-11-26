@@ -19,7 +19,9 @@ import {
 } from 'react-router'
 import type { Route } from './+types/root.ts'
 import stylesheet from './app.css?url'
+import { isBrokenLink } from './broken-link.ts'
 import { PageTitle } from './components/page-title.tsx'
+import { BrokenLink } from './components/removed.tsx'
 import { SiteFooter } from './components/site-footer.tsx'
 import { SiteHeader } from './components/site-header.tsx'
 import { requireEnv } from './env.server.ts'
@@ -101,6 +103,9 @@ const App = () => <Outlet />
 export default App
 
 export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
+  if (isBrokenLink(error)) {
+    return <BrokenLink />
+  }
   const heading =
     isRouteErrorResponse(error) && error.status === 404
       ? `Page not found`
