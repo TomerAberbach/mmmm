@@ -2,6 +2,7 @@ import { href, Link } from 'react-router'
 import type { Route } from './+types/contests.$contestId.ts'
 import { ContestDetails } from '~/components/contest-details.tsx'
 import { ContestShares } from '~/components/contest-shares.tsx'
+import { HiddenContestNote } from '~/components/hidden-contest-note.tsx'
 import { ReadOnlyContest } from '~/components/read-only-contest.tsx'
 import { readViewableContest } from '~/contest-context.server.ts'
 import { readContestPlayers } from '~/contest-players.server.ts'
@@ -48,7 +49,17 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   } as const
 }
 
-const ContestPage = ({ loaderData }: Route.ComponentProps) => {
+const ContestPage = ({ loaderData }: Route.ComponentProps) => (
+  <div className='flex flex-col gap-8'>
+    {loaderData.contest.isHidden ? <HiddenContestNote /> : null}
+    <ContestView loaderData={loaderData} />
+  </div>
+)
+export default ContestPage
+
+const ContestView = ({
+  loaderData,
+}: Pick<Route.ComponentProps, `loaderData`>) => {
   switch (loaderData.view) {
     case `own`:
       return <ContestDetails {...loaderData} />
@@ -66,7 +77,6 @@ const ContestPage = ({ loaderData }: Route.ComponentProps) => {
       )
   }
 }
-export default ContestPage
 
 /** What an educator can still do, while there's something to do it to */
 const PastContestControls = ({

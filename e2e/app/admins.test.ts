@@ -123,6 +123,22 @@ test(`the header links only admins to the admin area, whose pages link back`, as
   ).not.toBeAttached()
 })
 
+test(`a page left open asks for the second factor once another tab signs in without it`, async ({
+  page,
+}) => {
+  await signInAsAdmin(page, ADMINS.lapsed)
+  const other = await page.context().newPage()
+  await other.goto(`/contests`)
+  await signOut(other)
+  await signIn(other, ADMINS.lapsed)
+  await expect(other.getByRole(`banner`)).toContainText(`Ms. Frizzle`)
+
+  // The page has no loader
+  await page.getByRole(`link`, { name: `Educators` }).click()
+
+  await expect(page).toHaveURL(`/admin/verify`)
+})
+
 test(`a setup link opened in another browser doesn't start setup there`, async ({
   page,
   browser,

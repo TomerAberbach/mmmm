@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import { addContest } from '../prisma/fixtures.ts'
 import { createEducator, createMember } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
+import { setContestHidden } from './admin-contests.server.ts'
 import { prisma } from './db.server.ts'
 import { joinOrganization } from './organizations.server.ts'
 import {
@@ -43,6 +44,7 @@ test(`a contest opens for the colleague it's shared with`, async () => {
     id: contestId,
     name: `Period 2 Biology`,
     year,
+    isHidden: false,
     educatorName: `Ms. Frizzle`,
   }
   await expect(
@@ -177,4 +179,14 @@ test(`the contest page leaves out a share that no longer works`, async () => {
   })
 
   await expect(readColleagues(contestId)).resolves.toStrictEqual([])
+})
+
+test(`a colleague reads whether a shared contest is hidden`, async () => {
+  const { owner, colleague, contestId } = await createColleagues()
+  await shareContest(owner.id, contestId, colleague.email)
+  await setContestHidden(contestId, true)
+
+  await expect(
+    readSharedContest(colleague.id, contestId),
+  ).resolves.toMatchObject({ isHidden: true })
 })

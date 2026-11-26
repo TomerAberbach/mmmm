@@ -90,3 +90,31 @@ test(`the wild card's entrants are listed at its seed`, async () => {
     .element(rows.filter({ hasText: `Flying Frog` }))
     .toHaveTextContent(`14Flying FrogWild cardRename`)
 })
+
+test(`a division's rename sends its position`, async () => {
+  const received: unknown[] = []
+  await renderRoutes([
+    {
+      path: `/`,
+      Component: () => <CombatantRenames year={2026} bracket={BRACKET} />,
+    },
+    {
+      path: `/admin/bracket/rename-division`,
+      action: async ({ request }) => {
+        received.push(Object.fromEntries(await request.formData()))
+        return { result: {}, saved: true }
+      },
+    },
+  ])
+  const { name } = BRACKET.divisions.TOP_LEFT
+  await page.getByRole(`button`, { name: `Rename division ${name}` }).click()
+  const field = page.getByLabelText(`New name for the ${name} division`)
+  await expectNoAxeViolations()
+
+  await field.fill(`New Name`)
+  await page.getByRole(`button`, { name: `Save` }).click()
+
+  await expect
+    .poll(() => received)
+    .toStrictEqual([{ year: `2026`, position: `TOP_LEFT`, name: `New Name` }])
+})

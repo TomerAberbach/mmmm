@@ -80,6 +80,73 @@ test(`an admin opens a reported contest and hides it`, async ({
   await expect(page.getByText(/^Hidden · /u)).toBeVisible()
 })
 
+test(`a hidden contest's educator is told, and its players aren't`, async ({
+  page,
+  browser,
+}) => {
+  const name = `Hidden Biology`
+  const { educator, link } = await createContestAsEducator(browser, name)
+  await signInAsAdmin(page, ADMINS.hides)
+  await page.goto(`/admin/contests/${readContestId(educator)}`)
+  await page.getByRole(`button`, { name: `Hide ${name}` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Hide contest` })
+    .click()
+  await expect(page.getByText(/^Hidden · /u)).toBeVisible()
+  const player = await browser.newPage()
+
+  await educator.reload()
+  await player.goto(link)
+
+  const note = educator.getByText(`This contest is hidden,`)
+  await expect(note).toBeVisible()
+  await expect(
+    educator
+      .getByRole(`main`)
+      .getByRole(`link`, { name: `support@example.com` }),
+  ).toHaveAttribute(`href`, `mailto:support@example.com`)
+  await expect(
+    player.getByText(`${name} · Ms. Frizzle’s contest`),
+  ).toBeVisible()
+  await expect(player.getByText(`This contest is hidden`)).not.toBeAttached()
+  await expect(player.content()).resolves.not.toContain(`isHidden`)
+})
+
+test(`an admin renames a contest, then erases it`, async ({
+  page,
+  browser,
+}) => {
+  const { educator, link } = await createContestAsEducator(
+    browser,
+    `Doomed Biology`,
+  )
+  const address = `/admin/contests/${readContestId(educator)}`
+  await signInAsAdmin(page, ADMINS.erases)
+  await page.goto(address)
+  await page.getByRole(`button`, { name: `Rename`, exact: true }).click()
+  const name = page.getByLabel(`Contest name`)
+  await name.fill(`Renamed Biology`)
+  await page.getByRole(`button`, { name: `Save` }).click()
+  await expect(
+    page.getByRole(`heading`, { name: `Renamed Biology` }),
+  ).toBeVisible()
+  await page.getByRole(`button`, { name: `Delete forever` }).click()
+  const dialog = page.getByRole(`alertdialog`)
+  const confirmation = dialog.getByLabel(`Type Renamed Biology to confirm`)
+  await confirmation.fill(`Doomed Biology`)
+  await dialog.getByRole(`button`, { name: `Delete forever` }).click()
+  await expect(dialog.getByText(`This isn’t the contest’s name`)).toBeVisible()
+  await confirmation.fill(`Renamed Biology`)
+  await dialog.getByRole(`button`, { name: `Delete forever` }).click()
+
+  await expect(page).toHaveURL(`/admin/contests`)
+  const response = await page.goto(address)
+  expect(response?.status()).toBe(404)
+  const player = await browser.newPage()
+  expect((await player.goto(link))?.status()).toBe(404)
+})
+
 /** Creates a contest as a new educator, and returns its contest link */
 const createContestLink = async (browser: Browser): Promise<string> =>
   (await createContestAsEducator(browser)).link
@@ -90,12 +157,16 @@ const createContestLink = async (browser: Browser): Promise<string> =>
  */
 const createContestAsEducator = async (
   browser: Browser,
+  name = `Period 4 Biology`,
 ): Promise<{ educator: Page; link: string }> => {
   const educator = await browser.newPage()
   await signInConfirmed(educator, newEmailAddress())
-  const link = await createContest(educator, `Period 4 Biology`)
+  const link = await createContest(educator, name)
   return { educator, link }
 }
+
+const readContestId = (educator: Page): string =>
+  new URL(educator.url()).pathname.split(`/`).at(-1)!
 
 /** By keyboard */
 const pickEveryBattle = async (page: Page): Promise<void> => {

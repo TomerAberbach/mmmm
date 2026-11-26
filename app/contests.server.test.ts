@@ -1,8 +1,11 @@
 import { expect, test } from 'vitest'
 import { addContest } from '../prisma/fixtures.ts'
+import { createContestInNewYear, readEducatorId } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import { addYear } from '../test/years.ts'
+import { setContestHidden } from './admin-contests.server.ts'
 import {
+  readContestById,
   readContestByLink,
   readEducatorContest,
   readEducatorContests,
@@ -133,4 +136,23 @@ test(`another educator can't replace a contest's link`, async () => {
   await expect(readContestByLink(readLinkSecret(link))).resolves.toMatchObject({
     contest: { id: contestId },
   })
+})
+
+test(`a contest's educator reads whether it's hidden`, async () => {
+  const { contestId } = await createContestInNewYear()
+  const educatorId = await readEducatorId(contestId)
+  await setContestHidden(contestId, true)
+
+  await expect(
+    readEducatorContest(educatorId, contestId),
+  ).resolves.toMatchObject({ isHidden: true })
+})
+
+test(`what players read of a contest leaves out whether it's hidden`, async () => {
+  const { contestId } = await createContestInNewYear()
+  await setContestHidden(contestId, true)
+
+  const found = await readContestById(contestId)
+
+  expect(found?.contest).not.toHaveProperty(`isHidden`)
 })

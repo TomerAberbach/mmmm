@@ -143,6 +143,14 @@ export default [
         `contests/:contestId/erase`,
         `routes/admin.contests.$contestId.erase.ts`,
       ),
+      route(
+        `contests/:contestId/name`,
+        `routes/admin.contests.$contestId.name.ts`,
+      ),
+      route(
+        `contests/:contestId/erase-contest`,
+        `routes/admin.contests.$contestId.erase-contest.ts`,
+      ),
       route(`contests/hidden`, `routes/admin.contests.hidden.ts`),
       route(`organizations`, `routes/admin.organizations.tsx`),
       route(`organizations/rename`, `routes/admin.organizations.rename.ts`),
@@ -154,6 +162,10 @@ export default [
       route(`bracket/publication`, `routes/admin.bracket.publication.ts`),
       route(`bracket/move`, `routes/admin.bracket.move.ts`),
       route(`bracket/rename`, `routes/admin.bracket.rename.ts`),
+      route(
+        `bracket/rename-division`,
+        `routes/admin.bracket.rename-division.ts`,
+      ),
       route(
         `bracket/expected-lock-date`,
         `routes/admin.bracket.expected-lock-date.ts`,

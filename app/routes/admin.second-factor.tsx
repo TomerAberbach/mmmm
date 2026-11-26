@@ -22,6 +22,9 @@ const requireSecondFactor: Route.MiddlewareFunction = async (
 
 export const middleware: Route.MiddlewareFunction[] = [requireSecondFactor]
 
+/** Runs the middleware on client-side navigation to a page without a loader */
+export const loader = () => null
+
 /** Links each page but the first back to it */
 const SecondFactorLayout = () =>
   useMatch(href(`/admin`)) ? (

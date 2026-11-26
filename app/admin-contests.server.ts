@@ -9,6 +9,7 @@ import type { Organization } from './organizations.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { countRowsBefore, PAGE_SIZE, toPageNumber } from './page-number.ts'
 import type { PageNumber } from './page-number.ts'
+import { withCurrentYear } from './years.server.ts'
 
 export type AdminContest = {
   id: string
@@ -127,6 +128,22 @@ export const readAdminContest = async (
     })),
   }
 }
+
+/**
+ * Renames any contest, in any year and even in the trash. Returns whether it
+ * exists. Waits for `eraseContest`, which checks the name the admin typed
+ */
+export const renameContestAsAdmin = (
+  contestId: string,
+  name: string,
+): Promise<boolean> =>
+  withCurrentYear(async tx => {
+    const { count } = await tx.contest.updateMany({
+      where: { id: contestId },
+      data: { name },
+    })
+    return count > 0
+  })
 
 /** Returns whether the contest is outside the trash */
 export const setContestHidden = async (

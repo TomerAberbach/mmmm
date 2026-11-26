@@ -6,7 +6,7 @@ import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
 import { useValidatedForm } from './use-validated-form.ts'
-import { renameSchema } from '~/bracket-admin-forms.ts'
+import { divisionRenameSchema, renameSchema } from '~/bracket-admin-forms.ts'
 import { listDivisionSeedSlots } from '~/bracket-input.ts'
 import { DIVISION_POSITIONS, POSITION_LABELS, ROUND_NAMES } from '~/bracket.ts'
 import type { DivisionPosition } from '~/bracket.ts'
@@ -14,7 +14,7 @@ import type { SavedResult } from '~/form-replies.server.ts'
 import { listMerges, toSeededBracket } from '~/seeded-bracket.ts'
 import type { Combatant, StoredBracket } from '~/seeded-bracket.ts'
 
-/** Renames a published bracket's combatants */
+/** Renames a published bracket's combatants and divisions */
 export const CombatantRenames = ({
   year,
   bracket,
@@ -25,16 +25,17 @@ export const CombatantRenames = ({
   const merges = listMerges(toSeededBracket(bracket))
   return (
     <section className='flex flex-col gap-4'>
-      <h2 className={SECTION_HEADING_CLASS_NAME}>Combatants</h2>
+      <h2 className={SECTION_HEADING_CLASS_NAME}>Combatants and divisions</h2>
       <p className='max-w-prose text-muted'>
-        Rename a combatant to fix a typo or match ASU’s spelling. Every bracket
-        shows the new name.
+        Rename a combatant or a division to fix a typo or match ASU’s spelling.
+        Every bracket shows the new name.
       </p>
       <div className='grid items-start gap-6 lg:grid-cols-2'>
         {listDivisions(bracket).map(({ position, name, combatants }) => (
           <RenameGroup
             key={position}
             legend={`${POSITION_LABELS[position]}: ${name}`}
+            division={{ position, name }}
             combatants={combatants}
             year={year}
           />
@@ -53,6 +54,8 @@ export const CombatantRenames = ({
     </section>
   )
 }
+
+type Division = { position: DivisionPosition; name: string }
 
 type CombatantRow = Combatant & { isWildCardEntrant: boolean }
 
@@ -80,10 +83,13 @@ const listDivisions = (
 
 const RenameGroup = ({
   legend,
+  division,
   year,
   combatants,
 }: {
   legend: string
+  /** Undefined for a group that isn't a division */
+  division?: Division
   year: number
   combatants: CombatantRow[]
 }) => (
@@ -91,6 +97,7 @@ const RenameGroup = ({
     <legend className='px-1.5 font-condensed text-xl font-extrabold uppercase'>
       {legend}
     </legend>
+    {division ? <DivisionName year={year} division={division} /> : null}
     <ol>
       {combatants.map(combatant => (
         <RenameRow key={combatant.id} year={year} combatant={combatant} />
@@ -98,6 +105,72 @@ const RenameGroup = ({
     </ol>
   </fieldset>
 )
+
+const DivisionName = ({
+  year,
+  division,
+}: {
+  year: number
+  division: Division
+}) => {
+  const { fetcher, isOpen, open, close } = useInlineEdit()
+  return (
+    <div className='border-b-2 border-ink py-2'>
+      {isOpen ? (
+        <DivisionRenameForm
+          year={year}
+          division={division}
+          fetcher={fetcher}
+          onCancel={close}
+        />
+      ) : (
+        <Button
+          variant='quiet'
+          onPress={open}
+          aria-label={`Rename division ${division.name}`}
+        >
+          Rename division
+        </Button>
+      )}
+    </div>
+  )
+}
+
+const DivisionRenameForm = ({
+  year,
+  division: { position, name },
+  fetcher,
+  onCancel,
+}: {
+  year: number
+  division: Division
+  fetcher: FetcherWithComponents<SavedResult>
+  onCancel: () => void
+}) => {
+  const { form, fields } = useValidatedForm(
+    divisionRenameSchema,
+    fetcher.data?.result,
+    { year, position, name },
+  )
+  return (
+    <InlineEditForm
+      form={form}
+      fetcher={fetcher}
+      action={href(`/admin/bracket/rename-division`)}
+      onCancel={onCancel}
+    >
+      <input type='hidden' name={fields.year.name} value={year} />
+      <input type='hidden' name={fields.position.name} value={position} />
+      <TextField
+        {...fieldProps(fields.name)}
+        label={`New name for the ${name} division`}
+        // The form opens for typing, as a Rename press asks
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus
+      />
+    </InlineEditForm>
+  )
+}
 
 /**
  * The row's editor closes once its save succeeds, and Rename opens it afresh

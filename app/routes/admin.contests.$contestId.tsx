@@ -1,12 +1,9 @@
 import { data, href, Link } from 'react-router'
 import type { Route } from './+types/admin.contests.$contestId.ts'
 import { readAdminContest } from '~/admin-contests.server.ts'
-import {
-  AdminContestActions,
-  describeAdminContest,
-} from '~/components/admin-contest-actions.tsx'
+import { AdminContestHeader } from '~/components/admin-contest-header.tsx'
 import { AdminPlayerList } from '~/components/admin-player-list.tsx'
-import { PageHeader } from '~/components/page-header.tsx'
+import { EraseContestDialog } from '~/components/erase-contest-dialog.tsx'
 
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const contest = await readAdminContest(params.contestId)
@@ -24,19 +21,16 @@ const AdminContest = ({
     <Link to={href(`/admin/contests`)} className='self-start'>
       Contests
     </Link>
-    <div className='flex flex-col gap-2'>
-      <PageHeader
-        title={contest.name}
-        action={<AdminContestActions contest={contest} />}
-      />
-      <p className='wrap-anywhere text-muted'>
-        {describeAdminContest(contest)}
-      </p>
-    </div>
+    <AdminContestHeader contest={contest} />
     <AdminPlayerList
       players={players}
       action={href(`/admin/contests/:contestId/erase`, params)}
     />
+    <div className='border-t-2 border-ink pt-4'>
+      <EraseContestDialog
+        contest={{ ...contest, playerCount: players.length }}
+      />
+    </div>
   </div>
 )
 export default AdminContest

@@ -74,6 +74,7 @@ export const BracketSetupForm = ({
   year,
   laterYear = null,
   version,
+  newerVersion = null,
   defaultValue,
   lastResult,
 }: {
@@ -82,6 +83,8 @@ export const BracketSetupForm = ({
   laterYear?: number | null
   /** Of `defaultValue`, from `toBracketVersion` */
   version: string
+  /** Of the stored bracket that a refused save would have replaced */
+  newerVersion?: string | null
   /** An existing bracket to edit */
   defaultValue?: BracketForm
   lastResult?: SubmissionResult
@@ -94,9 +97,6 @@ export const BracketSetupForm = ({
   const [wildCard, setWildCard] = useState<WildCardChoice>(
     defaultValue?.wildCard ?? DEFAULT_WILD_CARD,
   )
-  // The fields keep the bracket they opened with, even once the page reloads its
-  // data, so this does too
-  const [seenVersion] = useState(version)
   const isEdit = defaultValue !== undefined
 
   return (
@@ -119,7 +119,7 @@ export const BracketSetupForm = ({
         >
           {/* The year to set up may have moved on since the page loaded */}
           <input type='hidden' name='year' value={year} />
-          <input type='hidden' name='seenVersion' value={seenVersion} />
+          <input type='hidden' name='seenVersion' value={version} />
           <WildCardSection wildCard={wildCard} onChange={setWildCard} />
           <PasteSection
             wildCard={wildCard}
@@ -153,9 +153,20 @@ export const BracketSetupForm = ({
               {isEdit ? `Save changes` : `Save bracket`}
             </Button>
             <FormError form={form} />
+            {newerVersion === null ? null : (
+              <Button
+                type='submit'
+                name='replacedVersion'
+                value={newerVersion}
+                variant='secondary'
+                isPending={isSubmitting}
+              >
+                Save these names anyway
+              </Button>
+            )}
           </div>
         </Form>
-        {isEdit ? <DeleteSection year={year} /> : null}
+        {isEdit ? <DeleteSection year={year} version={version} /> : null}
       </div>
     </FormProvider>
   )
@@ -403,7 +414,13 @@ const NameField = ({
   )
 }
 
-const DeleteSection = ({ year }: { year: number }) => (
+const DeleteSection = ({
+  year,
+  version,
+}: {
+  year: number
+  version: string
+}) => (
   <section className='flex flex-col gap-4 border-t-2 border-ink pt-7'>
     <h2 className={SECTION_HEADING_CLASS_NAME}>Delete bracket</h2>
     <p className='max-w-prose text-muted'>
@@ -415,7 +432,7 @@ const DeleteSection = ({ year }: { year: number }) => (
         title={`Delete the ${year} bracket?`}
         confirmLabel={`Delete ${year} bracket`}
         action={href(`/admin/bracket/delete`)}
-        fields={{ year: String(year) }}
+        fields={{ year: String(year), seenVersion: version }}
       >
         <p>
           This deletes its divisions, combatants, and wild card. Only admins see

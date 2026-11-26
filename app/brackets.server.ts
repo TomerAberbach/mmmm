@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { eraseArchivedYear } from './archive.server.ts'
 import {
   bracketInputSchema,
+  describeTakenDivisionName,
   describeTakenName,
   isSameName,
   listSeedSlots,
@@ -18,7 +19,7 @@ import {
   toBattleId,
   toBattleKey,
 } from './bracket.ts'
-import type { BattleRef } from './bracket.ts'
+import type { BattleRef, DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
@@ -34,11 +35,17 @@ import {
   withCurrentYearAlone,
 } from './years.server.ts'
 
+export type SaveReply =
+  | { saved: true }
+  | { refusal: `PUBLISHED` }
+  /** `version` is the stored bracket's */
+  | { refusal: `STALE`; version: string }
+
 /**
  * Replaces the year's unpublished bracket, keeping its expected lock date, or
- * stores a new one with every seed slot and battle. Returns false and changes
- * nothing when the year's bracket is published, or when it isn't the one that
- * `seenVersion`, from `toBracketVersion`, is of. Saving the stored bracket again
+ * stores a new one with every seed slot and battle. Refuses when the year's
+ * bracket is published, or isn't the one that `seenVersion`, from
+ * `toBracketVersion`, is of. Saving the stored bracket again
  * succeeds. Throws on input `bracketInputSchema` rejects. Takes `lockYears`
  * in `SHARE` mode, so publishing waits for it, and a lock on the year, so
  * concurrent saves of the year run one at a time
@@ -47,7 +54,7 @@ export const saveUnpublishedBracket = async (
   year: number,
   input: BracketInput,
   seenVersion?: string,
-): Promise<boolean> => {
+): Promise<SaveReply> => {
   const parsed = bracketInputSchema.parse(input)
   const rows = buildBracketRows(year, parsed)
   return prisma.$transaction(async tx => {
@@ -58,21 +65,21 @@ export const saveUnpublishedBracket = async (
       select: { publishedAt: true, expectedLockDate: true },
     })
     if (existing?.publishedAt) {
-      return false
+      return { refusal: `PUBLISHED` }
     }
     if (seenVersion !== undefined) {
       const stored = existing ? toNames(await readBracketRows(year, tx)) : null
       const version = toBracketVersion(stored)
       if (stored && version === toBracketVersion(parsed)) {
-        return true
+        return { saved: true }
       }
       if (version !== seenVersion) {
-        return false
+        return { refusal: `STALE`, version }
       }
     }
     await tx.bracket.deleteMany({ where: { year, publishedAt: null } })
     await insertBracketRows(tx, year, rows, existing?.expectedLockDate ?? null)
-    return true
+    return { saved: true }
   }, LOCKED_YEARS_LIMITS)
 }
 
@@ -110,14 +117,38 @@ const insertBracketRows = async (
   await tx.wildCardEntrant.createMany({ data: rows.wildCardEntrants })
 }
 
-/** Returns whether the year had an unpublished bracket to delete */
-export const deleteUnpublishedBracket = async (
+/**
+ * `GONE` means the year has no unpublished bracket, and `STALE` that it isn't
+ * the one `seenVersion` is of
+ */
+export const deleteUnpublishedBracket = (
   year: number,
-): Promise<boolean> => {
-  const { count } = await prisma.bracket.deleteMany({
+  seenVersion: string,
+): Promise<`DELETED` | `GONE` | `STALE`> =>
+  prisma.$transaction(async tx => {
+    await lockYears(tx, `SHARE`)
+    await lockYearForSaving(tx, year)
+    const version = await readUnpublishedVersion(tx, year)
+    if (version === null) {
+      return `GONE`
+    }
+    if (version !== seenVersion) {
+      return `STALE`
+    }
+    await tx.bracket.delete({ where: { year } })
+    return `DELETED`
+  }, LOCKED_YEARS_LIMITS)
+
+/** Null without an unpublished bracket */
+const readUnpublishedVersion = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+): Promise<string | null> => {
+  const bracket = await tx.bracket.findUnique({
     where: { year, publishedAt: null },
+    select: { year: true },
   })
-  return count > 0
+  return bracket && toBracketVersion(toNames(await readBracketRows(year, tx)))
 }
 
 /**
@@ -432,7 +463,13 @@ export const readAdminYears = async (): Promise<{
 }
 
 export type PublicationChange =
-  `CHANGED` | `UNCHANGED` | `PAST` | `HAS_CONTESTS` | `LOCKED` | `NO_CHAMPION`
+  | `CHANGED`
+  | `UNCHANGED`
+  | `STALE`
+  | `PAST`
+  | `HAS_CONTESTS`
+  | `LOCKED`
+  | `NO_CHAMPION`
 
 /**
  * Publishing moves the year from Setup to Open, and unpublishing moves it back
@@ -440,11 +477,13 @@ export type PublicationChange =
  * current year's trash and unsubmitted drafts. A newer year waits for the current
  * year's champion, since publishing it archives the current year's results.
  * `PAST` means a newer year is current. `UNCHANGED` means the year has no
- * bracket, or its bracket is already in that state
+ * bracket, or its bracket is already in that state. `STALE` means the bracket to
+ * publish isn't the one that `seenVersion`, from `toBracketVersion`, is of
  */
 export const setBracketPublished = (
   year: number,
   published: boolean,
+  seenVersion?: string,
 ): Promise<PublicationChange> =>
   withCurrentYearAlone(async (tx, current) => {
     if (current && year < current.year) {
@@ -466,6 +505,12 @@ export const setBracketPublished = (
       (await readBracketSummary(current.year, tx))?.phase !== `COMPLETE`
     ) {
       return `NO_CHAMPION`
+    }
+    if (published && seenVersion !== undefined) {
+      const version = await readUnpublishedVersion(tx, year)
+      if (version !== null && version !== seenVersion) {
+        return `STALE`
+      }
     }
     const { count } = await tx.bracket.updateMany({
       where: { year, publishedAt: published ? null : { not: null } },
@@ -569,6 +614,33 @@ export const renameCombatant = (
       return { error: describeTakenName(taken.name) }
     }
     await tx.combatant.update({ where: { id: combatantId }, data: { name } })
+    return { ok: true }
+  })
+
+/** Names the division `name`, with the checks of `renameCombatant` */
+export const renameDivision = (
+  year: number,
+  position: DivisionPosition,
+  name: string,
+): Promise<{ ok: true } | { error: string } | { formError: string }> =>
+  withCurrentYearAlone(async (tx, current) => {
+    if (current?.year !== year) {
+      return {
+        formError: `The ${year} bracket isn’t current. Reload the page`,
+      }
+    }
+    const others = await tx.division.findMany({
+      where: { year, position: { not: position } },
+      select: { name: true },
+    })
+    const taken = others.find(other => isSameName(other.name, name))
+    if (taken) {
+      return { error: describeTakenDivisionName(taken.name) }
+    }
+    await tx.division.update({
+      where: { year_position: { year, position } },
+      data: { name },
+    })
     return { ok: true }
   })
 
