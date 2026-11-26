@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from 'vitest'
+import { addContest, addPlayer } from '../prisma/fixtures.ts'
+import { pickEveryBattle } from '../prisma/pick-every-battle.ts'
 import {
-  addContest,
-  addPlayer,
   addSubmission,
   createContestInNewYear,
   readEducatorId,
 } from '../test/contests.ts'
 import { createEducator, createMember } from '../test/educators.ts'
-import { pickEveryBattle } from '../test/picks.ts'
+import { submitPicks } from '../test/player-picks.ts'
 import { readSeededBracket } from '../test/results.ts'
 import { addYear, setLocked } from '../test/years.ts'
 import { setContestHidden } from './admin-contests.server.ts'
@@ -23,7 +23,6 @@ import type {
   LeaderboardScope,
   LeaderboardViewer,
 } from './leaderboards.server.ts'
-import { submitPlayerPicks } from './player-picks.server.ts'
 import { deletePlayers } from './trash.server.ts'
 
 type TestContest = { contestId: string; year: number }
@@ -153,7 +152,7 @@ test(`a row opens its submission, hiding the name as the leaderboard does`, asyn
   const { contestId, year } = await createContestInNewYear()
   const bracket = await readSeededBracket(year)
   const { id } = await addPlayer(contestId)
-  await submitPlayerPicks(id, pickEveryBattle(bracket))
+  await submitPicks(id, pickEveryBattle(bracket))
   await prisma.submission.update({
     where: { playerId: id },
     data: { status: `APPROVED` },

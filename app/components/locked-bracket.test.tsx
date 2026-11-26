@@ -1,19 +1,16 @@
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
+import { pickEveryBattle } from '../../prisma/pick-every-battle.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import {
-  pickEveryBattle,
-  ROUND_1_FIRST,
-  storeTestBracket,
-} from '../../test/picks.ts'
+import { ROUND_1_FIRST, storeTestBracket } from '../../test/picks.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import type { SubmissionStatus } from '../generated/prisma/enums.ts'
-import { listContenders } from '../picks.ts'
 import type { Picks } from '../picks.ts'
 import { recordResult } from '../results.ts'
 import type { Results } from '../results.ts'
 import { toSeededBracket } from '../seeded-bracket.ts'
+import { listContenders } from '../winners.ts'
 import { LockedBracket } from './locked-bracket.tsx'
 
 const STORED_BRACKET = storeTestBracket(BRACKET_2025)

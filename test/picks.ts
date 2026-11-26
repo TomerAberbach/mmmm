@@ -1,9 +1,6 @@
 import { mapCombatants } from '../app/bracket-input.ts'
 import type { BracketInput } from '../app/bracket-input.ts'
-import { listBattles } from '../app/bracket.ts'
 import type { BattleRef } from '../app/bracket.ts'
-import { listContenders, pickWinner } from '../app/picks.ts'
-import type { Picks } from '../app/picks.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import type { SeededBracket, StoredBracket } from '../app/seeded-bracket.ts'
 
@@ -33,12 +30,3 @@ export const findCombatantId = (
   }
   return combatant.id
 }
-
-/** Picks the first contender of every battle, in play order */
-export const pickEveryBattle = (bracket: SeededBracket): Picks =>
-  listBattles().reduce(
-    (picks, battle) =>
-      pickWinner(bracket, picks, battle, listContenders(bracket, battle)[0]!.id)
-        .picks,
-    {},
-  )

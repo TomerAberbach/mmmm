@@ -204,7 +204,7 @@ app
   the seed slots, the wild card's entrants, and the winners so far from a
   `SeededBracket`. Build the `SeededBracket` once per `StoredBracket` with
   `toSeededBracket`, and pass it to both `buildBracketView` and the pick rules
-  in `picks.ts`
+  in `winners.ts`
 - Show a bracket from `buildBracketView` in `bracket-view.ts`. A regular
   `BattleBox` is hidden from screen readers and describes its battle in text for
   them. A diagram box adds no text, since the list of battles beside the diagram
@@ -249,9 +249,9 @@ app
   under `routes/player.approved.tsx`
 - Give a new leaderboard or contest page a `ReportDialog`, and answer it with
   `answerReport`, which checks that the reporter sees what they report
-- Change a player's picks with `pickWinner` from `picks.ts`, which also picks
+- Change a player's picks with `setWinner` from `winners.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
-  `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`
+  `savePlayerDraft` and `submitPlayerPicks` refuse picks that `setWinner`
   wouldn't produce, including a combatant ID from another year's bracket
 - A player edits a draft, and submitting copies it to their submission. Both are
   `Pick` rows, told apart by `stage`. Change them only through
@@ -290,7 +290,9 @@ app
   current until the test ends. Create a contest or a player in a new current
   year with `createContestInNewYear` or `createPlayerInNewYear` from
   `test/contests.ts`, a submission with a status and no picks with
-  `addSubmission`, and educators with `createEducator` from `test/educators.ts`
+  `addSubmission`, a player's picks with `saveDraft` or `submitPicks` from
+  `test/player-picks.ts`, and educators with `createEducator` from
+  `test/educators.ts`
 - Browser tests load `app.css` and check accessibility, including contrast, with
   `expectNoAxeViolations` from `test/axe.ts`
 - In browser tests, `toHaveTextContent` with a regex fails even on matching

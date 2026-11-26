@@ -1,11 +1,8 @@
 import { expect, test } from 'vitest'
-import {
-  addContest,
-  addPlayer,
-  createContestInNewYear,
-  readEducatorId,
-} from '../test/contests.ts'
-import { pickEveryBattle } from '../test/picks.ts'
+import { addContest, addPlayer } from '../prisma/fixtures.ts'
+import { pickEveryBattle } from '../prisma/pick-every-battle.ts'
+import { createContestInNewYear, readEducatorId } from '../test/contests.ts'
+import { readDraftAndSubmission, submitPicks } from '../test/player-picks.ts'
 import {
   crownChampion,
   lockYear,
@@ -20,10 +17,6 @@ import {
 import type { MoveRequest } from './move-request.ts'
 import { moveCombatants, readMoveImpact } from './moves.server.ts'
 import { readArrangement } from './moves.ts'
-import {
-  readDraftAndSubmission,
-  submitPlayerPicks,
-} from './player-picks.server.ts'
 import { reopenSubmissions, saveResult } from './results.server.ts'
 import { listMerges } from './seeded-bracket.ts'
 
@@ -46,7 +39,7 @@ const makeMove = async (
 
 const addSubmitted = async (contestId: string, year: number) => {
   const { id } = await addPlayer(contestId)
-  await submitPlayerPicks(id, pickEveryBattle(await readSeededBracket(year)))
+  await submitPicks(id, pickEveryBattle(await readSeededBracket(year)))
   return id
 }
 
@@ -107,7 +100,7 @@ test(`submitting again removes the note and waits for approval again`, async () 
   )
   await moveCombatants(await makeMove(year))
 
-  await submitPlayerPicks(id, pickEveryBattle(await readSeededBracket(year)))
+  await submitPicks(id, pickEveryBattle(await readSeededBracket(year)))
 
   await expect(readDraftAndSubmission(id)).resolves.toMatchObject({
     submission: { status: `PENDING` },

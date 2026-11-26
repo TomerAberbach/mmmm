@@ -1,17 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { listBattles, toBattleId } from '../app/bracket.ts'
+import { toBattleId } from '../app/bracket.ts'
 import {
   readBracket,
   saveUnpublishedBracket,
   setBracketPublished,
 } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
-import { listContenders, pickWinner } from '../app/picks.ts'
 import type { Picks } from '../app/picks.ts'
 import { hashSecret } from '../app/secrets.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
-import type { SeededBracket } from '../app/seeded-bracket.ts'
 import { BRACKET_2025 } from '../prisma/brackets.ts'
+import { pickEveryBattle } from '../prisma/pick-every-battle.ts'
 
 export const YEAR = 2025
 const CONTEST_COUNT = 200
@@ -48,24 +47,11 @@ export const fillDatabase = async (): Promise<void> => {
       },
     })
   }
-  const choices = [0, -1].map(side => pickEvery(bracket, side))
+  const choices = [0, -1].map(at => pickEveryBattle(bracket, at))
   for (let index = 0; index < CONTEST_COUNT; index++) {
     await fillContest(index, choices)
   }
 }
-
-/** Picks each battle's contender at the index, which can count from the end */
-const pickEvery = (bracket: SeededBracket, at: number): Picks =>
-  listBattles().reduce<Picks>(
-    (picks, battle) =>
-      pickWinner(
-        bracket,
-        picks,
-        battle,
-        listContenders(bracket, battle, picks).at(at)!.id,
-      ).picks,
-    {},
-  )
 
 const fillContest = async (
   contestIndex: number,

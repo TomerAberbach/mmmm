@@ -28,16 +28,12 @@ import { formatCount } from '~/format-count.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import { readArrangement } from '~/moves.ts'
 import type { PicksRequest } from '~/picks-request.ts'
-import {
-  arePicksEqual,
-  listContenders,
-  pickWinner,
-  TOTAL_BATTLES,
-} from '~/picks.ts'
+import { arePicksEqual } from '~/picks.ts'
 import type { Picks } from '~/picks.ts'
 import type { Submission } from '~/player-picks.server.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { StoredBracket } from '~/seeded-bracket.ts'
+import { listContenders, setWinner, TOTAL_BATTLES } from '~/winners.ts'
 
 /**
  * The player's bracket, each battle a control. Every change saves the whole
@@ -95,16 +91,16 @@ export const PlayerBracket = ({
     (): Picking => ({
       kind: `picks`,
       pick: (battle, winnerId) => {
-        const next = pickWinner(bracket, picks, battle, winnerId)
+        const next = setWinner(bracket, picks, battle, winnerId)
         changeCount.current += 1
-        setPicks(next.picks)
+        setPicks(next.winners)
         setCleared(new Set([...cleared, ...next.cleared.map(toBattleKey)]))
         setOutcome(
           next.cleared.length > 0
             ? { kind: `cleared`, battles: next.cleared }
             : null,
         )
-        send({ intent: `save`, picks: next.picks, arrangement })
+        send({ intent: `save`, picks: next.winners, arrangement })
       },
       listContenders: battle => listContenders(bracket, battle),
       isCleared: battle => {

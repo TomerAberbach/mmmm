@@ -7,7 +7,6 @@ import { addYear, claimYear } from '../test/years.ts'
 import { toNames } from './bracket-input.ts'
 import {
   deleteUnpublishedBracket,
-  listBracketCombatants,
   readBracket,
   readBracketSummary,
   readCurrentBracket,
@@ -346,19 +345,6 @@ test(`the current bracket carries its expected lock date`, async () => {
     year,
     expectedLockDate,
   })
-})
-
-test(`the wild card's entrants are listed at its seed`, async () => {
-  const year = await addYear({ published: false, input: BRACKET_2025 })
-
-  const divisions = listBracketCombatants((await readBracket(year))!)
-
-  expect(
-    divisions[0]?.combatants.filter(({ seed }) => seed === 14),
-  ).toMatchObject([
-    { name: `Northern Flying Squirrel`, isWildCardEntrant: true },
-    { name: `Flying Frog`, isWildCardEntrant: true },
-  ])
 })
 
 const readCombatantId = async (year: number, name: string) =>

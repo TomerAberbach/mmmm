@@ -6,8 +6,8 @@ import {
   ROUND_2_FIRST,
   seedTestBracket,
 } from '../test/picks.ts'
-import { listContenders } from './picks.ts'
 import { clearResult, listDecidableBattles, recordResult } from './results.ts'
+import { listContenders } from './winners.ts'
 
 const BRACKET = seedTestBracket(BRACKET_2026)
 const NILE_CROCODILE = findCombatantId(BRACKET, `Nile Crocodile`)

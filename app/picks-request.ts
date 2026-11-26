@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TOTAL_BATTLES } from './picks.ts'
+import { TOTAL_BATTLES } from './winners.ts'
 
 /** Battle keys mapped to combatant IDs */
 const picksSchema = z

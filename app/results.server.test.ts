@@ -1,14 +1,13 @@
 import { expect, test } from 'vitest'
+import { addContest, addPlayer, readLinkSecret } from '../prisma/fixtures.ts'
 import {
-  addContest,
-  addPlayer,
   createContestInNewYear,
   createPlayerInNewYear,
   readEducatorId,
-  readLinkSecret,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import { ROUND_2_FIRST } from '../test/picks.ts'
+import { saveDraft, submitPicks } from '../test/player-picks.ts'
 import {
   crownChampion,
   lockYear,
@@ -24,18 +23,14 @@ import {
   setBracketPublished,
 } from './brackets.server.ts'
 import { createContest } from './contests.server.ts'
-import { listContenders } from './picks.ts'
-import {
-  discardPlayerDraft,
-  savePlayerDraft,
-  submitPlayerPicks,
-} from './player-picks.server.ts'
+import { discardPlayerDraft } from './player-picks.server.ts'
 import { createPlayer, readPersonalLink } from './players.server.ts'
 import type { ResultRequest } from './result-request.ts'
 import { reopenSubmissions, saveResult } from './results.server.ts'
 import { fillSides, listMerges } from './seeded-bracket.ts'
 import type { Combatant } from './seeded-bracket.ts'
 import { deletePlayers } from './trash.server.ts'
+import { listContenders } from './winners.ts'
 
 test(`the first result is saved and locks submissions`, async () => {
   const year = await addYear({ published: true })
@@ -136,8 +131,8 @@ test(`locking refuses new players`, async () => {
 })
 
 test.each([
-  [`saving a draft`, (id: string) => savePlayerDraft(id, {})],
-  [`submitting`, (id: string) => submitPlayerPicks(id, {})],
+  [`saving a draft`, (id: string) => saveDraft(id, {})],
+  [`submitting`, (id: string) => submitPicks(id, {})],
   [`discarding a draft`, (id: string) => discardPlayerDraft(id)],
 ])(`locking refuses %s`, async (_, write) => {
   const { playerId, year } = await createPlayerInNewYear()

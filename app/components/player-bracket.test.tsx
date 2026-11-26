@@ -2,21 +2,21 @@ import { redirect, useLoaderData } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
+import { pickEveryBattle } from '../../prisma/pick-every-battle.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import {
   CHAMPIONSHIP,
-  pickEveryBattle,
   ROUND_1_FIRST,
   storeTestBracket,
 } from '../../test/picks.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import { toBattleKey } from '../bracket.ts'
 import { formatDateTime } from '../dates.ts'
-import { listContenders, pickWinner } from '../picks.ts'
 import type { Picks } from '../picks.ts'
 import type { Submission } from '../player-picks.server.ts'
 import { fillSides, toSeededBracket } from '../seeded-bracket.ts'
 import type { Combatant } from '../seeded-bracket.ts'
+import { listContenders, setWinner } from '../winners.ts'
 import { PlayerBracket } from './player-bracket.tsx'
 import type { Submitted } from './player-controls.tsx'
 
@@ -28,12 +28,12 @@ const [SEED_1, SEED_16] = listContenders(BRACKET, ROUND_1_FIRST) as [
 ]
 const COMPLETE_PICKS = pickEveryBattle(BRACKET)
 /** The complete picks with a different champion from Round 1 on */
-const COMPLETE_CHANGED_PICKS = pickWinner(
+const COMPLETE_CHANGED_PICKS = setWinner(
   BRACKET,
-  pickWinner(BRACKET, COMPLETE_PICKS, ROUND_1_FIRST, SEED_16.id).picks,
+  setWinner(BRACKET, COMPLETE_PICKS, ROUND_1_FIRST, SEED_16.id).winners,
   CHAMPIONSHIP,
   SEED_16.id,
-).picks
+).winners
 /** The finalist the complete picks don't choose as champion */
 const RUNNER_UP = fillSides(BRACKET, CHAMPIONSHIP, COMPLETE_PICKS)
   .flatMap(side => (side.kind === `combatant` ? [side.combatant] : []))
@@ -410,12 +410,12 @@ test(`submitting changes to an approved bracket says it stays approved`, async (
 })
 
 test(`discarding changes brings back the submitted picks`, async () => {
-  const changedPicks = pickWinner(
+  const changedPicks = setWinner(
     BRACKET,
     COMPLETE_PICKS,
     ROUND_1_FIRST,
     SEED_16.id,
-  ).picks
+  ).winners
   const fetchSpy = answerRequests(Response.json({ ok: true }))
   await renderBracket({ draft: changedPicks, submission: SUBMISSION })
 

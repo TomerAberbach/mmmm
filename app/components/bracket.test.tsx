@@ -6,16 +6,13 @@ import {
   BRACKET_2025,
   BRACKET_2026,
 } from '../../prisma/brackets.ts'
+import { pickEveryBattle } from '../../prisma/pick-every-battle.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import {
-  pickEveryBattle,
-  ROUND_1_FIRST,
-  seedTestBracket,
-} from '../../test/picks.ts'
+import { ROUND_1_FIRST, seedTestBracket } from '../../test/picks.ts'
 import { buildBracketView, buildMarkedBracketView } from '../bracket-view.ts'
 import type { Winners } from '../bracket.ts'
-import { listContenders } from '../picks.ts'
 import type { Combatant, SeededBracket } from '../seeded-bracket.ts'
+import { listContenders } from '../winners.ts'
 import { PRINTED_PAGE } from './bracket-diagram.tsx'
 import { Bracket } from './bracket.tsx'
 

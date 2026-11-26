@@ -18,7 +18,6 @@ import type { BattleRef } from '~/bracket.ts'
 import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
 import { readArrangement } from '~/moves.ts'
-import { listContenders, TOTAL_BATTLES } from '~/picks.ts'
 import type { ResultRequest } from '~/result-request.ts'
 import {
   applyResult,
@@ -28,6 +27,7 @@ import {
 import type { AppliedResult, ResultDecision, Results } from '~/results.ts'
 import { toSeededBracket } from '~/seeded-bracket.ts'
 import type { SeededBracket, StoredBracket } from '~/seeded-bracket.ts'
+import { listContenders, TOTAL_BATTLES } from '~/winners.ts'
 
 /**
  * The current year's bracket, each side a button that records its win. Each

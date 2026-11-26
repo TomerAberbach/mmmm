@@ -1,9 +1,9 @@
 import { isSameName } from './bracket-input.ts'
 import { listBattles, toBattleKey } from './bracket.ts'
 import type { BattleRef, Winners } from './bracket.ts'
-import { isContender, keepReachablePicks, pickWinner } from './picks.ts'
 import { fillSides, listCombatants, withMerge } from './seeded-bracket.ts'
 import type { SeededBracket, StoredMerge } from './seeded-bracket.ts'
+import { isContender, keepReachableWinners, setWinner } from './winners.ts'
 
 /** Who won each battle with a result, keyed by `toBattleKey` */
 export type Results = Winners
@@ -88,14 +88,14 @@ export const recordResult = (
   battle: BattleRef,
   winnerId: string,
 ): ResultsChange => {
-  const { picks, cleared } = pickWinner(
+  const { winners, cleared } = setWinner(
     bracket,
     results,
     battle,
     winnerId,
     results,
   )
-  return { results: picks, cleared }
+  return { results: winners, cleared }
 }
 
 /** Records the merge of the battle's sides, which must be its members */
@@ -137,8 +137,8 @@ export const clearResult = (
   battle: BattleRef,
 ): ResultsChange => {
   const { [toBattleKey(battle)]: _, ...rest } = results
-  const { picks, cleared } = keepReachablePicks(bracket, rest)
-  return { results: picks, cleared }
+  const { winners, cleared } = keepReachableWinners(bracket, rest)
+  return { results: winners, cleared }
 }
 
 /** The battles with every side known and no result, in play order */

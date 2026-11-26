@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest'
 import { BRACKET_2025 } from '../prisma/brackets.ts'
+import { pickEveryBattle } from '../prisma/pick-every-battle.ts'
 import {
   CHAMPIONSHIP,
   findCombatantId,
-  pickEveryBattle,
   ROUND_1_FIRST,
   ROUND_2_FIRST,
   seedTestBracket,
@@ -13,12 +13,12 @@ import {
   buildMarkedBracketView,
   describeBattle,
 } from './bracket-view.ts'
-import { listContenders } from './picks.ts'
 import { recordMerge, recordResult } from './results.ts'
 import type { Results } from './results.ts'
 import { readScorecard } from './scorecard.ts'
 import { markPick, PERFECT_SCORE } from './scoring.ts'
 import { withMerge } from './seeded-bracket.ts'
+import { listContenders } from './winners.ts'
 
 const BRACKET = seedTestBracket(BRACKET_2025)
 const PICKS = pickEveryBattle(BRACKET)
