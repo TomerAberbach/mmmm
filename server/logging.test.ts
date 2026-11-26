@@ -12,6 +12,10 @@ test.each([
     path: `//api/auth/reset-password/secret`,
     redacted: `//api/auth/reset-password/[redacted]`,
   },
+  {
+    path: `/confirm-address/secret`,
+    redacted: `/confirm-address/[redacted]`,
+  },
   { path: `/play/secret`, redacted: `/play/[redacted]` },
   { path: `/Play/secret`, redacted: `/Play/[redacted]` },
   { path: `/%6dy-bracket/secret`, redacted: `/my-bracket/[redacted]` },

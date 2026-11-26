@@ -2,9 +2,9 @@ import { getFormProps } from '@conform-to/react'
 import type { ReactElement } from 'react'
 import { DialogTrigger } from 'react-aria-components'
 import { useFetcher } from 'react-router'
-import { Button } from './button.tsx'
+import { DangerButtons } from './danger-buttons.tsx'
 import { FormError } from './form-error.tsx'
-import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
+import { ModalFrame } from './modal-frame.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import { accountDeletionSchema } from '~/account-deletion-forms.ts'
@@ -78,24 +78,10 @@ const DeleteAccountForm = ({
         label={`Type ${email} to confirm`}
         autoComplete='off'
       />
-      <div className={BUTTONS_CLASS_NAME}>
-        {/* The least destructive choice gets focus, as in ConfirmDialog */}
-        <Button
-          slot='close'
-          variant='secondary'
-          // eslint-disable-next-line jsx-a11y/no-autofocus
-          autoFocus
-        >
-          Cancel
-        </Button>
-        <Button
-          type='submit'
-          variant='danger'
-          isPending={fetcher.state !== `idle`}
-        >
-          Delete account
-        </Button>
-      </div>
+      <DangerButtons
+        confirmLabel='Delete account'
+        isPending={fetcher.state !== `idle`}
+      />
       <FormError form={form} />
     </fetcher.Form>
   )

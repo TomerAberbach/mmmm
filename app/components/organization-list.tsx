@@ -1,6 +1,7 @@
 import { href } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
+import { DeleteOrganizationDialog } from './delete-organization-dialog.tsx'
 import { InlineEditForm } from './inline-edit-form.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
@@ -61,13 +62,16 @@ const OrganizationItem = ({
           onCancel={close}
         />
       ) : (
-        <Button
-          variant='quiet'
-          onPress={open}
-          aria-label={`Rename ${name ?? domain}`}
-        >
-          Rename
-        </Button>
+        <div className='flex flex-wrap gap-2'>
+          <Button
+            variant='quiet'
+            onPress={open}
+            aria-label={`Rename ${name ?? domain}`}
+          >
+            Rename
+          </Button>
+          <DeleteOrganizationDialog domain={domain} />
+        </div>
       )}
     </li>
   )

@@ -53,3 +53,25 @@ const orphanContestsAndDelete = async (
 /** Counts every year's contests */
 export const countContests = (educatorId: string): Promise<number> =>
   prisma.contest.count({ where: { educatorId, ...CONTEST_OUTSIDE_TRASH } })
+
+/**
+ * An unconfirmed educator belongs to no one yet, so whoever confirms the address
+ * next replaces them, unless they have contests. Returns whether the address is
+ * free. The condition keeps one whose address is confirmed meanwhile
+ */
+export const freeAddress = async (
+  email: string,
+  db: Prisma.TransactionClient = prisma,
+): Promise<boolean> => {
+  await db.educator.deleteMany({ where: { email, ...REPLACEABLE } })
+  return (await db.educator.count({ where: { email } })) === 0
+}
+
+/** Whether `freeAddress` would free it */
+export const isAddressFree = async (email: string): Promise<boolean> =>
+  (await prisma.educator.count({ where: { email, NOT: REPLACEABLE } })) === 0
+
+const REPLACEABLE = {
+  emailVerified: false,
+  contests: { none: {} },
+} satisfies Prisma.EducatorWhereInput
