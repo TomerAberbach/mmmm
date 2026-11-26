@@ -13,6 +13,7 @@
     "start": "NODE_ENV=production node server.ts",
     "job:daily": "node app/daily-job.server.ts",
     "db:import": "node import/run.ts",
+    "launch:emails": "node import/run-launch.ts",
     "db:seed": "prisma db seed",
     "db:reset": "node prisma/push-schema.ts --force-reset && prisma generate && prisma db seed",
     "format:base": "prettier --cache --write",

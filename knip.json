@@ -1,4 +1,4 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": ["server/app.ts"]
+  "entry": ["server/app.ts", "import/launch.ts"]
 }

@@ -195,5 +195,31 @@ hashes or schools. Run it against an empty or already imported database.
    hashes.
 
 A rerun replaces what an earlier run added. The import refuses to rerun once an
-imported educator confirms their address, so finish it before the launch emails.
-It runs in one transaction, so a failure changes nothing.
+imported educator is emailed or confirms their address, so finish it before the
+launch emails. It runs in one transaction, so a failure changes nothing.
+
+## Send the launch emails
+
+`pnpm launch:emails` emails each imported educator a link that sets a password
+and confirms their address. The link works for 3 days, and Forgot password does
+the same after that. Send them once the import is checked, since the import
+can't rerun after an educator uses one.
+
+1. Check Resend's daily limit for the account's plan. The free plan sends 100
+   emails a day.
+2. In your own terminal, set `DATABASE_URL`, `APP_ENV`, `BETTER_AUTH_URL`,
+   `BETTER_AUTH_SECRET`, `EMAIL_FROM`, `RESEND_API_KEY`, and `SUPPORT_EMAIL` to
+   the app's values, and `EMAIL_TRANSPORT` to `resend`. The links and the footer
+   use them.
+3. Count who is waiting, then send up to that limit. Rerun it each day until no
+   educators are left:
+
+   ```sh
+   pnpm launch:emails --dry-run
+   pnpm launch:emails --limit 100
+   ```
+
+A run goes on past an address that Resend rejects, reports its educator's ID,
+and tries it again on the next run. It stops after 3 failures in a row. An
+educator gets two emails only when Resend accepts one but doesn't answer in
+time.
