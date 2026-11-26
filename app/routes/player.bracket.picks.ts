@@ -2,11 +2,7 @@ import { href, redirect } from 'react-router'
 import type { Route } from './+types/player.bracket.picks.ts'
 import { picksRequestSchema } from '~/picks-request.ts'
 import type { PicksRequest } from '~/picks-request.ts'
-import {
-  readPlayContest,
-  readRequiredPlayer,
-  requirePlayer,
-} from '~/play-context.server.ts'
+import { readRequiredPlayer, requirePlayer } from '~/play-context.server.ts'
 import {
   discardPlayerDraft,
   savePlayerDraft,
@@ -33,20 +29,19 @@ export const action = async ({
     return refuse()
   }
   const { id } = readRequiredPlayer(context)
-  const { year } = readPlayContest(context)
-  const result = await writePicks(id, year, parsed.data)
+  const result = await writePicks(id, parsed.data)
   return `refusal` in result ? refuse() : new Response(null)
 }
 
 const refuse = (): Response => new Response(null, { status: 400 })
 
-const writePicks = (playerId: string, year: number, request: PicksRequest) => {
+const writePicks = (playerId: string, request: PicksRequest) => {
   switch (request.intent) {
     case `save`:
-      return savePlayerDraft(playerId, year, request.picks)
+      return savePlayerDraft(playerId, request.picks)
     case `submit`:
-      return submitPlayerPicks(playerId, year, request.picks)
+      return submitPlayerPicks(playerId, request.picks)
     case `discard`:
-      return discardPlayerDraft(playerId, year)
+      return discardPlayerDraft(playerId)
   }
 }

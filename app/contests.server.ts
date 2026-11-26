@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { href } from 'react-router'
-import { lockYears, readCurrentYear } from './brackets.server.ts'
+import { withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
@@ -19,9 +19,7 @@ export const createContest = (
   educatorId: string,
   name: string,
 ): Promise<string | null> =>
-  prisma.$transaction(async tx => {
-    await lockYears(tx, `SHARE`)
-    const year = await readCurrentYear(tx)
+  withCurrentYear(async (tx, year) => {
     if (year === null) {
       return null
     }

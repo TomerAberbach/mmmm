@@ -1,8 +1,9 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
-import { lockYear, readBracketRows } from './brackets.server.ts'
+import { readBracketRows, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type { Prisma, SubmissionStatus } from './generated/prisma/client.ts'
+import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { arePicksComplete, arePicksConsistent, arePicksEqual } from './picks.ts'
 import type { Picks } from './picks.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
@@ -57,10 +58,9 @@ export type PicksRefusal = {
  */
 export const savePlayerDraft = (
   playerId: string,
-  year: number,
   picks: Picks,
 ): Promise<{ saved: true } | PicksRefusal> =>
-  withPlayerBracket(playerId, year, async (tx, bracket, battleIdByKey) => {
+  withPlayerBracket(playerId, async (tx, bracket, battleIdByKey) => {
     if (!arePicksConsistent(bracket, picks)) {
       return { refusal: `INCONSISTENT` } as const
     }
@@ -75,10 +75,9 @@ export const savePlayerDraft = (
  */
 export const submitPlayerPicks = (
   playerId: string,
-  year: number,
   picks: Picks,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
-  withPlayerBracket(playerId, year, async (tx, bracket, battleIdByKey) => {
+  withPlayerBracket(playerId, async (tx, bracket, battleIdByKey) => {
     if (!arePicksComplete(bracket, picks)) {
       return { refusal: `INCOMPLETE` } as const
     }
@@ -108,9 +107,8 @@ export const submitPlayerPicks = (
  */
 export const discardPlayerDraft = (
   playerId: string,
-  year: number,
 ): Promise<{ discarded: true } | PicksRefusal> =>
-  withCurrentPlayer(playerId, year, async tx => {
+  withCurrentPlayer(playerId, async tx => {
     if (!(await tx.submission.findUnique({ where: { playerId } }))) {
       return { refusal: `NOT_SUBMITTED` } as const
     }
@@ -164,32 +162,28 @@ const writePicks = async (
 }
 
 /**
- * Runs `change` in a transaction once it holds the player's row and the year,
- * refusing unless the year is current and the player and their contest are
- * outside the trash. The player must be in one of the year's contests
+ * Runs `change` in a transaction once it holds the years and the player's row,
+ * with the player's year, refusing unless that year is current and the player
+ * and their contest are outside the trash
  */
 const withCurrentPlayer = <Result>(
   playerId: string,
-  year: number,
-  change: (tx: Prisma.TransactionClient) => Promise<Result>,
+  change: (tx: Prisma.TransactionClient, year: number) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
-  prisma.$transaction(async tx => {
+  withCurrentYear(async (tx, currentYear) => {
+    await tx.$queryRaw`SELECT 1 FROM "Player" WHERE "id" = ${playerId} FOR UPDATE`
     // The request may have read the player before another deleted them or
     // their contest
-    const [player] = await tx.$queryRaw<{ isDeleted: boolean }[]>`
-      SELECT
-        "Player"."deletedAt" IS NOT NULL
-          OR "Contest"."deletedAt" IS NOT NULL AS "isDeleted"
-      FROM "Player"
-      JOIN "Contest" ON "Contest"."id" = "Player"."contestId"
-      WHERE "Player"."id" = ${playerId}
-      FOR UPDATE OF "Player"
-    `
-    if (!player || player.isDeleted) {
+    const player = await tx.player.findFirst({
+      where: { id: playerId, ...PLAYER_OUTSIDE_TRASH },
+      select: { contest: { select: { year: true } } },
+    })
+    if (!player) {
       return { refusal: `DELETED` } as const
     }
-    return (await lockYear(tx, year, `SHARE`)) === `CURRENT`
-      ? change(tx)
+    const { year } = player.contest
+    return year === currentYear
+      ? change(tx, year)
       : ({ refusal: `NOT_CURRENT_YEAR` } as const)
   })
 
@@ -199,15 +193,13 @@ const withCurrentPlayer = <Result>(
  */
 const withPlayerBracket = <Result>(
   playerId: string,
-  year: number,
   change: (
     tx: Prisma.TransactionClient,
     bracket: SeededBracket,
     battleIdByKey: ReadonlyMap<string, string>,
   ) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
-  withCurrentPlayer(playerId, year, async tx => {
-    // A current year's bracket is published, so it exists
-    const { bracket, battleIdByKey } = (await readBracketRows(year, tx))!
+  withCurrentPlayer(playerId, async (tx, year) => {
+    const { bracket, battleIdByKey } = await readBracketRows(year, tx)
     return change(tx, toSeededBracket(bracket), battleIdByKey)
   })

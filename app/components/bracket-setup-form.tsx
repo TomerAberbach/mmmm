@@ -39,6 +39,7 @@ import type { BracketForm, WildCardChoice } from '~/bracket-form.ts'
 import {
   DIVISION_POSITIONS,
   isSameSeedSlot,
+  mapDivisions,
   MAX_WILD_CARD_ENTRANTS,
   MIN_WILD_CARD_ENTRANTS,
   POSITION_LABELS,
@@ -222,12 +223,9 @@ const WildCardSection = ({
 
 const useDivisionNames = (): Record<DivisionPosition, string> => {
   const [divisions] = useField<BracketForm[`divisions`]>(`divisions`)
-  return Object.fromEntries(
-    DIVISION_POSITIONS.map(position => [
-      position,
-      divisions.value?.[position]?.name?.trim() ?? ``,
-    ]),
-  ) as Record<DivisionPosition, string>
+  return mapDivisions(
+    position => divisions.value?.[position]?.name?.trim() ?? ``,
+  )
 }
 
 const capitalize = (text: string): string =>

@@ -1,9 +1,8 @@
+import { listSeedSlots } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
 import {
-  DIVISION_POSITIONS,
-  isSameSeedSlot,
+  mapDivisions,
   readBattleSides,
-  SEEDS,
   toBattleKey,
   toSeedSlotKey,
 } from './bracket.ts'
@@ -14,24 +13,6 @@ import type {
   SeedSlotRef,
   Winners,
 } from './bracket.ts'
-
-/**
- * Every seed slot in seed order, with its combatant. The wild card's seed slot
- * has none, since the wild card's winner fills it
- */
-export const listSeedSlots = <Combatant>({
-  divisions,
-  wildCard,
-}: BracketInput<Combatant>): (SeedSlotRef & { combatant?: Combatant })[] =>
-  DIVISION_POSITIONS.flatMap(position => {
-    const combatants = [...divisions[position].combatants]
-    return SEEDS.map(seed =>
-      isSameSeedSlot({ position, seed }, wildCard)
-        ? { position, seed }
-        : // The input schema checks each division's count
-          { position, seed, combatant: combatants.shift()! },
-    )
-  })
 
 type StoredCombatant = { id: string; name: string }
 
@@ -65,9 +46,7 @@ export const toSeededBracket = (stored: StoredBracket): SeededBracket => {
     seed: wildCard.seed,
   }))
   return {
-    divisionNames: Object.fromEntries(
-      DIVISION_POSITIONS.map(position => [position, divisions[position].name]),
-    ) as Record<DivisionPosition, string>,
+    divisionNames: mapDivisions(position => divisions[position].name),
     wildCardSlot: { position: wildCard.position, seed: wildCard.seed },
     wildCardEntrants,
     combatantBySeedSlot: new Map(

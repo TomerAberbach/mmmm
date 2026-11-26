@@ -3,14 +3,20 @@ import { z } from 'zod'
 import {
   bracketInputSchema,
   findDuplicateNames,
+  listDivisionSeedSlots,
+  listSeedSlots,
   toBracketSchema,
 } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
-import { DIVISION_POSITIONS, listBattles, toBattleKey } from './bracket.ts'
+import {
+  DIVISION_POSITIONS,
+  listBattles,
+  mapDivisions,
+  toBattleKey,
+} from './bracket.ts'
 import type { DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
 import { Prisma } from './generated/prisma/client.ts'
-import { listSeedSlots } from './seeded-bracket.ts'
 import type { Combatant, StoredBracket } from './seeded-bracket.ts'
 
 /**
@@ -85,15 +91,7 @@ const buildBracketRows = (year: number, input: BracketInput) => {
   }
   const wildCardSlotId = randomUUID()
 
-  const divisionRows = DIVISION_POSITIONS.map(position => ({
-    id: randomUUID(),
-    year,
-    position,
-    name: input.divisions[position].name,
-  }))
-  const divisionIds = Object.fromEntries(
-    divisionRows.map(({ id, position }) => [position, id]),
-  ) as Record<DivisionPosition, string>
+  const divisionIds = mapDivisions(() => randomUUID())
   const seedSlots = listSeedSlots(input).map(({ position, seed, combatant }) =>
     combatant === undefined
       ? {
@@ -113,7 +111,12 @@ const buildBracketRows = (year: number, input: BracketInput) => {
   const wildCardId = randomUUID()
   return {
     battles: listBattles().map(battle => ({ id: randomUUID(), ...battle })),
-    divisions: divisionRows,
+    divisions: DIVISION_POSITIONS.map(position => ({
+      id: divisionIds[position],
+      year,
+      position,
+      name: input.divisions[position].name,
+    })),
     seedSlots,
     wildCard: { id: wildCardId, year, seedSlotId: wildCardSlotId },
     wildCardEntrants: input.wildCard.entrants.map((name, index) => ({
@@ -173,32 +176,23 @@ export const readBracket = async (
 }
 
 /**
- * The year's bracket with its battles' row IDs, keyed by `toBattleKey`, or
- * null when it has none
+ * The year's bracket with its battles' row IDs, keyed by `toBattleKey`. The
+ * year must have a bracket
  */
-type BracketRows = {
-  bracket: StoredBracket
-  battleIdByKey: ReadonlyMap<string, string>
-}
-
 export const readBracketRows = async (
   year: number,
   db: Prisma.TransactionClient,
-): Promise<BracketRows | null> => {
-  const bracket = await db.bracket.findUnique({
-    where: { year },
-    select: { year: true },
-  })
-  if (!bracket) {
-    return null
-  }
-  const stored = await readBracketInTransaction(db, year)
+): Promise<{
+  bracket: StoredBracket
+  battleIdByKey: ReadonlyMap<string, string>
+}> => {
+  const bracket = await readBracketInTransaction(db, year)
   const battles = await db.battle.findMany({
     where: { year },
     select: { id: true, round: true, index: true },
   })
   return {
-    bracket: stored,
+    bracket,
     battleIdByKey: new Map(
       battles.map(battle => [toBattleKey(battle), battle.id]),
     ),
@@ -278,29 +272,40 @@ export const setBracketPublished = (
   published: boolean,
 ): Promise<PublicationChange> =>
   prisma.$transaction(async tx => {
-    const publication = await lockYear(tx, year, `UPDATE`)
-    if (!publication || (publication !== `UNPUBLISHED`) === published) {
-      return `UNCHANGED`
-    }
+    await lockYears(tx, `UPDATE`)
     if (
       !published &&
       (await tx.contest.findFirst({ where: { year }, select: { id: true } }))
     ) {
       return `HAS_CONTESTS`
     }
-    await tx.bracket.update({
-      where: { year },
+    const { count } = await tx.bracket.updateMany({
+      where: { year, publishedAt: published ? null : { not: null } },
       data: { publishedAt: published ? new Date() : null },
     })
-    return `CHANGED`
+    return count > 0 ? `CHANGED` : `UNCHANGED`
   })
 
 /** Only the current year takes new players */
 export const isCurrentYear = async (year: number): Promise<boolean> =>
   (await readCurrentYear()) === year
 
-/** A current year is published, and no newer year is */
-export type YearPublication = `UNPUBLISHED` | `PUBLISHED` | `CURRENT`
+/**
+ * Runs `change` in a transaction with the current year, which stays current
+ * until the transaction ends, or null before any bracket is published. It locks
+ * the years before `change` can lock a row, so every transaction takes its
+ * locks in one order
+ */
+export const withCurrentYear = <Result>(
+  change: (
+    tx: Prisma.TransactionClient,
+    currentYear: number | null,
+  ) => Promise<Result>,
+): Promise<Result> =>
+  prisma.$transaction(async tx => {
+    await lockYears(tx, `SHARE`)
+    return change(tx, await readCurrentYear(tx))
+  })
 
 /**
  * Holds which years are published and current until the transaction ends, so
@@ -309,7 +314,7 @@ export type YearPublication = `UNPUBLISHED` | `PUBLISHED` | `CURRENT`
  * One advisory lock covers every year, including a bracket inserted after the
  * lock is taken
  */
-export const lockYears = async (
+const lockYears = async (
   tx: Prisma.TransactionClient,
   mode: `SHARE` | `UPDATE`,
 ): Promise<void> => {
@@ -323,38 +328,14 @@ const YEARS_LOCK_KEY = 7_041_903
 
 /**
  * Locks one year's bracket against other saves and changes to its expected lock
- * date until the transaction ends.
- * Postgres keeps two-key advisory locks apart from one-key ones, so it never
- * waits on `lockYears`
+ * date until the transaction ends. Postgres keeps two-key advisory locks apart
+ * from one-key ones, so it never waits on `lockYears`
  */
 const lockYearForSaving = async (
   tx: Prisma.TransactionClient,
   year: number,
 ): Promise<void> => {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(${YEARS_LOCK_KEY}::int, ${year}::int)`
-}
-
-/**
- * Takes `lockYears`, then reads whether the year is published and current.
- * Null when the year has no bracket
- */
-export const lockYear = async (
-  tx: Prisma.TransactionClient,
-  year: number,
-  mode: `SHARE` | `UPDATE`,
-): Promise<YearPublication | null> => {
-  await lockYears(tx, mode)
-  const bracket = await tx.bracket.findUnique({
-    where: { year },
-    select: { publishedAt: true },
-  })
-  if (!bracket) {
-    return null
-  }
-  if (bracket.publishedAt === null) {
-    return `UNPUBLISHED`
-  }
-  return (await readCurrentYear(tx)) === year ? `CURRENT` : `PUBLISHED`
 }
 
 /** Returns whether the year has a bracket. Null clears the date */
@@ -387,13 +368,11 @@ export const readBracketCombatants = async (
   if (!bracket) {
     return []
   }
-  const seedSlots = listSeedSlots(bracket)
   return DIVISION_POSITIONS.map(position => ({
     position,
     name: bracket.divisions[position].name,
-    combatants: seedSlots
-      .filter(seedSlot => seedSlot.position === position)
-      .flatMap(({ seed, combatant }): CombatantRow[] =>
+    combatants: listDivisionSeedSlots(bracket, position).flatMap(
+      ({ seed, combatant }): CombatantRow[] =>
         combatant === undefined
           ? bracket.wildCard.entrants.map(entrant => ({
               ...entrant,
@@ -401,7 +380,7 @@ export const readBracketCombatants = async (
               isWildCardEntrant: true,
             }))
           : [{ ...combatant, seed, isWildCardEntrant: false }],
-      ),
+    ),
   }))
 }
 
@@ -480,7 +459,6 @@ const BRACKET_SELECT = {
 
 const storedBracketSchema = toBracketSchema(
   z.object({ id: z.string(), name: z.string() }),
-  ({ name }) => name,
 )
 
 /** Parsing checks the stored rows form a whole bracket, and narrows seeds */

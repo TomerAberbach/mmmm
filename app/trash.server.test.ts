@@ -65,8 +65,7 @@ test(`a deleted player moves to the trash, and their personal link turns off`, a
 })
 
 test(`a deleted player can't be changed outside the trash`, async () => {
-  const { contestId, year, educatorId, playerId } =
-    await createContestWithPlayer()
+  const { contestId, educatorId, playerId } = await createContestWithPlayer()
   await deletePlayers(educatorId, contestId, [playerId])
 
   const changed = await setSubmissionStatus(
@@ -76,7 +75,7 @@ test(`a deleted player can't be changed outside the trash`, async () => {
     `REJECTED`,
   )
   const renamed = await renamePlayer(educatorId, contestId, playerId, `Bo`)
-  const saved = await savePlayerDraft(playerId, year, {})
+  const saved = await savePlayerDraft(playerId, {})
 
   expect([changed, renamed, saved]).toStrictEqual([
     0,
@@ -283,8 +282,7 @@ test(`the database refuses a deleted player without a deleter`, async () => {
 })
 
 test(`a deleted contest takes no players or picks`, async () => {
-  const { contestId, year, educatorId, playerId } =
-    await createContestWithPlayer()
+  const { contestId, educatorId, playerId } = await createContestWithPlayer()
   await deleteContest(educatorId, contestId)
 
   const created = await createPlayer(
@@ -292,7 +290,7 @@ test(`a deleted contest takes no players or picks`, async () => {
     `Jonah K.`,
     () => Promise.resolve(undefined),
   )
-  const saved = await savePlayerDraft(playerId, year, {})
+  const saved = await savePlayerDraft(playerId, {})
 
   expect([created, saved]).toStrictEqual([
     { refusal: `CONTEST_DELETED` },
