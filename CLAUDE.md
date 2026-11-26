@@ -22,6 +22,7 @@ mmmm
 ├── server/             # Express middleware: security headers, cross-origin checks, rate limits, the client's IP address, request logs. Has its own CLAUDE.md
 ├── app/                # The React Router app. Has its own CLAUDE.md
 ├── import/             # Imports mmmm-old's database. See docs/operations.md
+├── load/               # The load test, `pnpm load`. See docs/load-test.md
 ├── prisma/             # Schema and seed. Has its own CLAUDE.md
 ├── test/database.ts    # Creates throwaway databases for each Vitest worker and Playwright run
 ├── docs/operations.md  # Accounts, secrets, deploys, backups, and admins

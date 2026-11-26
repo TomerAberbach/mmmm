@@ -14,6 +14,7 @@
     "job:daily": "node app/daily-job.server.ts",
     "db:import": "node import/run.ts",
     "launch:emails": "node import/run-launch.ts",
+    "load": "pnpm build && node load/run.ts",
     "db:seed": "prisma db seed",
     "db:reset": "node prisma/push-schema.ts --force-reset && prisma generate && prisma db seed",
     "format:base": "prettier --cache --write",

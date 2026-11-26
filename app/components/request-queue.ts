@@ -99,9 +99,9 @@ export const useRequestQueue = <Sent>(
 const ignore = () => {}
 
 /**
- * A redirect means the server no longer remembers who sent it, and a 4xx that
- * the bracket changed since the page loaded. Reloading resolves both, while a
- * network error or a 5xx may pass on a retry
+ * A redirect means the server no longer remembers who sent it, and a 4xx other
+ * than a 429 that the bracket changed since the page loaded. Reloading resolves
+ * both
  */
 const postRequest = async (
   path: string,
@@ -121,10 +121,14 @@ const postRequest = async (
     if (response.status === LOCKED_STATUS) {
       return `locked`
     }
-    return response.type === `opaqueredirect` || response.status < 500
-      ? `refused`
-      : `failed`
+    return canPass(response) ? `failed` : `refused`
   } catch {
     return `failed`
   }
 }
+
+/** Whether the same request may succeed later, as after a busy minute */
+const canPass = ({ type, status }: Response): boolean =>
+  type !== `opaqueredirect` && (status >= 500 || status === TOO_MANY_REQUESTS)
+
+const TOO_MANY_REQUESTS = 429

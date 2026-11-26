@@ -11,7 +11,10 @@ import {
 import { forwardClientIp } from './server/client-ip.ts'
 import { dropDisconnectedClients } from './server/disconnected-clients.ts'
 import { logRequests } from './server/logging.ts'
-import { limitRequestsPerIp } from './server/rate-limit.ts'
+import {
+  limitFailedLoginsPerIp,
+  limitRequestsPerIp,
+} from './server/rate-limit.ts'
 import {
   rejectCrossOriginRequests,
   setContentSecurityPolicy,
@@ -93,10 +96,13 @@ server.use(
   dropDisconnectedClients,
   logRequests,
   rejectCrossOriginRequests,
-  // Generous, because a whole school can share one IP address
-  limitRequestsPerIp(1000),
+  // A whole school can share one IP address, and each pick is a request. This
+  // is 500 players who pick every 3 seconds
+  limitRequestsPerIp(10_000),
   forwardClientIp,
-  ...(STAGING_PASSWORD ? [requireStagingPassword(STAGING_PASSWORD)] : []),
+  ...(STAGING_PASSWORD
+    ? [limitFailedLoginsPerIp(30), requireStagingPassword(STAGING_PASSWORD)]
+    : []),
   app,
 )
 server.listen(PORT, () => {

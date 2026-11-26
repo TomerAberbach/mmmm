@@ -183,6 +183,17 @@ test(`picking who fills an undecided side also picks their earlier wins`, async 
   await expect.element(page.getByText(`2 of 64 picked`)).toBeVisible()
 })
 
+test(`a save over the rate limit offers to try again`, async () => {
+  await renderBracket()
+  answerRequests(new Response(null, { status: 429 }))
+
+  await firstBattle().getByText(SEED_16.name).click()
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Try again` }))
+    .toBeVisible()
+})
+
 test(`a save the server refuses asks for a reload instead of a retry`, async () => {
   answerRequests(Response.json({ error: `` }, { status: 400 }))
   await renderBracket()
