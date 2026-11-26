@@ -51,7 +51,7 @@ const AdminResults = ({
       isLocked={summary.phase !== `OPEN`}
     />
     <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
-      <CombatantRenames divisions={divisions} merges={merges} />
+      <CombatantRenames year={year} divisions={divisions} merges={merges} />
       <CombatantMoves
         key={year}
         year={year}

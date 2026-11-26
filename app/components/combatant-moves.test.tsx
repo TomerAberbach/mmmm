@@ -14,7 +14,12 @@ import { CombatantMoves } from './combatant-moves.tsx'
 const BRACKET = storeTestBracket(BRACKET_2026)
 const [SEED_1, SEED_2, SEED_3] = BRACKET.divisions.TOP_LEFT.combatants
 
-const IMPACT = { battles: 9, submissions: 214, drafts: 1, results: 3 }
+const IMPACT = {
+  battles: 9,
+  submissions: 214,
+  drafts: 1,
+  results: [`ROUND_1:0`, `ROUND_1:7`, `ROUND_2:0`],
+}
 
 /** Renders the section with an action that moves combatants in memory */
 const renderMoves = async ({

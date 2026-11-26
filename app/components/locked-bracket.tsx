@@ -10,8 +10,8 @@ import {
 import type { Submitted } from './player-controls.tsx'
 import { Scoreboard } from './scoreboard.tsx'
 import {
-  buildBracketView,
   buildMarkedBracketView,
+  buildPicksView,
   isMarked,
 } from '~/bracket-view.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
@@ -51,7 +51,7 @@ export const LockedBracket = ({
     // A draft never submitted has no score
     return submitted
       ? buildMarkedBracketView(year, seededBracket, picks, results)
-      : buildBracketView(year, seededBracket, picks)
+      : buildPicksView(year, seededBracket, picks)
   }, [year, bracket, picks, submitted, results])
   return (
     <>

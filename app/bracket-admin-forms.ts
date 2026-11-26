@@ -5,6 +5,7 @@ import { COMBATANT_NAME, freeTextSchema } from './free-text.ts'
  * Admins copy names from ASU's bracket, so they skip the offensive word filter
  */
 export const renameSchema = z.object({
+  year: z.int(),
   combatantId: z.string(),
   name: freeTextSchema(COMBATANT_NAME),
 })

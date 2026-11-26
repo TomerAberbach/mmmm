@@ -63,8 +63,10 @@ export default [
     route(`deleted`, `routes/play.deleted.tsx`),
   ]),
   route(`player/:contestId`, `routes/player.tsx`, [
-    route(`bracket`, `routes/player.bracket.tsx`),
-    route(`bracket/picks`, `routes/player.bracket.picks.ts`),
+    layout(`routes/player.remembered.tsx`, [
+      route(`bracket`, `routes/player.bracket.tsx`),
+      route(`bracket/picks`, `routes/player.bracket.picks.ts`),
+    ]),
     route(`forgotten`, `routes/player.forgotten.tsx`),
     route(`delete`, `routes/player.delete.ts`),
   ]),

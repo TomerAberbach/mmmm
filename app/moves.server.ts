@@ -17,7 +17,7 @@ import {
 } from './moves.ts'
 import { CONTEST_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { clearPicks } from './player-picks.server.ts'
-import { clearResults } from './results.server.ts'
+import { clearResults, hasSameKeys } from './results.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
 
@@ -27,7 +27,8 @@ export type MoveImpact = {
   submissions: number
   /** Drafts of players who haven't submitted */
   drafts: number
-  results: number
+  /** The keys of the battles whose results it clears */
+  results: string[]
 }
 
 /** What the route answers a preview or a move */
@@ -43,7 +44,7 @@ export const readMoveImpact = (
     request,
     withCurrentYear,
     async (tx, { year, disturbedKeys, disturbedIds }) => {
-      const results = await readResultRows(year, tx)
+      const results = await listClearedResults(tx, year, disturbedKeys)
       const player = (stage: `DRAFT` | `SUBMISSION`) =>
         ({
           deletedAt: null,
@@ -58,8 +59,7 @@ export const readMoveImpact = (
         drafts: await tx.player.count({
           where: { ...player(`DRAFT`), submission: null },
         }),
-        results: Object.keys(results).filter(key => disturbedKeys.has(key))
-          .length,
+        results,
       }
     },
   )
@@ -74,6 +74,10 @@ export const moveCombatants = (
 ): Promise<{ moved: true } | MoveRefusal> =>
   withMove(request, withCurrentYearAlone, async (tx, move) => {
     const { year, current, before, after, battleIdByKey, disturbedKeys } = move
+    const results = await listClearedResults(tx, year, disturbedKeys)
+    if (!hasSameKeys(results, request.results)) {
+      return { refusal: `STALE` } as const
+    }
     await replacePlaces(tx, year, before, after)
     if (disturbedKeys.size > 0) {
       await clearPicks(tx, year, move.disturbedIds, current.isLocked)
@@ -85,8 +89,17 @@ export const moveCombatants = (
         disturbedKeys,
       )
     }
-    return { moved: true }
+    return { moved: true } as const
   })
+
+const listClearedResults = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  disturbedKeys: ReadonlySet<string>,
+): Promise<string[]> =>
+  Object.keys(await readResultRows(year, tx)).filter(key =>
+    disturbedKeys.has(key),
+  )
 
 type Move = {
   year: number

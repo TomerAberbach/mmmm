@@ -30,9 +30,20 @@ export const CombatantMoves = ({
   // Swaps of an arrangement that has changed no longer mean what they did
   const [pending, setPending] = useState({ arrangement, swaps: NO_SWAPS })
   const swaps = pending.arrangement === arrangement ? pending.swaps : NO_SWAPS
-  const setSwaps = (next: Swap[]) => setPending({ arrangement, swaps: next })
   const preview = useFetcher<MoveReply>()
   const save = useFetcher<ConfirmResult>()
+  const clearSaved = () => {
+    // Resetting a save under way would drop its reply and the reload after it
+    if (save.state === `idle`) {
+      save.reset()
+    }
+  }
+  const changeSwaps = (next: Swap[]) => {
+    // A review under way would show what the earlier swaps clear
+    preview.reset()
+    clearSaved()
+    setPending({ arrangement, swaps: next })
+  }
   const move = { year, arrangement, isLocked, swaps }
   const target = {
     method: `post`,
@@ -57,21 +68,20 @@ export const CombatantMoves = ({
       </p>
       <SwapForm
         places={listPlaces(swapCombatants(bracket, swaps)!)}
-        onSwap={swap => {
-          preview.reset()
-          save.reset()
-          setSwaps([...swaps, swap])
-        }}
+        onSwap={swap => changeSwaps([...swaps, swap])}
       />
       {swaps.length > 0 ? (
         <>
-          <SwapList bracket={bracket} swaps={swaps} onChange={setSwaps} />
+          <SwapList bracket={bracket} swaps={swaps} onChange={changeSwaps} />
           <div>
             <Button
-              isPending={preview.state !== `idle`}
+              isPending={preview.state !== `idle` || save.state !== `idle`}
               onPress={() => {
-                save.reset()
-                void preview.submit({ ...move, intent: `preview` }, target)
+                clearSaved()
+                void preview.submit(
+                  { ...move, intent: `preview`, results: [] },
+                  target,
+                )
               }}
             >
               {`Review ${formatCount(swaps.length, `swap`)}`}
@@ -88,7 +98,12 @@ export const CombatantMoves = ({
           onOpenChange={() => preview.reset()}
           title='Move combatants?'
           confirmLabel='Move combatants'
-          onConfirm={() => save.submit({ ...move, intent: `save` }, target)}
+          onConfirm={() =>
+            save.submit(
+              { ...move, intent: `save`, results: impact.results },
+              target,
+            )
+          }
         >
           <MoveDescription
             moves={listMoves(bracket, swaps)}
@@ -220,8 +235,8 @@ const MoveDescription = ({
             ? `Submissions are locked, so those picks in ${formatCount(submissions, `submission`)} score nothing.`
             : `${formatCount(submissions, `submission`)} will return to drafts, and ${formatCount(drafts, `draft`)} will lose picks. Those players see a note to finish and submit.`}
         </p>
-        {results > 0 ? (
-          <p>{`It also clears ${formatCount(results, `result`)}, to record again.`}</p>
+        {results.length > 0 ? (
+          <p>{`It also clears ${formatCount(results.length, `result`)}, to record again.`}</p>
         ) : null}
         <p>Moving them back won’t restore what’s cleared.</p>
       </>

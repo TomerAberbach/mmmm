@@ -583,15 +583,21 @@ export const listBracketCombatants = (
 
 /**
  * Names the combatant `name`, which the route has checked, unless another
- * combatant in the year's bracket has the same name
+ * combatant in the year's bracket has the same name. A `formError` isn't about
+ * the name
  */
 export const renameCombatant = (
   year: number,
   combatantId: string,
   name: string,
-): Promise<{ ok: true } | { error: string }> =>
+): Promise<{ ok: true } | { error: string } | { formError: string }> =>
   // Alone, so a merge or another rename can't take the name after the check
-  withCurrentYearAlone(async tx => {
+  withCurrentYearAlone(async (tx, current) => {
+    if (current?.year !== year) {
+      return {
+        formError: `The ${year} bracket isn’t current. Reload the page`,
+      }
+    }
     const combatants = await tx.combatant.findMany({
       where: { year },
       select: { id: true, name: true },

@@ -1,8 +1,11 @@
 import type { RequestHandler } from 'express'
 
-/** Reset links, contest links, and personal links */
+/**
+ * Reset links, contest links, and personal links. React Router matches paths in
+ * any case
+ */
 const SECRET_PATH =
-  /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket)\/)[^/]+/u
+  /(?<prefix>\/(?:api\/auth\/reset-password|play|my-bracket)\/)[^/]+/iu
 
 /**
  * Logs each request without its query string, its secrets, or the client's IP
@@ -21,4 +24,13 @@ export const logRequests: RequestHandler = (req, res, next) => {
 }
 
 export const redactPath = (path: string): string =>
-  path.replace(SECRET_PATH, `$<prefix>[redacted]`)
+  decodeLetters(path).replace(SECRET_PATH, `$<prefix>[redacted]`)
+
+/**
+ * An encoded letter or hyphen could otherwise hide a prefix from `SECRET_PATH`.
+ * The rest stays encoded, since a decoded line break could forge a log line
+ */
+const decodeLetters = (path: string): string =>
+  path.replaceAll(/%(?:2d|[46][1-9a-f]|[57][0-9a])/giu, encoded =>
+    decodeURIComponent(encoded),
+  )

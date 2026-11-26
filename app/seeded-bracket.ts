@@ -108,7 +108,7 @@ export const withMerge = (
           merge: {
             memberIds: merge.memberIds,
             originalIds: merge.memberIds.flatMap(id =>
-              listMembers(bracket, id),
+              listOriginalIds(bracket, id),
             ),
           },
         },
@@ -126,7 +126,7 @@ export const listMerges = (bracket: SeededBracket): Combatant[] =>
   listCombatants(bracket).filter(({ merge }) => merge)
 
 /** The combatants before any merge, by ID, that `id` stands for */
-export const listMembers = (bracket: SeededBracket, id: string): string[] =>
+export const listOriginalIds = (bracket: SeededBracket, id: string): string[] =>
   bracket.combatantById.get(id)?.merge?.originalIds ?? [id]
 
 /** Whether the combatant won the battle, alone or in a merge there or before */
