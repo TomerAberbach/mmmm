@@ -200,6 +200,22 @@ test(`saving an unpublished bracket keeps its expected lock date`, async () => {
   })
 })
 
+test(`an expected lock date set during a save is kept`, async () => {
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2026)
+  const expectedLockDate = new Date(`2027-03-19T00:00:00Z`)
+
+  const [, wasSet] = await Promise.all([
+    saveUnpublishedBracket(year, BRACKET_2025),
+    setExpectedLockDate(year, expectedLockDate),
+  ])
+
+  expect(wasSet).toBe(true)
+  await expect(readBracketSummary(year)).resolves.toMatchObject({
+    expectedLockDate,
+  })
+})
+
 test(`two saves of an unpublished bracket at once both succeed`, async () => {
   const year = await claimYear()
   await saveUnpublishedBracket(year, BRACKET_2026)

@@ -62,7 +62,11 @@ export const usePicksRequests = (
             } else if (outcome === `refused`) {
               setState({ kind: `refused`, intent })
             } else {
-              setState({ kind: `failed`, intent })
+              setState(previous =>
+                keepsFailure(previous, intent)
+                  ? previous
+                  : { kind: `failed`, intent },
+              )
             }
           })
           .finally(() => {
@@ -93,7 +97,8 @@ export const usePicksRequests = (
 const ignore = () => {}
 
 /**
- * A failed submit stays shown past later saves, since a save doesn't submit. A
+ * A failed submit stays shown past later saves, sent or failed, since a save
+ * doesn't submit. A
  * save after a failed discard builds on the submitted picks and replaces the
  * draft, so discarding again would lose the player's newer picks
  */

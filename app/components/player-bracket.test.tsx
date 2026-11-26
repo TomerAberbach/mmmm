@@ -290,6 +290,44 @@ test(`a failed submit stays shown after a later pick saves`, async () => {
     .toBeVisible()
 })
 
+test(`a failed submit stays shown after a later pick fails to save`, async () => {
+  await renderBracket({ draft: COMPLETE_PICKS })
+  const fetchSpy = answerRequests(new TypeError(`Failed to fetch`))
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+  await expect
+    .element(page.getByText(`Couldn’t submit`, { exact: false }))
+    .toBeVisible()
+
+  await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+  await firstBattle().getByText(SEED_16.name).click()
+
+  await expect.poll(() => fetchSpy.mock.calls.length).toBe(2)
+  await expect
+    .element(page.getByRole(`button`, { name: `Try again` }))
+    .toBeVisible()
+  await expect
+    .element(page.getByText(`Couldn’t submit`, { exact: false }))
+    .toBeVisible()
+})
+
+test(`trying a failed submit again saves picks that are no longer complete`, async () => {
+  await renderBracket({ draft: COMPLETE_PICKS })
+  const fetchSpy = answerRequests(new TypeError(`Failed to fetch`))
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+  await expect
+    .element(page.getByRole(`button`, { name: `Try again` }))
+    .toBeVisible()
+  await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+  await firstBattle().getByText(SEED_16.name).click()
+  await expect.poll(() => fetchSpy.mock.calls.length).toBe(2)
+
+  await page.getByRole(`button`, { name: `Try again` }).click()
+
+  await expect.poll(() => fetchSpy.mock.calls.length).toBe(3)
+  const [, failedSave, retried] = readSentBodies(fetchSpy)
+  expect(retried).toStrictEqual(failedSave)
+})
+
 test(`a submitted bracket shows when its picks last changed and its personal link`, async () => {
   await renderBracket({ draft: COMPLETE_PICKS, submission: SUBMISSION })
 

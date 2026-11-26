@@ -139,7 +139,14 @@ export const PlayerBracket = ({
   /** Sends what the player would send now, not the picks that failed */
   const retries: Record<PicksRequest[`intent`], () => void> = {
     save: () => send({ intent: `save`, picks }),
-    submit,
+    submit: () => {
+      // A change made after the submit failed may have left battles to pick,
+      // and its own save may have failed
+      if (unpicked.length > 0) {
+        send({ intent: `save`, picks })
+      }
+      submit()
+    },
     discard,
   }
 
