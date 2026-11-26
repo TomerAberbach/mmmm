@@ -148,14 +148,17 @@ export const hasSecondFactor = (secondFactors: SecondFactors): boolean =>
 
 const SETUP_LINK_PREFIX = `second-factor-setup:`
 
+export const createSetupLinkToken = (): string => createSecret()
+
 /**
- * Stores only the token's hash, so reading the database reveals no working
- * link. A new link replaces the educator's earlier ones
+ * Makes the token's link work, in place of the educator's earlier ones. Stores
+ * only the token's hash, so reading the database reveals no working link. Call
+ * it once the link is sent, so an unsent one leaves the earlier one working
  */
-export const createSetupLinkToken = async (
+export const storeSetupLinkToken = async (
   educatorId: string,
-): Promise<string> => {
-  const token = createSecret()
+  token: string,
+): Promise<void> => {
   await prisma.$transaction([
     prisma.verification.deleteMany({
       where: {
@@ -174,7 +177,6 @@ export const createSetupLinkToken = async (
       },
     }),
   ])
-  return token
 }
 
 /** Uses up the token, so its link works once, and only for its own educator */

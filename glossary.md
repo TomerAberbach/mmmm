@@ -59,6 +59,7 @@ for a **Player**'s **Draft** or **Submission**.
 | **Display name**       | The name that identifies a **Player** in a **Contest**, which the **Player** enters and their **Educator** can change          | Username, student name, nickname          |
 | **Possible duplicate** | A **Player** whose **Display name** matches another's in the same **Contest**, ignoring case, spaces, punctuation, and accents | Similar player, double                    |
 | **Personal link**      | A **Player**'s secret link to their own **Draft** or **Submission** in one **Contest**                                         | Recovery link, magic link, sign-in token  |
+| **Replace**            | To give a **Player** a new **Personal link**, or a **Contest** a new **Contest link**, which turns off the old one             | Regenerate, rotate, revoke                |
 | **Pick**               | A **Player**'s chosen winner of one **Battle**                                                                                 | Choice, guess, prediction                 |
 | **Clear**              | To remove a **Pick** whose winner can no longer reach its **Battle** after an earlier **Pick** changes                         | Invalidate, reset, drop                   |
 | **Draft**              | A **Player**'s **Picks** that they edit, which become their **Submission** when they submit                                    | Unsubmitted bracket, fill-out, completion |

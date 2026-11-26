@@ -1,6 +1,6 @@
 import type { SubmissionResult } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub, useActionData } from 'react-router'
+import { createRoutesStub, redirect, useActionData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
@@ -124,4 +124,29 @@ test(`the contest link names the contest and its educator`, async () => {
   await expect
     .element(page.getByText(`Period 6 Biology · Ms. Rivera’s contest`))
     .toBeVisible()
+})
+
+test(`the start button stays pending until the player's bracket loads`, async () => {
+  const bracketLoad = Promise.withResolvers<null>()
+  const Stub = createRoutesStub([
+    {
+      path: `/play/secret`,
+      action: () => redirect(`/player/bracket`),
+      Component: () => <PlayContestPage view={{ state: `askName` }} />,
+    },
+    {
+      path: `/player/bracket`,
+      loader: () => bracketLoad.promise,
+      Component: () => <p>The bracket</p>,
+    },
+  ])
+  await render(<Stub initialEntries={[`/play/secret`]} />)
+  await userEvent.fill(page.getByRole(`textbox`), `Maya R.`)
+  const start = page.getByRole(`button`, { name: `Start my bracket` })
+
+  await start.click()
+
+  await expect.element(start).toHaveAttribute(`data-pending`)
+  bracketLoad.resolve(null)
+  await expect.element(page.getByText(`The bracket`)).toBeVisible()
 })

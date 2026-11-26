@@ -1,5 +1,5 @@
 import { createRoutesStub } from 'react-router'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -46,5 +46,22 @@ test(`the download holds every code, one per line`, async () => {
     .toHaveAttribute(
       `href`,
       `data:text/plain;charset=utf-8,${encodeURIComponent(CODES.join(`\n`))}`,
+    )
+})
+
+test(`codes the browser can't copy say so`, async () => {
+  // Runs only in the browser, so Node's support doesn't apply
+  // eslint-disable-next-line node/no-unsupported-features/node-builtins
+  vi.spyOn(navigator.clipboard, `writeText`).mockRejectedValue(
+    new Error(`Not allowed`),
+  )
+  await renderCodes()
+
+  await page.getByRole(`button`, { name: `Copy codes` }).click()
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(
+      `Couldn’t copy. Download or write down the codes instead`,
     )
 })

@@ -322,7 +322,8 @@ export const lockYears = async (
 const YEARS_LOCK_KEY = 7_041_903
 
 /**
- * Locks one year's bracket against other saves until the transaction ends.
+ * Locks one year's bracket against other saves and changes to its expected lock
+ * date until the transaction ends.
  * Postgres keeps two-key advisory locks apart from one-key ones, so it never
  * waits on `lockYears`
  */
@@ -357,16 +358,19 @@ export const lockYear = async (
 }
 
 /** Returns whether the year has a bracket. Null clears the date */
-export const setExpectedLockDate = async (
+export const setExpectedLockDate = (
   year: number,
   expectedLockDate: Date | null,
-): Promise<boolean> => {
-  const { count } = await prisma.bracket.updateMany({
-    where: { year },
-    data: { expectedLockDate },
+): Promise<boolean> =>
+  prisma.$transaction(async tx => {
+    // A save of the bracket reinserts the date it read
+    await lockYearForSaving(tx, year)
+    const { count } = await tx.bracket.updateMany({
+      where: { year },
+      data: { expectedLockDate },
+    })
+    return count > 0
   })
-  return count > 0
-}
 
 export type CombatantRow = Combatant & { isWildCardEntrant: boolean }
 

@@ -6,11 +6,13 @@ import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { verifyJWT } from 'better-auth/crypto'
 import { twoFactor } from 'better-auth/plugins'
 import { href } from 'react-router'
+import { z } from 'zod'
 import {
   CONFIRMATION_EXPIRES_IN_DAYS,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
   RESET_EXPIRES_IN_HOURS,
+  signUpSchema,
 } from './auth-forms.ts'
 import { limitAuthRequest, refundAuthRequest } from './auth-limits.server.ts'
 import { prisma } from './db.server.ts'
@@ -68,8 +70,18 @@ const FORCED_FIELDS: Record<string, Record<string, unknown>> = {
   '/passkey/verify-registration': { createSession: false, name: `` },
 }
 
-const EDUCATOR_NAME_SCHEMA = serverFreeTextSchema(EDUCATOR_NAME)
-const PATHS_WITH_NAME = new Set([`/sign-up/email`, `/update-user`])
+const UPDATE_USER_SCHEMA = z.looseObject({
+  name: serverFreeTextSchema(EDUCATOR_NAME).optional(),
+})
+
+/**
+ * Refuses whatever Better Auth would, which it checks only after the app's hook
+ * has deleted an unconfirmed educator
+ */
+const SIGN_UP_SCHEMA = signUpSchema(serverFreeTextSchema)
+  // `FORCED_FIELDS` replaces it
+  .extend({ callbackURL: z.unknown().optional() })
+  .strict()
 
 const beforeAuthRequest = createAuthMiddleware(async ctx => {
   if (
@@ -88,13 +100,15 @@ const beforeAuthRequest = createAuthMiddleware(async ctx => {
     email: body.email,
     headers: ctx.headers,
   })
-  // Checks the name before sign-up looks up the address, so a rejected name
-  // answers the same whether or not the address has an educator
-  if (PATHS_WITH_NAME.has(ctx.path) && body.name !== undefined) {
-    body = { ...body, name: await parseName(body.name) }
+  if (ctx.path === `/update-user`) {
+    body = await parseBody(UPDATE_USER_SCHEMA, body)
   }
-  if (ctx.path === `/sign-up/email` && typeof body.email === `string`) {
-    await deleteUnconfirmedEducator(ctx.context.internalAdapter, body.email)
+  if (ctx.path === `/sign-up/email`) {
+    // Before looking up the address, so a refused sign-up answers the same
+    // whether or not the address has an educator
+    const signUp = await parseBody(SIGN_UP_SCHEMA, body)
+    body = signUp
+    await deleteUnconfirmedEducator(ctx.context.internalAdapter, signUp.email)
   }
   return { context: { body: { ...body, ...FORCED_FIELDS[ctx.path] } } }
 })
@@ -141,8 +155,11 @@ const readConfirmationToken = async (
     : undefined
 }
 
-const parseName = async (name: unknown): Promise<string> => {
-  const parsed = await EDUCATOR_NAME_SCHEMA.safeParseAsync(name)
+const parseBody = async <Body extends Record<string, unknown>>(
+  schema: z.ZodType<Body>,
+  body: unknown,
+): Promise<Body> => {
+  const parsed = await schema.safeParseAsync(body)
   if (!parsed.success) {
     throw new APIError(`BAD_REQUEST`, {
       message: parsed.error.issues[0]?.message,
@@ -293,8 +310,9 @@ export const auth = betterAuth({
     // confirmed educator still signs in with the password
     autoSignInAfterVerification: false,
     expiresIn: CONFIRMATION_EXPIRES_IN_SECONDS,
-    sendVerificationEmail: ({ user, url }) =>
-      sendEmail(confirmEmail({ to: user.email, url })),
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendEmail(confirmEmail({ to: user.email, url }))
+    },
   },
   session: {
     fields: { userId: `educatorId` },

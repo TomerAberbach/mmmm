@@ -27,5 +27,12 @@ export const useValidatedForm = <Schema extends z.ZodObject>(
     shouldValidate: `onSubmit`,
     shouldRevalidate: `onInput`,
   })
-  return { form, fields, isSubmitting: useNavigation().state === `submitting` }
+  return { form, fields, isSubmitting: useIsSubmitting() }
 }
+
+/**
+ * Whether a page's form is submitting, until the page it leads to loads, so a
+ * second press can't submit it again meanwhile
+ */
+export const useIsSubmitting = (): boolean =>
+  useNavigation().formMethod !== undefined

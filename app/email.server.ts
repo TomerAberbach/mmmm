@@ -18,14 +18,16 @@ export type Email = {
 /**
  * Skips the email once its address has received its share, so no one can
  * flood an inbox through any form that sends email. Skipping changes nothing
- * in the response, which reveals nothing about the address
+ * in the response, which reveals nothing about the address. Returns whether it
+ * sent the email
  */
-export const sendEmail = async (email: Email): Promise<void> => {
+export const sendEmail = async (email: Email): Promise<boolean> => {
   if (!(await allowEmailTo(email.to))) {
     console.warn(`Skipped the email "${email.subject}" over the hourly limit`)
-    return
+    return false
   }
   await deliver(email)
+  return true
 }
 
 /**
@@ -58,10 +60,16 @@ const allowEmailTo = async (to: string): Promise<boolean> =>
 export const sendEmailOrLog = (email: Email): Promise<void> =>
   logFailure(email, sendEmail(email))
 
-const logFailure = (email: Email, sending: Promise<void>): Promise<void> =>
-  sending.catch((error: unknown) => {
+const logFailure = async (
+  email: Email,
+  sending: Promise<unknown>,
+): Promise<void> => {
+  try {
+    await sending
+  } catch (error) {
     console.error(`Failed to send the email "${email.subject}"`, error)
-  })
+  }
+}
 
 const renderEmail = async ({
   to,

@@ -72,7 +72,7 @@ export const PlayerBracket = ({
     [year, bracket, picks],
   )
   const { round, setRound, showBattle } = useShownRound(view)
-  const { state, send } = usePicksRequests(picksPath)
+  const { state, isSending, send } = usePicksRequests(picksPath)
   const revalidator = useRevalidator()
   // Counts the player's changes, so a submit that a later change overtakes
   // shows no panel
@@ -125,12 +125,22 @@ export const PlayerBracket = ({
   }
   // The picks go back at once, so a pick made while the discard is in flight
   // builds on the submitted picks, as the server's draft will
-  const discard = (submitted: Submission): void => {
+  const discard = (): void => {
+    if (!submission) {
+      return
+    }
     changeCount.current += 1
-    setPicks(submitted.picks)
+    setPicks(submission.picks)
     setCleared(new Set())
     setOutcome(null)
     send({ intent: `discard` })
+  }
+
+  /** Sends what the player would send now, not the picks that failed */
+  const retries: Record<PicksRequest[`intent`], () => void> = {
+    save: () => send({ intent: `save`, picks }),
+    submit,
+    discard,
   }
 
   const hasChanges =
@@ -142,6 +152,7 @@ export const PlayerBracket = ({
           {...submitted}
           kind={outcome.submitted}
           forgetPath={forgetPath}
+          isSending={isSending}
         />
       ) : null}
       {submission?.status === `REJECTED` && outcome?.kind !== `submitted` ? (
@@ -154,20 +165,30 @@ export const PlayerBracket = ({
         {submitted && !hasChanges ? (
           <>
             <BarLabel>{`Submitted · ${STATUS_TEXT[submitted.submission.status].label}`}</BarLabel>
-            <RequestStatus state={state} />
+            <RequestStatus
+              state={state}
+              onRetry={intent => retries[intent]()}
+            />
             <BarActions>
               <PersonalLinkButton personalLink={submitted.personalLink} />
-              <ForgetButton forgetPath={forgetPath} variant='quiet' />
+              <ForgetButton
+                forgetPath={forgetPath}
+                variant='quiet'
+                isSending={isSending}
+              />
             </BarActions>
           </>
         ) : (
           <>
             {hasChanges ? <BarLabel>Changes not submitted</BarLabel> : null}
             <PickProgress unpicked={unpicked} onShowBattle={showBattle} />
-            <RequestStatus state={state} />
+            <RequestStatus
+              state={state}
+              onRetry={intent => retries[intent]()}
+            />
             <BarActions>
               {hasChanges ? (
-                <DiscardButton onDiscard={() => discard(submission)} />
+                <DiscardButton onDiscard={discard} isSending={isSending} />
               ) : null}
               <Button onPress={submit}>
                 {hasChanges ? `Submit changes` : `Submit bracket`}
@@ -193,7 +214,11 @@ export const PlayerBracket = ({
       />
       <Bracket view={view} selection={{ round, onSelect: setRound }} />
       <div className='print:hidden'>
-        <DeleteButton deletePath={deletePath} playerId={playerId} />
+        <DeleteButton
+          deletePath={deletePath}
+          playerId={playerId}
+          isSending={isSending}
+        />
       </div>
     </PickingContext>
   )
@@ -253,9 +278,11 @@ const SubmittedPanel = ({
   personalLink,
   kind,
   forgetPath,
+  isSending,
 }: Submitted & {
   kind: `bracket` | `changes`
   forgetPath: string
+  isSending: boolean
 }) => {
   const headingId = useId()
   // Moves focus to the panel, so a screen reader announces it
@@ -288,7 +315,11 @@ const SubmittedPanel = ({
       </div>
       <div className='flex flex-col items-start gap-2 border-t-2 border-muted-light pt-4'>
         <p>On a shared computer? Forget your bracket here when you’re done.</p>
-        <ForgetButton forgetPath={forgetPath} variant='secondary' />
+        <ForgetButton
+          forgetPath={forgetPath}
+          variant='secondary'
+          isSending={isSending}
+        />
       </div>
     </section>
   )
@@ -327,12 +358,19 @@ const PersonalLinkButton = ({ personalLink }: { personalLink: string }) => (
 const ForgetButton = ({
   forgetPath,
   variant,
+  isSending,
 }: {
   forgetPath: string
   variant: `quiet` | `secondary`
+  /** A response still in flight would make this computer remember again */
+  isSending: boolean
 }) => (
   <ConfirmDialog
-    trigger={<Button variant={variant}>Done, forget this computer</Button>}
+    trigger={
+      <Button variant={variant} isDisabled={isSending}>
+        Done, forget this computer
+      </Button>
+    }
     title='Forget this computer?'
     confirmLabel='Forget this computer'
     confirmVariant='primary'
@@ -345,9 +383,20 @@ const ForgetButton = ({
   </ConfirmDialog>
 )
 
-const DiscardButton = ({ onDiscard }: { onDiscard: () => void }) => (
+const DiscardButton = ({
+  onDiscard,
+  isSending,
+}: {
+  onDiscard: () => void
+  /** A submit still in flight would change which picks discarding brings back */
+  isSending: boolean
+}) => (
   <ConfirmDialog
-    trigger={<Button variant='quiet'>Discard changes</Button>}
+    trigger={
+      <Button variant='quiet' isDisabled={isSending}>
+        Discard changes
+      </Button>
+    }
     title='Discard your changes?'
     confirmLabel='Discard changes'
     onConfirm={onDiscard}
@@ -362,12 +411,18 @@ const DiscardButton = ({ onDiscard }: { onDiscard: () => void }) => (
 const DeleteButton = ({
   deletePath,
   playerId,
+  isSending,
 }: {
   deletePath: string
   playerId: string
+  isSending: boolean
 }) => (
   <ConfirmDialog
-    trigger={<Button variant='quiet'>Delete my bracket</Button>}
+    trigger={
+      <Button variant='quiet' isDisabled={isSending}>
+        Delete my bracket
+      </Button>
+    }
     title='Delete your bracket?'
     confirmLabel='Delete my bracket'
     action={deletePath}
@@ -452,7 +507,13 @@ const describeCleared = (cleared: BattleRef[]): string =>
     ? ``
     : `Your change cleared ${cleared.length} later ${cleared.length === 1 ? `pick` : `picks`} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
 
-const RequestStatus = ({ state }: { state: RequestState }) => {
+const RequestStatus = ({
+  state,
+  onRetry,
+}: {
+  state: RequestState
+  onRetry: (intent: PicksRequest[`intent`]) => void
+}) => {
   switch (state.kind) {
     case `idle`:
       return <span className='text-muted'>Picks save as you go</span>
@@ -470,8 +531,10 @@ const RequestStatus = ({ state }: { state: RequestState }) => {
           role='alert'
           className='flex items-center gap-2 font-semibold text-danger'
         >
-          {`${INTENT_TEXT[state.intent].failed}. Your picks are still here`}
-          <Button variant='quiet' onPress={state.retry}>
+          {state.intent === `discard`
+            ? INTENT_TEXT.discard.failed
+            : `${INTENT_TEXT[state.intent].failed}. Your picks are still here`}
+          <Button variant='quiet' onPress={() => onRetry(state.intent)}>
             Try again
           </Button>
         </span>

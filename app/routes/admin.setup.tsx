@@ -13,6 +13,7 @@ import {
   markSetupLinkUsed,
   readSecondFactors,
   redeemSetupLinkToken,
+  storeSetupLinkToken,
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
@@ -53,8 +54,14 @@ export const action = async ({ context }: Route.ActionArgs) => {
     return redirect(href(`/admin`))
   }
   const url = new URL(SETUP_URL)
-  url.searchParams.set(`token`, await createSetupLinkToken(educator.id))
-  await sendEmail(secondFactorSetupEmail({ to: educator.email, url: url.href }))
+  const token = createSetupLinkToken()
+  url.searchParams.set(`token`, token)
+  const isSent = await sendEmail(
+    secondFactorSetupEmail({ to: educator.email, url: url.href }),
+  )
+  if (isSent) {
+    await storeSetupLinkToken(educator.id, token)
+  }
   return { sent: true } as const
 }
 

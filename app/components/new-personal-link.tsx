@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { href } from 'react-router'
 import { z } from 'zod'
 import { Button } from './button.tsx'
@@ -24,34 +24,28 @@ export const NewPersonalLink = ({
   onClose: () => void
 }) => {
   const [outcome, setOutcome] = useState<Outcome>()
-  const isReplacing = useRef(false)
   const replace = async ({ id, displayName }: ContestPlayer) => {
-    // The second link would be shown over the first, which can't be shown again
-    if (isReplacing.current) {
-      return
-    }
-    isReplacing.current = true
     const link = await requestNewLink(
       href(`/contests/:contestId/players/:playerId/personal-link`, {
         contestId,
         playerId: id,
       }),
-    ).finally(() => {
-      isReplacing.current = false
-    })
+    )
     if (link === null) {
       setOutcome({ kind: `failed`, displayName })
       return
     }
     // Copying may wait on a permission prompt, so the link shows first
     setOutcome({ kind: `replaced`, displayName, link, isCopied: false })
-    if (await copyText(link)) {
-      setOutcome(shown =>
-        shown?.kind === `replaced` && shown.link === link
-          ? { ...shown, isCopied: true }
-          : shown,
-      )
-    }
+    void copyText(link).then(isCopied => {
+      if (isCopied) {
+        setOutcome(shown =>
+          shown?.kind === `replaced` && shown.link === link
+            ? { ...shown, isCopied }
+            : shown,
+        )
+      }
+    })
   }
   return (
     <>
@@ -61,7 +55,7 @@ export const NewPersonalLink = ({
           onOpenChange={onClose}
           title={`Replace ${player.displayName}’s personal link?`}
           confirmLabel='Create new link'
-          onConfirm={() => void replace(player)}
+          onConfirm={() => replace(player)}
         >
           <p>
             {`The old link stops working, also in any browser that has it open. Give ${player.displayName} the new one, and no one else.`}
