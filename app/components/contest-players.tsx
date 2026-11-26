@@ -10,6 +10,7 @@ import { FetcherError } from './fetcher-error.tsx'
 import { InlineEditForm } from './inline-edit-form.tsx'
 import { LocalTime } from './local-time.tsx'
 import { NewPersonalLink } from './new-personal-link.tsx'
+import { ScoreCell } from './score-cell.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
@@ -17,22 +18,14 @@ import { useValidatedForm } from './use-validated-form.ts'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
 import type { ConfirmResult, SavedResult } from '~/form-replies.server.ts'
-import { formatCount, pluralize } from '~/format-count.ts'
+import { formatCount } from '~/format-count.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import type { SubmissionStatus } from '~/generated/prisma/browser.ts'
 import { joinIds } from '~/id-list.ts'
 import { playerNameSchema } from '~/player-forms.ts'
 import type { Decision } from '~/player-forms.ts'
 import { findPossibleDuplicates } from '~/possible-duplicates.ts'
-import { describeStatus } from '~/submission-status.ts'
-
-/** Each section's players, by submission status, or null for drafts */
-const SECTIONS: (SubmissionStatus | null)[] = [
-  `PENDING`,
-  `APPROVED`,
-  `REJECTED`,
-  null,
-]
+import { describeStatus, SUBMISSION_SECTIONS } from '~/submission-status.ts'
 
 /** What an educator does to a row */
 type RowChange = Decision | `DELETED`
@@ -145,7 +138,7 @@ export const ContestPlayers = ({
         {isSelecting ? `${selection.players.length} selected` : ``}
       </p>
       {players.length === 0 ? <NoPlayers isOpen={isOpen} /> : null}
-      {SECTIONS.map(status => {
+      {SUBMISSION_SECTIONS.map(status => {
         const title = describeStatus(status, isOpen)
         const sectionPlayers = players.filter(
           player => player.status === status,
@@ -672,19 +665,6 @@ const PlayerRow = ({
     </tr>
   )
 }
-
-const ScoreCell = ({ score }: { score: number | null }) => (
-  <td className='px-2 py-2 text-end tabular-nums max-sm:absolute max-sm:end-0 max-sm:top-3 max-sm:p-0'>
-    {score === null ? (
-      <span className='text-muted'>None</span>
-    ) : (
-      <>
-        <span className='font-extrabold'>{score}</span>
-        <span className='sm:sr-only'>{` ${pluralize(score, `point`)}`}</span>
-      </>
-    )}
-  </td>
-)
 
 /**
  * Focusing the row scrolls to it. Following the link's fragment instead would

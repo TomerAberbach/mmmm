@@ -49,6 +49,7 @@ const renderContest = async () => {
             contest={useLoaderData<Contest>()}
             players={PLAYERS}
             deletedCount={2}
+            colleagues={null}
           />
         ),
       },

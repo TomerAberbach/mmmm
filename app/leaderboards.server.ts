@@ -11,6 +11,7 @@ import type { Picks } from './picks.ts'
 import { readSubmissionPicks } from './player-picks.server.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
+import { readSharedContestIds } from './shares.server.ts'
 
 /** Whose approved submissions a leaderboard ranks, in one year */
 export type LeaderboardScope = { year: number } & (
@@ -19,9 +20,9 @@ export type LeaderboardScope = { year: number } & (
 )
 
 /**
- * An educator sees every name in their own contests. A player sees their own
- * name and the top score tiers' in their own contest. No other name leaves its
- * contest
+ * An educator sees every name in their own contests and those shared with them.
+ * A player sees their own name and the top score tiers' in their own contest. No
+ * other name leaves its contest
  */
 export type LeaderboardViewer =
   | { kind: `educator`; educatorId: string }
@@ -59,7 +60,7 @@ export const readLeaderboard = (
           : Prisma.empty
       }
     `
-    return { rows: rows.map(row => toRow(row, scope, viewer)), page: pages }
+    return { rows: rows.map(await labelRows(tx, scope, viewer)), page: pages }
   })
 
 /** A contest's rows all fit on one page, so it prints whole */
@@ -105,7 +106,7 @@ export const readLeaderboardSubmission = (
     `
     return row
       ? {
-          row: toRow(row, scope, viewer),
+          row: (await labelRows(tx, scope, viewer))(row),
           picks: await readSubmissionPicks(playerId, tx),
           ...(await readBracketAndResultRows(scope.year, tx)),
         }
@@ -126,26 +127,37 @@ type RankedSubmission = {
   contestTier: number
 }
 
-const toRow = (
-  row: RankedSubmission,
+/** Resolves to what labels a row as the viewer sees it */
+const labelRows = async (
+  tx: Prisma.TransactionClient,
   scope: LeaderboardScope,
   viewer: LeaderboardViewer,
-): LeaderboardRow => {
-  const isOwn = viewer.kind === `player` && viewer.playerId === row.playerId
-  return {
+): Promise<(row: RankedSubmission) => LeaderboardRow> => {
+  const isNamed = await readNamed(tx, scope.year, viewer)
+  return row => ({
     playerId: row.playerId,
-    label: isNamed(row, viewer) ? row.displayName : describeHidden(row, scope),
+    label: isNamed(row) ? row.displayName : describeHidden(row, scope),
     score: row.score,
     rank: row.rank,
-    isOwn,
-  }
+    isOwn: viewer.kind === `player` && viewer.playerId === row.playerId,
+  })
 }
 
-const isNamed = (row: RankedSubmission, viewer: LeaderboardViewer): boolean =>
-  viewer.kind === `educator`
-    ? row.educatorId === viewer.educatorId
-    : row.playerId === viewer.playerId ||
+/** Resolves to whether the viewer sees a row's name */
+const readNamed = async (
+  tx: Prisma.TransactionClient,
+  year: number,
+  viewer: LeaderboardViewer,
+): Promise<(row: RankedSubmission) => boolean> => {
+  if (viewer.kind === `player`) {
+    return row =>
+      row.playerId === viewer.playerId ||
       (row.contestId === viewer.contestId && row.contestTier <= NAMED_TIERS)
+  }
+  const { educatorId } = viewer
+  const sharedIds = await readSharedContestIds(educatorId, year, tx)
+  return row => row.educatorId === educatorId || sharedIds.has(row.contestId)
+}
 
 const describeHidden = (
   { contestName, educatorName }: RankedSubmission,

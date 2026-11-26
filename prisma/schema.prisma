@@ -27,6 +27,7 @@ model Educator {
   passkeys           Passkey[]
   authenticatorApps  AuthenticatorApp[]
   contests           Contest[]
+  shares             Share[]
   // Null until the educator signs in, and at a free email provider
   organizationDomain String?
   organization       Organization?      @relation(fields: [organizationDomain], references: [domain], onDelete: Restrict)
@@ -278,9 +279,23 @@ model Contest {
   bracket     Bracket   @relation(fields: [year], references: [year], onDelete: Restrict)
   educator    Educator  @relation(fields: [educatorId], references: [id], onDelete: Restrict)
   players     Player[]
+  shares      Share[]
 
   @@index([educatorId, year])
   @@index([year])
+}
+
+/// One colleague's full view of a contest
+model Share {
+  contestId  String
+  // The colleague
+  educatorId String
+  createdAt  DateTime @default(now())
+  contest    Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  educator   Educator @relation(fields: [educatorId], references: [id], onDelete: Cascade)
+
+  @@id([contestId, educatorId])
+  @@index([educatorId])
 }
 
 // One person's bracket in one contest: a draft until it's submitted

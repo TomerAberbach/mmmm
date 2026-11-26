@@ -2,7 +2,7 @@ import { href, Link, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.leaderboard.ts'
 import { Leaderboard } from '~/components/leaderboard.tsx'
 import { PageHeader } from '~/components/page-header.tsx'
-import { readRequiredContest } from '~/contest-context.server.ts'
+import { readViewableContest } from '~/contest-context.server.ts'
 import { readPageNumber } from '~/leaderboard-row.ts'
 import {
   readEducatorViewer,
@@ -15,7 +15,7 @@ export const loader = async ({
   context,
   params,
 }: Route.LoaderArgs) => {
-  const named = toContestScope(readRequiredContest(context))
+  const named = toContestScope(readViewableContest(context).contest)
   const leaderboard = await readLeaderboard(
     named.scope,
     readEducatorViewer(context),

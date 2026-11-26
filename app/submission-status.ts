@@ -16,3 +16,11 @@ const STATUS_LABELS: Record<SubmissionStatus, string> = {
   APPROVED: `Approved`,
   REJECTED: `Rejected`,
 }
+
+/** A contest's sections of players in order, with null for drafts */
+export const SUBMISSION_SECTIONS: (SubmissionStatus | null)[] = [
+  `PENDING`,
+  `APPROVED`,
+  `REJECTED`,
+  null,
+]
