@@ -17,6 +17,7 @@ test(`the new educator is named before the contest is theirs`, async () => {
             id: `period-2`,
             name: `Period 2 Biology`,
             isHidden: false,
+            isInTrash: false,
           }}
         />
       ),
@@ -53,3 +54,30 @@ test(`the new educator is named before the contest is theirs`, async () => {
     { contestId: `period-2`, email: `grace@example.com`, educatorId: `grace` },
   ])
 })
+
+test.each([
+  { isInTrash: true, isNoteShown: true },
+  { isInTrash: false, isNoteShown: false },
+])(
+  `the dialog mentions restoring a contest only in the trash (in it: $isInTrash)`,
+  async ({ isInTrash, isNoteShown }) => {
+    await renderRoutes([
+      {
+        path: `/`,
+        Component: () => (
+          <HandOverDialog
+            contest={{ id: `a`, name: `A`, isHidden: false, isInTrash }}
+          />
+        ),
+      },
+    ])
+
+    await page.getByRole(`button`, { name: `Hand over A` }).click()
+
+    await expect.element(page.getByRole(`dialog`)).toBeVisible()
+    expect(
+      page.getByText(`Handing it over restores it`, { exact: false }).elements()
+        .length > 0,
+    ).toBe(isNoteShown)
+  },
+)

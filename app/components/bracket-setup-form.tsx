@@ -72,10 +72,16 @@ const ENTRANT_COUNTS = Array.from(
  */
 export const BracketSetupForm = ({
   year,
+  laterYear = null,
+  version,
   defaultValue,
   lastResult,
 }: {
   year: number
+  /** The upcoming year, when the calendar has moved past the bracket's */
+  laterYear?: number | null
+  /** Of `defaultValue`, from `toBracketVersion` */
+  version: string
   /** An existing bracket to edit */
   defaultValue?: BracketForm
   lastResult?: SubmissionResult
@@ -88,6 +94,9 @@ export const BracketSetupForm = ({
   const [wildCard, setWildCard] = useState<WildCardChoice>(
     defaultValue?.wildCard ?? DEFAULT_WILD_CARD,
   )
+  // The fields keep the bracket they opened with, even once the page reloads its
+  // data, so this does too
+  const [seenVersion] = useState(version)
   const isEdit = defaultValue !== undefined
 
   return (
@@ -98,6 +107,11 @@ export const BracketSetupForm = ({
           Enter the combatants from ASU’s bracket. Only admins see it until you
           publish it.
         </p>
+        {isEdit && laterYear !== null ? (
+          <p className='max-w-prose'>
+            {`The ${year} tournament is over. To set up the ${laterYear} bracket, delete this one below.`}
+          </p>
+        ) : null}
         <Form
           method='post'
           {...getFormProps(form)}
@@ -105,6 +119,7 @@ export const BracketSetupForm = ({
         >
           {/* The year to set up may have moved on since the page loaded */}
           <input type='hidden' name='year' value={year} />
+          <input type='hidden' name='seenVersion' value={seenVersion} />
           <WildCardSection wildCard={wildCard} onChange={setWildCard} />
           <PasteSection
             wildCard={wildCard}
@@ -403,8 +418,8 @@ const DeleteSection = ({ year }: { year: number }) => (
         fields={{ year: String(year) }}
       >
         <p>
-          This deletes its divisions, combatants, and wild card. Nobody else has
-          seen it yet, since it’s unpublished.
+          This deletes its divisions, combatants, and wild card. Only admins see
+          it while it’s unpublished.
         </p>
       </ConfirmDialog>
     </div>

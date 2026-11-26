@@ -234,7 +234,7 @@ test(`once submissions close, the educator dashboard says why no contest can be 
   await expect
     .element(
       page.getByText(
-        `You can create contests again once the 2028 bracket is published.`,
+        `You can create contests again once the next bracket is published.`,
         { exact: false },
       ),
     )

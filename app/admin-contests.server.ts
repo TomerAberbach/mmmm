@@ -1,4 +1,5 @@
 import { prisma } from './db.server.ts'
+import type { Prisma } from './generated/prisma/client.ts'
 import {
   ORGANIZATION_SELECT,
   toContestOrganization,
@@ -40,43 +41,51 @@ export const readAdminContests = async (
     ],
     skip: countRowsBefore(pageNumber),
     take: PAGE_SIZE,
-    select: {
-      id: true,
-      name: true,
-      year: true,
-      isHidden: true,
-      deletedAt: true,
-      orphanedFrom: { select: ORGANIZATION_SELECT },
-      educator: {
-        select: {
-          name: true,
-          organization: { select: ORGANIZATION_SELECT },
-        },
-      },
-      _count: {
-        select: {
-          players: {
-            where: { deletedAt: null, submission: { status: `APPROVED` } },
-          },
-        },
-      },
-    },
+    select: ADMIN_CONTEST_SELECT,
   })
   return {
-    contests: contests.map(
-      ({ educator, orphanedFrom, deletedAt, _count, ...contest }) => ({
-        ...contest,
-        educatorName: educator?.name ?? null,
-        organizationName: describe(
-          toContestOrganization({ educator, orphanedFrom }),
-        ),
-        approvedCount: _count.players,
-        isInTrash: deletedAt !== null,
-      }),
-    ),
+    contests: contests.map(toAdminContest),
     page: pageNumber,
   }
 }
+
+const ADMIN_CONTEST_SELECT = {
+  id: true,
+  name: true,
+  year: true,
+  isHidden: true,
+  deletedAt: true,
+  orphanedFrom: { select: ORGANIZATION_SELECT },
+  educator: {
+    select: {
+      name: true,
+      organization: { select: ORGANIZATION_SELECT },
+    },
+  },
+  _count: {
+    select: {
+      players: {
+        where: { deletedAt: null, submission: { status: `APPROVED` } },
+      },
+    },
+  },
+} satisfies Prisma.ContestSelect
+
+const toAdminContest = ({
+  educator,
+  orphanedFrom,
+  deletedAt,
+  _count,
+  ...contest
+}: Prisma.ContestGetPayload<{
+  select: typeof ADMIN_CONTEST_SELECT
+}>): AdminContest => ({
+  ...contest,
+  educatorName: educator?.name ?? null,
+  organizationName: describe(toContestOrganization({ educator, orphanedFrom })),
+  approvedCount: _count.players,
+  isInTrash: deletedAt !== null,
+})
 
 const describe = (organization: Organization | null): string | null =>
   organization && describeOrganization(organization)
@@ -89,33 +98,32 @@ export type AdminPlayer = {
 }
 
 /**
- * A contest's players by name, even when they or the contest are in the trash.
- * Null when it's gone
+ * A contest and its players by name, even when they or the contest are in the
+ * trash. Null when it's gone
  */
-export const readAdminPlayers = async (
+export const readAdminContest = async (
   contestId: string,
-): Promise<{ name: string; year: number; players: AdminPlayer[] } | null> => {
-  const contest = await prisma.contest.findUnique({
+): Promise<{ contest: AdminContest; players: AdminPlayer[] } | null> => {
+  const row = await prisma.contest.findUnique({
     where: { id: contestId },
     select: {
-      name: true,
-      year: true,
-      deletedAt: true,
+      ...ADMIN_CONTEST_SELECT,
       players: {
         orderBy: [{ displayName: `asc` }, { id: `asc` }],
         select: { id: true, displayName: true, deletedAt: true },
       },
     },
   })
-  if (!contest) {
+  if (!row) {
     return null
   }
-  const { deletedAt: contestDeletedAt, players, ...rest } = contest
+  const { players, ...rest } = row
+  const contest = toAdminContest(rest)
   return {
-    ...rest,
+    contest,
     players: players.map(({ deletedAt, ...player }) => ({
       ...player,
-      isInTrash: deletedAt !== null || contestDeletedAt !== null,
+      isInTrash: deletedAt !== null || contest.isInTrash,
     })),
   }
 }

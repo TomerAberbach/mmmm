@@ -58,7 +58,7 @@ export const EducatorDashboard = ({
       ) : null}
       {current?.isLocked ? (
         <SubmissionsClosed>
-          {`You can create contests again once the ${current.year + 1} bracket is published.`}
+          You can create contests again once the next bracket is published.
         </SubmissionsClosed>
       ) : null}
       {current ? (

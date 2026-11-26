@@ -12,12 +12,14 @@ import {
   readBracket,
   readBracketSummary,
   saveUnpublishedBracket,
+  toBracketVersion,
 } from '~/brackets.server.ts'
 import { BracketSetupForm } from '~/components/bracket-setup-form.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
 import { readLostSessionMessage } from '~/lost-session.ts'
+import { readUpcomingYear } from '~/year.ts'
 
 /** Only for a year to set up. The current year's bracket is with its results */
 export const loader = async () => {
@@ -25,13 +27,20 @@ export const loader = async () => {
   if (year === null) {
     return redirect(href(`/admin/results`))
   }
+  const upcomingYear = readUpcomingYear(new Date())
   const summary = await readBracketSummary(year)
   const bracket = summary && (await readBracket(year))
+  const names = bracket && toNames(bracket)
   return {
     year,
-    archivedYear: current?.year ?? null,
+    archivedYear:
+      current?.summary.phase === `COMPLETE`
+        ? { year: current.year, resultCount: current.summary.resultCount }
+        : null,
     summary,
-    defaultValue: bracket ? toBracketForm(toNames(bracket)) : undefined,
+    laterYear: upcomingYear > year ? upcomingYear : null,
+    version: toBracketVersion(names),
+    defaultValue: names ? toBracketForm(names) : undefined,
   }
 }
 
@@ -44,12 +53,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
+  const seenVersion = formData.get(`seenVersion`)
   return year !== null &&
     formData.get(`year`) === String(year) &&
-    (await saveUnpublishedBracket(year, toBracketInput(submission.value)))
+    typeof seenVersion === `string` &&
+    (await saveUnpublishedBracket(
+      year,
+      toBracketInput(submission.value),
+      seenVersion,
+    ))
     ? redirect(href(`/admin`))
     : rejectForm(submission, {
-        formErrors: [`This bracket can’t change here now. Reload the page`],
+        formErrors: [
+          `This bracket changed or moved since the page loaded, so nothing was saved. Reload the page`,
+        ],
       })
 }
 
@@ -90,6 +107,8 @@ const AdminBracket = ({ loaderData, actionData }: Route.ComponentProps) => (
     ) : null}
     <BracketSetupForm
       year={loaderData.year}
+      laterYear={loaderData.laterYear}
+      version={loaderData.version}
       defaultValue={loaderData.defaultValue}
       lastResult={actionData?.result}
     />

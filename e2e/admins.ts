@@ -14,12 +14,15 @@ export const ADMINS = {
   returnPath: `return-path-admin@example.com`,
   returnPathPassword: `return-path-password-admin@example.com`,
   lostSession: `lost-session-admin@example.com`,
+  links: `links-admin@example.com`,
+  stale: `stale-admin@example.com`,
   setup: `setup-admin@example.com`,
   publish: `publish-admin@example.com`,
   results: `results-admin@example.com`,
   unpublish: `unpublish-admin@example.com`,
   check: `check-admin@example.com`,
   contest: `contest-admin@example.com`,
+  reports: `reports-admin@example.com`,
   staysPublished: `stays-published-admin@example.com`,
 }
 

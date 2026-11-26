@@ -13,6 +13,7 @@ import {
   findEducator,
   handOverContest,
 } from './support.server.ts'
+import { deleteContest } from './trash.server.ts'
 
 const createOrphanedContest = async () => {
   await addYear({ published: true })
@@ -55,6 +56,35 @@ test(`a contest handed over works for its new educator`, async () => {
       select: { orphanedFromDomain: true },
     }),
   ).resolves.toStrictEqual({ orphanedFromDomain: null })
+})
+
+test(`a contest orphaned in the trash is restored when handed over`, async () => {
+  await addYear({ published: true })
+  const domain = `${randomUUID()}.edu`
+  const educatorId = await createMember(domain)
+  const contestId = await addContest(educatorId, `Period 2 Biology`)
+  await deleteContest(educatorId, contestId)
+  await deleteEducator(educatorId, `${educatorId}@${domain}`)
+  const newId = await createMember(`${randomUUID()}.edu`)
+
+  await expect(handOverContest(contestId, newId)).resolves.toBe(true)
+
+  await expect(
+    prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { educatorId: true, deletedAt: true },
+    }),
+  ).resolves.toStrictEqual({ educatorId: newId, deletedAt: null })
+})
+
+test(`a contest still its educator's isn't handed over from the trash`, async () => {
+  await addYear({ published: true })
+  const educatorId = await createMember(`${randomUUID()}.edu`)
+  const contestId = await addContest(educatorId, `Period 2 Biology`)
+  await deleteContest(educatorId, contestId)
+  const newId = await createMember(`${randomUUID()}.edu`)
+
+  await expect(handOverContest(contestId, newId)).resolves.toBe(false)
 })
 
 test(`only an orphaned contest is handed over, to a confirmed educator`, async () => {

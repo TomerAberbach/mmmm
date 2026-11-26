@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { eraseArchivedYear } from './archive.server.ts'
 import {
@@ -6,7 +6,9 @@ import {
   describeTakenName,
   isSameName,
   listSeedSlots,
+  mapCombatants,
   toBracketSchema,
+  toNames,
 } from './bracket-input.ts'
 import type { BracketInput } from './bracket-input.ts'
 import {
@@ -21,7 +23,7 @@ import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
-import { readUpcomingYear } from './year.ts'
+import { isPastDate, readUpcomingYear } from './year.ts'
 import {
   CURRENT_BRACKET,
   LOCKED_YEARS_LIMITS,
@@ -35,16 +37,19 @@ import {
 /**
  * Replaces the year's unpublished bracket, keeping its expected lock date, or
  * stores a new one with every seed slot and battle. Returns false and changes
- * nothing when the year's bracket is published. Throws on input
- * `bracketInputSchema` rejects. Takes `lockYears` in `SHARE` mode, so
- * publishing waits for it, and a lock on the year, so concurrent saves of the
- * year run one at a time
+ * nothing when the year's bracket is published, or when it isn't the one that
+ * `seenVersion`, from `toBracketVersion`, is of. Saving the stored bracket again
+ * succeeds. Throws on input `bracketInputSchema` rejects. Takes `lockYears`
+ * in `SHARE` mode, so publishing waits for it, and a lock on the year, so
+ * concurrent saves of the year run one at a time
  */
 export const saveUnpublishedBracket = async (
   year: number,
   input: BracketInput,
+  seenVersion?: string,
 ): Promise<boolean> => {
-  const rows = buildBracketRows(year, bracketInputSchema.parse(input))
+  const parsed = bracketInputSchema.parse(input)
+  const rows = buildBracketRows(year, parsed)
   return prisma.$transaction(async tx => {
     await lockYears(tx, `SHARE`)
     await lockYearForSaving(tx, year)
@@ -55,11 +60,27 @@ export const saveUnpublishedBracket = async (
     if (existing?.publishedAt) {
       return false
     }
+    if (seenVersion !== undefined) {
+      const stored = existing ? toNames(await readBracketRows(year, tx)) : null
+      const version = toBracketVersion(stored)
+      if (stored && version === toBracketVersion(parsed)) {
+        return true
+      }
+      if (version !== seenVersion) {
+        return false
+      }
+    }
     await tx.bracket.deleteMany({ where: { year, publishedAt: null } })
     await insertBracketRows(tx, year, rows, existing?.expectedLockDate ?? null)
     return true
   }, LOCKED_YEARS_LIMITS)
 }
+
+/** Differs between brackets whose names or wild cards do. Null is no bracket */
+export const toBracketVersion = (bracket: BracketInput | null): string =>
+  createHash(`sha256`)
+    .update(JSON.stringify(bracket && mapCombatants(bracket, name => name)))
+    .digest(`base64url`)
 
 /** Inserts an unpublished bracket for a year without one */
 export const insertBracket = (
@@ -156,7 +177,7 @@ const buildBracketRows = (year: number, input: BracketInput) => {
 export const readCurrentBracket = async (): Promise<{
   year: number
   bracket: StoredBracket
-  /** Null once the year locks, as without a date */
+  /** Null once the year locks or the date passes, as without a date */
   expectedLockDate: Date | null
   results: Results
 } | null> =>
@@ -169,11 +190,19 @@ export const readCurrentBracket = async (): Promise<{
       current && {
         year: current.year,
         bracket: await readBracketRows(current.year, tx),
-        expectedLockDate: current.lockedAt ? null : current.expectedLockDate,
+        expectedLockDate: current.lockedAt
+          ? null
+          : hidePastDate(current.expectedLockDate),
         results: await readResultRows(current.year, tx),
       }
     )
   })
+
+/** An expected lock date to show. A past one no longer says when to expect it */
+export const hidePastDate = (expectedLockDate: Date | null): Date | null =>
+  expectedLockDate && isPastDate(expectedLockDate, new Date())
+    ? null
+    : expectedLockDate
 
 /** The year must have a bracket */
 export const readBracketAndResults = (
@@ -317,7 +346,8 @@ export type BracketSummary =
     }
   // Submissions reopen only while no results are saved
   | { phase: `IN_PROGRESS`; hasResults: boolean }
-  | { phase: `COMPLETE`; champion: string }
+  // A battle the champion wasn't in may have no result
+  | { phase: `COMPLETE`; champion: string; resultCount: number }
   | { phase: `ARCHIVED` }
 
 /** Null when the year has no bracket */
@@ -354,7 +384,7 @@ export const readBracketSummary = async (
   const champion = battles.find(({ round }) => round === `CHAMPIONSHIP`)?.result
     ?.winner.name
   if (champion !== undefined) {
-    return { phase: `COMPLETE`, champion }
+    return { phase: `COMPLETE`, champion, resultCount: battles.length }
   }
   return lockedAt
     ? { phase: `IN_PROGRESS`, hasResults: battles.length > 0 }
@@ -368,16 +398,25 @@ export const readBracketSummary = async (
 
 /**
  * The years the admin manages: the current year, and the year to set up, which
- * opens once the current year is Complete
+ * opens once the current year is Complete. A newer year already set up comes
+ * first, even once the calendar moves past it
  */
 export const readAdminYears = async (): Promise<{
   current: { year: number; summary: BracketSummary } | null
   setupYear: number | null
 }> => {
   const current = await readCurrentYear()
+  const unpublished = await prisma.bracket.findFirst({
+    where: {
+      publishedAt: null,
+      ...(current && { year: { gt: current.year } }),
+    },
+    orderBy: { year: `asc` },
+    select: { year: true },
+  })
   const upcomingYear = readUpcomingYear(new Date())
   if (!current) {
-    return { current: null, setupYear: upcomingYear }
+    return { current: null, setupYear: unpublished?.year ?? upcomingYear }
   }
   const { year } = current
   const summary = (await readBracketSummary(year))!
@@ -386,7 +425,9 @@ export const readAdminYears = async (): Promise<{
     // The champion can come before April, when the calendar's upcoming year is
     // still this one
     setupYear:
-      summary.phase === `COMPLETE` ? Math.max(year + 1, upcomingYear) : null,
+      summary.phase === `COMPLETE`
+        ? (unpublished?.year ?? Math.max(year + 1, upcomingYear))
+        : null,
   }
 }
 

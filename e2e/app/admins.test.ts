@@ -101,6 +101,28 @@ test(`a password returns an admin only as far as their second factor`, async ({
   await expect(page).toHaveURL(`/admin/verify`)
 })
 
+test(`the header links only admins to the admin area, whose pages link back`, async ({
+  page,
+  browser,
+}) => {
+  const educator = await browser.newPage()
+  await signInConfirmed(educator, newEmailAddress())
+  await signInAsAdmin(page, ADMINS.links)
+  await page.goto(`/contests`)
+
+  await page.getByRole(`banner`).getByRole(`link`, { name: `Admin` }).click()
+  await page.getByRole(`link`, { name: `Educators` }).click()
+  await page.getByRole(`main`).getByRole(`link`, { name: `Admin` }).click()
+
+  await expect(page).toHaveURL(`/admin`)
+  await expect(
+    educator.getByRole(`banner`).getByRole(`link`, { name: `Ms. Frizzle` }),
+  ).toBeVisible()
+  await expect(
+    educator.getByRole(`banner`).getByRole(`link`, { name: `Admin` }),
+  ).not.toBeAttached()
+})
+
 test(`a setup link opened in another browser doesn't start setup there`, async ({
   page,
   browser,

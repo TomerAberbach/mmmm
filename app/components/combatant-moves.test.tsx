@@ -25,12 +25,22 @@ const IMPACT = {
 const renderMoves = async ({
   isLocked = false,
   reply = { impact: IMPACT },
-}: { isLocked?: boolean; reply?: MoveReply } = {}) => {
+  reload = Promise.resolve(),
+}: {
+  isLocked?: boolean
+  reply?: MoveReply
+  /** What loading the page waits for once a move is saved */
+  reload?: Promise<void>
+} = {}) => {
   let bracket = BRACKET
+  let reloaded = Promise.resolve()
   await renderRoutes([
     {
       path: `/`,
-      loader: () => bracket,
+      loader: async () => {
+        await reloaded
+        return bracket
+      },
       HydrateFallback: () => null,
       Component: () => (
         <CombatantMoves
@@ -48,6 +58,7 @@ const renderMoves = async ({
           return reply
         }
         bracket = swapCombatants(bracket, move.swaps)!
+        reloaded = reload
         return { ok: true }
       },
     },
@@ -129,5 +140,44 @@ test(`a refused preview says so`, async () => {
 
   await expect
     .element(page.getByText(`The bracket changed. Reload the page`))
+    .toBeVisible()
+})
+
+test(`swaps that cancel out leave the list once saved`, async () => {
+  await renderMoves()
+  await addSwap(SEED_1!.name, SEED_2!.name)
+  await addSwap(SEED_1!.name, SEED_2!.name)
+  await page.getByRole(`button`, { name: `Review 2 swaps` }).click()
+  const dialog = page.getByRole(`alertdialog`)
+  await expect
+    .element(dialog.getByText(`The swaps cancel out, so no combatant moves.`))
+    .toBeVisible()
+
+  await dialog.getByRole(`button`, { name: `Move combatants` }).click()
+
+  await expect.element(page.getByText(`Moved the combatants`)).toBeVisible()
+  await expect
+    .element(page.getByRole(`button`, { name: /^Review/u }))
+    .not.toBeInTheDocument()
+})
+
+test(`a swap added before the page reloads stays once swaps that cancel out are saved`, async () => {
+  const { promise: reload, resolve: finishReload } =
+    Promise.withResolvers<undefined>()
+  await renderMoves({ reload })
+  await addSwap(SEED_1!.name, SEED_2!.name)
+  await addSwap(SEED_1!.name, SEED_2!.name)
+  await page.getByRole(`button`, { name: `Review 2 swaps` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Move combatants` })
+    .click()
+  await expect.element(page.getByText(`Moved the combatants`)).toBeVisible()
+
+  await addSwap(SEED_1!.name, SEED_3!.name)
+  finishReload(undefined)
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Review 1 swap` }))
     .toBeVisible()
 })

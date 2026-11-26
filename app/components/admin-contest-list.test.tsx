@@ -68,7 +68,7 @@ test(`the admin hides a contest and shows it again`, async () => {
     .toBeVisible()
 })
 
-test(`a contest in the trash opens but can't be hidden or handed over`, async () => {
+test(`an orphaned contest in the trash can be handed over but not hidden`, async () => {
   await renderRoutes([
     {
       path: `/`,
@@ -86,5 +86,10 @@ test(`a contest in the trash opens but can't be hidden or handed over`, async ()
   await expect
     .element(page.getByRole(`link`, { name: `Period 2 Biology` }))
     .toHaveAttribute(`href`, `/admin/contests/period-2`)
-  await expect.element(page.getByRole(`button`)).not.toBeInTheDocument()
+  await expect
+    .element(page.getByRole(`button`, { name: `Hand over Period 2 Biology` }))
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`button`, { name: `Hide Period 2 Biology` }))
+    .not.toBeInTheDocument()
 })

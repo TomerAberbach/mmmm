@@ -18,6 +18,7 @@ import {
   useRouteLoaderData,
 } from 'react-router'
 import type { Route } from './+types/root.ts'
+import { isAdmin } from './admins.server.ts'
 import stylesheet from './app.css?url'
 import { isBrokenLink } from './broken-link.ts'
 import { PageTitle } from './components/page-title.tsx'
@@ -49,6 +50,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     // Every page receives this, so it holds only what the header shows
     educator: educator && {
       name: educator.name,
+      isAdmin: isAdmin(educator),
       reportCount: await countReports({
         kind: `educator`,
         educatorId: educator.id,

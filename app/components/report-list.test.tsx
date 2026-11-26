@@ -40,7 +40,10 @@ test(`dismissing a report takes it off the list and keeps focus there`, async ()
     },
   ])
   await expect
-    .element(page.getByText(/The contest’s name · Ms\. Frizzle/u))
+    // Not the long form, which is in UTC
+    .element(
+      page.getByText(/The contest’s name · Ms\. Frizzle · Mar 20, 2027/u),
+    )
     .toBeVisible()
   await expectNoAxeViolations()
 

@@ -14,6 +14,7 @@ import {
   saveUnpublishedBracket,
   setBracketPublished,
   setExpectedLockDate,
+  toBracketVersion,
 } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
@@ -229,6 +230,59 @@ test(`two saves of an unpublished bracket at once both succeed`, async () => {
   await expect(readBracketNames(year)).resolves.toStrictEqual(BRACKET_2025)
 })
 
+test.each([
+  { scenario: `over a newer save`, stored: BRACKET_2025 },
+  { scenario: `of a bracket deleted since`, stored: null },
+])(`a stale save $scenario is refused`, async ({ stored }) => {
+  const year = await claimYear()
+  if (stored) {
+    await saveUnpublishedBracket(year, stored)
+  }
+
+  const saved = await saveUnpublishedBracket(
+    year,
+    BRACKET_2017,
+    toBracketVersion(BRACKET_2026),
+  )
+
+  expect(saved).toBe(false)
+  await expect(readBracketNames(year)).resolves.toStrictEqual(stored)
+})
+
+test(`a first save is refused once another admin made one`, async () => {
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2025)
+
+  const saved = await saveUnpublishedBracket(
+    year,
+    BRACKET_2026,
+    toBracketVersion(null),
+  )
+
+  expect(saved).toBe(false)
+})
+
+test(`a repeated save succeeds`, async () => {
+  const year = await claimYear()
+  const save = () =>
+    saveUnpublishedBracket(year, BRACKET_2026, toBracketVersion(null))
+  await save()
+
+  await expect(save()).resolves.toBe(true)
+})
+
+test(`a save of the bracket as it was seen replaces it, whatever its expected lock date`, async () => {
+  const year = await claimYear()
+  await saveUnpublishedBracket(year, BRACKET_2026)
+  const seenVersion = toBracketVersion(BRACKET_2026)
+  await setExpectedLockDate(year, new Date(`2099-03-19T00:00:00Z`))
+
+  const saved = await saveUnpublishedBracket(year, BRACKET_2025, seenVersion)
+
+  expect(saved).toBe(true)
+  await expect(readBracketNames(year)).resolves.toStrictEqual(BRACKET_2025)
+})
+
 test(`saving over a published bracket changes nothing`, async () => {
   const year = await addYear({ published: true, input: BRACKET_2026 })
 
@@ -344,6 +398,17 @@ test(`the current bracket carries its expected lock date`, async () => {
   await expect(readCurrentBracket()).resolves.toMatchObject({
     year,
     expectedLockDate,
+  })
+})
+
+test(`a past expected lock date isn't shown`, async () => {
+  const year = await addYear({ published: true })
+
+  await setExpectedLockDate(year, new Date(`2020-03-19T00:00:00Z`))
+
+  await expect(readCurrentBracket()).resolves.toMatchObject({
+    year,
+    expectedLockDate: null,
   })
 })
 
