@@ -22,9 +22,9 @@ export const ModalFrame = ({
   <ModalOverlay
     isOpen={isOpen}
     onOpenChange={onOpenChange}
-    className='fixed inset-0 z-10 flex items-center justify-center bg-ink/40 p-4'
+    className='fixed inset-0 z-10 flex overflow-y-auto bg-ink/40 p-4'
   >
-    <Modal className='w-full max-w-lg'>
+    <Modal className='m-auto w-full max-w-lg'>
       <Dialog
         {...props}
         className='flex flex-col gap-3 border-2 border-ink bg-white p-6 shadow-offset shadow-accent-soft outline-none'

@@ -15,6 +15,7 @@ const renderLeaderboard = (
       Component: () => (
         <Leaderboard
           leaderboard={{ rows, page: leaderboardPage }}
+          reportPath='/report'
           toBracketPath={id => `/brackets/${id}`}
         />
       ),

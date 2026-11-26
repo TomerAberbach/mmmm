@@ -26,6 +26,9 @@ export default [
     index(`routes/contests._index.tsx`),
     route(`new`, `routes/contests.new.ts`),
     route(`organization`, `routes/contests.organization.ts`),
+    route(`report`, `routes/contests.report.ts`),
+    route(`reports`, `routes/contests.reports.tsx`),
+    route(`reports/dismiss`, `routes/contests.reports.dismiss.ts`),
     route(`global`, `routes/contests.global.tsx`),
     route(`global/:playerId`, `routes/contests.global.$playerId.tsx`),
     route(`leaderboard`, `routes/contests.leaderboard.tsx`),
@@ -35,6 +38,7 @@ export default [
     route(`trash/erase`, `routes/contests.trash.erase.ts`),
     layout(`routes/contests.contest.tsx`, [
       route(`:contestId`, `routes/contests.$contestId.tsx`),
+      route(`:contestId/report`, `routes/contests.$contestId.report.ts`),
       route(`:contestId/trash`, `routes/contests.$contestId.trash.tsx`),
       route(
         `:contestId/leaderboard`,
@@ -81,6 +85,7 @@ export default [
   route(`play/:linkSecret`, `routes/play.tsx`, [
     index(`routes/play._index.tsx`),
     route(`deleted`, `routes/play.deleted.tsx`),
+    route(`report`, `routes/play.report.ts`),
   ]),
   route(`player/:contestId`, `routes/player.tsx`, [
     layout(`routes/player.remembered.tsx`, [
@@ -92,6 +97,7 @@ export default [
           `leaderboard/:playerId`,
           `routes/player.leaderboard.$playerId.tsx`,
         ),
+        route(`report`, `routes/player.report.ts`),
         route(`global`, `routes/player.global.tsx`),
         route(`global/:playerId`, `routes/player.global.$playerId.tsx`),
         route(`organization`, `routes/player.organization.tsx`),
@@ -110,6 +116,8 @@ export default [
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
+      route(`reports`, `routes/admin.reports.tsx`),
+      route(`reports/dismiss`, `routes/admin.reports.dismiss.ts`),
       route(`contests`, `routes/admin.contests.tsx`),
       route(`contests/hidden`, `routes/admin.contests.hidden.ts`),
       route(`organizations`, `routes/admin.organizations.tsx`),

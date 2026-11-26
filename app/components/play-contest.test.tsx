@@ -34,6 +34,7 @@ const renderPlay = async (view: PlayView, error = ``) => {
         },
         Component: () => (
           <PlayContestPage
+            reportPath='/report'
             view={view}
             lastResult={
               useActionData<{ result: SubmissionResult } | undefined>()?.result
@@ -139,7 +140,9 @@ test(`the start button stays pending until the player's bracket loads`, async ()
       {
         path: `/play/secret`,
         action: () => redirect(`/player/bracket`),
-        Component: () => <PlayContestPage view={{ state: `askName` }} />,
+        Component: () => (
+          <PlayContestPage reportPath='/report' view={{ state: `askName` }} />
+        ),
       },
       {
         path: `/player/bracket`,

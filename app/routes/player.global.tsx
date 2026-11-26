@@ -21,6 +21,7 @@ const PlayerGlobal = ({ loaderData, params }: Route.ComponentProps) => (
     <PageHeader label={loaderData.name} title='Global leaderboard' />
     <Leaderboard
       leaderboard={loaderData.leaderboard}
+      reportPath={href(`/player/:contestId/report`, params)}
       toBracketPath={playerId =>
         href(`/player/:contestId/global/:playerId`, {
           ...params,

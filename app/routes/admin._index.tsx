@@ -7,10 +7,15 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseTag } from '~/components/phase-section.tsx'
 import { SECTION_HEADING_CLASS_NAME } from '~/components/settings-section.tsx'
 import { formatDate } from '~/dates.ts'
+import { countReports } from '~/reports.server.ts'
 
 export const loader = async () => {
-  const { current, setupYear } = await readAdminYears()
+  const [{ current, setupYear }, reportCount] = await Promise.all([
+    readAdminYears(),
+    countReports({ kind: `admin` }),
+  ])
   return {
+    reportCount,
     current,
     setup: setupYear !== null && {
       year: setupYear,
@@ -19,7 +24,9 @@ export const loader = async () => {
   }
 }
 
-const Admin = ({ loaderData: { current, setup } }: Route.ComponentProps) => (
+const Admin = ({
+  loaderData: { reportCount, current, setup },
+}: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <PageTitle>Admin</PageTitle>
     {current ? (
@@ -45,6 +52,9 @@ const Admin = ({ loaderData: { current, setup } }: Route.ComponentProps) => (
         </ButtonLink>
       </YearCard>
     ) : null}
+    <Link to={href(`/admin/reports`)} className='self-start'>
+      {`Reports (${reportCount})`}
+    </Link>
     <Link to={href(`/admin/contests`)} className='self-start'>
       Contests
     </Link>

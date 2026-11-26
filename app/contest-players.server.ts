@@ -18,6 +18,14 @@ export type ContestPlayer = {
   score: number | null
 }
 
+export const hasPlayer = async (
+  contestId: string,
+  playerId: string,
+): Promise<boolean> =>
+  (await prisma.player.count({
+    where: { id: playerId, contestId, ...PLAYER_OUTSIDE_TRASH },
+  })) > 0
+
 /** Drafts are oldest first either way. Scores order as leaderboards do */
 export const readContestPlayers = async (
   contestId: string,

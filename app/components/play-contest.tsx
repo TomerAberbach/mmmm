@@ -5,11 +5,13 @@ import { Button, ButtonLink } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import { PAGE_LABEL_CLASS_NAME } from './page-header.tsx'
 import { PageTitle } from './page-title.tsx'
+import { ReportDialog } from './report-dialog.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import type { PlayContest } from '~/contests.server.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import { displayNameSchema } from '~/player-forms.ts'
+import { CONTEST_TARGET } from '~/report-forms.ts'
 
 /**
  * What the contest link shows: the name question, the prompt for a player
@@ -30,18 +32,24 @@ export const NOT_OPEN_MESSAGE = `Submissions are closed, so no one can start a b
 
 export const PlayContestPage = ({
   view,
+  reportPath,
   lastResult,
 }: {
   view: PlayView
+  reportPath: string
   lastResult?: SubmissionResult
-}) =>
-  view.state === `askName` ? (
-    <NameForm lastResult={lastResult} />
-  ) : view.state === `returning` ? (
-    <ReturningPlayer view={view} />
-  ) : (
-    <ContestNotOpen />
-  )
+}) => (
+  <div className='flex flex-col gap-8'>
+    {view.state === `askName` ? (
+      <NameForm lastResult={lastResult} />
+    ) : view.state === `returning` ? (
+      <ReturningPlayer view={view} />
+    ) : (
+      <ContestNotOpen />
+    )}
+    <ReportDialog action={reportPath} targets={[CONTEST_TARGET]} />
+  </div>
+)
 
 /**
  * Pages under a contest, which search engines skip, since their addresses open a

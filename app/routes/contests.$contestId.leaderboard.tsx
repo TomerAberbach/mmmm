@@ -9,13 +9,22 @@ import {
   toContestScope,
 } from '~/leaderboard-scopes.server.ts'
 
-export const loader = async ({ request, context, params }: Route.LoaderArgs) =>
-  readRequiredLeaderboard(
-    request,
-    toContestScope(readViewableContest(context).contest),
-    readEducatorViewer(context),
-    href(`/contests/:contestId`, params),
-  )
+export const loader = async ({
+  request,
+  context,
+  params,
+}: Route.LoaderArgs) => {
+  const { access, contest } = readViewableContest(context)
+  return {
+    access,
+    ...(await readRequiredLeaderboard(
+      request,
+      toContestScope(contest),
+      readEducatorViewer(context),
+      href(`/contests/:contestId`, params),
+    )),
+  }
+}
 
 const ContestLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
@@ -28,6 +37,11 @@ const ContestLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
     <PageHeader label={loaderData.name} title='Leaderboard' />
     <Leaderboard
       leaderboard={loaderData.leaderboard}
+      reportPath={
+        loaderData.access === `shared`
+          ? href(`/contests/:contestId/report`, params)
+          : null
+      }
       toBracketPath={playerId =>
         href(`/contests/:contestId/leaderboard/:playerId`, {
           ...params,

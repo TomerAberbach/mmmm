@@ -282,9 +282,35 @@ model Contest {
   educator    Educator  @relation(fields: [educatorId], references: [id], onDelete: Restrict)
   players     Player[]
   shares      Share[]
+  reports     Report[]
 
   @@index([educatorId, year])
   @@index([year])
+}
+
+enum ReportReason {
+  RUDE
+  FULL_NAME
+  NOT_REAL
+  OTHER
+}
+
+/// Records nothing about who sent it
+model Report {
+  id                    String       @id
+  contestId             String
+  // Null when it's about the contest's name
+  playerId              String?
+  reason                ReportReason
+  createdAt             DateTime     @default(now())
+  // The contest's educator and the admin dismiss a report separately
+  isDismissedByEducator Boolean      @default(false)
+  isDismissedByAdmin    Boolean      @default(false)
+  contest               Contest      @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  player                Player?      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([contestId])
+  @@index([playerId])
 }
 
 /// One colleague's full view of a contest
@@ -319,6 +345,7 @@ model Player {
   contest          Contest        @relation(fields: [contestId], references: [id], onDelete: Cascade)
   picks            Pick[]
   submission       Submission?
+  reports          Report[]
 
   @@index([contestId])
 }
