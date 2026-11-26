@@ -1,7 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/resend-confirmation.ts'
+import { readRefusal } from '~/app-refusal.server.ts'
 import { emailSchema } from '~/auth-forms.ts'
-import { isTooManyAttempts } from '~/auth-limits.server.ts'
 import { auth } from '~/auth.server.ts'
 import type { ResendResult } from '~/components/check-email.tsx'
 
@@ -24,10 +24,11 @@ export const action = async ({
       })
     }
   } catch (error) {
-    if (isTooManyAttempts(error)) {
-      return { error: error.body.message }
+    const message = readRefusal(error)
+    if (message === undefined) {
+      throw error
     }
-    throw error
+    return { error: message }
   }
   return { sentAt: new Date() }
 }

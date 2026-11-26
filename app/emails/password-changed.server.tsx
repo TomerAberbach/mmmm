@@ -1,13 +1,9 @@
+import { href } from 'react-router'
 import type { Email } from '../email.server.ts'
+import { toAppUrl } from '../env.server.ts'
 import { EmailAction, EmailLayout, EmailParagraph } from './layout.server.tsx'
 
-export const passwordChangedEmail = ({
-  to,
-  resetUrl,
-}: {
-  to: string
-  resetUrl: string
-}): Email => ({
+export const passwordChangedEmail = ({ to }: { to: string }): Email => ({
   to,
   subject: `Your MMMM password was changed`,
   body: (
@@ -22,7 +18,9 @@ export const passwordChangedEmail = ({
       <EmailParagraph>
         If you didn&apos;t change it, reset your password now.
       </EmailParagraph>
-      <EmailAction href={resetUrl}>Reset password</EmailAction>
+      <EmailAction href={toAppUrl(href(`/forgot-password`)).href}>
+        Reset password
+      </EmailAction>
     </EmailLayout>
   ),
 })

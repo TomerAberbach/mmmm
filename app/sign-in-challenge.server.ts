@@ -1,7 +1,9 @@
 import type { Submission } from '@conform-to/react'
 import { APIError } from 'better-auth/api'
 import { href, redirect } from 'react-router'
-import { rejectAuthError, rejectForm } from './form-replies.server.ts'
+import { rejectAuthError } from './auth-replies.server.ts'
+import { rejectForm } from './form-replies.server.ts'
+import type { FormRejection } from './form-replies.server.ts'
 
 /**
  * Sign-in sends an educator with an authenticator app here with a cookie that
@@ -14,7 +16,7 @@ export const answerSignInChallenge = async (
   submission: Submission<{ code: string }>,
   verify: (code: string) => Promise<{ headers: Headers }>,
   invalidMessage: string,
-): Promise<Response | ReturnType<typeof rejectForm>> => {
+): Promise<Response | FormRejection> => {
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
@@ -34,7 +36,7 @@ const rejectChallenge = (
   submission: Submission<{ code: string }>,
   error: unknown,
   invalidMessage: string,
-): Response | ReturnType<typeof rejectForm> => {
+): Response | FormRejection => {
   const code = error instanceof APIError ? error.body?.code : undefined
   if (code === `INVALID_CODE` || code === `INVALID_BACKUP_CODE`) {
     return rejectForm(submission, {

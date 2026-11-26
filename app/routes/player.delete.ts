@@ -1,6 +1,6 @@
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/player.delete.ts'
-import type { ConfirmResult } from '~/components/confirm-dialog.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 import { readPlayContest } from '~/play-context.server.ts'
 import { forgetPlayer, readRememberedPlayer } from '~/player-cookie.server.ts'
 import { readPersonalLink } from '~/players.server.ts'

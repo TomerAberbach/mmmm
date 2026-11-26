@@ -6,12 +6,10 @@ import { CLIENT_IP_HEADER } from './client-ip.ts'
 import { prisma } from './db.server.ts'
 import {
   createSetupLinkToken,
-  markSetupLinkUsed,
   mayChangeSecondFactors,
-  redeemSetupLinkToken,
+  redeemSetupLink,
   storeSetupLinkToken,
 } from './second-factor.server.ts'
-import { LAST_SECOND_FACTOR, SECOND_FACTOR_REQUIRED } from './second-factor.ts'
 
 const PASSWORD = `correct-horse-battery`
 
@@ -71,13 +69,16 @@ const addSetupLink = async (educatorId: string): Promise<string> => {
   return token
 }
 
-const useSetupLink = async ({ educatorId }: SignedIn): Promise<void> => {
-  const token = await addSetupLink(educatorId)
-  await redeemSetupLinkToken(token, educatorId)
-  const session = await prisma.session.findFirstOrThrow({
+const readSessionId = async (educatorId: string): Promise<string> => {
+  const { id } = await prisma.session.findFirstOrThrow({
     where: { educatorId },
   })
-  await markSetupLinkUsed(session.id)
+  return id
+}
+
+const useSetupLink = async ({ educatorId }: SignedIn): Promise<void> => {
+  const token = await addSetupLink(educatorId)
+  await redeemSetupLink(token, educatorId, await readSessionId(educatorId))
 }
 
 const turnOnAuthenticatorApp = async (
@@ -125,7 +126,7 @@ test(`a password alone can't add an admin's first second factor`, async () => {
   })
 
   await expect(enabling).rejects.toMatchObject({
-    body: { code: SECOND_FACTOR_REQUIRED },
+    body: { message: `Use your second factor before changing it` },
   })
 })
 
@@ -139,7 +140,7 @@ test(`educators off the admin list can't add a second factor`, async () => {
   })
 
   await expect(enabling).rejects.toMatchObject({
-    body: { code: SECOND_FACTOR_REQUIRED },
+    body: { message: `Only admins add second factors` },
   })
 })
 
@@ -189,7 +190,9 @@ test(`an admin can't remove their last second factor`, async () => {
   })
 
   await expect(disabling).rejects.toMatchObject({
-    body: { code: LAST_SECOND_FACTOR },
+    body: {
+      message: `Admins keep at least one second factor. Add another before removing this one.`,
+    },
   })
 })
 
@@ -212,8 +215,8 @@ test(`a setup link works once`, async () => {
   const token = await addSetupLink(educatorId)
 
   const redeemed = [
-    await redeemSetupLinkToken(token, educatorId),
-    await redeemSetupLinkToken(token, educatorId),
+    await redeemSetupLink(token, educatorId, await readSessionId(educatorId)),
+    await redeemSetupLink(token, educatorId, await readSessionId(educatorId)),
   ]
 
   expect(redeemed).toStrictEqual([true, false])
@@ -224,7 +227,11 @@ test(`a setup link works only for its own educator`, async () => {
   const other = await signInConfirmed()
   const token = await addSetupLink(owner.educatorId)
 
-  const redeemed = await redeemSetupLinkToken(token, other.educatorId)
+  const redeemed = await redeemSetupLink(
+    token,
+    other.educatorId,
+    await readSessionId(other.educatorId),
+  )
 
   expect(redeemed).toBe(false)
 })
@@ -234,7 +241,11 @@ test(`a new setup link replaces the educator's earlier one`, async () => {
   const earlier = await addSetupLink(educatorId)
   await addSetupLink(educatorId)
 
-  const redeemed = await redeemSetupLinkToken(earlier, educatorId)
+  const redeemed = await redeemSetupLink(
+    earlier,
+    educatorId,
+    await readSessionId(educatorId),
+  )
 
   expect(redeemed).toBe(false)
 })
@@ -244,7 +255,11 @@ test(`a setup link expires after an hour`, async () => {
   const token = await addSetupLink(educatorId)
   vi.useFakeTimers({ now: Date.now() + 61 * 60 * 1000, toFake: [`Date`] })
 
-  const redeemed = await redeemSetupLinkToken(token, educatorId)
+  const redeemed = await redeemSetupLink(
+    token,
+    educatorId,
+    await readSessionId(educatorId),
+  )
 
   expect(redeemed).toBe(false)
 })

@@ -8,17 +8,18 @@ import {
   INCORRECT_CODE_MESSAGE,
   securityCodeFormSchema,
 } from '~/auth-forms.ts'
+import { rejectAuthError } from '~/auth-replies.server.ts'
 import { auth } from '~/auth.server.ts'
 import {
   ConfirmPasswordStep,
   ScanStep,
 } from '~/components/authenticator-app-setup.tsx'
 import { RecoveryCodes } from '~/components/recovery-codes.tsx'
-import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
+import type { FormRejection } from '~/form-replies.server.ts'
 import {
   mayChangeSecondFactors,
   readSecondFactors,
-  readSecondFactorStep,
 } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
 
@@ -31,12 +32,10 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const secondFactors = await readSecondFactors(
     readRequiredEducator(context).id,
   )
-  if (secondFactors.hasAuthenticatorApp) {
-    return redirect(href(`/admin`))
-  }
-  return mayChangeSecondFactors(assurance, secondFactors)
+  return !secondFactors.hasAuthenticatorApp &&
+    mayChangeSecondFactors(assurance, secondFactors)
     ? null
-    : redirect(readSecondFactorStep(secondFactors))
+    : redirect(href(`/admin`))
 }
 
 /**
@@ -56,7 +55,7 @@ export const shouldRevalidate = ({
  */
 type Step = `password` | `scan` | `codes`
 
-const rejectPassword = ({ data: reply, init }: ReturnType<typeof rejectForm>) =>
+const rejectPassword = ({ data: reply, init }: FormRejection) =>
   data({ step: `password` as const, ...reply }, init ?? undefined)
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -106,17 +105,10 @@ const turnOn = async (
     return redirect(href(`/admin/setup/authenticator-app`))
   }
   // Sends the URI back, so the page shows the same QR code again
-  const rejectScan = (errors?: Parameters<typeof rejectForm>[1]) =>
-    data(
-      {
-        step: `scan` as const,
-        totpUri,
-        ...rejectForm(submission, errors).data,
-      },
-      400,
-    )
+  const rejectScan = ({ data: reply, init }: FormRejection) =>
+    data({ step: `scan` as const, totpUri, ...reply }, init ?? undefined)
   if (submission.status !== `success`) {
-    return rejectScan()
+    return rejectScan(rejectForm(submission))
   }
   try {
     const { headers } = await auth.api.verifyTOTP({
@@ -132,10 +124,13 @@ const turnOn = async (
       headers,
     })
   } catch (error) {
-    if (error instanceof APIError && error.body?.code === `INVALID_CODE`) {
-      return rejectScan({ fieldErrors: { code: [INCORRECT_CODE_MESSAGE] } })
-    }
-    throw error
+    return rejectScan(
+      error instanceof APIError && error.body?.code === `INVALID_CODE`
+        ? rejectForm(submission, {
+            fieldErrors: { code: [INCORRECT_CODE_MESSAGE] },
+          })
+        : rejectAuthError(submission, error),
+    )
   }
 }
 

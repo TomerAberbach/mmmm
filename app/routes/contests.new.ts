@@ -4,6 +4,7 @@ import type { Route } from './+types/contests.new.ts'
 import { contestNameSchema } from '~/contest-forms.ts'
 import { createContest } from '~/contests.server.ts'
 import { rejectForm } from '~/form-replies.server.ts'
+import type { FormRejection } from '~/form-replies.server.ts'
 import { serverFreeTextSchema } from '~/free-text.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 
@@ -12,7 +13,7 @@ export const loader = (): Response => redirect(href(`/contests`))
 export const action = async ({
   request,
   context,
-}: Route.ActionArgs): Promise<Response | ReturnType<typeof rejectForm>> => {
+}: Route.ActionArgs): Promise<Response | FormRejection> => {
   const submission = parseWithZod(await request.formData(), {
     schema: contestNameSchema(serverFreeTextSchema),
   })

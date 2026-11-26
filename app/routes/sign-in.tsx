@@ -3,11 +3,12 @@ import { APIError } from 'better-auth/api'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/sign-in.ts'
 import { signInSchema } from '~/auth-forms.ts'
+import { rejectAuthError } from '~/auth-replies.server.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignInForm } from '~/components/sign-in-form.tsx'
 import type { SignInNotice } from '~/components/sign-in-form.tsx'
-import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
 
 export const loader = ({ request }: Route.LoaderArgs) => ({
   notice: readNotice(new URL(request.url).searchParams),
@@ -57,7 +58,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (error.body?.code === `EMAIL_NOT_VERIFIED`) {
         return { unconfirmed: email }
       }
-      if (error.body?.code === `INVALID_EMAIL_OR_PASSWORD`) {
+      // Better Auth refuses a password too long to be anyone's before checking
+      // it
+      if (
+        error.body?.code === `INVALID_EMAIL_OR_PASSWORD` ||
+        error.body?.code === `PASSWORD_TOO_LONG`
+      ) {
         return rejectForm(submission, {
           formErrors: [`Email address or password is incorrect`],
         })

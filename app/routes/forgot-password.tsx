@@ -2,12 +2,13 @@ import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/forgot-password.ts'
 import { forgotPasswordSchema } from '~/auth-forms.ts'
+import { rejectAuthError } from '~/auth-replies.server.ts'
 import { auth } from '~/auth.server.ts'
 import {
   ForgotPasswordForm,
   ResetLinkSent,
 } from '~/components/forgot-password-form.tsx'
-import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
 import { readSignedInEducator } from '~/session.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) =>

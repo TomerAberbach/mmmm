@@ -1,10 +1,11 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import type { Route } from './+types/sign-up.ts'
 import { signUpSchema } from '~/auth-forms.ts'
+import { rejectAuthError } from '~/auth-replies.server.ts'
 import { auth } from '~/auth.server.ts'
 import { CheckEmail } from '~/components/check-email.tsx'
 import { SignUpForm } from '~/components/sign-up-form.tsx'
-import { rejectAuthError, rejectForm } from '~/form-replies.server.ts'
+import { rejectForm } from '~/form-replies.server.ts'
 import { serverFreeTextSchema } from '~/free-text.server.ts'
 
 export const action = async ({ request }: Route.ActionArgs) => {

@@ -47,14 +47,17 @@ app
 - Set up a form with `useValidatedForm` from `components/use-validated-form.ts`,
   and answer a form the action refuses with `rejectForm` from
   `form-replies.server.ts`, which never sends a password back. Answer Better
-  Auth's refusals, such as too many attempts, with `rejectAuthError`
+  Auth's refusals with `rejectAuthError` from `auth-replies.server.ts`. Refuse a
+  Better Auth request with `refuse` from `app-refusal.server.ts`, whose message
+  educators see
 - Put a field's error under its input, and a form's error below its submit
   button as a `FormError` from `components/form-error.tsx`, so nothing above
   them moves when they appear. Forms validate only once first submitted. A form
   too long to see at once also lists its field errors above it with
   `ErrorSummary` from `components/error-summary.tsx`
-- Answer a form submitted through a fetcher with `acceptForm` from
-  `form-replies.server.ts` once it saves, and show `SavedNotice` from
+- Answer a form submitted through a fetcher with `saveForm` from
+  `form-replies.server.ts`, or with `acceptForm` and `rejectForm` when the reply
+  sets headers or Better Auth can refuse it, and show `SavedNotice` from
   `components/saved-notice.tsx`
 - Convert and format dates with `dates.ts`. A `@db.Date` column holds midnight
   UTC, so read it in UTC. Show an instant as its day in Arizona with
@@ -86,8 +89,9 @@ app
   shows. Load an educator's address or ID in the route that needs it
 - Add admin pages under the `routes/admin.second-factor.tsx` layout in
   `routes.ts`, which opens them only for a session whose `assurance` is
-  `SECOND_FACTOR`. `requireAdmin` answers everyone but an admin with the
-  not-found page
+  `SECOND_FACTOR`. It alone picks whether another session sets up or verifies a
+  second factor, so redirect to `/admin`. `requireAdmin` answers everyone but an
+  admin with the not-found page
 - `guardSecondFactorChange` in `second-factor.server.ts` checks every
   `/two-factor/*` and `/passkey/*` request. When adding a Better Auth endpoint
   that adds or removes a second factor, list it in `ADDING_PATHS` or

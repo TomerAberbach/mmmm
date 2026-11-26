@@ -1,16 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { getAuthenticatorName } from '@better-auth/passkey'
 import type { GenericEndpointContext } from 'better-auth'
-import { APIError, getSessionFromCtx } from 'better-auth/api'
-import { href } from 'react-router'
+import { getSessionFromCtx } from 'better-auth/api'
 import { isAdmin } from './admins.server.ts'
+import { refuse } from './app-refusal.server.ts'
 import { prisma } from './db.server.ts'
 import type { SessionAssurance } from './generated/prisma/enums.ts'
-import {
-  LAST_SECOND_FACTOR,
-  SECOND_FACTOR_REQUIRED,
-  SETUP_LINK_EXPIRES_IN_HOURS,
-} from './second-factor.ts'
+import { SETUP_LINK_EXPIRES_IN_HOURS } from './second-factor.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 
 /** Sessions these paths create used a second factor */
@@ -58,26 +54,20 @@ export const guardSecondFactorChange = async (
   const { user: educator, session } = signedIn
   const secondFactors = await readSecondFactors(educator.id)
   if (!mayChangeSecondFactors(readAssurance(session), secondFactors)) {
-    throw new APIError(`FORBIDDEN`, {
-      code: SECOND_FACTOR_REQUIRED,
-      message: `Use your second factor before changing it`,
-    })
+    throw refuse(`FORBIDDEN`, `Use your second factor before changing it`)
   }
   if (ADDING_PATHS.has(ctx.path) && !isAdmin(educator)) {
-    throw new APIError(`FORBIDDEN`, {
-      code: SECOND_FACTOR_REQUIRED,
-      message: `Only admins add second factors`,
-    })
+    throw refuse(`FORBIDDEN`, `Only admins add second factors`)
   }
   if (
     REMOVING_PATHS.has(ctx.path) &&
     isAdmin(educator) &&
     countSecondFactors(secondFactors) <= 1
   ) {
-    throw new APIError(`BAD_REQUEST`, {
-      code: LAST_SECOND_FACTOR,
-      message: `Admins keep at least one second factor. Add another before removing this one.`,
-    })
+    throw refuse(
+      `BAD_REQUEST`,
+      `Admins keep at least one second factor. Add another before removing this one.`,
+    )
   }
 }
 
@@ -179,20 +169,33 @@ export const storeSetupLinkToken = async (
   ])
 }
 
-/** Uses up the token, so its link works once, and only for its own educator */
-export const redeemSetupLinkToken = async (
+/**
+ * Uses up the token, so its link works once, and only for its own educator.
+ * The link proves the session's educator reads their email. A session that
+ * already used a second factor keeps that
+ */
+export const redeemSetupLink = (
   token: string,
   educatorId: string,
-): Promise<boolean> => {
-  const { count } = await prisma.verification.deleteMany({
-    where: {
-      identifier: setupLinkIdentifier(token),
-      value: educatorId,
-      expiresAt: { gt: new Date() },
-    },
+  sessionId: string,
+): Promise<boolean> =>
+  prisma.$transaction(async tx => {
+    const { count } = await tx.verification.deleteMany({
+      where: {
+        identifier: setupLinkIdentifier(token),
+        value: educatorId,
+        expiresAt: { gt: new Date() },
+      },
+    })
+    if (count === 0) {
+      return false
+    }
+    await tx.session.updateMany({
+      where: { id: sessionId, assurance: `PASSWORD` },
+      data: { assurance: `SETUP_LINK` },
+    })
+    return true
   })
-  return count > 0
-}
 
 const setupLinkIdentifier = (token: string): string =>
   `${SETUP_LINK_PREFIX}${hashSecret(token)}`
@@ -209,21 +212,3 @@ export const markSecondFactorUsed = async (
     data: { assurance: `SECOND_FACTOR` },
   })
 }
-
-/**
- * A setup link proves the session's educator reads their email. A session
- * that already used a second factor keeps that
- */
-export const markSetupLinkUsed = async (sessionId: string): Promise<void> => {
-  await prisma.session.updateMany({
-    where: { id: sessionId, assurance: `PASSWORD` },
-    data: { assurance: `SETUP_LINK` },
-  })
-}
-
-/**
- * Where an admin's session goes when it hasn't used a second factor: setup
- * without one, or verifying one they have
- */
-export const readSecondFactorStep = (secondFactors: SecondFactors): string =>
-  href(hasSecondFactor(secondFactors) ? `/admin/verify` : `/admin/setup`)

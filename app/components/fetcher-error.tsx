@@ -1,5 +1,5 @@
 import type { FetcherWithComponents } from 'react-router'
-import type { ConfirmResult } from './confirm-dialog.tsx'
+import type { ConfirmResult } from '~/form-replies.server.ts'
 
 /** A ConfirmResult's error, once its request finishes */
 export const FetcherError = ({

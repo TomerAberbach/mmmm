@@ -178,9 +178,7 @@ test(`a wrong current password keeps the old password`, async ({ page }) => {
 
   await changePassword(page, `not the password`)
 
-  await expect(
-    page.getByText(`Your current password is incorrect`),
-  ).toBeVisible()
+  await expect(page.getByText(`Your password is incorrect`)).toBeVisible()
 })
 
 test(`signing out other sessions keeps this one`, async ({
