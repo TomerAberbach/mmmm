@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import {
   bracketInputSchema,
-  findDuplicateNames,
+  describeTakenName,
+  isSameName,
   listDivisionSeedSlots,
   listSeedSlots,
   toBracketSchema,
@@ -16,7 +17,7 @@ import {
 } from './bracket.ts'
 import type { BattleRef, DivisionPosition } from './bracket.ts'
 import { prisma } from './db.server.ts'
-import { Prisma } from './generated/prisma/client.ts'
+import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
 import type { Combatant, StoredBracket } from './seeded-bracket.ts'
 import { readUpcomingYear } from './year.ts'
@@ -143,26 +144,42 @@ export const readCurrentBracket = async (): Promise<{
   /** Null once the year locks, as without a date */
   expectedLockDate: Date | null
   results: Results
-} | null> => {
-  const bracket = await prisma.bracket.findFirst({
-    ...CURRENT_BRACKET,
-    select: {
-      ...BRACKET_SELECT,
-      year: true,
-      expectedLockDate: true,
-      lockedAt: true,
-      battles: RESULTS,
-    },
+} | null> =>
+  readSnapshot(async tx => {
+    const current = await tx.bracket.findFirst({
+      ...CURRENT_BRACKET,
+      select: { year: true, expectedLockDate: true, lockedAt: true },
+    })
+    return (
+      current && {
+        year: current.year,
+        bracket: await readBracketInTransaction(tx, current.year),
+        expectedLockDate: current.lockedAt ? null : current.expectedLockDate,
+        results: await readResultRows(current.year, tx),
+      }
+    )
   })
-  return (
-    bracket && {
-      year: bracket.year,
-      bracket: readStoredBracket(bracket),
-      expectedLockDate: bracket.lockedAt ? null : bracket.expectedLockDate,
-      results: toResults(bracket.battles),
-    }
-  )
-}
+
+/** The year must have a bracket */
+export const readBracketAndResults = (
+  year: number,
+): Promise<{ bracket: StoredBracket; results: Results }> =>
+  readSnapshot(async tx => ({
+    bracket: await readBracketInTransaction(tx, year),
+    results: await readResultRows(year, tx),
+  }))
+
+/**
+ * Every query of `read` sees the database at one moment, so each result's
+ * winner is in the bracket even when a merge is saved or cleared between them
+ */
+const readSnapshot = <Read>(
+  read: (tx: Prisma.TransactionClient) => Promise<Read>,
+): Promise<Read> =>
+  prisma.$transaction(read, {
+    isolationLevel: `RepeatableRead`,
+    maxWait: LOCKED_YEARS_LIMITS.maxWait,
+  })
 
 /** `isLocked` once the year's first result is saved, until the admin reopens */
 export type CurrentYear = { year: number; isLocked: boolean }
@@ -255,9 +272,14 @@ const readBracketInTransaction = async (
     where: { wildCard: where },
     ...BRACKET_SELECT.wildCard.select.entrants,
   })
+  const combatants = await db.combatant.findMany({
+    ...BRACKET_SELECT.combatants,
+    where: { ...BRACKET_SELECT.combatants.where, year },
+  })
   return readStoredBracket({
     divisions,
     wildCard: wildCard && { ...wildCard, entrants },
+    combatants,
   })
 }
 
@@ -515,48 +537,28 @@ export const listBracketCombatants = (
  * Names the combatant `name`, which the route has checked, unless another
  * combatant in the year's bracket has the same name
  */
-export const renameCombatant = async (
+export const renameCombatant = (
   year: number,
   combatantId: string,
   name: string,
-): Promise<{ ok: true } | { error: string }> => {
-  const combatants = await prisma.combatant.findMany({
-    where: { year },
-    select: { id: true, name: true },
-  })
-  if (!combatants.some(({ id }) => id === combatantId)) {
-    return { error: `That combatant isn’t in the ${year} bracket` }
-  }
-  const others = combatants.filter(({ id }) => id !== combatantId)
-  const duplicate = findDuplicateNames([
-    ...others.map(combatant => ({ place: combatant.id, name: combatant.name })),
-    { place: combatantId, name },
-  ]).find(({ place }) => place === combatantId)
-  if (duplicate) {
-    const other = others.find(({ id }) => id === duplicate.other)!
-    return {
-      error: describeTakenName(other.name),
-    }
-  }
-  try {
-    await prisma.combatant.update({
-      where: { id: combatantId },
-      data: { name },
+): Promise<{ ok: true } | { error: string }> =>
+  // Alone, so a merge or another rename can't take the name after the check
+  withCurrentYearAlone(async tx => {
+    const combatants = await tx.combatant.findMany({
+      where: { year },
+      select: { id: true, name: true },
     })
-  } catch (error) {
-    // A concurrent rename took the name after the check
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === `P2002`
-    ) {
-      return {
-        error: describeTakenName(name),
-      }
+    if (!combatants.some(({ id }) => id === combatantId)) {
+      return { error: `That combatant isn’t in the ${year} bracket` }
     }
-    throw error
-  }
-  return { ok: true }
-}
+    const others = combatants.filter(({ id }) => id !== combatantId)
+    const taken = others.find(other => isSameName(other.name, name))
+    if (taken) {
+      return { error: describeTakenName(taken.name) }
+    }
+    await tx.combatant.update({ where: { id: combatantId }, data: { name } })
+    return { ok: true }
+  })
 
 const RESULTS = {
   where: { result: { isNot: null } },
@@ -589,6 +591,16 @@ const BRACKET_SELECT = {
       },
     },
   },
+  combatants: {
+    where: { members: { some: {} } },
+    // A fixed order, since a rename would otherwise move its row
+    orderBy: { id: `asc` },
+    select: {
+      id: true,
+      name: true,
+      members: { orderBy: { id: `asc` }, select: { id: true } },
+    },
+  },
 } satisfies Prisma.BracketSelect
 
 const storedBracketSchema = toBracketSchema(
@@ -599,11 +611,12 @@ const storedBracketSchema = toBracketSchema(
 const readStoredBracket = ({
   divisions,
   wildCard,
+  combatants,
 }: Pick<
   Prisma.BracketGetPayload<{ select: typeof BRACKET_SELECT }>,
-  `divisions` | `wildCard`
->): StoredBracket =>
-  storedBracketSchema.parse({
+  `divisions` | `wildCard` | `combatants`
+>): StoredBracket => ({
+  ...storedBracketSchema.parse({
     divisions: Object.fromEntries(
       divisions.map(({ position, name, seedSlots }) => [
         position,
@@ -619,7 +632,9 @@ const readStoredBracket = ({
       seed: wildCard.seedSlot.seed,
       entrants: wildCard.entrants.map(({ combatant }) => combatant),
     },
-  })
-
-const describeTakenName = (name: string): string =>
-  `${name} is already a combatant. Give each combatant its own name`
+  }),
+  merges: combatants.map(({ members, ...merge }) => ({
+    ...merge,
+    memberIds: members.map(({ id }) => id),
+  })),
+})

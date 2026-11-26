@@ -1,7 +1,8 @@
+import { isSameName } from './bracket-input.ts'
 import { listBattles, toBattleKey } from './bracket.ts'
 import type { BattleRef, Winners } from './bracket.ts'
-import { isContender, keepReachablePicks, pickWinner } from './picks.ts'
-import { fillSides } from './seeded-bracket.ts'
+import { keepReachablePicks, pickWinner } from './picks.ts'
+import { fillSides, listCombatants } from './seeded-bracket.ts'
 import type { SeededBracket } from './seeded-bracket.ts'
 
 /** Who won each battle with a result, keyed by `toBattleKey` */
@@ -21,12 +22,47 @@ export const recordResult = (
   battle: BattleRef,
   winnerId: string,
 ): ResultsChange => {
-  if (!isContender(bracket, battle, winnerId, results)) {
-    throw new Error(`${winnerId} can't win ${toBattleKey(battle)}`)
-  }
-  const { picks, cleared } = pickWinner(bracket, results, battle, winnerId)
+  const { picks, cleared } = pickWinner(
+    bracket,
+    results,
+    battle,
+    winnerId,
+    results,
+  )
   return { results: picks, cleared }
 }
+
+/** Records the merge of the battle's sides, which must be its members */
+export const recordMerge = (
+  results: Results,
+  battle: BattleRef,
+  mergeId: string,
+): ResultsChange => ({
+  results: { ...results, [toBattleKey(battle)]: mergeId },
+  cleared: [],
+})
+
+/**
+ * The IDs of the two combatants that a merge of the battle would join, or null
+ * for a battle that has a result or too few known sides
+ */
+export const readMergeMembers = (
+  bracket: SeededBracket,
+  results: Results,
+  battle: BattleRef,
+): string[] | null => {
+  if (results[toBattleKey(battle)] !== undefined) {
+    return null
+  }
+  const memberIds = fillSides(bracket, battle, results).flatMap(side =>
+    side.kind === `combatant` ? side.combatant.id : [],
+  )
+  return memberIds.length === 2 ? memberIds : null
+}
+
+/** Whether no combatant in the bracket has the name */
+export const isNameFree = (bracket: SeededBracket, name: string): boolean =>
+  listCombatants(bracket).every(other => !isSameName(other.name, name))
 
 /** Clears the battle's result, and each later one that depended on it */
 export const clearResult = (

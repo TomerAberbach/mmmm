@@ -233,10 +233,9 @@ const listNameFields = (input: BracketInput): NameField[] =>
 
 /**
  * Each place whose name another place shares, with the first other place that
- * shares it. Names differing only in case, spacing, or the style of
- * apostrophe count as the same
+ * shares it
  */
-export const findDuplicateNames = <Place>(
+const findDuplicateNames = <Place>(
   entries: { place: Place; name: string }[],
 ): { place: Place; other: Place }[] => {
   const entriesByName = Map.groupBy(entries, ({ name }) => normalizeName(name))
@@ -252,6 +251,16 @@ export const findDuplicateNames = <Place>(
         duplicate.other !== undefined,
     )
 }
+
+export const describeTakenName = (name: string): string =>
+  `${name} is already a combatant. Give each combatant its own name`
+
+/**
+ * Names differing only in case, spacing, or the style of apostrophe count as
+ * the same
+ */
+export const isSameName = (name: string, other: string): boolean =>
+  normalizeName(name) === normalizeName(other)
 
 const normalizeName = (name: string): string =>
   name.trim().toLowerCase().replaceAll(/\s+/gu, ` `).replaceAll(`’`, `'`)

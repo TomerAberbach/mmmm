@@ -4,6 +4,7 @@ import { Bracket } from './bracket.tsx'
 import { Button } from './button.tsx'
 import { ClearedNotice } from './cleared-notice.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
+import { listMergeable, MergeDialog } from './merge-dialog.tsx'
 import { PickingContext } from './picking.ts'
 import type { Picking } from './picking.ts'
 import { useRequestQueue } from './request-queue.ts'
@@ -18,10 +19,20 @@ import { formatTime } from '~/dates.ts'
 import { formatCount } from '~/format-count.ts'
 import { listContenders, TOTAL_BATTLES } from '~/picks.ts'
 import type { ResultRequest } from '~/result-request.ts'
-import { clearResult, listDecidableBattles, recordResult } from '~/results.ts'
+import {
+  clearResult,
+  listDecidableBattles,
+  readMergeMembers,
+  recordMerge,
+  recordResult,
+} from '~/results.ts'
 import type { Results, ResultsChange } from '~/results.ts'
-import { toSeededBracket } from '~/seeded-bracket.ts'
-import type { SeededBracket, StoredBracket } from '~/seeded-bracket.ts'
+import { toSeededBracket, withMerge } from '~/seeded-bracket.ts'
+import type {
+  SeededBracket,
+  StoredBracket,
+  StoredMerge,
+} from '~/seeded-bracket.ts'
 
 /**
  * The current year's bracket, each side a button that records its win. Each
@@ -38,8 +49,20 @@ export const ResultsEditor = ({
   initialResults: Results
   isLocked: boolean
 }) => {
-  const bracket = useMemo(() => toSeededBracket(stored), [stored])
   const [results, setResults] = useState(initialResults)
+  // A reload can drop a merge that these results still hold, such as after
+  // another admin clears it
+  const [knownMerges, setKnownMerges] = useState(stored.merges)
+  const bracket = useMemo(() => {
+    const winnerIds = new Set(Object.values(results))
+    return toSeededBracket({
+      ...stored,
+      // The stored ones first, for their latest names
+      merges: [...stored.merges, ...knownMerges].filter(({ id }) =>
+        winnerIds.has(id),
+      ),
+    })
+  }, [stored, knownMerges, results])
   const [cleared, setCleared] = useState<BattleRef[]>([])
   const [asking, setAsking] = useState<PendingChange | null>(null)
   const view = useMemo(
@@ -63,12 +86,25 @@ export const ResultsEditor = ({
     [send, revalidator],
   )
   const save = useCallback(
-    ({ request, change }: PendingChange): void => {
+    ({ request, change, merge }: PendingChange): void => {
+      if (merge) {
+        setKnownMerges(current => [...current, merge])
+      }
       setResults(change.results)
       setCleared(change.cleared)
       sendRequest(request)
     },
     [sendRequest],
+  )
+  const askOrSave = useCallback(
+    (pending: PendingChange): void => {
+      if (readQuestion(pending)) {
+        setAsking(pending)
+      } else {
+        save(pending)
+      }
+    },
+    [save],
   )
   const picking = useMemo(
     (): Picking => ({
@@ -85,19 +121,21 @@ export const ResultsEditor = ({
           winnerId,
           isLocked,
         })
-        if (readQuestion(pending)) {
-          setAsking(pending)
-        } else {
-          save(pending)
-        }
+        askOrSave(pending)
       },
       listContenders: battle => listContenders(bracket, battle, results),
       isCleared: battle =>
         cleared.some(other => toBattleKey(other) === toBattleKey(battle)),
     }),
-    [isBlocked, year, bracket, results, isLocked, cleared, save],
+    [isBlocked, year, bracket, results, isLocked, cleared, askOrSave],
   )
-  const [nextBattle] = listDecidableBattles(bracket, results)
+  const decidable = listDecidableBattles(bracket, results)
+  const [nextBattle] = decidable
+  const [firstMergeable, ...otherMergeable] = listMergeable(
+    bracket,
+    results,
+    decidable,
+  )
   return (
     <section className='flex flex-col gap-4'>
       <div className='mx-auto flex w-full max-w-6xl flex-col gap-2'>
@@ -117,6 +155,25 @@ export const ResultsEditor = ({
             Next battle to decide
           </Button>
         ) : null}
+        {firstMergeable && (isSending || !isBlocked) ? (
+          <MergeDialog
+            bracket={bracket}
+            mergeable={[firstMergeable, ...otherMergeable]}
+            isPending={isSending}
+            onMerge={(battle, name) =>
+              askOrSave(
+                readPendingMerge({
+                  year,
+                  bracket,
+                  results,
+                  battle,
+                  name,
+                  isLocked,
+                }),
+              )
+            }
+          />
+        ) : null}
       </div>
       <ClearedNotice
         message={
@@ -131,7 +188,7 @@ export const ResultsEditor = ({
       {asking ? (
         <QuestionDialog
           asking={asking}
-          bracket={bracket}
+          bracket={asking.merge ? withMerge(bracket, asking.merge) : bracket}
           results={results}
           onConfirm={() => save(asking)}
           onClose={() => setAsking(null)}
@@ -141,7 +198,11 @@ export const ResultsEditor = ({
   )
 }
 
-type PendingChange = { request: ResultRequest; change: ResultsChange }
+type PendingChange = {
+  request: ResultRequest
+  change: ResultsChange
+  merge?: StoredMerge
+}
 
 /** What to confirm first: locking, changing a result, or clearing one */
 type Question = `lock` | `change` | `clear`
@@ -173,8 +234,44 @@ const readPendingChange = ({
       year,
       battle,
       winnerId: isClear ? null : winnerId,
+      mergeName: null,
       previousWinnerId,
       cleared: change.cleared.map(toBattleKey),
+      locks: !isLocked,
+    },
+  }
+}
+
+const readPendingMerge = ({
+  year,
+  bracket,
+  results,
+  battle,
+  name,
+  isLocked,
+}: {
+  year: number
+  bracket: SeededBracket
+  results: Results
+  battle: BattleRef
+  name: string
+  isLocked: boolean
+}): PendingChange => {
+  const merge = {
+    id: crypto.randomUUID(),
+    name,
+    memberIds: readMergeMembers(bracket, results, battle)!,
+  }
+  return {
+    merge,
+    change: recordMerge(results, battle, merge.id),
+    request: {
+      year,
+      battle,
+      winnerId: merge.id,
+      mergeName: name,
+      previousWinnerId: null,
+      cleared: [],
       locks: !isLocked,
     },
   }

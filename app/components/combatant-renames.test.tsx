@@ -27,7 +27,7 @@ const renderRenames = async (error?: string) => {
     [
       {
         path: `/admin/bracket`,
-        Component: () => <CombatantRenames divisions={DIVISIONS} />,
+        Component: () => <CombatantRenames merges={[]} divisions={DIVISIONS} />,
       },
       {
         path: `/admin/bracket/rename`,

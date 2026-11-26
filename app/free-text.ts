@@ -22,6 +22,11 @@ export const COMBATANT_NAME: FreeTextField = {
   maxLength: 80,
 }
 
+export const MERGE_NAME: FreeTextField = {
+  label: `the combined name`,
+  maxLength: COMBATANT_NAME.maxLength,
+}
+
 export const CONTEST_NAME: FreeTextField = {
   label: `the contest’s name`,
   maxLength: 80,

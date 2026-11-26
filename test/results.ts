@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { BattleRef } from '../app/bracket.ts'
 import { readBracket } from '../app/brackets.server.ts'
 import { listContenders } from '../app/picks.ts'
@@ -21,11 +22,23 @@ export const makeFirstResult = async (
     year,
     battle,
     winnerId: listContenders(bracket, battle)[0]!.id,
+    mergeName: null,
     previousWinnerId: null,
     cleared: [],
     locks: true,
   }
 }
+
+/** A confirmed request to merge the battle's sides */
+export const makeMerge = async (
+  year: number,
+  mergeName = `Ginkgo & Rhizo`,
+  battle = ROUND_1_FIRST,
+): Promise<ResultRequest> => ({
+  ...(await makeFirstResult(year, battle)),
+  winnerId: randomUUID(),
+  mergeName,
+})
 
 const saveFirstResult = async (
   year: number,

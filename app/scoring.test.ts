@@ -5,19 +5,23 @@ import {
   findCombatantId,
   pickEveryBattle,
   ROUND_1_FIRST,
+  ROUND_2_FIRST,
   seedTestBracket,
 } from '../test/picks.ts'
-import { buildMarkedBracketView, describeBattle } from './bracket-view.ts'
-import type { BattleRef } from './bracket.ts'
+import {
+  buildBracketView,
+  buildMarkedBracketView,
+  describeBattle,
+} from './bracket-view.ts'
 import { listContenders } from './picks.ts'
-import { recordResult } from './results.ts'
+import { recordMerge, recordResult } from './results.ts'
 import type { Results } from './results.ts'
 import { readScorecard } from './scorecard.ts'
 import { markPick, PERFECT_SCORE } from './scoring.ts'
+import { withMerge } from './seeded-bracket.ts'
 
 const BRACKET = seedTestBracket(BRACKET_2025)
 const PICKS = pickEveryBattle(BRACKET)
-const ROUND_2_FIRST: BattleRef = { round: `ROUND_2`, index: 0 }
 const [PICKED, OPPONENT] = [PICKS[`ROUND_1:0`]!, PICKS[`ROUND_1:1`]!]
 const KANGAROO = findCombatantId(BRACKET, `Eastern Grey Kangaroo`)
 
@@ -105,5 +109,28 @@ test.each([
 
   expect(description).toBe(
     `Round 1, battle 2: Gelada vs. Eastern Grey Kangaroo. Picked Gelada, ${text}`,
+  )
+})
+
+test(`a pick of one side of a merge is right, and undecided in the next battle`, () => {
+  const [first, second] = listContenders(BRACKET, ROUND_1_FIRST)
+  const merge = {
+    id: `merge`,
+    name: `Ginkgo & Rhizo`,
+    memberIds: [first!.id, second!.id],
+  }
+  const bracket = withMerge(BRACKET, merge)
+  const { results } = recordMerge({}, ROUND_1_FIRST, merge.id)
+
+  expect([
+    markPick(bracket, results, ROUND_1_FIRST, second!.id),
+    markPick(bracket, results, ROUND_2_FIRST, first!.id),
+  ]).toStrictEqual([`RIGHT`, `UNDECIDED`])
+  expect(
+    describeBattle(
+      buildBracketView(2025, bracket, results).battles.ROUND_1[0]!,
+    ),
+  ).toBe(
+    `Round 1, battle 1: ${first!.name} vs. ${second!.name}, both advanced as Ginkgo & Rhizo`,
   )
 })

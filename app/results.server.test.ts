@@ -8,7 +8,14 @@ import {
   readLinkSecret,
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
-import { crownChampion, lockYear, makeFirstResult } from '../test/results.ts'
+import { ROUND_2_FIRST } from '../test/picks.ts'
+import {
+  crownChampion,
+  lockYear,
+  makeFirstResult,
+  makeMerge,
+  readSeededBracket,
+} from '../test/results.ts'
 import { addYear } from '../test/years.ts'
 import {
   readAdminYears,
@@ -17,6 +24,7 @@ import {
   setBracketPublished,
 } from './brackets.server.ts'
 import { createContest } from './contests.server.ts'
+import { listContenders } from './picks.ts'
 import {
   discardPlayerDraft,
   savePlayerDraft,
@@ -25,6 +33,8 @@ import {
 import { createPlayer, readPersonalLink } from './players.server.ts'
 import type { ResultRequest } from './result-request.ts'
 import { reopenSubmissions, saveResult } from './results.server.ts'
+import { fillSides, listMerges } from './seeded-bracket.ts'
+import type { Combatant } from './seeded-bracket.ts'
 import { deletePlayers } from './trash.server.ts'
 
 test(`the first result is saved and locks submissions`, async () => {
@@ -215,4 +225,88 @@ test(`a newer bracket is published only once the current year has a champion`, a
   const later = await setBracketPublished(newerYear, true)
 
   expect([early, later]).toStrictEqual([`NO_CHAMPION`, `CHANGED`])
+})
+
+test(`a merge advances under its combined name`, async () => {
+  const year = await addYear({ published: true })
+
+  const merge = await makeMerge(year)
+
+  const saved = await saveResult(merge)
+
+  expect(saved).toStrictEqual({ saved: true })
+  const bracket = await readSeededBracket(year)
+  const results = await readResultRows(year)
+  expect(
+    fillSides(bracket, { round: `ROUND_2`, index: 0 }, results)[0],
+  ).toMatchObject({ combatant: { id: merge.winnerId, name: `Ginkgo & Rhizo` } })
+})
+
+test(`repeating a saved merge succeeds`, async () => {
+  const year = await addYear({ published: true })
+  const request = await makeMerge(year)
+  await saveResult(request)
+
+  await expect(saveResult(request)).resolves.toStrictEqual({ saved: true })
+})
+
+test(`a merge can't take another combatant's name`, async () => {
+  const year = await addYear({ published: true })
+  const [{ name }] = listContenders(await readSeededBracket(year), {
+    round: `CHAMPIONSHIP`,
+    index: 0,
+  }) as [Combatant]
+
+  const saved = await saveResult(await makeMerge(year, name.toUpperCase()))
+
+  expect(saved).toStrictEqual({ refusal: `STALE` })
+})
+
+test(`a battle with an undecided side can't end in a merge`, async () => {
+  const year = await addYear({ published: true })
+
+  const saved = await saveResult({
+    ...(await makeMerge(year)),
+    battle: { round: `ROUND_2`, index: 0 },
+  })
+
+  expect(saved).toStrictEqual({ refusal: `STALE` })
+})
+
+test(`changing a merge to one side's win removes the merge`, async () => {
+  const year = await addYear({ published: true })
+  const { winnerId } = await makeFirstResult(year)
+  const merge = await makeMerge(year)
+  await saveResult(merge)
+
+  const saved = await saveResult({
+    ...merge,
+    winnerId,
+    mergeName: null,
+    previousWinnerId: merge.winnerId,
+  })
+
+  expect(saved).toStrictEqual({ saved: true })
+  expect(listMerges(await readSeededBracket(year))).toStrictEqual([])
+})
+
+test(`a merge whose member merge is cleared goes with it`, async () => {
+  const year = await addYear({ published: true })
+  const first = await makeMerge(year)
+  await saveResult(first)
+  const other = await makeFirstResult(year, { round: `ROUND_1`, index: 1 })
+  await saveResult(other)
+  const second = await makeMerge(year, `Three Together`, ROUND_2_FIRST)
+  await saveResult(second)
+
+  const saved = await saveResult({
+    ...first,
+    winnerId: null,
+    mergeName: null,
+    previousWinnerId: first.winnerId,
+    cleared: [`ROUND_2:0`],
+  })
+
+  expect(saved).toStrictEqual({ saved: true })
+  expect(listMerges(await readSeededBracket(year))).toStrictEqual([])
 })

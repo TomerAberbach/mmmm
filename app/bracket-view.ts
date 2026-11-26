@@ -17,7 +17,7 @@ import type { Picks } from './picks.ts'
 import type { Results } from './results.ts'
 import { markPick } from './scoring.ts'
 import type { PickMark } from './scoring.ts'
-import { fillSides, findCombatant } from './seeded-bracket.ts'
+import { didAdvance, fillSides, findWinner } from './seeded-bracket.ts'
 import type { Combatant, SeededBracket, Side } from './seeded-bracket.ts'
 
 export type BattleView = BattleRef & {
@@ -43,7 +43,8 @@ export type BracketView = {
 
 /**
  * Every battle of the bracket, with each side filled from the seed slots and
- * the winners so far. Throws when a winner isn't on one of its battle's sides
+ * the winners so far. Throws when a winner is neither one of its battle's sides
+ * nor the merge of both
  */
 export const buildBracketView = (
   year: number,
@@ -59,7 +60,7 @@ export const buildBracketView = (
       if (winnerId === undefined) {
         return { ...battle, sides }
       }
-      const winner = findCombatant(sides, winnerId)
+      const winner = findWinner(bracket, sides, winnerId)
       if (!winner) {
         throw new Error(`${winnerId} isn't in ${readBattleName(battle)}`)
       }
@@ -124,21 +125,21 @@ export const readDivisionBattles = (
  * For screen readers, such as "Round 2, battle 3: Okapi vs. Puma, Okapi won".
  * On a marked bracket, it ends like ". Picked Puma, wrong, Okapi won" instead
  */
-export const describeBattle = ({
-  round,
-  index,
-  sides,
-  winner,
-  marking,
-}: BattleView): string => {
-  const sideNames = sides.map(describeSide).join(` vs. `)
-  const result =
-    winner === undefined
-      ? ``
-      : marking
-        ? `. Picked ${winner.name}, ${describeMarking(marking)}`
-        : `, ${winner.name} won`
-  return `${readBattleName({ round, index })}: ${sideNames}${result}`
+export const describeBattle = (battle: BattleView): string => {
+  const sideNames = battle.sides.map(describeSide).join(` vs. `)
+  return `${readBattleName(battle)}: ${sideNames}${describeResult(battle)}`
+}
+
+const describeResult = ({ sides, winner, marking }: BattleView): string => {
+  if (!winner) {
+    return ``
+  }
+  if (marking) {
+    return `. Picked ${winner.name}, ${describeMarking(marking)}`
+  }
+  return sides.some(side => isMerged(side, winner))
+    ? `, both advanced as ${winner.name}`
+    : `, ${winner.name} won`
 }
 
 const describeMarking = ({ mark, actualWinner }: Marking): string => {
@@ -148,6 +149,12 @@ const describeMarking = ({ mark, actualWinner }: Marking): string => {
   const result = actualWinner ? `${actualWinner.name} won` : `not decided yet`
   return mark === `WRONG` ? `wrong, ${result}` : result
 }
+
+/** Whether the side won in a merge there */
+const isMerged = (side: Side, winner: Combatant): boolean =>
+  side.kind === `combatant` &&
+  side.combatant.id !== winner.id &&
+  didAdvance(side.combatant, winner)
 
 const describeSide = (side: Side): string =>
   side.kind === `combatant`
