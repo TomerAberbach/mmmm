@@ -16,8 +16,9 @@ app
 
 - `app.css` removes Tailwind's default colors and fonts. Use the theme's: `ink`,
   `muted`, `accent`, `accent-strong`, `muted-light` and `accent-light` (only for
-  large text), `accent-soft` and the bracket's round colors (only for
-  decoration), `danger`, and `font-display`, `font-condensed`, `font-sans`
+  large text), `accent-soft` (only for decoration and behind `ink` text), the
+  bracket's round colors (only for decoration), `danger`, and `font-display`,
+  `font-condensed`, `font-sans`
 - Use Tailwind's scales, not arbitrary values such as `text-[13px]`. When a
   scale lacks a value, add it to the theme in `app.css`
 - Build interactive controls on React Aria Components, as in
