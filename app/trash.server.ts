@@ -118,8 +118,9 @@ export const erasePlayers = (
   })
 
 /**
- * The admin deletes a player for good, in any year and in or out of the
- * contest's trash, such as for a family. Returns whether the player was in the contest
+ * The admin deletes a player for good, such as for a family, in any year and
+ * even when the player or the contest is in the trash. Returns whether the
+ * player was in the contest
  */
 export const erasePlayer = (
   contestId: string,

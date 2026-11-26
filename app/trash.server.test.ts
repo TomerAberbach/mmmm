@@ -311,6 +311,13 @@ test(`an admin erases a past year's player`, async () => {
   )
 })
 
+test(`an admin erases a player in a deleted contest`, async () => {
+  const { contestId, educatorId, playerId } = await createContestWithPlayer()
+  await deleteContest(educatorId, contestId)
+
+  await expect(erasePlayer(contestId, playerId)).resolves.toBe(true)
+})
+
 test(`an admin erases no player through another contest`, async () => {
   const { playerId } = await createContestWithPlayer()
   const other = await createContestWithPlayer()

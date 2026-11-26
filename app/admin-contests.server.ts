@@ -19,17 +19,20 @@ export type AdminContest = {
   approvedCount: number
   /** Whether the organization and global leaderboards leave it out */
   isHidden: boolean
+  isInTrash: boolean
 }
 
-/** Hidden contests first, then the newest year's, by name */
+/**
+ * Hidden contests first, then the newest year's, by name. Those in the trash
+ * come last, most recently deleted first
+ */
 export const readAdminContests = async (
   page: number,
 ): Promise<{ contests: AdminContest[]; page: PageNumber }> => {
-  const where = CONTEST_OUTSIDE_TRASH
-  const pageNumber = toPageNumber(page, await prisma.contest.count({ where }))
+  const pageNumber = toPageNumber(page, await prisma.contest.count())
   const contests = await prisma.contest.findMany({
-    where,
     orderBy: [
+      { deletedAt: { sort: `desc`, nulls: `first` } },
       { isHidden: `desc` },
       { year: `desc` },
       { name: `asc` },
@@ -42,6 +45,7 @@ export const readAdminContests = async (
       name: true,
       year: true,
       isHidden: true,
+      deletedAt: true,
       orphanedFrom: { select: ORGANIZATION_SELECT },
       educator: {
         select: {
@@ -60,13 +64,14 @@ export const readAdminContests = async (
   })
   return {
     contests: contests.map(
-      ({ educator, orphanedFrom, _count, ...contest }) => ({
+      ({ educator, orphanedFrom, deletedAt, _count, ...contest }) => ({
         ...contest,
         educatorName: educator?.name ?? null,
         organizationName: describe(
           toContestOrganization({ educator, orphanedFrom }),
         ),
         approvedCount: _count.players,
+        isInTrash: deletedAt !== null,
       }),
     ),
     page: pageNumber,
@@ -79,33 +84,40 @@ const describe = (organization: Organization | null): string | null =>
 export type AdminPlayer = {
   id: string
   displayName: string
+  /** Whether the player or the contest is in the trash */
   isInTrash: boolean
 }
 
-/** A contest's players by name, with those in the trash. Null when it's gone */
+/**
+ * A contest's players by name, even when they or the contest are in the trash.
+ * Null when it's gone
+ */
 export const readAdminPlayers = async (
   contestId: string,
 ): Promise<{ name: string; year: number; players: AdminPlayer[] } | null> => {
   const contest = await prisma.contest.findUnique({
-    where: { id: contestId, ...CONTEST_OUTSIDE_TRASH },
+    where: { id: contestId },
     select: {
       name: true,
       year: true,
+      deletedAt: true,
       players: {
         orderBy: [{ displayName: `asc` }, { id: `asc` }],
         select: { id: true, displayName: true, deletedAt: true },
       },
     },
   })
-  return (
-    contest && {
-      ...contest,
-      players: contest.players.map(({ deletedAt, ...player }) => ({
-        ...player,
-        isInTrash: deletedAt !== null,
-      })),
-    }
-  )
+  if (!contest) {
+    return null
+  }
+  const { deletedAt: contestDeletedAt, players, ...rest } = contest
+  return {
+    ...rest,
+    players: players.map(({ deletedAt, ...player }) => ({
+      ...player,
+      isInTrash: deletedAt !== null || contestDeletedAt !== null,
+    })),
+  }
 }
 
 /** Returns whether the contest is outside the trash */

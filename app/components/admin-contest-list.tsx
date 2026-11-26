@@ -4,7 +4,10 @@ import { ConfirmDialog } from './confirm-dialog.tsx'
 import { HandOverDialog } from './hand-over-dialog.tsx'
 import type { AdminContest } from '~/admin-contests.server.ts'
 
-/** Contests, each with the button that hides it or shows it again */
+/**
+ * Contests, each with the button that hides it or shows it again. One in the
+ * trash only opens
+ */
 export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
   contests.length === 0 ? (
     <p className='text-muted'>No contests yet.</p>
@@ -26,6 +29,7 @@ export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
             </Link>
             <p className='wrap-anywhere text-muted'>
               {[
+                contest.isInTrash ? `In the trash` : null,
                 contest.isHidden ? `Hidden` : null,
                 contest.year,
                 contest.educatorName ?? `No educator`,
@@ -36,12 +40,14 @@ export const AdminContestList = ({ contests }: { contests: AdminContest[] }) =>
                 .join(` · `)}
             </p>
           </div>
-          <div className='flex flex-wrap gap-2'>
-            {contest.educatorName === null ? (
-              <HandOverDialog contest={contest} />
-            ) : null}
-            <HiddenButton contest={contest} />
-          </div>
+          {contest.isInTrash ? null : (
+            <div className='flex flex-wrap gap-2'>
+              {contest.educatorName === null ? (
+                <HandOverDialog contest={contest} />
+              ) : null}
+              <HiddenButton contest={contest} />
+            </div>
+          )}
         </li>
       ))}
     </ul>

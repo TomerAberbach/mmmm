@@ -49,3 +49,20 @@ test(`the admin erases a player`, async () => {
   await expect.element(page.getByText(`Maya R.`)).not.toBeInTheDocument()
   await expect.element(page.getByText(`Sam T.`)).toBeVisible()
 })
+
+test(`erasing a player in the trash changes no leaderboard or link`, async () => {
+  await renderPlayers()
+
+  await page.getByRole(`button`, { name: `Erase Sam T.` }).click()
+
+  await expect
+    .element(
+      page
+        .getByRole(`alertdialog`)
+        .getByText(
+          `This can’t be undone, though backups keep the data for up to 30 days.`,
+          { exact: true },
+        ),
+    )
+    .toBeVisible()
+})
