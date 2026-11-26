@@ -11,7 +11,9 @@ export const readUpcomingYear = (today: Date): number => {
 
 const APRIL = 4
 
-const readArizonaDate = (date: Date): { year: number; month: number } => {
+export const readArizonaDate = (
+  date: Date,
+): { year: number; month: number } => {
   const parts = ARIZONA_DATE_FORMAT.formatToParts(date)
   const readPart = (type: `year` | `month`) =>
     Number(parts.find(part => part.type === type)?.value)
