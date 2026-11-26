@@ -2,10 +2,17 @@ import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import { pickEveryBattle, storeTestBracket } from '../../test/picks.ts'
+import {
+  pickEveryBattle,
+  ROUND_1_FIRST,
+  storeTestBracket,
+} from '../../test/picks.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import type { SubmissionStatus } from '../generated/prisma/enums.ts'
+import { listContenders } from '../picks.ts'
 import type { Picks } from '../picks.ts'
+import { recordResult } from '../results.ts'
+import type { Results } from '../results.ts'
 import { toSeededBracket } from '../seeded-bracket.ts'
 import { LockedBracket } from './locked-bracket.tsx'
 
@@ -15,6 +22,7 @@ const PICKS = pickEveryBattle(toSeededBracket(STORED_BRACKET))
 const renderLocked = async (
   status: SubmissionStatus | null,
   draft: Picks = PICKS,
+  results: Results = {},
 ) => {
   await renderRoutes([
     {
@@ -24,6 +32,7 @@ const renderLocked = async (
           year={2025}
           bracket={STORED_BRACKET}
           draft={draft}
+          results={results}
           submitted={
             status && {
               submission: {
@@ -106,4 +115,72 @@ test(`deleting a locked bracket warns that it can't be submitted again`, async (
         }),
     )
     .toBeVisible()
+})
+
+test(`a submission shows its score so far and marks its picks`, async () => {
+  await page.viewport(390, 844)
+  await renderLocked(`APPROVED`, PICKS, {
+    'ROUND_1:0': PICKS[`ROUND_1:0`]!,
+  })
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Score so far` }))
+    .toBeVisible()
+  await expect
+    .element(page.getByText(`1 earned · 137 still possible · 0 missed`))
+    .toBeVisible()
+  await expect
+    .element(
+      page.getByRole(`tabpanel`).getByText(/^Round 1, battle 1: .*, right$/u),
+    )
+    .toBeInTheDocument()
+  await expectNoAxeViolations()
+})
+
+test(`a phone shows the points by round once pressed`, async () => {
+  await page.viewport(390, 844)
+  await renderLocked(`APPROVED`)
+  const tile = page.getByRole(`listitem`).filter({ hasText: `13 to win` })
+  await expect.element(tile).not.toBeInTheDocument()
+
+  await page.getByRole(`button`, { name: `Points by round` }).click()
+
+  await expect.element(tile).toBeVisible()
+})
+
+test(`a bracket with a champion has a final score`, async () => {
+  await renderLocked(`APPROVED`, PICKS, PICKS)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Final score` }))
+    .toBeVisible()
+  await expect.element(page.getByText(`138 earned · 0 missed`)).toBeVisible()
+})
+
+test(`a wrong pick names an actual winner who isn't in its box`, async () => {
+  await page.viewport(390, 844)
+  const bracket = toSeededBracket(STORED_BRACKET)
+  const upset = listContenders(bracket, ROUND_1_FIRST)[1]!
+  const { results } = recordResult(
+    bracket,
+    {},
+    { round: `ROUND_2`, index: 0 },
+    upset.id,
+  )
+  await renderLocked(`APPROVED`, PICKS, results)
+
+  await page.getByRole(`tab`, { name: `Round 2` }).click()
+
+  await expect
+    .element(page.getByRole(`tabpanel`).getByText(`Won by ${upset.name}`))
+    .toBeVisible()
+})
+
+test(`a bracket never submitted has no score or marks`, async () => {
+  await renderLocked(null, PICKS, PICKS)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Final score` }))
+    .not.toBeInTheDocument()
+  await expect.element(page.getByText(/, right$/u)).not.toBeInTheDocument()
 })

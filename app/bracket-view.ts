@@ -13,10 +13,26 @@ import type {
   SeedSlotRef,
   Winners,
 } from './bracket.ts'
+import type { Picks } from './picks.ts'
+import type { Results } from './results.ts'
+import { markPick } from './scoring.ts'
+import type { PickMark } from './scoring.ts'
 import { fillSides, findCombatant } from './seeded-bracket.ts'
 import type { Combatant, SeededBracket, Side } from './seeded-bracket.ts'
 
-export type BattleView = BattleRef & { sides: Side[]; winner?: Combatant }
+export type BattleView = BattleRef & {
+  sides: Side[]
+  winner?: Combatant
+  marking?: Marking
+}
+
+/**
+ * How the pick of a battle's winner stands, or null without a pick, and who won
+ * the battle once it's decided
+ */
+type Marking = { mark: PickMark | null; actualWinner?: Combatant }
+
+type MarkedBattleView = BattleView & { marking: Marking }
 
 export type BracketView = {
   year: number
@@ -60,6 +76,39 @@ export const buildBracketView = (
   }
 }
 
+/** A bracket whose winners are picks, each marked against the results */
+export type MarkedBracketView = Omit<BracketView, `battles`> & {
+  battles: Record<Round, MarkedBattleView[]>
+}
+
+export const buildMarkedBracketView = (
+  year: number,
+  bracket: SeededBracket,
+  picks: Picks,
+  results: Results,
+): MarkedBracketView => {
+  const view = buildBracketView(year, bracket, picks)
+  const markBattle = (battle: BattleView): MarkedBattleView => {
+    const { winner } = battle
+    const result = results[toBattleKey(battle)]
+    return {
+      ...battle,
+      marking: {
+        mark: winner ? markPick(bracket, results, battle, winner.id) : null,
+        ...(result !== undefined && {
+          actualWinner: bracket.combatantById.get(result)!,
+        }),
+      },
+    }
+  }
+  return {
+    ...view,
+    battles: Object.fromEntries(
+      ROUNDS.map(round => [round, view.battles[round].map(markBattle)]),
+    ) as Record<Round, MarkedBattleView[]>,
+  }
+}
+
 /** The round's battles within the division, top to bottom */
 export const readDivisionBattles = (
   { battles }: BracketView,
@@ -72,17 +121,32 @@ export const readDivisionBattles = (
 }
 
 /**
- * For screen readers, such as "Round 2, battle 3: Okapi vs. Puma, Okapi won"
+ * For screen readers, such as "Round 2, battle 3: Okapi vs. Puma, Okapi won".
+ * On a marked bracket, it ends like ". Picked Puma, wrong, Okapi won" instead
  */
 export const describeBattle = ({
   round,
   index,
   sides,
   winner,
+  marking,
 }: BattleView): string => {
   const sideNames = sides.map(describeSide).join(` vs. `)
-  const result = winner === undefined ? `` : `, ${winner.name} won`
+  const result =
+    winner === undefined
+      ? ``
+      : marking
+        ? `. Picked ${winner.name}, ${describeMarking(marking)}`
+        : `, ${winner.name} won`
   return `${readBattleName({ round, index })}: ${sideNames}${result}`
+}
+
+const describeMarking = ({ mark, actualWinner }: Marking): string => {
+  if (mark === `RIGHT`) {
+    return `right`
+  }
+  const result = actualWinner ? `${actualWinner.name} won` : `not decided yet`
+  return mark === `WRONG` ? `wrong, ${result}` : result
 }
 
 const describeSide = (side: Side): string =>
@@ -100,6 +164,14 @@ export const readBattleName = ({ round, index }: BattleRef): string =>
     ? ROUND_NAMES.WILD_CARD
     : `${ROUND_NAMES[round]}, battle ${index + 1}`
 
+/** Whether the bracket's winners are marked picks */
+export const isMarked = (view: BracketView): view is MarkedBracketView =>
+  view.battles.WILD_CARD.some(({ marking }) => marking !== undefined)
+
+/** On a marked bracket, a battle is decided by its result instead of its pick */
+export const isDecided = ({ winner, marking }: BattleView): boolean =>
+  (marking ? marking.actualWinner : winner) !== undefined
+
 /**
  * The round to show first: the earliest from Round 1 on with a battle left to
  * decide, or the Championship once every battle is decided. Round 1 already
@@ -107,5 +179,5 @@ export const readBattleName = ({ round, index }: BattleRef): string =>
  */
 export const readStartingRound = ({ battles }: BracketView): Round =>
   ROUNDS.slice(ROUNDS.indexOf(`ROUND_1`)).find(round =>
-    battles[round].some(battle => battle.winner === undefined),
+    battles[round].some(battle => !isDecided(battle)),
   ) ?? `CHAMPIONSHIP`

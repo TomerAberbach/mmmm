@@ -18,7 +18,7 @@ import { useValidatedForm } from './use-validated-form.ts'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
 import type { ConfirmResult, SavedResult } from '~/form-replies.server.ts'
-import { formatCount } from '~/format-count.ts'
+import { formatCount, pluralize } from '~/format-count.ts'
 import { freeTextSchema } from '~/free-text.ts'
 import type { SubmissionStatus } from '~/generated/prisma/browser.ts'
 import { joinIds } from '~/id-list.ts'
@@ -159,6 +159,7 @@ export const ContestPlayers = ({
             key={title}
             title={title}
             status={status}
+            isOpen={isOpen}
             selection={{
               selectedCount: sectionPlayers.filter(({ id }) =>
                 selection.ids.has(id),
@@ -187,6 +188,7 @@ export const ContestPlayers = ({
                 key={player.id}
                 contestId={contestId}
                 player={player}
+                isOpen={isOpen}
                 duplicates={duplicates.get(player.id) ?? []}
                 isSelected={selection.ids.has(player.id)}
                 isSelecting={isSelecting}
@@ -470,12 +472,14 @@ const findNeighborId = (
 const PlayerSection = ({
   title,
   status,
+  isOpen,
   selection,
   action,
   children,
 }: {
   title: string
   status: SubmissionStatus | null
+  isOpen: boolean
   selection: {
     selectedCount: number
     onChange: (isSelected: boolean) => void
@@ -515,6 +519,9 @@ const PlayerSection = ({
               </Checkbox>
             </td>
             <th className='px-2 py-1.5 text-start max-sm:hidden'>Name</th>
+            {isOpen ? null : (
+              <th className='w-20 px-2 py-1.5 text-end max-sm:hidden'>Score</th>
+            )}
             <th className='w-44 px-2 py-1.5 text-start max-sm:hidden'>
               Started
             </th>
@@ -568,6 +575,7 @@ const LIST_FORMAT = new Intl.ListFormat(`en-US`)
 const PlayerRow = ({
   contestId,
   player,
+  isOpen,
   duplicates,
   isSelected,
   isSelecting,
@@ -578,6 +586,8 @@ const PlayerRow = ({
 }: {
   contestId: string
   player: ContestPlayer
+  /** Scores show once the contest's year takes no more picks */
+  isOpen: boolean
   duplicates: ContestPlayer[]
   isSelected: boolean
   /** Whether any row is selected, which turns off the row's own decisions */
@@ -602,7 +612,9 @@ const PlayerRow = ({
           {`Select ${player.displayName}`}
         </Checkbox>
       </td>
-      <td className='px-2 py-2 font-semibold wrap-break-word max-sm:p-0'>
+      <td
+        className={`px-2 py-2 font-semibold wrap-break-word max-sm:p-0 ${isOpen ? `` : `max-sm:pe-24`}`}
+      >
         {rename.isOpen ? (
           <RenameForm
             contestId={contestId}
@@ -622,6 +634,7 @@ const PlayerRow = ({
         )}
         <DuplicatesNote duplicates={duplicates} />
       </td>
+      {isOpen ? null : <ScoreCell score={player.score} />}
       <td className='px-2 py-2 text-muted tabular-nums max-sm:p-0'>
         <span className='sm:sr-only'>Started </span>
         <LocalTime date={player.startedAt} format={formatDateTime} />
@@ -660,6 +673,19 @@ const PlayerRow = ({
     </tr>
   )
 }
+
+const ScoreCell = ({ score }: { score: number | null }) => (
+  <td className='px-2 py-2 text-end tabular-nums max-sm:absolute max-sm:end-0 max-sm:top-3 max-sm:p-0'>
+    {score === null ? (
+      <span className='text-muted'>None</span>
+    ) : (
+      <>
+        <span className='font-extrabold'>{score}</span>
+        <span className='sm:sr-only'>{` ${pluralize(score, `point`)}`}</span>
+      </>
+    )}
+  </td>
+)
 
 /**
  * Focusing the row scrolls to it. Following the link's fragment instead would

@@ -1,6 +1,6 @@
 import { href } from 'react-router'
 import type { Route } from './+types/player.bracket.ts'
-import { isOpenYear, readBracket } from '~/brackets.server.ts'
+import { isOpenYear, readBracket, readResultRows } from '~/brackets.server.ts'
 import { LockedBracket } from '~/components/locked-bracket.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PlayerBracket } from '~/components/player-bracket.tsx'
@@ -21,10 +21,11 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   const player = readRequiredPlayer(context)
   const { year } = readPlayContest(context)
   // A contest exists only while its year's bracket is published
-  const [bracket, { draft, submission }, isOpen] = await Promise.all([
+  const [bracket, { draft, submission }, isOpen, results] = await Promise.all([
     readBracket(year),
     readDraftAndSubmission(player.id),
     isOpenYear(year),
+    readResultRows(year),
   ])
   return {
     playerId: player.id,
@@ -33,6 +34,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
     isOpen,
     bracket: bracket!,
     draft,
+    results,
     // A player sees their personal link once they submit
     submitted: submission && {
       submission,
@@ -42,7 +44,7 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
 }
 
 const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
-  const { displayName, isOpen, draft, ...shared } = loaderData
+  const { displayName, isOpen, draft, results, ...shared } = loaderData
   const paths = {
     forgetPath: href(`/player/:contestId/forgotten`, params),
     deletePath: href(`/player/:contestId/delete`, params),
@@ -58,7 +60,7 @@ const PlayerBracketPage = ({ loaderData, params }: Route.ComponentProps) => {
           picksPath={href(`/player/:contestId/bracket/picks`, params)}
         />
       ) : (
-        <LockedBracket {...shared} {...paths} draft={draft} />
+        <LockedBracket {...shared} {...paths} draft={draft} results={results} />
       )}
     </div>
   )

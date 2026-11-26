@@ -1,5 +1,6 @@
 import { Tab, TabList, TabPanel, Tabs } from 'react-aria-components'
 import { BattleBox } from './battle-box.tsx'
+import { INNER_FOCUS_CLASSES } from './focus-classes.ts'
 import { usePicking } from './picking.ts'
 import {
   describeBattle,
@@ -52,7 +53,7 @@ export const BracketRoundTabs = ({
           <Tab
             key={round}
             id={round}
-            className='-mb-0.5 flex min-h-11 shrink-0 cursor-pointer items-center border-b-4 border-transparent px-3 font-condensed text-lg font-bold whitespace-nowrap uppercase outline-none data-focus-visible:outline-3 data-focus-visible:-outline-offset-3 data-focus-visible:outline-accent-strong data-selected:border-accent data-selected:text-accent-strong'
+            className={`-mb-0.5 flex min-h-11 shrink-0 cursor-pointer items-center border-b-4 border-transparent px-3 font-condensed text-lg font-bold whitespace-nowrap uppercase data-selected:border-accent data-selected:text-accent-strong ${INNER_FOCUS_CLASSES}`}
           >
             {ROUND_NAMES[round]}
             {picking ? <BattlesLeft battles={view.battles[round]} /> : null}

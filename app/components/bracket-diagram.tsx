@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { BattleBox, BoxSizer, readNameWidth } from './battle-box.tsx'
+import { isMarked } from '~/bracket-view.ts'
 import type { BattleView, BracketView } from '~/bracket-view.ts'
 import {
   DIVISION_POSITIONS,
@@ -26,7 +27,11 @@ export const BracketDiagram = ({ view }: { view: BracketView }) => {
   const nameWidth = readNameWidth(view)
   const style = {
     '--name-width': `${nameWidth}em`,
-    '--zoom': readPrintZoom(nameWidth, wildCard.battle.sides.length),
+    '--zoom': readPrintZoom(
+      nameWidth,
+      wildCard.battle.sides.length,
+      isMarked(view),
+    ),
   } as CSSProperties
   return (
     <div className='overflow-x-auto print:overflow-visible'>
@@ -69,14 +74,22 @@ const ROUNDING_ROOM = 0.98
 const DIAGRAM_SIZE = {
   boxesAcross: 11,
   boxPadding: 48,
+  markWidth: 40,
   restOfWidth: 264,
   heightWithoutEntrants: 1610,
   entrantHeight: 68,
 }
 
 /** Scales the printed diagram to fit one page */
-const readPrintZoom = (nameWidth: number, entrantCount: number): number => {
-  const boxWidth = nameWidth * 16 + DIAGRAM_SIZE.boxPadding
+const readPrintZoom = (
+  nameWidth: number,
+  entrantCount: number,
+  hasMarks: boolean,
+): number => {
+  const boxWidth =
+    nameWidth * 16 +
+    DIAGRAM_SIZE.boxPadding +
+    (hasMarks ? DIAGRAM_SIZE.markWidth : 0)
   const width = DIAGRAM_SIZE.boxesAcross * boxWidth + DIAGRAM_SIZE.restOfWidth
   const height =
     DIAGRAM_SIZE.heightWithoutEntrants +
@@ -192,6 +205,7 @@ const Half = ({
       <Band
         dir={dir}
         className={`${columns.divisions} row-start-2`}
+        hasMarks={isMarked(view)}
         wildCard={wildCardIn(top) ?? wildCardIn(bottom)}
       />
       <Division
@@ -400,10 +414,12 @@ const WildCardLineEnd = ({ wildCard }: { wildCard: WildCardPlacement }) => (
 const Band = ({
   dir,
   className,
+  hasMarks,
   wildCard,
 }: {
   dir: `ltr` | `rtl`
   className: string
+  hasMarks: boolean
   wildCard?: WildCardPlacement
 }) => {
   const box = wildCard && <WildCardBox wildCard={wildCard} />
@@ -412,7 +428,7 @@ const Band = ({
   return (
     <div dir={dir} className={`flex flex-col ${className}`}>
       <div className='flex flex-1 flex-col justify-start'>{above}</div>
-      <RoundLabels />
+      <RoundLabels hasMarks={hasMarks} />
       <div className='flex flex-1 flex-col justify-end'>{below}</div>
     </div>
   )
@@ -443,7 +459,7 @@ const ROUND_LABEL_CLASSES: Record<DivisionRound, string> = {
   ELITE_TRAIT: `${CONNECTOR_GUTTER} fill-elite-trait`,
 }
 
-const RoundLabels = () => (
+const RoundLabels = ({ hasMarks }: { hasMarks: boolean }) => (
   <div className='ms-8 flex py-4'>
     {DIVISION_ROUNDS.map(round => (
       <div
@@ -457,7 +473,7 @@ const RoundLabels = () => (
         <svg viewBox='0 0 12 6' className='h-3 w-6'>
           <path d='M0 0 6 6 12 0Z' />
         </svg>
-        <BoxSizer />
+        <BoxSizer hasMarks={hasMarks} />
       </div>
     ))}
   </div>
@@ -476,7 +492,9 @@ const Center = ({ view }: { view: BracketView }) => {
           <p className='font-display text-xl whitespace-nowrap text-accent-strong uppercase'>
             {view.year} champion
           </p>
-          <p className='min-w-48 border-4 border-ink px-3 py-2 text-center font-condensed text-lg font-extrabold uppercase'>
+          <p
+            className={`min-w-48 border-4 border-ink px-3 py-2 text-center font-condensed text-lg font-extrabold uppercase ${championship.marking?.mark === `WRONG` ? `text-danger line-through decoration-2` : ``}`}
+          >
             {/* Keeps its height while empty */}
             {championship.winner?.name ?? `\u{A0}`}
           </p>

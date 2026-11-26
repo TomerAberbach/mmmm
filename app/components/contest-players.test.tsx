@@ -16,7 +16,13 @@ const player = (
   id: string,
   displayName: string,
   status: ContestPlayer[`status`],
-): ContestPlayer => ({ id, displayName, startedAt: STARTED_AT, status })
+): ContestPlayer => ({
+  id,
+  displayName,
+  startedAt: STARTED_AT,
+  status,
+  score: status && 0,
+})
 
 /**
  * Renders the list with actions that change the players in memory, as the
@@ -686,4 +692,32 @@ test(`a contest without players says to share its link`, async () => {
       ),
     )
     .toBeVisible()
+})
+
+test(`each score shows once the year isn't open`, async () => {
+  await page.viewport(1280, 900)
+  await renderRoutes([
+    {
+      path: `/`,
+      Component: () => (
+        <ContestPlayers
+          contestId='period-2'
+          isOpen={false}
+          players={[
+            { ...player(`maya`, `Maya R.`, `APPROVED`), score: 34 },
+            player(`leo`, `Leo M.`, null),
+          ]}
+        />
+      ),
+    },
+  ])
+
+  const rows = page.getByRole(`row`)
+  await expect
+    .element(rows.filter({ hasText: `Maya R.` }).getByText(`34`))
+    .toBeVisible()
+  await expect
+    .element(rows.filter({ hasText: `Leo M.` }).getByText(`None`))
+    .toBeVisible()
+  await expectNoAxeViolations()
 })

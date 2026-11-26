@@ -47,7 +47,7 @@ export const saveUnpublishedBracket = async (
     await tx.bracket.deleteMany({ where: { year, publishedAt: null } })
     await insertBracketRows(tx, year, rows, existing?.expectedLockDate ?? null)
     return true
-  })
+  }, LOCKED_YEARS_LIMITS)
 }
 
 const insertBracketRows = async (
@@ -426,7 +426,17 @@ const withLockedYears = <Result>(
   prisma.$transaction(async tx => {
     await lockYears(tx, mode)
     return change(tx, await readCurrentYear(tx))
-  })
+  }, LOCKED_YEARS_LIMITS)
+
+/**
+ * Saving a result scores every submission of the year, which took 3 seconds for
+ * 20,000 of them, and other changes wait for it
+ */
+const LOCKED_YEARS_LIMITS = {
+  timeout: 30_000,
+  // Waiting changes can hold every connection. The pool itself waits 5 seconds
+  maxWait: 5000,
+}
 
 type LockMode = `SHARE` | `UPDATE`
 

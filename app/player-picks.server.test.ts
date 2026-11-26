@@ -6,9 +6,10 @@ import {
   pickEveryBattle,
   ROUND_1_FIRST,
 } from '../test/picks.ts'
+import { readSeededBracket } from '../test/results.ts'
 import { addYear } from '../test/years.ts'
 import { buildBracketView } from './bracket-view.ts'
-import { readBracket, renameCombatant } from './brackets.server.ts'
+import { renameCombatant } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { pickWinner } from './picks.ts'
 import type { Picks } from './picks.ts'
@@ -18,7 +19,6 @@ import {
   savePlayerDraft,
   submitPlayerPicks,
 } from './player-picks.server.ts'
-import { toSeededBracket } from './seeded-bracket.ts'
 
 const readPicksChangedAt = (
   submitted: Awaited<ReturnType<typeof submitPlayerPicks>>,
@@ -28,10 +28,6 @@ const readPicksChangedAt = (
   }
   return submitted.submission.picksChangedAt
 }
-
-/** The year's stored bracket, which `addYear` fills with 2026's */
-const readSeededBracket = async (year: number) =>
-  toSeededBracket((await readBracket(year))!)
 
 type TestPicks = {
   /** Round 1's first battle's seed 1, picked in `complete` */

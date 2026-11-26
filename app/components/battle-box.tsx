@@ -10,6 +10,7 @@ import {
   RadioGroup,
   ToggleButton,
 } from 'react-aria-components'
+import { INNER_FOCUS_CLASSES } from './focus-classes.ts'
 import { usePicking } from './picking.ts'
 import type { Picking } from './picking.ts'
 import { describeBattle, readBattleName } from '~/bracket-view.ts'
@@ -17,6 +18,8 @@ import type { BattleView, BracketView } from '~/bracket-view.ts'
 import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { measureWidestName } from '~/name-width.ts'
+import type { PickMark } from '~/scoring.ts'
+import { findCombatant } from '~/seeded-bracket.ts'
 import type { Combatant, Side } from '~/seeded-bracket.ts'
 
 const SIZE_CLASSES = {
@@ -26,8 +29,15 @@ const SIZE_CLASSES = {
     height: `h-8`,
     // An ancestor sets `--name-width` to `readNameWidth`'s width
     name: `w-(--name-width) shrink-0`,
+    mark: `w-8 shrink-0`,
   },
-  regular: { box: ``, row: `px-3`, height: `h-10`, name: `` },
+  regular: {
+    box: ``,
+    row: `px-3`,
+    height: `h-10`,
+    name: ``,
+    mark: `shrink-0`,
+  },
 }
 
 const WILD_CARD_WINNER = `Wild card winner`
@@ -44,9 +54,10 @@ export const readNameWidth = ({ battles }: BracketView): number =>
   ])
 
 /**
- * One battle's sides, with the winner shaded and the loser muted. Screen
- * readers skip the boxes, so a regular box adds `describeBattle`'s text for
- * them. A diagram box adds none, since a list of the battles beside the diagram
+ * One battle's sides, with the winner shaded and the loser muted, or with the
+ * pick marked, and the actual winner of a battle picked wrong. Screen readers
+ * skip the boxes, so a regular box adds `describeBattle`'s text for them. A
+ * diagram box adds none, since a list of the battles beside the diagram
  * describes them. Inside a `PickingContext`, each side is a radio button
  * instead, and a side not yet decided opens a menu of the combatants who could
  * fill it. A regular box fills its container and truncates long names
@@ -79,17 +90,25 @@ export const BattleBox = ({
       ) : null}
       <div dir='ltr' aria-hidden className={readBoxClasses(classes)}>
         {battle.sides.map((side, index) => (
-          <div
+          <ReadOnlySide
             // Sides never reorder
             key={index}
-            className={`${readRowClasses(classes)} ${readResultClasses(side, battle.winner)}`}
-          >
-            <WildCardLineBar wildCardLine={wildCardLine} side={index} />
-            <SeedNumber side={side} />
-            <SideName side={side} className={classes.name} />
-          </div>
+            side={side}
+            battle={battle}
+            classes={classes}
+            wildCardLineBar={
+              <WildCardLineBar wildCardLine={wildCardLine} side={index} />
+            }
+          />
         ))}
+        {size === `diagram` && battle.round !== `ROUND_1` ? (
+          <WonBy
+            battle={battle}
+            className='absolute inset-x-0 top-full mt-0.5 truncate'
+          />
+        ) : null}
       </div>
+      {size === `regular` ? <WonBy battle={battle} className='mt-1' /> : null}
     </>
   )
 }
@@ -109,7 +128,7 @@ export type WildCardLine = {
  * An empty row as wide as a diagram box, for lining labels up with a column of
  * boxes
  */
-export const BoxSizer = () => {
+export const BoxSizer = ({ hasMarks }: { hasMarks: boolean }) => {
   const classes = SIZE_CLASSES.diagram
   return (
     <div
@@ -118,6 +137,7 @@ export const BoxSizer = () => {
     >
       <span className='w-5 shrink-0' />
       <span className={classes.name} />
+      {hasMarks ? <span className={classes.mark} /> : null}
     </div>
   )
 }
@@ -129,6 +149,87 @@ const readResultClasses = (side: Side, winner: Combatant | undefined) => {
   return side.combatant.id === winner.id
     ? `bg-accent-soft/40 font-extrabold`
     : `text-muted`
+}
+
+/** How a side stands on a marked bracket. Null when neither picked nor won */
+type SideState = PickMark | `ACTUAL_WINNER`
+
+const readSideState = (
+  side: Side,
+  { winner, marking }: BattleView,
+): SideState | null => {
+  if (side.kind === `undecided` || !marking) {
+    return null
+  }
+  const { id } = side.combatant
+  if (id === winner?.id) {
+    return marking.mark
+  }
+  return id === marking.actualWinner?.id ? `ACTUAL_WINNER` : null
+}
+
+const STATE_CLASSES: Record<SideState, string> = {
+  RIGHT: `bg-accent-soft/40 font-extrabold`,
+  WRONG: `font-extrabold text-danger`,
+  UNDECIDED: `bg-ink/5 font-extrabold`,
+  ACTUAL_WINNER: `font-extrabold`,
+}
+
+const STATE_MARKS: Record<SideState, ReactNode> = {
+  RIGHT: <span className='text-accent-strong'>✓</span>,
+  WRONG: `✗`,
+  UNDECIDED: null,
+  ACTUAL_WINNER: <span className='text-sm font-semibold text-muted'>won</span>,
+}
+
+const ReadOnlySide = ({
+  side,
+  battle,
+  classes,
+  wildCardLineBar,
+}: {
+  side: Side
+  battle: BattleView
+  classes: SizeClasses
+  wildCardLineBar: ReactNode
+}) => {
+  const state = readSideState(side, battle)
+  return (
+    <div
+      className={`${readRowClasses(classes)} ${state ? STATE_CLASSES[state] : readResultClasses(side, battle.winner)}`}
+    >
+      {wildCardLineBar}
+      <SeedNumber side={side} />
+      <SideName
+        side={side}
+        className={`${classes.name} ${state === `WRONG` ? `line-through decoration-2` : ``}`}
+      />
+      {battle.marking ? (
+        <span className={`ms-auto text-end ${classes.mark}`}>
+          {state && STATE_MARKS[state]}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+/** The actual winner of a battle picked wrong, when it isn't one of the sides */
+const WonBy = ({
+  battle: { sides, marking },
+  className,
+}: {
+  battle: BattleView
+  className: string
+}) => {
+  if (marking?.mark !== `WRONG` || !marking.actualWinner) {
+    return null
+  }
+  const { id, name } = marking.actualWinner
+  return findCombatant(sides, id) ? null : (
+    <p aria-hidden className={`text-sm text-muted ${className}`}>
+      Won by <span className='font-semibold text-ink'>{name}</span>
+    </p>
+  )
 }
 
 const readSideName = (side: Side): string =>
@@ -156,12 +257,12 @@ const SideName = ({ side, className }: { side: Side; className: string }) => {
 type SizeClasses = (typeof SIZE_CLASSES)[keyof typeof SIZE_CLASSES]
 
 const readBoxClasses = (classes: SizeClasses) =>
-  `border-2 border-ink bg-white text-base ${classes.box}`
+  `relative border-2 border-ink bg-white text-base ${classes.box}`
 
 const readRowClasses = (classes: SizeClasses) =>
   `relative box-content flex items-center gap-2 not-first:border-t-2 not-first:border-muted-light ${classes.row} ${classes.height}`
 
-const FOCUS_CLASSES = `cursor-pointer outline-none data-focus-visible:outline-3 data-focus-visible:-outline-offset-3 data-focus-visible:outline-accent-strong`
+const FOCUS_CLASSES = `cursor-pointer ${INNER_FOCUS_CLASSES}`
 
 const WildCardLineBar = ({
   wildCardLine,

@@ -7,8 +7,12 @@ import {
   BRACKET_2026,
 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
-import { ROUND_1_FIRST, seedTestBracket } from '../../test/picks.ts'
-import { buildBracketView } from '../bracket-view.ts'
+import {
+  pickEveryBattle,
+  ROUND_1_FIRST,
+  seedTestBracket,
+} from '../../test/picks.ts'
+import { buildBracketView, buildMarkedBracketView } from '../bracket-view.ts'
 import type { Winners } from '../bracket.ts'
 import { listContenders } from '../picks.ts'
 import type { Combatant, SeededBracket } from '../seeded-bracket.ts'
@@ -32,10 +36,24 @@ const renderBracket = async (
     winners = {},
     year = 2025,
     bracket = BRACKET,
-  }: { winners?: Winners; year?: number; bracket?: SeededBracket } = {},
+    results,
+  }: {
+    winners?: Winners
+    year?: number
+    bracket?: SeededBracket
+    results?: Winners
+  } = {},
 ) => {
   await page.viewport(viewport.width, viewport.height)
-  await render(<Bracket view={buildBracketView(year, bracket, winners)} />)
+  await render(
+    <Bracket
+      view={
+        results
+          ? buildMarkedBracketView(year, bracket, winners, results)
+          : buildBracketView(year, bracket, winners)
+      }
+    />,
+  )
   await document.fonts.ready
 }
 
@@ -150,3 +168,32 @@ test.each(BRACKETS)(
     expect(height).toBeLessThanOrEqual(PRINTED_PAGE.height)
   },
 )
+
+test.each(BRACKETS)(
+  `$year's marked diagram prints on one page`,
+  async ({ year, bracket }) => {
+    const winners = pickEveryBattle(bracket)
+    await renderBracket(WIDE_SCREEN, {
+      year,
+      bracket,
+      winners,
+      results: { 'ROUND_1:0': winners[`ROUND_1:0`]! },
+    })
+
+    const { width, height } = readPrintedDiagramSize()
+
+    expect(width).toBeLessThanOrEqual(PRINTED_PAGE.width)
+    expect(height).toBeLessThanOrEqual(PRINTED_PAGE.height)
+  },
+)
+
+test(`a marked bracket starts on the earliest round left to decide`, async () => {
+  await renderBracket(PHONE, {
+    winners: pickEveryBattle(BRACKET),
+    results: {},
+  })
+
+  await expect
+    .element(page.getByRole(`tab`, { name: `Round 1` }))
+    .toHaveAttribute(`aria-selected`, `true`)
+})

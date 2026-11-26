@@ -150,6 +150,11 @@ app
 - Change results only through `results.server.ts`. A request holds what the
   admin saw and confirmed, and `saveResult` refuses it when its effects would
   differ. The rules both sides share are in `results.ts`
+- Decide which picks are right only in `listRightWinners` in `scoring.ts`. The
+  marks, from `buildMarkedBracketView`, and the stored scores, from
+  `storeScores`, both read it. Rank by score in the query that lists
+  submissions, since approving, rejecting, and deleting change ranks but not
+  scores
 - Read which seed slots or earlier battles feed a battle, and which Round 1
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
   links, only a round and an index for results and picks to reference
