@@ -28,6 +28,7 @@ import { requireEnv } from './env.server.ts'
 import { serverFreeTextSchema } from './free-text.server.ts'
 import { EDUCATOR_NAME } from './free-text.ts'
 import { SessionAssurance } from './generated/prisma/enums.ts'
+import { joinOrganization } from './organizations.server.ts'
 import {
   guardSecondFactorChange,
   markSecondFactorUsed,
@@ -354,6 +355,8 @@ export const auth = betterAuth({
   databaseHooks: {
     session: {
       create: {
+        // However an educator confirms their address, they sign in after
+        after: session => joinOrganization(session.userId),
         // Nothing stores IP addresses
         before: (session, ctx) =>
           Promise.resolve({

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { auth } from './auth.server.ts'
 import { CLIENT_IP_HEADER } from './client-ip.ts'
 import { prisma } from './db.server.ts'
+import { readMailbox } from './mailbox.server.ts'
+import { readOrganization } from './organizations.server.ts'
 
 test(`sessions don't store the client's IP address`, async () => {
   const credentials = {
@@ -64,3 +66,37 @@ test.each<[string, object, string]>([
     ).resolves.toMatchObject({ id: user.id })
   },
 )
+
+test(`an educator who confirmed with a reset link joins their organization at sign-in`, async () => {
+  const domain = `${randomUUID()}.edu`
+  const email = `frizzle@${domain}`
+  const newPassword = `wahoo-magic-school-bus`
+  const headers = new Headers({ [CLIENT_IP_HEADER]: `203.0.113.9` })
+  const { user } = await auth.api.signUpEmail({
+    body: { name: `Ms. Frizzle`, email, password: `correct-horse-battery` },
+    headers,
+  })
+  await auth.api.requestPasswordReset({ body: { email }, headers })
+  const token = await vi.waitFor(() => {
+    const text = readMailbox()
+      .filter(sent => sent.to === email)
+      .map(sent => sent.text)
+      .join(`\n`)
+    return /\/reset-password\/(?<token>[^?\s]+)/u.exec(text)!.groups!.token!
+  })
+
+  await auth.api.resetPassword({
+    body: { token, newPassword },
+    headers,
+  })
+
+  await auth.api.signInEmail({
+    body: { email, password: newPassword },
+    headers,
+  })
+
+  await expect(readOrganization(user.id)).resolves.toStrictEqual({
+    domain,
+    name: null,
+  })
+})

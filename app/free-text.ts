@@ -32,6 +32,11 @@ export const CONTEST_NAME: FreeTextField = {
   maxLength: 80,
 }
 
+export const ORGANIZATION_NAME: FreeTextField = {
+  label: `the organization’s name`,
+  maxLength: 80,
+}
+
 export const DISPLAY_NAME: FreeTextField = {
   label: `your first name and last initial`,
   maxLength: 30,

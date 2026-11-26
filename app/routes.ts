@@ -25,6 +25,7 @@ export default [
   route(`contests`, `routes/contests.tsx`, [
     index(`routes/contests._index.tsx`),
     route(`new`, `routes/contests.new.ts`),
+    route(`organization`, `routes/contests.organization.ts`),
     route(`trash`, `routes/contests.trash.tsx`),
     route(`trash/restore`, `routes/contests.trash.restore.ts`),
     route(`trash/erase`, `routes/contests.trash.erase.ts`),
@@ -93,6 +94,8 @@ export default [
   route(`admin`, `routes/admin.tsx`, [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
+      route(`organizations`, `routes/admin.organizations.tsx`),
+      route(`organizations/rename`, `routes/admin.organizations.rename.ts`),
       route(`bracket`, `routes/admin.bracket.tsx`),
       route(`results`, `routes/admin.results.tsx`),
       route(`results/save`, `routes/admin.results.save.ts`),

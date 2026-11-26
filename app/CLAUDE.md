@@ -129,6 +129,14 @@ app
   `/dev/mailbox`, or with `readMailbox` in a test. Only `APP_ENV=development`
   and `APP_ENV=test` may use the mailbox
 
+## Organizations
+
+- An educator joins their email domain's organization at sign-in, with
+  `joinOrganization`, so a new way to confirm an address needs no step of its
+  own. Add a free email provider that `free-email-domains` lacks to
+  `organizations.server.ts`. The package's install script only refetches its
+  list, so `allowBuilds` denies it
+
 ## Brackets
 
 - Store or replace an unpublished bracket with `saveUnpublishedBracket` from
