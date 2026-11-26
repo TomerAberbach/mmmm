@@ -10,6 +10,7 @@ import { countWaiting, sendLaunchEmails } from './launch-emails.ts'
 /** Resend allows 2 requests a second, and 100 emails a day on its free plan */
 const PAUSE_MS = 600
 const DEFAULT_LIMIT = `100`
+const STOP_SIGNALS = [`SIGINT`, `SIGTERM`] as const
 
 /**
  * Sends the launch emails, up to `--limit`. `--dry-run` only counts who is
@@ -26,21 +27,35 @@ const main = async (): Promise<void> => {
   if (!Number.isSafeInteger(limit) || limit < 1) {
     throw new Error(`--limit takes a whole number from 1`)
   }
-  const waiting = await countWaiting()
   if (values[`dry-run`]) {
-    console.log(`${waiting} educators are waiting for the launch email`)
+    console.log(
+      `${await countWaiting()} educators are waiting for the launch email`,
+    )
     return
   }
   checkSettings()
+  const stop = new AbortController()
+  // Stopping between claiming an educator and emailing them would skip them.
+  // A second signal, of either kind, stops at once
+  const stopAfterCurrent = () => {
+    for (const name of STOP_SIGNALS) {
+      process.off(name, stopAfterCurrent)
+    }
+    stop.abort()
+  }
+  for (const name of STOP_SIGNALS) {
+    process.on(name, stopAfterCurrent)
+  }
   const { sent, failures } = await sendLaunchEmails({
     limit,
     pauseMs: PAUSE_MS,
+    signal: stop.signal,
   })
   for (const { educatorId, error } of failures) {
     console.error(`Failed to email educator ${educatorId}`, error)
   }
   console.log(
-    `Sent ${sent} launch emails. ${waiting - sent} educators are left`,
+    `Sent ${sent} launch emails. ${await countWaiting()} educators are left`,
   )
 }
 

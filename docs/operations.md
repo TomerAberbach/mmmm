@@ -235,6 +235,8 @@ can't rerun after an educator uses one.
    ```
 
 A run goes on past an address that Resend rejects, reports its educator's ID,
-and tries it again on the next run. It stops after 3 failures in a row. An
-educator gets two emails only when Resend accepts one but doesn't answer in
-time.
+and tries it again on the next run. It stops after 3 failures in a row. Ctrl-C
+stops it after the current educator, and a second one stops at once, which can
+leave an educator marked as emailed with no email. Forgot password still works
+for them. An educator gets two emails only when Resend accepts one but doesn't
+answer in time.

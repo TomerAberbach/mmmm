@@ -31,14 +31,17 @@ const MAX_FAILURES_IN_A_ROW = 3
 /**
  * Emails up to `limit` waiting educators a link that sets a password and
  * confirms their address, oldest first, pausing between them. Goes on past an
- * address the service rejects, which keeps waiting
+ * address the service rejects, which keeps waiting. Stops between educators once
+ * the signal aborts
  */
 export const sendLaunchEmails = async ({
   limit,
   pauseMs,
+  signal,
 }: {
   limit: number
   pauseMs: number
+  signal?: AbortSignal
 }): Promise<LaunchRun> => {
   const educators = await prisma.educator.findMany({
     where: WAITING,
@@ -49,6 +52,9 @@ export const sendLaunchEmails = async ({
   const run: LaunchRun = { sent: 0, failures: [] }
   let failuresInARow = 0
   for (const { id, email } of educators) {
+    if (signal?.aborted) {
+      break
+    }
     // Before sending, since the educator may have set a password or been
     // deleted since the run started, or another run may have emailed them
     if (!(await claim(id, email))) {
@@ -59,7 +65,7 @@ export const sendLaunchEmails = async ({
       run.sent++
       failuresInARow = 0
     } catch (error) {
-      await release(id)
+      await release(id, error)
       run.failures.push({ educatorId: id, error })
       failuresInARow++
       if (failuresInARow === MAX_FAILURES_IN_A_ROW) {
@@ -80,11 +86,19 @@ const claim = async (id: string, email: string): Promise<boolean> => {
   return count > 0
 }
 
-const release = async (id: string): Promise<void> => {
-  await prisma.educator.updateMany({
-    where: { id },
-    data: { launchEmailedAt: null },
-  })
+/** Undoes `claim` after `sendError`, and names the educator if it can't */
+const release = async (id: string, sendError: unknown): Promise<void> => {
+  try {
+    await prisma.educator.updateMany({
+      where: { id },
+      data: { launchEmailedAt: null },
+    })
+  } catch (error) {
+    throw new AggregateError(
+      [sendError, error],
+      `Educator ${id} got no email but stays marked as emailed`,
+    )
+  }
 }
 
 const send = async (id: string, email: string): Promise<void> => {

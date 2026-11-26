@@ -476,8 +476,8 @@ const withLockedYears = <Result>(
   }, LOCKED_YEARS_LIMITS)
 
 /**
- * Saving a result scores every submission of the year, which took 3 seconds for
- * 20,000 of them, and other changes wait for it
+ * Saving a result scores every submission of the year, and other changes wait for
+ * it. `docs/load-test.md` has how long that takes
  */
 const LOCKED_YEARS_LIMITS = {
   timeout: 30_000,
