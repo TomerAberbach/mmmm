@@ -3,7 +3,6 @@ import type { Route } from './+types/my-bracket.ts'
 import { BrokenLink, DeletedBracket } from '~/components/removed.tsx'
 import { rememberPlayer } from '~/player-cookie.server.ts'
 import { readPersonalLink } from '~/players.server.ts'
-import { readEraseTime } from '~/trash.ts'
 
 /**
  * A personal link moves its secret into the player's cookie and redirects, so
@@ -21,7 +20,7 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
     const { startLinkSecret: linkSecret } = target
     return data(
       {
-        restoreBy: readEraseTime(target),
+        restoreBy: target.restoreBy,
         contestPath:
           linkSecret === null
             ? null

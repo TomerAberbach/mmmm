@@ -21,12 +21,12 @@ export const RecoveryCodes = ({
       <PageTitle>Save your recovery codes</PageTitle>
       <p>
         If you lose your phone or passkey, each code signs you in once. Keep
-        them somewhere safe, such as a password manager. You won&apos;t see them
+        them somewhere safe, such as a password manager. You won’t see them
         again.
       </p>
       <RecoveryCodeList codes={codes} />
       <Checkbox isSelected={isSaved} onChange={setIsSaved}>
-        I&apos;ve saved these codes
+        I’ve saved these codes
       </Checkbox>
       <div>
         <ButtonLink href={continueTo} isDisabled={!isSaved}>

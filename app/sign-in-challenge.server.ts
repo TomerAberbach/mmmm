@@ -53,7 +53,7 @@ const rejectChallenge = (
     ? rejectForm(
         submission,
         {
-          formErrors: [`Too many incorrect codes. Try again in 15 minutes.`],
+          formErrors: [`Too many incorrect codes. Try again in 15 minutes`],
         },
         { status: 429 },
       )

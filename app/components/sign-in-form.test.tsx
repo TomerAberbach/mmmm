@@ -1,28 +1,29 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { signInSchema } from '../auth-forms.ts'
 import { SignInForm } from './sign-in-form.tsx'
 import type { SignInNotice } from './sign-in-form.tsx'
 
 const renderSignIn = async (notice?: SignInNotice): Promise<void> => {
-  const Stub = createRoutesStub([
-    {
-      path: `/sign-in`,
-      Component: ({ actionData }: { actionData?: { result: never } }) => (
-        <SignInForm lastResult={actionData?.result} notice={notice} />
-      ),
-      action: async ({ request }) => ({
-        result: parseWithZod(await request.formData(), {
-          schema: signInSchema,
-        }).reply({ formErrors: [`Email address or password is incorrect`] }),
-      }),
-    },
-  ])
-  await render(<Stub initialEntries={[`/sign-in`]} />)
+  await renderRoutes(
+    [
+      {
+        path: `/sign-in`,
+        Component: ({ actionData }: { actionData?: { result: never } }) => (
+          <SignInForm lastResult={actionData?.result} notice={notice} />
+        ),
+        action: async ({ request }) => ({
+          result: parseWithZod(await request.formData(), {
+            schema: signInSchema,
+          }).reply({ formErrors: [`Email address or password is incorrect`] }),
+        }),
+      },
+    ],
+    `/sign-in`,
+  )
 }
 
 test(`a failed sign-in shows the server's message`, async () => {

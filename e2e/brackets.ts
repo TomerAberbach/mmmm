@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { readUpcomingYear } from '../app/year.ts'
+import { confirmDialog } from './dialogs.ts'
 
 export const YEAR = readUpcomingYear(new Date())
 
@@ -32,35 +33,6 @@ export const setUpAndPublishBracket = async (page: Page): Promise<void> => {
   await expect(
     page.getByRole(`button`, { name: `Unpublish`, exact: true }),
   ).toBeVisible()
-}
-
-/**
- * Presses `trigger`, then the dialog's `action`, which defaults to the same
- * label
- */
-export const confirmDialog = async (
-  page: Page,
-  trigger: string,
-  action = trigger,
-): Promise<void> => {
-  await page.getByRole(`button`, { name: trigger, exact: true }).click()
-  await page
-    .getByRole(`alertdialog`)
-    .getByRole(`button`, { name: action, exact: true })
-    .click()
-}
-
-/** Returns the new contest's contest link */
-export const createContest = async (
-  page: Page,
-  name: string,
-): Promise<string> => {
-  await page.getByRole(`button`, { name: `Create contest` }).click()
-  const dialog = page.getByRole(`dialog`)
-  await dialog.getByLabel(`Contest name`).fill(name)
-  await dialog.getByRole(`button`, { name: `Create contest` }).click()
-  await expect(page.getByRole(`heading`, { name })).toBeVisible()
-  return page.getByRole(`textbox`, { name: `Contest link` }).inputValue()
 }
 
 const pasteNames = async (page: Page, names: string): Promise<void> => {

@@ -1,9 +1,9 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub, useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { contestNameSchema } from '../contest-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { ContestDetails } from './contest-details.tsx'
@@ -30,40 +30,42 @@ const renderContest = async () => {
     year: 2027,
     link: `https://mmmm.onl/play/secret`,
   }
-  const Stub = createRoutesStub([
-    {
-      path: `/contests/period-2`,
-      loader: () => contest,
-      HydrateFallback: () => null,
-      Component: () => (
-        <ContestDetails
-          contest={useLoaderData<Contest>()}
-          players={PLAYERS}
-          deletedCount={2}
-        />
-      ),
-    },
-    {
-      path: `/contests/period-2/link`,
-      action: () => {
-        contest = { ...contest, link: `https://mmmm.onl/play/new-secret` }
-        return { ok: true }
+  await renderRoutes(
+    [
+      {
+        path: `/contests/period-2`,
+        loader: () => contest,
+        HydrateFallback: () => null,
+        Component: () => (
+          <ContestDetails
+            contest={useLoaderData<Contest>()}
+            players={PLAYERS}
+            deletedCount={2}
+          />
+        ),
       },
-    },
-    {
-      path: `/contests/period-2/name`,
-      action: async ({ request }) => {
-        const submission = parseWithZod(await request.formData(), {
-          schema: contestNameSchema(freeTextSchema),
-        })
-        if (submission.status === `success`) {
-          contest = { ...contest, name: submission.value.name }
-        }
-        return { result: submission.reply(), saved: true }
+      {
+        path: `/contests/period-2/link`,
+        action: () => {
+          contest = { ...contest, link: `https://mmmm.onl/play/new-secret` }
+          return { ok: true }
+        },
       },
-    },
-  ])
-  await render(<Stub initialEntries={[`/contests/period-2`]} />)
+      {
+        path: `/contests/period-2/name`,
+        action: async ({ request }) => {
+          const submission = parseWithZod(await request.formData(), {
+            schema: contestNameSchema(freeTextSchema),
+          })
+          if (submission.status === `success`) {
+            contest = { ...contest, name: submission.value.name }
+          }
+          return { result: submission.reply(), saved: true }
+        },
+      },
+    ],
+    `/contests/period-2`,
+  )
 }
 
 test(`the contest link is shown beside its Copy button`, async () => {

@@ -1,9 +1,8 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { signUpSchema } from '../auth-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
 import { SignUpForm } from './sign-up-form.tsx'
@@ -13,22 +12,24 @@ const renderSignUp = async (
   serverErrors: Record<string, string[]> = {},
 ): Promise<{ submissions: number }> => {
   const counts = { submissions: 0 }
-  const Stub = createRoutesStub([
-    {
-      path: `/sign-up`,
-      Component: ({ actionData }: { actionData?: { result: never } }) => (
-        <SignUpForm lastResult={actionData?.result} />
-      ),
-      action: async ({ request }) => {
-        counts.submissions++
-        const submission = parseWithZod(await request.formData(), {
-          schema: signUpSchema(freeTextSchema),
-        })
-        return { result: submission.reply({ fieldErrors: serverErrors }) }
+  await renderRoutes(
+    [
+      {
+        path: `/sign-up`,
+        Component: ({ actionData }: { actionData?: { result: never } }) => (
+          <SignUpForm lastResult={actionData?.result} />
+        ),
+        action: async ({ request }) => {
+          counts.submissions++
+          const submission = parseWithZod(await request.formData(), {
+            schema: signUpSchema(freeTextSchema),
+          })
+          return { result: submission.reply({ fieldErrors: serverErrors }) }
+        },
       },
-    },
-  ])
-  await render(<Stub initialEntries={[`/sign-up`]} />)
+    ],
+    `/sign-up`,
+  )
   return counts
 }
 
@@ -49,7 +50,7 @@ test(`the sign-up form tells players they don't need to sign up`, async () => {
   await renderSignUp()
 
   await expect
-    .element(page.getByText(`Players don't need an account`, { exact: false }))
+    .element(page.getByText(`Players don’t need an account`, { exact: false }))
     .toBeVisible()
   await expectNoAxeViolations()
 })

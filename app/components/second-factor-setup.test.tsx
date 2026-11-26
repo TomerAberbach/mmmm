@@ -1,15 +1,14 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { SecondFactorChoice, SetupLinkRequest } from './second-factor-setup.tsx'
 
 const renderRequest = async (state: {
   linkInvalid: boolean
   isSent: boolean
 }) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => (
@@ -17,7 +16,6 @@ const renderRequest = async (state: {
       ),
     },
   ])
-  await render(<Stub />)
 }
 
 test(`before the link is sent, the page offers to email it`, async () => {
@@ -53,8 +51,7 @@ test(`a used or expired link asks for a new one`, async () => {
 })
 
 test(`the choice recommends a passkey first`, async () => {
-  const Stub = createRoutesStub([{ path: `/`, Component: SecondFactorChoice }])
-  await render(<Stub />)
+  await renderRoutes([{ path: `/`, Component: SecondFactorChoice }])
 
   const headings = page.getByRole(`heading`, { level: 2 })
 

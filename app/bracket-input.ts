@@ -149,9 +149,9 @@ const NAME_RULES = {
   division: {
     maxLength: DIVISION_NAME.maxLength,
     tooLong: ({ label }: NameField, maxLength: number) =>
-      `Shorten ${label}'s name to ${maxLength} characters or fewer`,
+      `Shorten ${label}’s name to ${maxLength} characters or fewer`,
     duplicate: ({ name }: NameField, other: NameField) =>
-      `${name} is also ${other.label}'s name. Give each division its own name`,
+      `${name} is also ${other.label}’s name. Give each division its own name`,
   },
   combatant: {
     maxLength: COMBATANT_NAME.maxLength,

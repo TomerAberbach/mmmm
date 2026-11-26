@@ -78,7 +78,7 @@ export const limitAuthRequest = async (request: AuthRequest): Promise<void> => {
   if (refusal) {
     const { message, headers } = toRefusal(
       refusal,
-      wait => `Too many attempts. ${wait}.`,
+      wait => `Too many attempts. ${wait}`,
     )
     throw refuse(`TOO_MANY_REQUESTS`, message, headers)
   }

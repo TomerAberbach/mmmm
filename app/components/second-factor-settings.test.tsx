@@ -1,8 +1,7 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { SecondFactorSettings } from './second-factor-settings.tsx'
 import type { AuthenticatorAppResult } from './second-factor-settings.tsx'
@@ -21,11 +20,11 @@ const renderSettings = async (
   data: SecondFactorSettingsData,
   { recoveryCodes = [`abcde-fghij`] }: { recoveryCodes?: string[] } = {},
 ) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     { path: `/`, Component: () => <SecondFactorSettings {...data} /> },
     {
       path: `/settings/remove-passkey`,
-      action: (): ConfirmResult => ({ error: `Admins keep at least one.` }),
+      action: (): ConfirmResult => ({ error: `Admins keep at least one` }),
     },
     {
       path: `/settings/authenticator-app`,
@@ -35,7 +34,6 @@ const renderSettings = async (
       }),
     },
   ])
-  await render(<Stub />)
 }
 
 test(`an admin sees each passkey and the recovery codes left`, async () => {
@@ -74,7 +72,7 @@ test(`removing a passkey asks first and shows why it failed`, async () => {
 
   await expect
     .element(page.getByRole(`alertdialog`).getByRole(`alert`))
-    .toHaveTextContent(`Admins keep at least one.`)
+    .toHaveTextContent(`Admins keep at least one`)
 })
 
 test(`new recovery codes show once they're made`, async () => {

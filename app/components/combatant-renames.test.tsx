@@ -1,10 +1,9 @@
 import { parseWithZod } from '@conform-to/zod/v4'
 import type { ComponentProps } from 'react'
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { renameSchema } from '../bracket-admin-forms.ts'
 import { CombatantRenames } from './combatant-renames.tsx'
 
@@ -24,24 +23,26 @@ const DIVISIONS: ComponentProps<typeof CombatantRenames>[`divisions`] = [
  * or saves it when there's none
  */
 const renderRenames = async (error?: string) => {
-  const Stub = createRoutesStub([
-    {
-      path: `/admin/bracket`,
-      Component: () => <CombatantRenames divisions={DIVISIONS} />,
-    },
-    {
-      path: `/admin/bracket/rename`,
-      action: async ({ request }) => {
-        const submission = parseWithZod(await request.formData(), {
-          schema: renameSchema,
-        })
-        return error
-          ? { result: submission.reply({ fieldErrors: { name: [error] } }) }
-          : { result: submission.reply(), saved: true }
+  await renderRoutes(
+    [
+      {
+        path: `/admin/bracket`,
+        Component: () => <CombatantRenames divisions={DIVISIONS} />,
       },
-    },
-  ])
-  await render(<Stub initialEntries={[`/admin/bracket`]} />)
+      {
+        path: `/admin/bracket/rename`,
+        action: async ({ request }) => {
+          const submission = parseWithZod(await request.formData(), {
+            schema: renameSchema,
+          })
+          return error
+            ? { result: submission.reply({ fieldErrors: { name: [error] } }) }
+            : { result: submission.reply(), saved: true }
+        },
+      },
+    ],
+    `/admin/bracket`,
+  )
 }
 
 test(`renaming one combatant keeps another's name open`, async () => {

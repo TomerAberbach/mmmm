@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { createRoutesStub } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { NewPersonalLink } from './new-personal-link.tsx'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 
@@ -43,8 +42,7 @@ const renderNewLink = async (
     copied.push(text)
     return Promise.resolve()
   })
-  const Stub = createRoutesStub([{ path: `/`, Component: Page }])
-  await render(<Stub />)
+  await renderRoutes([{ path: `/`, Component: Page }])
   return { copied }
 }
 
@@ -112,8 +110,7 @@ test(`a refused replacement says the old link may or may not work`, async () => 
 test(`the confirmation stays open until the link is created`, async () => {
   const answer = Promise.withResolvers<Response>()
   vi.spyOn(globalThis, `fetch`).mockReturnValue(answer.promise)
-  const Stub = createRoutesStub([{ path: `/`, Component: Page }])
-  await render(<Stub />)
+  await renderRoutes([{ path: `/`, Component: Page }])
   await createLink()
 
   // `user-event` writes keys in braces

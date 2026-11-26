@@ -3,6 +3,7 @@ import { RateLimiterRes } from 'rate-limiter-flexible'
 import type { RateLimiterMemory } from 'rate-limiter-flexible'
 import { MAX_EMAIL_LENGTH } from './auth-forms.ts'
 import { CLIENT_IP_HEADER } from './client-ip.ts'
+import { formatCount } from './format-count.ts'
 
 /**
  * Resolves to the refusal once the key has used up its points. The limiter
@@ -91,9 +92,7 @@ export const toRefusal = (
 ): LimitRefusal => {
   const minutes = Math.max(1, Math.ceil(msBeforeNext / 60_000))
   return {
-    message: toMessage(
-      `Try again in ${minutes} ${minutes === 1 ? `minute` : `minutes`}`,
-    ),
+    message: toMessage(`Try again in ${formatCount(minutes, `minute`)}`),
     headers: { 'Retry-After': String(Math.ceil(msBeforeNext / 1000)) },
   }
 }

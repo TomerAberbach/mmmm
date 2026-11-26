@@ -13,17 +13,17 @@ export const EDUCATOR_NAME: FreeTextField = {
 }
 
 export const DIVISION_NAME: FreeTextField = {
-  label: `each division's name`,
+  label: `each division’s name`,
   maxLength: 80,
 }
 
 export const COMBATANT_NAME: FreeTextField = {
-  label: `each combatant's name`,
+  label: `each combatant’s name`,
   maxLength: 80,
 }
 
 export const CONTEST_NAME: FreeTextField = {
-  label: `the contest's name`,
+  label: `the contest’s name`,
   maxLength: 80,
 }
 
@@ -36,7 +36,7 @@ export const DISPLAY_NAME: FreeTextField = {
 
 /** The display name an educator gives a player in their contest */
 export const PLAYER_NAME: FreeTextField = {
-  label: `the player's name`,
+  label: `the player’s name`,
   maxLength: DISPLAY_NAME.maxLength,
 }
 

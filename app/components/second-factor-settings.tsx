@@ -14,6 +14,7 @@ import { RecoveryCodeList } from './recovery-codes.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, PasswordField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
+import { formatCount } from '~/format-count.ts'
 
 export type AuthenticatorAppResult = {
   result: SubmissionResult
@@ -121,8 +122,7 @@ const PasskeyItem = ({
         action={href(`/settings/remove-passkey`)}
         fields={{ id }}
       >
-        You won&apos;t be able to sign in with it. We&apos;ll email you about
-        the change.
+        You won’t be able to sign in with it. We’ll email you about the change.
       </ConfirmDialog>
     ) : null}
   </li>
@@ -148,15 +148,12 @@ const AuthenticatorAppSettings = ({
   const recoveryCodes = isIdle ? fetcher.data?.recoveryCodes : undefined
   return (
     <>
-      <p>
-        On. {recoveryCodesLeft} recovery{` `}
-        {recoveryCodesLeft === 1 ? `code` : `codes`} left.
-      </p>
+      <p>On. {formatCount(recoveryCodesLeft, `recovery code`)} left.</p>
       {recoveryCodes ? (
         <>
           <Notice kind='status'>
             Here are your new recovery codes. Your old ones no longer work. Save
-            these now, since you won&apos;t see them again.
+            these now, since you won’t see them again.
           </Notice>
           <RecoveryCodeList codes={recoveryCodes} />
         </>

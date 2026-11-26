@@ -1,10 +1,9 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { seedTestBracket } from '../../test/picks.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { buildBracketView } from '../bracket-view.ts'
 import { SignedOutHome } from './signed-out-home.tsx'
 
@@ -12,7 +11,7 @@ const renderHome = async (
   upcomingYear = 2027,
   current?: { year: number; expectedLockDate: string | null },
 ) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => (
@@ -34,7 +33,6 @@ const renderHome = async (
       ),
     },
   ])
-  await render(<Stub />)
 }
 
 test(`the home page invites educators to play March Mammal Madness`, async () => {
@@ -85,7 +83,7 @@ test(`the home page tells players they don't need to sign up`, async () => {
   await renderHome()
 
   await expect
-    .element(page.getByText(`Players don't need an account`, { exact: false }))
+    .element(page.getByText(`Players don’t need an account`, { exact: false }))
     .toBeVisible()
 })
 

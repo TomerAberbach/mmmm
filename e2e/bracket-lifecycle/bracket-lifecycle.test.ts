@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ADMINS, signInAsAdmin } from '../admins.ts'
-import { confirmDialog, fillBracketForm, YEAR } from '../brackets.ts'
+import { fillBracketForm, YEAR } from '../brackets.ts'
+import { confirmDialog } from '../dialogs.ts'
 
 // Each test takes the upcoming year's one bracket a step further
 test.describe.configure({ mode: `serial` })

@@ -19,12 +19,12 @@ export const secondFactorSetupEmail = ({
       <EmailParagraph>
         Someone signed in to the MMMM admin account with this email address and
         asked to set up a second factor. If it was you, open this link in the
-        browser where you&apos;re signed in.
+        browser where you’re signed in.
       </EmailParagraph>
       <EmailAction href={url}>Set up a second factor</EmailAction>
       <EmailParagraph>
         The link works once and expires in {SETUP_LINK_EXPIRES_IN_HOURS} hour.
-        If you didn&apos;t ask, someone may know your password, so reset it.
+        If you didn’t ask, someone may know your password, so reset it.
       </EmailParagraph>
     </EmailLayout>
   ),

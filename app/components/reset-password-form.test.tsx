@@ -1,23 +1,24 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { ResetPasswordForm } from './reset-password-form.tsx'
 
 const renderReset = async (): Promise<{ submissions: number }> => {
   const counts = { submissions: 0 }
-  const Stub = createRoutesStub([
-    {
-      path: `/reset-password`,
-      Component: () => <ResetPasswordForm token='a-token' />,
-      action: () => {
-        counts.submissions++
-        return null
+  await renderRoutes(
+    [
+      {
+        path: `/reset-password`,
+        Component: () => <ResetPasswordForm token='a-token' />,
+        action: () => {
+          counts.submissions++
+          return null
+        },
       },
-    },
-  ])
-  await render(<Stub initialEntries={[`/reset-password`]} />)
+    ],
+    `/reset-password`,
+  )
   return counts
 }
 

@@ -3,10 +3,10 @@ import { href } from 'react-router'
 import { isCurrentYear, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import { toAppUrl } from './env.server.ts'
-import type { PlayerDeleter } from './generated/prisma/client.ts'
 import type { LimitRefusal } from './limits.server.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
+import { readEraseTime } from './trash.ts'
 
 export type NewPlayer =
   | { secret: string }
@@ -87,8 +87,8 @@ export type PersonalLinkTarget =
   | { state: `contestDeleted` }
   | {
       state: `deleted`
-      deletedBy: PlayerDeleter
-      deletedAt: Date
+      /** When the daily job erases the player, or null when it doesn't */
+      restoreBy: Date | null
       /**
        * The contest link where the player starts a new bracket. Null when the
        * contest takes no players, or its contest link was replaced after the
@@ -128,8 +128,7 @@ export const readPersonalLink = async (
   return deletedAt && deletedBy
     ? {
         state: `deleted`,
-        deletedBy,
-        deletedAt,
+        restoreBy: readEraseTime({ deletedAt, deletedBy }),
         startLinkSecret:
           linkVersion === contest.linkVersion &&
           (await isCurrentYear(contest.year))

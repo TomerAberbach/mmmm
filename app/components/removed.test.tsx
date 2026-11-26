@@ -1,16 +1,14 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { formatLocalDate } from '../dates.ts'
 import { DeletedBracket } from './removed.tsx'
 
 const renderDeleted = async (props: Parameters<typeof DeletedBracket>[0]) => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     { path: `/`, Component: () => <DeletedBracket {...props} /> },
   ])
-  await render(<Stub />)
 }
 
 test(`a bracket an educator removed offers a new one`, async () => {

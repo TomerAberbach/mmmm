@@ -22,6 +22,7 @@ import type { BracketView } from '~/bracket-view.ts'
 import { listBattles, toBattleKey } from '~/bracket.ts'
 import type { BattleRef, Round } from '~/bracket.ts'
 import { formatDateTime, formatTime } from '~/dates.ts'
+import { formatCount } from '~/format-count.ts'
 import type { SubmissionStatus } from '~/generated/prisma/enums.ts'
 import type { PicksRequest } from '~/picks-request.ts'
 import {
@@ -512,7 +513,7 @@ const ClearedNotice = ({ cleared }: { cleared: BattleRef[] }) => (
 const describeCleared = (cleared: BattleRef[]): string =>
   cleared.length === 0
     ? ``
-    : `Your change cleared ${cleared.length} later ${cleared.length === 1 ? `pick` : `picks`} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
+    : `Your change cleared ${formatCount(cleared.length, `later pick`)} that depended on it: ${cleared.map(readBattleName).join(`, `)}.`
 
 const RequestStatus = ({
   state,

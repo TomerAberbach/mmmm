@@ -94,11 +94,11 @@ test(`a division name used twice is reported at both fields`, () => {
   expect(problems).toStrictEqual([
     {
       field: `divisions.TOP_LEFT.name`,
-      message: `SAME & DIFFERENT is also the top right division's name. Give each division its own name`,
+      message: `SAME & DIFFERENT is also the top right division’s name. Give each division its own name`,
     },
     {
       field: `divisions.TOP_RIGHT.name`,
-      message: `Same & Different is also the top left division's name. Give each division its own name`,
+      message: `Same & Different is also the top left division’s name. Give each division its own name`,
     },
   ])
 })
@@ -111,7 +111,7 @@ test.each([
     },
     problem: {
       field: `divisions.TOP_LEFT.name`,
-      message: `Shorten the top left division's name to 80 characters or fewer`,
+      message: `Shorten the top left division’s name to 80 characters or fewer`,
     },
   },
   {

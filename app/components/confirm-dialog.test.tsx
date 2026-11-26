@@ -1,8 +1,7 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import type { ConfirmResult } from '~/form-replies.server.ts'
@@ -16,7 +15,7 @@ const renderDialog = async (result: ConfirmResult = SUCCESS) => {
     submittedContestIds.push(form.get(`contestId`))
     return result
   }
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => (
@@ -33,7 +32,6 @@ const renderDialog = async (result: ConfirmResult = SUCCESS) => {
     },
     { path: `/delete`, action: deleteContest },
   ])
-  await render(<Stub />)
   await page.getByRole(`button`, { name: `Delete contest` }).click()
   return { submittedContestIds }
 }
@@ -76,7 +74,7 @@ test(`confirming submits the fields to the action and closes`, async () => {
 })
 
 test(`an error from the action keeps the dialog open and shows it`, async () => {
-  await renderDialog({ error: `Contests with submissions can't be deleted` })
+  await renderDialog({ error: `Contests with submissions can’t be deleted` })
 
   await page
     .getByRole(`alertdialog`)
@@ -85,5 +83,5 @@ test(`an error from the action keeps the dialog open and shows it`, async () => 
 
   await expect
     .element(page.getByRole(`alertdialog`).getByRole(`alert`))
-    .toHaveTextContent(`Contests with submissions can't be deleted`)
+    .toHaveTextContent(`Contests with submissions can’t be deleted`)
 })

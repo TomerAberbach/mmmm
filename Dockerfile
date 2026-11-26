@@ -1,5 +1,4 @@
 FROM node:24-slim AS base
-RUN corepack enable && corepack prepare pnpm@12.9.0 --activate
 # Prisma's schema engine, which the release command runs, needs OpenSSL
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -7,6 +6,8 @@ RUN apt-get update \
 WORKDIR /app
 
 FROM base AS build
+# Installs the pnpm version in package.json
+RUN corepack enable
 # Installing runs `prisma generate`, which needs the schema and its config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
 COPY prisma ./prisma

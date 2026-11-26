@@ -33,8 +33,7 @@ export const alreadySignedUpEmail = ({ to }: { to: string }): Email => ({
         .
       </EmailParagraph>
       <EmailParagraph>
-        If it wasn&apos;t you, ignore this email. Your account hasn&apos;t
-        changed.
+        If it wasn’t you, ignore this email. Your account hasn’t changed.
       </EmailParagraph>
     </EmailLayout>
   ),

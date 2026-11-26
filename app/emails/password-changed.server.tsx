@@ -16,7 +16,7 @@ export const passwordChangedEmail = ({ to }: { to: string }): Email => ({
         changed, and every other signed-in browser was signed out.
       </EmailParagraph>
       <EmailParagraph>
-        If you didn&apos;t change it, reset your password now.
+        If you didn’t change it, reset your password now.
       </EmailParagraph>
       <EmailAction href={toAppUrl(href(`/forgot-password`)).href}>
         Reset password

@@ -256,7 +256,7 @@ model Player {
   // no working link
   personalLinkHash String         @unique
   // The version of the contest link the player started with
-  linkVersion      Int            @default(1)
+  linkVersion      Int
   createdAt        DateTime       @default(now())
   // Both set while the player is in the trash, which a CHECK constraint ensures
   deletedAt        DateTime?

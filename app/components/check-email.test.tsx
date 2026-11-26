@@ -1,13 +1,12 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { CheckEmail } from './check-email.tsx'
 
 test(`resending the link sends the address and says when`, async () => {
   const resentTo: unknown[] = []
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => <CheckEmail email='ada@school.org' reason='signed-up' />,
@@ -20,7 +19,6 @@ test(`resending the link sends the address and says when`, async () => {
       },
     },
   ])
-  await render(<Stub />)
 
   await page.getByRole(`button`, { name: `Resend email` }).click()
 
@@ -32,7 +30,7 @@ test(`resending the link sends the address and says when`, async () => {
 })
 
 test(`an unconfirmed educator is told to confirm before signing in`, async () => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => (
@@ -40,8 +38,6 @@ test(`an unconfirmed educator is told to confirm before signing in`, async () =>
       ),
     },
   ])
-
-  await render(<Stub />)
 
   await expect
     .element(
@@ -54,22 +50,21 @@ test(`an unconfirmed educator is told to confirm before signing in`, async () =>
 })
 
 test(`a refused resend says why`, async () => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => <CheckEmail email='ada@school.org' reason='signed-up' />,
     },
     {
       path: `/resend-confirmation`,
-      action: () => ({ error: `Too many attempts. Try again in 60 minutes.` }),
+      action: () => ({ error: `Too many attempts. Try again in 60 minutes` }),
     },
   ])
-  await render(<Stub />)
 
   await page.getByRole(`button`, { name: `Resend email` }).click()
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(`Too many attempts. Try again in 60 minutes.`)
+    .toHaveTextContent(`Too many attempts. Try again in 60 minutes`)
   await expectNoAxeViolations()
 })

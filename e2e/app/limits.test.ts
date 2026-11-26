@@ -25,7 +25,7 @@ test(`an address gets 10 sign-in attempts from one browser before it has to wait
 
   // The wait counts down from the first attempt, so a slow run can show 14
   await expect(page.getByRole(`alert`)).toHaveText(
-    /^Too many attempts\. Try again in 1[45] minutes\.$/u,
+    /^Too many attempts\. Try again in 1[45] minutes$/u,
   )
 })
 

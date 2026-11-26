@@ -80,7 +80,7 @@ export const ScanStep = ({
             slot='trigger'
             className='cursor-pointer font-semibold text-accent-strong underline underline-offset-2 outline-offset-2 data-focus-visible:outline-3 data-focus-visible:outline-accent-strong'
           >
-            Can&apos;t scan it?
+            Can’t scan it?
           </AriaButton>
         </Heading>
         <DisclosurePanel className='flex flex-col gap-1'>

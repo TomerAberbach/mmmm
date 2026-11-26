@@ -15,6 +15,8 @@
   left
 - The server's `ADMIN_LIST` comes from `admins.ts`, since a test can't change it
   once the server starts. Give each admin test its own address in `ADMINS`
+- Press a button that opens a confirmation, and confirm it, with `confirmDialog`
+  from `dialogs.ts`
 - Sign in as an admin with `signInAsAdmin` from `admins.ts`, which adds a
   passkey through Chromium's virtual authenticator. Test authenticator apps with
   `readTotpCode` from `test/totp.ts`

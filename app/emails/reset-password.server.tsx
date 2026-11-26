@@ -23,7 +23,7 @@ export const resetPasswordEmail = ({
       <EmailAction href={url}>Set a new password</EmailAction>
       <EmailParagraph>
         The link works once and expires in {RESET_EXPIRES_IN_HOURS} hour. If you
-        didn&apos;t ask, ignore this email. Your password hasn&apos;t changed.
+        didn’t ask, ignore this email. Your password hasn’t changed.
       </EmailParagraph>
     </EmailLayout>
   ),

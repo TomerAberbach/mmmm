@@ -1,20 +1,18 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test, vi } from 'vitest'
 import { page } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { RecoveryCodes } from './recovery-codes.tsx'
 
 const CODES = [`abcde-fghij`, `klmno-pqrst`]
 
 const renderCodes = async () => {
-  const Stub = createRoutesStub([
+  await renderRoutes([
     {
       path: `/`,
       Component: () => <RecoveryCodes codes={CODES} continueTo='/admin' />,
     },
   ])
-  await render(<Stub />)
 }
 
 test(`continuing waits until the educator says they saved the codes`, async () => {
@@ -29,7 +27,7 @@ test(`continuing waits until the educator says they saved the codes`, async () =
 test(`saying the codes are saved lets the educator continue`, async () => {
   await renderCodes()
 
-  await page.getByText(`I've saved these codes`).click()
+  await page.getByText(`I’ve saved these codes`).click()
 
   await expect
     .element(page.getByRole(`link`, { name: `Continue` }))

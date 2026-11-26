@@ -12,7 +12,7 @@ import { readRefusalMessage } from './app-refusal.ts'
 export type PasskeyCeremony = () => Promise<string | undefined>
 
 export const addPasskey: PasskeyCeremony = () =>
-  runCeremony(`The passkey wasn't added. Try again.`, async () => {
+  runCeremony(`The passkey wasn’t added. Try again`, async () => {
     const options = await fetchJson<PublicKeyCredentialCreationOptionsJSON>(
       `/api/auth/passkey/generate-register-options`,
     )
@@ -22,7 +22,7 @@ export const addPasskey: PasskeyCeremony = () =>
 
 export const signInWithPasskey: PasskeyCeremony = () =>
   runCeremony(
-    `That didn't sign you in. Try again, or use your password.`,
+    `That didn’t sign you in. Try again, or use your password`,
     async () => {
       const options = await fetchJson<PublicKeyCredentialRequestOptionsJSON>(
         `/api/auth/passkey/generate-authenticate-options`,

@@ -1,24 +1,25 @@
-import { createRoutesStub } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
+import { renderRoutes } from '../../test/render-routes.tsx'
 import { toBracketForm } from '../bracket-form.ts'
 import type { BracketForm } from '../bracket-form.ts'
 import { BracketSetupForm } from './bracket-setup-form.tsx'
 
 const renderForm = async (defaultValue?: BracketForm) => {
-  const Stub = createRoutesStub([
-    {
-      path: `/admin/bracket`,
-      Component: () => (
-        <BracketSetupForm year={2027} defaultValue={defaultValue} />
-      ),
-      action: () => null,
-    },
-  ])
-  await render(<Stub initialEntries={[`/admin/bracket`]} />)
+  await renderRoutes(
+    [
+      {
+        path: `/admin/bracket`,
+        Component: () => (
+          <BracketSetupForm year={2027} defaultValue={defaultValue} />
+        ),
+        action: () => null,
+      },
+    ],
+    `/admin/bracket`,
+  )
 }
 
 const division = (name: string) => page.getByRole(`group`, { name })
