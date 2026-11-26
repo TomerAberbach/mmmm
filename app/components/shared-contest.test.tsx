@@ -34,13 +34,18 @@ const renderSharedContest = (isOpen: boolean) =>
     },
   ])
 
-test(`a shared contest shows its players and scores without controls`, async () => {
+test(`a shared contest shows its players and scores without changing them`, async () => {
   await renderSharedContest(false)
 
   await expect
     .element(page.getByRole(`row`, { name: /Ava L\..*12 points/u }))
     .toBeVisible()
-  await expect.element(page.getByRole(`button`)).not.toBeInTheDocument()
+  expect(
+    page
+      .getByRole(`button`)
+      .elements()
+      .map(({ textContent }) => textContent),
+  ).toStrictEqual([`Report`])
   await expectNoAxeViolations()
 })
 

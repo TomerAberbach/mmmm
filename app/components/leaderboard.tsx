@@ -1,18 +1,23 @@
 import { Link } from 'react-router'
 import { Pages } from './pages.tsx'
-import type { LeaderboardPage } from '~/leaderboard-row.ts'
+import { ReportDialog } from './report-dialog.tsx'
+import { formatRank } from '~/leaderboard-row.ts'
+import type { LeaderboardPage, LeaderboardRow } from '~/leaderboard-row.ts'
+import type { ReportTarget } from '~/report-forms.ts'
 
 /** Approved submissions by rank, each opening its marked bracket */
 export const Leaderboard = ({
   leaderboard: { rows, page },
+  reportPath,
   toBracketPath,
 }: {
   leaderboard: LeaderboardPage
+  /** Null for the educator who can change the names */
+  reportPath: string | null
   toBracketPath: (playerId: string) => string
-}) =>
-  rows.length === 0 ? (
-    <p className='text-muted'>No approved brackets yet.</p>
-  ) : (
+}) => {
+  const [first, ...others] = rows
+  return first ? (
     <div className='flex flex-col gap-6'>
       <table className='w-full max-w-3xl border-collapse'>
         <thead>
@@ -63,5 +68,19 @@ export const Leaderboard = ({
         </tbody>
       </table>
       {page ? <Pages {...page} /> : null}
+      {reportPath === null ? null : (
+        <ReportDialog
+          action={reportPath}
+          targets={[toTarget(first), ...others.map(toTarget)]}
+        />
+      )}
     </div>
+  ) : (
+    <p className='text-muted'>No approved brackets yet.</p>
   )
+}
+
+const toTarget = ({ playerId, rank, label }: LeaderboardRow): ReportTarget => ({
+  id: playerId,
+  label: `${formatRank(rank)} · ${label}`,
+})

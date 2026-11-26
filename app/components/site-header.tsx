@@ -9,7 +9,7 @@ export const SiteHeader = ({
    * Null when signed out. Undefined when it couldn't be read, so the header
    * shows neither
    */
-  educator?: { name: string } | null
+  educator?: { name: string; reportCount: number } | null
 }) => (
   <header className='border-b-2 border-ink print:hidden'>
     <div className='h-2 bg-linear-to-r from-accent-strong via-muted to-accent-soft' />
@@ -26,6 +26,11 @@ export const SiteHeader = ({
           action={href(`/sign-out`)}
           className='flex items-center gap-4'
         >
+          {educator.reportCount > 0 ? (
+            <Link to={href(`/contests/reports`)} className='font-semibold'>
+              {`Reports (${educator.reportCount})`}
+            </Link>
+          ) : null}
           <Link
             to={href(`/settings`)}
             className='font-semibold text-ink no-underline hover:underline'

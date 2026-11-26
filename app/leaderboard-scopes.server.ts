@@ -6,6 +6,7 @@ import {
   readLeaderboard,
   readLeaderboardSubmission,
   readPlayerRank,
+  readRankedContestId,
 } from './leaderboards.server.ts'
 import type {
   LeaderboardScope,
@@ -56,28 +57,58 @@ export type ScopeRank = {
 }
 
 /** The player's contest, then their organization if any, then everyone */
+export const readPlayerScopes = async (contest: {
+  id: string
+  name: string
+  year: number
+}): Promise<NamedScope[]> =>
+  [
+    toContestScope(contest),
+    await readContestOrganizationScope(contest),
+    toGlobalScope(contest.year),
+  ].filter(named => named !== null)
+
+/** Ranks in the order of `readPlayerScopes` */
 export const readPlayerRanks = async (
   contest: { id: string; name: string; year: number },
   playerId: string,
 ): Promise<ScopeRank[]> => {
-  const scopes = [
-    toContestScope(contest),
-    await readContestOrganizationScope(contest),
-    toGlobalScope(contest.year),
-  ]
   const ranks: ScopeRank[] = []
   // One at a time, so a burst of players can't use up the pool
-  for (const named of scopes) {
-    if (named) {
-      const { scope, name } = named
-      ranks.push({
-        kind: scope.kind,
-        name,
-        rank: await readPlayerRank(scope, playerId),
-      })
-    }
+  for (const { scope, name } of await readPlayerScopes(contest)) {
+    ranks.push({
+      kind: scope.kind,
+      name,
+      rank: await readPlayerRank(scope, playerId),
+    })
   }
   return ranks
+}
+
+/** The educator's organization if any, then everyone */
+export const readEducatorScopes = async (
+  educatorId: string,
+): Promise<NamedScope[]> =>
+  [
+    await readEducatorOrganizationScope(educatorId),
+    await readGlobalScope(),
+  ].filter(named => named !== null)
+
+/** Null unless the player has a row in one of the scopes */
+export const findRankedContestId = async (
+  scopes: NamedScope[],
+  playerId: string | null,
+): Promise<string | null> => {
+  if (playerId === null) {
+    return null
+  }
+  for (const { scope } of scopes) {
+    const contestId = await readRankedContestId(scope, playerId)
+    if (contestId !== null) {
+      return contestId
+    }
+  }
+  return null
 }
 
 /** Null without an organization, or before any bracket is published */

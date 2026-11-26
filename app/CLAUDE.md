@@ -236,6 +236,8 @@ app
   `leaderboards.server.ts`, which hides names by viewer on the server and
   returns nothing while the year is open. Nest a player's leaderboard pages
   under `routes/player.approved.tsx`
+- Give a new leaderboard or contest page a `ReportDialog`, and answer it with
+  `answerReport`, which checks that the reporter sees what they report
 - Change a player's picks with `pickWinner` from `picks.ts`, which also picks
   the winner's earlier wins and clears the later picks that no longer fit.
   `savePlayerDraft` and `submitPlayerPicks` refuse picks that `pickWinner`

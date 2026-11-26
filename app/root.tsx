@@ -25,6 +25,7 @@ import { BrokenLink } from './components/removed.tsx'
 import { SiteFooter } from './components/site-footer.tsx'
 import { SiteHeader } from './components/site-header.tsx'
 import { requireEnv } from './env.server.ts'
+import { countReports } from './reports.server.ts'
 import { loadSignedInEducator, readSignedInEducator } from './session.server.ts'
 
 export const links: Route.LinksFunction = () => [
@@ -46,7 +47,13 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
   return {
     supportEmail: requireEnv(`SUPPORT_EMAIL`),
     // Every page receives this, so it holds only what the header shows
-    educator: educator && { name: educator.name },
+    educator: educator && {
+      name: educator.name,
+      reportCount: await countReports({
+        kind: `educator`,
+        educatorId: educator.id,
+      }),
+    },
   }
 }
 

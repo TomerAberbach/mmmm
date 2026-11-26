@@ -2,10 +2,12 @@ import { useId } from 'react'
 import { href, Link } from 'react-router'
 import { LocalTime } from './local-time.tsx'
 import { PageHeader } from './page-header.tsx'
+import { ReportDialog } from './report-dialog.tsx'
 import { ScoreCell } from './score-cell.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import type { ContestPlayer } from '~/contest-players.server.ts'
 import { formatDateTime } from '~/dates.ts'
+import { CONTEST_TARGET } from '~/report-forms.ts'
 import type { SharedContest } from '~/shares.server.ts'
 import { describeStatus, SUBMISSION_SECTIONS } from '~/submission-status.ts'
 
@@ -50,6 +52,13 @@ export const SharedContestDetails = ({
         />
       ) : null
     })}
+    <ReportDialog
+      action={href(`/contests/:contestId/report`, { contestId: contest.id })}
+      targets={[
+        CONTEST_TARGET,
+        ...players.map(({ id, displayName }) => ({ id, label: displayName })),
+      ]}
+    />
   </div>
 )
 

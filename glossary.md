@@ -69,7 +69,9 @@ for a **Player**'s **Draft** or **Submission**.
 | **Discard**            | To replace a **Player**'s **Draft** with their **Submission**'s **Picks**                                                            | Revert, undo                              |
 | **Submission**         | A submitted set of **Picks** in a **Contest**, with a status of pending, approved, or rejected                                       | Entry, fill-out, completion, bracket      |
 | **Approve**            | To mark a **Submission** approved, so it counts on **Leaderboards**                                                                  | Accept, allow                             |
-| **Reject**             | To mark a **Submission** rejected, so **Leaderboards** leave it out                                                                  | Deny, decline, dismiss                    |
+| **Reject**             | To mark a **Submission** rejected, so **Leaderboards** leave it out                                                                  | Deny, decline                             |
+| **Report**             | An anonymous notice that a **Display name** or a **Contest**'s name needs a look, sent to the **Educator** and the **Admin**         | Flag, complaint                           |
+| **Dismiss**            | To take a **Report** off its reader's list                                                                                           | Resolve, close                            |
 | **Marked bracket**     | A **Player**'s **Picks**, each shown as right or wrong                                                                               | Graded bracket, scored bracket            |
 | **Share**              | An **Educator**'s grant of one colleague's full view of a **Contest**                                                                | Collaborator, co-teacher                  |
 | **Trash**              | The holding place for deleted **Contests**, **Drafts**, and **Submissions** until they're **Restored** or **Erased**                 | Recycle bin, archive                      |

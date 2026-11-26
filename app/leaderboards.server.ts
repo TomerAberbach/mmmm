@@ -277,3 +277,19 @@ export const readPlayerRank = async (
   const { isRanked, ...playerRank } = row!
   return isRanked ? playerRank : null
 }
+
+/** The player's contest. Null when `readPlayerRank` would be */
+export const readRankedContestId = async (
+  scope: LeaderboardScope,
+  playerId: string,
+): Promise<string | null> => {
+  if (await isOpenYear(scope.year)) {
+    return null
+  }
+  const [row] = await prisma.$queryRaw<{ contestId: string }[]>`
+    SELECT "Contest"."id" AS "contestId"
+    ${APPROVED_SUBMISSIONS_SQL} AND ${scopeSql(scope)}
+      AND "Player"."id" = ${playerId}
+  `
+  return row?.contestId ?? null
+}

@@ -98,9 +98,13 @@ const rejectTooManyNewPlayers = (
   { message, headers }: LimitRefusal,
 ) => rejectForm(submission, { formErrors: [message] }, { status: 429, headers })
 
-const PlayPage = ({ loaderData, actionData }: Route.ComponentProps) => (
+const PlayPage = ({ loaderData, actionData, params }: Route.ComponentProps) => (
   <div className='max-w-xl'>
-    <PlayContestPage view={loaderData} lastResult={actionData?.result} />
+    <PlayContestPage
+      view={loaderData}
+      reportPath={href(`/play/:linkSecret/report`, params)}
+      lastResult={actionData?.result}
+    />
   </div>
 )
 export default PlayPage

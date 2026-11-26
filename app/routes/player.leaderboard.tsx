@@ -21,6 +21,7 @@ const PlayerLeaderboard = ({ loaderData, params }: Route.ComponentProps) => (
     <PageTitle>Leaderboard</PageTitle>
     <Leaderboard
       leaderboard={loaderData.leaderboard}
+      reportPath={href(`/player/:contestId/report`, params)}
       toBracketPath={playerId =>
         href(`/player/:contestId/leaderboard/:playerId`, {
           ...params,
