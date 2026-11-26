@@ -18,7 +18,7 @@ import type { Submission } from '../player-picks.server.ts'
 import { fillSides, toSeededBracket } from '../seeded-bracket.ts'
 import type { Combatant } from '../seeded-bracket.ts'
 import { PlayerBracket } from './player-bracket.tsx'
-import type { Submitted } from './player-bracket.tsx'
+import type { Submitted } from './player-controls.tsx'
 
 const STORED_BRACKET = storeTestBracket(BRACKET_2025)
 const BRACKET = toSeededBracket(STORED_BRACKET)
@@ -511,4 +511,18 @@ test(`forgetting and deleting wait for a request in flight`, async () => {
 
   await expect.element(forget).toBeEnabled()
   await expect.element(deleteBracket).toBeEnabled()
+})
+
+test(`submitting as submissions close says so and reloads the page`, async () => {
+  answerRequests(new Response(null, { status: 423 }))
+  await renderBracket({ draft: COMPLETE_PICKS })
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+
+  await expect
+    .element(page.getByRole(`alert`))
+    .toHaveTextContent(`Submissions just closed. Couldn’t submitReload`)
+  await expect
+    .element(page.getByRole(`button`, { name: `Reload` }))
+    .toBeVisible()
 })

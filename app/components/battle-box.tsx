@@ -8,6 +8,7 @@ import {
   RadioButton,
   RadioField,
   RadioGroup,
+  ToggleButton,
 } from 'react-aria-components'
 import { usePicking } from './picking.ts'
 import type { Picking } from './picking.ts'
@@ -184,53 +185,112 @@ const SeedNumber = ({ side }: { side: Side }) => (
   </span>
 )
 
-const PickableBattleBox = ({
-  battle,
-  classes,
-  wildCardLine,
-  picking,
-}: {
+type PickableBoxProps = {
   battle: BattleView
   classes: SizeClasses
   wildCardLine: WildCardLine | undefined
   picking: Picking
-}) => (
-  <RadioGroup
-    aria-label={readBattleName(battle)}
-    value={battle.winner?.id ?? null}
-    onChange={winner => picking.pick(battle, winner)}
-    dir='ltr'
-    data-battle={toBattleKey(battle)}
-    className={`${readBoxClasses(classes)} ${picking.isCleared(battle) ? `outline-4 outline-offset-2 outline-sweet-16` : ``}`}
-  >
-    {battle.sides.map((side, index) =>
-      side.kind === `combatant` ? (
-        <RadioField
-          // Sides never reorder
-          key={index}
-          value={side.combatant.id}
-          className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
-        >
-          <WildCardLineBar wildCardLine={wildCardLine} side={index} />
-          <RadioButton
-            className={`flex min-w-0 flex-1 items-center gap-2 self-stretch ${FOCUS_CLASSES}`}
+}
+
+const PickableBattleBox = (props: PickableBoxProps) =>
+  props.picking.kind === `results` ? (
+    <ResultBox {...props} />
+  ) : (
+    <PickBox {...props} />
+  )
+
+const readPickableBoxProps = ({
+  battle,
+  classes,
+  picking,
+}: PickableBoxProps) => ({
+  'aria-label': readBattleName(battle),
+  dir: `ltr`,
+  'data-battle': toBattleKey(battle),
+  className: `${readBoxClasses(classes)} ${picking.isCleared(battle) ? `outline-4 outline-offset-2 outline-sweet-16` : ``}`,
+})
+
+const PickBox = (props: PickableBoxProps) => {
+  const { battle, classes, wildCardLine, picking } = props
+  return (
+    <RadioGroup
+      {...readPickableBoxProps(props)}
+      value={battle.winner?.id ?? null}
+      onChange={winner => picking.pick(battle, winner)}
+    >
+      {battle.sides.map((side, index) =>
+        side.kind === `combatant` ? (
+          <RadioField
+            // Sides never reorder
+            key={index}
+            value={side.combatant.id}
+            className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
           >
-            <SeedNumber side={side} />
-            <SideName side={side} className={classes.name} />
-          </RadioButton>
-        </RadioField>
-      ) : (
-        <div key={index} className={readRowClasses(classes)}>
-          <WildCardLineBar wildCardLine={wildCardLine} side={index} />
-          <ContenderMenu
-            side={side}
-            className={classes.name}
-            picking={picking}
-          />
-        </div>
-      ),
-    )}
-  </RadioGroup>
+            <WildCardLineBar wildCardLine={wildCardLine} side={index} />
+            <RadioButton
+              className={`flex min-w-0 flex-1 items-center gap-2 self-stretch ${FOCUS_CLASSES}`}
+            >
+              <SeedNumber side={side} />
+              <SideName side={side} className={classes.name} />
+            </RadioButton>
+          </RadioField>
+        ) : (
+          <UndecidedSide key={index} {...props} side={side} index={index} />
+        ),
+      )}
+    </RadioGroup>
+  )
+}
+
+/** Each side is a toggle button, since pressing a recorded winner clears it */
+const ResultBox = (props: PickableBoxProps) => {
+  const { battle, classes, wildCardLine, picking } = props
+  const boxProps = readPickableBoxProps(props)
+  return (
+    // A fieldset grows to fit its longest name unless its minimum width is zero
+    <fieldset {...boxProps} className={`min-w-0 ${boxProps.className}`}>
+      {battle.sides.map((side, index) =>
+        side.kind === `combatant` ? (
+          <div
+            // Sides never reorder
+            key={index}
+            className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
+          >
+            <WildCardLineBar wildCardLine={wildCardLine} side={index} />
+            <ToggleButton
+              isSelected={side.combatant.id === battle.winner?.id}
+              onChange={() => picking.pick(battle, side.combatant.id)}
+              className={`flex min-w-0 flex-1 items-center gap-2 self-stretch text-start ${FOCUS_CLASSES}`}
+            >
+              <SeedNumber side={side} />
+              <SideName side={side} className={classes.name} />
+              {side.combatant.id === battle.winner?.id ? (
+                <span className='sr-only'>, won. Press to clear</span>
+              ) : null}
+            </ToggleButton>
+          </div>
+        ) : (
+          <UndecidedSide key={index} {...props} side={side} index={index} />
+        ),
+      )}
+    </fieldset>
+  )
+}
+
+const UndecidedSide = ({
+  side,
+  index,
+  classes,
+  wildCardLine,
+  picking,
+}: PickableBoxProps & {
+  side: Extract<Side, { kind: `undecided` }>
+  index: number
+}) => (
+  <div className={readRowClasses(classes)}>
+    <WildCardLineBar wildCardLine={wildCardLine} side={index} />
+    <ContenderMenu side={side} className={classes.name} picking={picking} />
+  </div>
 )
 
 /**
@@ -282,7 +342,9 @@ const ContenderList = ({
 }) => (
   <>
     <p className='px-3 py-1.5 text-sm text-muted'>
-      Pick who gets here. Their earlier wins fill in too
+      {picking.kind === `results`
+        ? `Choose who gets here. Their earlier wins are recorded too`
+        : `Pick who gets here. Their earlier wins fill in too`}
     </p>
     <Menu
       aria-label={`Who wins ${readBattleName(battle)}`}

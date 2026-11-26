@@ -134,14 +134,22 @@ app
 - Store or replace an unpublished bracket with `saveUnpublishedBracket` from
   `brackets.server.ts`, which writes every seed slot, battle, and the wild card
   in one transaction
-- Read a year's phase with `readBracketSummary`, instead of checking
-  `publishedAt`
-- Only the current year takes new contests, players, and picks. Run a
-  transaction that depends on which year is current with `withCurrentYear` from
-  `brackets.server.ts`, which shares one lock among such writes. Publishing and
-  unpublishing take that lock alone, so neither interleaves with those writes or
-  with each other. `saveUnpublishedBracket` shares it and takes a lock on its
-  year, so saves of different years and pick writes run alongside it
+- Read a year's phase with `readBracketSummary`, and the years the admin manages
+  with `readAdminYears`, instead of checking `publishedAt`, `lockedAt`, or the
+  date. The admin sets up the next year only once the current year has a
+  champion
+- Only an open year, current and not locked, takes new contests, players, and
+  picks. Run a transaction that depends on it with `withCurrentYear` from
+  `brackets.server.ts`, and check it with `isOpen`. Such writes share one lock,
+  which publishing, unpublishing, and results take alone with
+  `withCurrentYearAlone`, so none interleaves with them.
+  `saveUnpublishedBracket` shares it and takes a lock on its year, so saves of
+  different years and pick writes run alongside it
+- Post the year an admin page shows with each of its forms, and refuse another
+  one, since the years the admin manages move on with results
+- Change results only through `results.server.ts`. A request holds what the
+  admin saw and confirmed, and `saveResult` refuses it when its effects would
+  differ. The rules both sides share are in `results.ts`
 - Read which seed slots or earlier battles feed a battle, and which Round 1
   battle the wild card's winner plays, from `bracket.ts`. `Battle` rows store no
   links, only a round and an index for results and picks to reference
@@ -217,10 +225,10 @@ app
   adds to them. Delete, restore, and erase only through `trash.server.ts`
 - Answer a link that can work again, such as a deleted player's, with a 404.
   Chromium caches a 410 forever
-- Send the picker's requests through `usePicksRequests` in
-  `components/picks-requests.ts`, which sends one at a time so the server
-  applies them in order. React Router's fetchers cancel an earlier request in
-  the browser, but the server still applies it
+- Send the picker's requests and results through `useRequestQueue` in
+  `components/request-queue.ts`, which sends one at a time so the server applies
+  them in order. A 423 means submissions closed. React Router's fetchers cancel
+  an earlier request in the browser, but the server still applies it
 
 ## Testing
 

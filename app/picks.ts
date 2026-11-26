@@ -7,23 +7,25 @@ export type Picks = Winners
 
 export const TOTAL_BATTLES = listBattles().length
 
-/** Every combatant who could win the battle, whatever the picks */
+/** Every combatant who could win the battle, given the winners so far */
 export const listContenders = (
   bracket: SeededBracket,
   battle: BattleRef,
+  winners: Winners = {},
 ): Combatant[] =>
-  fillSides(bracket, battle, {}).flatMap(side =>
+  fillSides(bracket, battle, winners).flatMap(side =>
     side.kind === `combatant`
       ? side.combatant
-      : listContenders(bracket, side.battle),
+      : listContenders(bracket, side.battle, winners),
   )
 
-const isContender = (
+export const isContender = (
   bracket: SeededBracket,
   battle: BattleRef,
   combatantId: string,
+  winners: Winners = {},
 ): boolean =>
-  listContenders(bracket, battle).some(({ id }) => id === combatantId)
+  listContenders(bracket, battle, winners).some(({ id }) => id === combatantId)
 
 /**
  * Picks `winner`, a combatant ID, in the battle, and in every earlier battle on
@@ -95,7 +97,7 @@ const listPathTo = (
  * Keeps, in play order, each pick whose winner is on one of its battle's sides,
  * so a cleared pick also clears the picks that depended on it
  */
-const keepReachablePicks = (
+export const keepReachablePicks = (
   bracket: SeededBracket,
   picks: Picks,
 ): { picks: Picks; cleared: BattleRef[] } => {

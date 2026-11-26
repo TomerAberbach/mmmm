@@ -8,6 +8,7 @@ import {
   savePlayerDraft,
   submitPlayerPicks,
 } from '~/player-picks.server.ts'
+import { LOCKED_STATUS } from '~/submissions-locked.ts'
 
 export const middleware: Route.MiddlewareFunction[] = [requirePlayer]
 
@@ -30,7 +31,12 @@ export const action = async ({
   }
   const { id } = readRequiredPlayer(context)
   const result = await writePicks(id, parsed.data)
-  return `refusal` in result ? refuse() : new Response(null)
+  if (`refusal` in result) {
+    return result.refusal === `NOT_OPEN`
+      ? new Response(null, { status: LOCKED_STATUS })
+      : refuse()
+  }
+  return new Response(null)
 }
 
 const refuse = (): Response => new Response(null, { status: 400 })

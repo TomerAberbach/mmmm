@@ -12,28 +12,30 @@ export type ContestSummary = { id: string; name: string; link: string }
 export type Contest = ContestSummary & { year: number }
 
 /**
- * Creates a contest in the current year. Returns the contest's ID, or null
- * before any bracket is published
+ * Creates a contest in the current year, and returns its ID. Refuses before any
+ * bracket is published, and once the year locks
  */
 export const createContest = (
   educatorId: string,
   name: string,
-): Promise<string | null> =>
-  withCurrentYear(async (tx, year) => {
-    if (year === null) {
-      return null
+): Promise<{ id: string } | { refusal: `NOT_PUBLISHED` | `LOCKED` }> =>
+  withCurrentYear(async (tx, current) => {
+    if (!current) {
+      return { refusal: `NOT_PUBLISHED` }
     }
-    const { id } = await tx.contest.create({
+    if (current.isLocked) {
+      return { refusal: `LOCKED` }
+    }
+    return tx.contest.create({
       data: {
         id: randomUUID(),
-        year,
+        year: current.year,
         educatorId,
         name,
         linkSecret: createContestSecret(),
       },
       select: { id: true },
     })
-    return id
   })
 
 /** Replaces the stored secret with the contest link built from it */

@@ -1,8 +1,5 @@
 import type { BracketInput } from '../app/bracket-input.ts'
-import {
-  saveUnpublishedBracket,
-  setBracketPublished,
-} from '../app/brackets.server.ts'
+import { saveUnpublishedBracket } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import { BRACKET_2026 } from '../prisma/brackets.ts'
 
@@ -28,6 +25,12 @@ export const addYear = async ({
 }): Promise<number> => {
   const year = await claimYear()
   await saveUnpublishedBracket(year, input)
-  await setBracketPublished(year, published)
+  if (published) {
+    // Skips the champion that publishing over a current year requires
+    await prisma.bracket.update({
+      where: { year },
+      data: { publishedAt: new Date() },
+    })
+  }
   return year
 }

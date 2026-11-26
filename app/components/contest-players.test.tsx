@@ -52,6 +52,7 @@ const renderPlayers = async (
         Component: () => (
           <ContestPlayers
             contestId='period-2'
+            isOpen
             players={useLoaderData<ContestPlayer[]>()}
           />
         ),

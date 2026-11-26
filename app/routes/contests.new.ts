@@ -20,15 +20,16 @@ export const action = async ({
   if (submission.status !== `success`) {
     return rejectForm(submission)
   }
-  const contestId = await createContest(
+  const contest = await createContest(
     readRequiredEducator(context).id,
     submission.value.name,
   )
-  return contestId
-    ? redirect(href(`/contests/:contestId`, { contestId }))
-    : rejectForm(submission, {
-        formErrors: [
-          `Contests open once the bracket is published, so this one wasn’t created`,
-        ],
-      })
+  return `refusal` in contest
+    ? rejectForm(submission, { formErrors: [REFUSALS[contest.refusal]] })
+    : redirect(href(`/contests/:contestId`, { contestId: contest.id }))
+}
+
+const REFUSALS = {
+  NOT_PUBLISHED: `Contests open once the bracket is published, so this one wasn’t created`,
+  LOCKED: `Submissions are closed, so this contest wasn’t created`,
 }

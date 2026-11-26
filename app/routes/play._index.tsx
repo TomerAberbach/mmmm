@@ -2,9 +2,12 @@ import type { Submission } from '@conform-to/react'
 import { parseWithZod } from '@conform-to/zod/v4'
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/play._index.ts'
-import { isCurrentYear } from '~/brackets.server.ts'
+import { isOpenYear } from '~/brackets.server.ts'
 import { brokenLink } from '~/broken-link.ts'
-import { CONTEST_CLOSED, PlayContestPage } from '~/components/play-contest.tsx'
+import {
+  NOT_OPEN_MESSAGE,
+  PlayContestPage,
+} from '~/components/play-contest.tsx'
 import type { PlayView } from '~/components/play-contest.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
 import { serverFreeTextSchema } from '~/free-text.server.ts'
@@ -28,7 +31,10 @@ export const loader = async ({
   context,
 }: Route.LoaderArgs): Promise<PlayView> => {
   const contest = readPlayContest(context)
-  const player = await readRememberedPlayer(request, contest.id)
+  const [player, isOpen] = await Promise.all([
+    readRememberedPlayer(request, contest.id),
+    isOpenYear(contest.year),
+  ])
   if (player) {
     return {
       state: `returning`,
@@ -36,11 +42,10 @@ export const loader = async ({
       bracketPath: href(`/player/:contestId/bracket`, {
         contestId: contest.id,
       }),
+      isOpen,
     }
   }
-  return {
-    state: (await isCurrentYear(contest.year)) ? `askName` : `closed`,
-  }
+  return { state: isOpen ? `askName` : `notOpen` }
 }
 
 export const action = async ({
@@ -76,7 +81,7 @@ export const action = async ({
     }
     return player.refusal === `LIMITED`
       ? rejectTooManyNewPlayers(submission, player.limit)
-      : rejectForm(submission, { formErrors: [CONTEST_CLOSED] })
+      : rejectForm(submission, { formErrors: [NOT_OPEN_MESSAGE] })
   }
   return redirect(
     href(`/player/:contestId/bracket`, { contestId: contest.id }),

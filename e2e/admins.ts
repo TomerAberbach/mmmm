@@ -13,6 +13,7 @@ export const ADMINS = {
   otherBrowser: `other-browser-admin@example.com`,
   setup: `setup-admin@example.com`,
   publish: `publish-admin@example.com`,
+  results: `results-admin@example.com`,
   unpublish: `unpublish-admin@example.com`,
   check: `check-admin@example.com`,
   contest: `contest-admin@example.com`,

@@ -220,7 +220,7 @@ test.each([
 
     const result = await write(playerId, picks)
 
-    expect(result).toStrictEqual({ refusal: `NOT_CURRENT_YEAR` })
+    expect(result).toStrictEqual({ refusal: `NOT_OPEN` })
     await expect(readDraftAndSubmission(playerId)).resolves.toMatchObject({
       draft: picks.changed,
       submission: { picks: picks.complete },

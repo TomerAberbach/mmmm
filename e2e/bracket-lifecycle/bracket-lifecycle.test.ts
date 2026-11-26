@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { ADMINS, signInAsAdmin } from '../admins.ts'
+import { newEmailAddress, signInConfirmed } from '../auth.ts'
 import { fillBracketForm, YEAR } from '../brackets.ts'
 import { confirmDialog } from '../dialogs.ts'
 
@@ -52,6 +53,39 @@ test(`a published bracket is on the home page, with each rename`, async ({
   ).toBeVisible()
   await expect(
     visitor.getByText(`Combatant One`, { exact: true }).first(),
+  ).toBeVisible()
+})
+
+test(`the first result locks submissions until they reopen`, async ({
+  page,
+  browser,
+}) => {
+  await signInAsAdmin(page, ADMINS.results)
+  await page.getByRole(`link`, { name: `Manage the ${YEAR} bracket` }).click()
+  const winner = page
+    .getByRole(`group`, { name: `Round 1, battle 1`, exact: true })
+    .getByRole(`button`)
+    .first()
+
+  await winner.click()
+  await page.getByRole(`button`, { name: `Save result and lock` }).click()
+
+  await expect(page.getByText(/^Saved at/u)).toBeVisible()
+  await expect(page.getByText(`In progress`, { exact: true })).toBeVisible()
+  const educator = await browser.newPage()
+  await signInConfirmed(educator, newEmailAddress())
+  await expect(
+    educator.getByText(`Submissions are closed.`, { exact: true }),
+  ).toBeVisible()
+
+  await winner.click()
+  await page.getByRole(`button`, { name: `Clear result` }).click()
+  await confirmDialog(page, `Reopen submissions`)
+
+  await expect(page.getByText(`Open`, { exact: true })).toBeVisible()
+  await educator.reload()
+  await expect(
+    educator.getByRole(`button`, { name: `Create contest` }),
   ).toBeVisible()
 })
 

@@ -90,6 +90,7 @@ test(`a remembered player continues to their bracket`, async () => {
     state: `returning`,
     displayName: `Maya R.`,
     bracketPath: `/play/secret/bracket`,
+    isOpen: true,
   })
 
   const link = page.getByRole(`link`, { name: `Continue as Maya R.` })
@@ -102,6 +103,7 @@ test(`a remembered player is offered a new bracket instead`, async () => {
     state: `returning`,
     displayName: `Maya R.`,
     bracketPath: `/play/secret/bracket`,
+    isOpen: true,
   })
 
   await expect
@@ -113,11 +115,11 @@ test(`a remembered player is offered a new bracket instead`, async () => {
   await expectNoAxeViolations()
 })
 
-test(`a past year's contest takes no new players`, async () => {
-  await renderPlay({ state: `closed` })
+test(`a contest that isn't open takes no new players`, async () => {
+  await renderPlay({ state: `notOpen` })
 
   await expect
-    .element(page.getByRole(`heading`, { name: `New brackets are closed` }))
+    .element(page.getByRole(`heading`, { name: `Submissions are closed` }))
     .toBeVisible()
   await expect.element(page.getByRole(`textbox`)).not.toBeInTheDocument()
 })

@@ -1,6 +1,6 @@
 import { toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
-import { readBracketRows, withCurrentYear } from './brackets.server.ts'
+import { isOpen, readBracketRows, withCurrentYear } from './brackets.server.ts'
 import { prisma } from './db.server.ts'
 import type {
   PickStage,
@@ -46,14 +46,10 @@ export const readDraftAndSubmission = async (
   }
 }
 
-/** Only the current year's contests take picks */
+/** Only an open year's contests take picks */
 export type PicksRefusal = {
   refusal:
-    | `NOT_CURRENT_YEAR`
-    | `DELETED`
-    | `INCONSISTENT`
-    | `INCOMPLETE`
-    | `NOT_SUBMITTED`
+    `NOT_OPEN` | `DELETED` | `INCONSISTENT` | `INCOMPLETE` | `NOT_SUBMITTED`
 }
 
 /**
@@ -165,14 +161,14 @@ const writePicks = async (
 
 /**
  * Runs `change` in a transaction once it holds the years and the player's row,
- * with the player's year, refusing unless that year is current and the player
+ * with the player's year, refusing unless that year is open and the player
  * and their contest are outside the trash
  */
 const withCurrentPlayer = <Result>(
   playerId: string,
   change: (tx: Prisma.TransactionClient, year: number) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
-  withCurrentYear(async (tx, currentYear) => {
+  withCurrentYear(async (tx, current) => {
     await tx.$queryRaw`SELECT 1 FROM "Player" WHERE "id" = ${playerId} FOR UPDATE`
     // The request may have read the player before another deleted them or
     // their contest
@@ -184,9 +180,9 @@ const withCurrentPlayer = <Result>(
       return { refusal: `DELETED` } as const
     }
     const { year } = player.contest
-    return year === currentYear
+    return isOpen(current, year)
       ? change(tx, year)
-      : ({ refusal: `NOT_CURRENT_YEAR` } as const)
+      : ({ refusal: `NOT_OPEN` } as const)
   })
 
 /**

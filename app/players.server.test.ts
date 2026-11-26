@@ -71,7 +71,7 @@ test(`a contest takes no players once a newer year is published, and costs the l
     limit,
   )
 
-  expect(player).toStrictEqual({ refusal: `NOT_CURRENT_YEAR` })
+  expect(player).toStrictEqual({ refusal: `NOT_OPEN` })
   expect(limit).not.toHaveBeenCalled()
   await expect(prisma.player.count({ where: { contestId } })).resolves.toBe(0)
 })

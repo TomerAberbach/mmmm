@@ -10,17 +10,18 @@ import { readUpcomingYear } from '~/year.ts'
 export const loader = async ({
   context,
 }: Route.LoaderArgs): Promise<EducatorDashboardView> => {
-  const year = await readCurrentYear()
-  if (year === null) {
+  const current = await readCurrentYear()
+  if (!current) {
     return { current: null, upcomingYear: readUpcomingYear(new Date()) }
   }
+  const { year, isLocked } = current
   const educator = readRequiredEducator(context)
   const [contests, deletedCount] = await Promise.all([
     readEducatorContests(educator.id, year),
     countDeletedContests(educator.id, year),
   ])
   return {
-    current: { year, contests, deletedCount },
+    current: { year, isLocked, contests, deletedCount },
   }
 }
 

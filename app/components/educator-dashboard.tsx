@@ -3,6 +3,7 @@ import { CopyButton } from './copy-button.tsx'
 import { CreateContestDialog } from './create-contest-dialog.tsx'
 import { PageHeader } from './page-header.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
+import { SubmissionsClosed } from './submissions-closed.tsx'
 import type { ContestSummary } from '~/contests.server.ts'
 
 /**
@@ -14,6 +15,7 @@ export type EducatorDashboardView =
   | {
       current: {
         year: number
+        isLocked: boolean
         contests: ContestSummary[]
         deletedCount: number
       }
@@ -31,12 +33,19 @@ export const EducatorDashboard = ({
       <PageHeader
         label={current ? String(current.year) : undefined}
         title='Your contests'
-        action={hasContests ? <CreateContestDialog /> : null}
+        action={
+          hasContests && !current?.isLocked ? <CreateContestDialog /> : null
+        }
       />
+      {current?.isLocked ? (
+        <SubmissionsClosed>
+          {`The first ${current.year} result is in, so you can create contests again once the ${current.year + 1} bracket is published.`}
+        </SubmissionsClosed>
+      ) : null}
       {current ? (
         hasContests ? (
           <ContestList contests={current.contests} />
-        ) : (
+        ) : current.isLocked ? null : (
           <FirstContest />
         )
       ) : (

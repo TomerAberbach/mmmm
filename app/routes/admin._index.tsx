@@ -1,55 +1,84 @@
 import { href } from 'react-router'
 import type { Route } from './+types/admin._index.ts'
-import { readBracketSummary } from '~/brackets.server.ts'
+import { readAdminYears, readBracketSummary } from '~/brackets.server.ts'
+import type { BracketSummary } from '~/brackets.server.ts'
 import { ButtonLink } from '~/components/button.tsx'
 import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseTag } from '~/components/phase-section.tsx'
 import { SECTION_HEADING_CLASS_NAME } from '~/components/settings-section.tsx'
 import { formatDate } from '~/dates.ts'
-import { readUpcomingYear } from '~/year.ts'
 
 export const loader = async () => {
-  const year = readUpcomingYear(new Date())
-  const summary = await readBracketSummary(year)
+  const { current, setupYear } = await readAdminYears()
   return {
-    year,
-    // Null before the year's bracket is set up
-    phase: summary?.phase ?? null,
-    expectedLockDate:
-      summary?.expectedLockDate && formatDate(summary.expectedLockDate),
+    current,
+    setup: setupYear !== null && {
+      year: setupYear,
+      summary: await readBracketSummary(setupYear),
+    },
   }
 }
 
-const Admin = ({
-  loaderData: { year, phase, expectedLockDate },
-}: Route.ComponentProps) => (
+const Admin = ({ loaderData: { current, setup } }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
     <PageTitle>Admin</PageTitle>
-    <section className='flex max-w-xl flex-col gap-3 border-2 border-ink p-5'>
-      <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-        <h2 className={SECTION_HEADING_CLASS_NAME}>{year} bracket</h2>
-        <PhaseTag phase={phase ?? `SETUP`} />
-        {phase === null ? (
-          <span className='text-muted'>Not set up yet</span>
-        ) : null}
-      </div>
-      {phase === null ? (
-        <p className='text-muted'>
-          ASU publishes its bracket in March. Enter it here, check it, then
-          publish it.
-        </p>
-      ) : null}
-      {expectedLockDate ? (
-        <p className='text-muted'>Expected to lock {expectedLockDate}</p>
-      ) : null}
-      <div>
-        <ButtonLink href={href(`/admin/bracket`)}>
-          {phase === null
-            ? `Set up the ${year} bracket`
-            : `Manage the ${year} bracket`}
+    {current ? (
+      <YearCard {...current}>
+        <ButtonLink
+          href={href(`/admin/results`)}
+          variant={
+            current.summary.phase === `COMPLETE` ? `secondary` : `primary`
+          }
+        >
+          {current.summary.phase === `COMPLETE`
+            ? `Correct ${current.year} results`
+            : `Manage the ${current.year} bracket`}
         </ButtonLink>
-      </div>
-    </section>
+      </YearCard>
+    ) : null}
+    {setup ? (
+      <YearCard {...setup}>
+        <ButtonLink href={href(`/admin/bracket`)}>
+          {setup.summary
+            ? `Manage the ${setup.year} bracket`
+            : `Set up the ${setup.year} bracket`}
+        </ButtonLink>
+      </YearCard>
+    ) : null}
   </div>
 )
 export default Admin
+
+const YearCard = ({
+  year,
+  summary,
+  children,
+}: {
+  year: number
+  /** Null before the year's bracket is set up */
+  summary: BracketSummary | null
+  children: React.ReactNode
+}) => (
+  <section className='flex max-w-xl flex-col gap-3 border-2 border-ink p-5'>
+    <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+      <h2 className={SECTION_HEADING_CLASS_NAME}>{year} bracket</h2>
+      <PhaseTag phase={summary?.phase ?? `SETUP`} />
+      {summary ? null : <span className='text-muted'>Not set up yet</span>}
+    </div>
+    {summary ? null : (
+      <p className='text-muted'>
+        ASU publishes its bracket in March. Enter it here, check it, then
+        publish it.
+      </p>
+    )}
+    {summary?.phase === `COMPLETE` ? (
+      <p className='font-semibold'>Champion: {summary.champion}</p>
+    ) : null}
+    {summary && `expectedLockDate` in summary && summary.expectedLockDate ? (
+      <p className='text-muted'>
+        Expected to lock {formatDate(summary.expectedLockDate)}
+      </p>
+    ) : null}
+    <div>{children}</div>
+  </section>
+)

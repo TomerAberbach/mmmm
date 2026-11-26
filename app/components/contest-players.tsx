@@ -65,9 +65,12 @@ const listDecisions = ({ status }: ContestPlayer): Decision[] =>
 export const ContestPlayers = ({
   contestId,
   players,
+  isOpen,
 }: {
   contestId: string
   players: ContestPlayer[]
+  /** Whether the contest's year takes players and picks */
+  isOpen: boolean
 }) => {
   const [announcement, setAnnouncement] = useState(``)
   const [newLinkPlayer, setNewLinkPlayer] = useState<ContestPlayer | null>(null)
@@ -142,9 +145,9 @@ export const ContestPlayers = ({
       <p className='sr-only' aria-live='polite'>
         {isSelecting ? `${selection.players.length} selected` : ``}
       </p>
-      {players.length === 0 ? <NoPlayers /> : null}
+      {players.length === 0 ? <NoPlayers isOpen={isOpen} /> : null}
       {SECTIONS.map(status => {
-        const title = describeStatus(status)
+        const title = describeStatus(status, isOpen)
         const sectionPlayers = players.filter(
           player => player.status === status,
         )
@@ -224,14 +227,15 @@ export const ContestPlayers = ({
   )
 }
 
-const NoPlayers = () => (
+const NoPlayers = ({ isOpen }: { isOpen: boolean }) => (
   <section className='flex flex-col gap-3'>
     <h2 tabIndex={-1} className={SECTION_HEADING_CLASS_NAME}>
       Players
     </h2>
     <p className='max-w-prose text-muted'>
-      No one has started a bracket yet. Share the contest link with your
-      players.
+      {isOpen
+        ? `No one has started a bracket yet. Share the contest link with your players.`
+        : `No one started a bracket.`}
     </p>
   </section>
 )

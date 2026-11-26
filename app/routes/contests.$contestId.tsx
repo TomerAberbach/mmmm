@@ -1,5 +1,6 @@
 import { data } from 'react-router'
 import type { Route } from './+types/contests.$contestId.ts'
+import { isOpen, readCurrentYear } from '~/brackets.server.ts'
 import { ContestDetails } from '~/components/contest-details.tsx'
 import { readContestPlayers } from '~/contest-players.server.ts'
 import { readEducatorContest } from '~/contests.server.ts'
@@ -12,15 +13,21 @@ import { countDeletedPlayers } from '~/trash.server.ts'
 export const loader = async ({ context, params }: Route.LoaderArgs) => {
   // Read together, and the players stay on the server unless the contest is
   // the educator's
-  const [contest, players, deletedCount] = await Promise.all([
+  const [contest, players, deletedCount, current] = await Promise.all([
     readEducatorContest(readRequiredEducator(context).id, params.contestId),
     readContestPlayers(params.contestId),
     countDeletedPlayers(params.contestId),
+    readCurrentYear(),
   ])
   if (!contest) {
     throw data(null, { status: 404 })
   }
-  return { contest, players, deletedCount }
+  return {
+    contest,
+    players,
+    deletedCount,
+    isOpen: isOpen(current, contest.year),
+  }
 }
 
 const ContestPage = ({ loaderData }: Route.ComponentProps) => (

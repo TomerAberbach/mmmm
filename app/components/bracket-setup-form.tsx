@@ -103,6 +103,8 @@ export const BracketSetupForm = ({
           {...getFormProps(form)}
           className='flex flex-col gap-8'
         >
+          {/* The year to set up may have moved on since the page loaded */}
+          <input type='hidden' name='year' value={year} />
           <WildCardSection wildCard={wildCard} onChange={setWildCard} />
           <PasteSection
             wildCard={wildCard}
@@ -398,6 +400,7 @@ const DeleteSection = ({ year }: { year: number }) => (
         title={`Delete the ${year} bracket?`}
         confirmLabel={`Delete ${year} bracket`}
         action={href(`/admin/bracket/delete`)}
+        fields={{ year: String(year) }}
       >
         <p>
           This deletes its divisions, combatants, and wild card. Nobody else has

@@ -124,6 +124,9 @@ model Bracket {
   // A heads-up for educators and players. Only the first result locks
   // submissions
   expectedLockDate DateTime?   @db.Date
+  // Set by the first result, when players can no longer submit. Clearing every
+  // result leaves it, until the admin reopens submissions
+  lockedAt         DateTime?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   divisions        Division[]
@@ -177,6 +180,7 @@ model Combatant {
   seedSlot        SeedSlot?
   wildCardEntrant WildCardEntrant?
   picks           Pick[]
+  wins            Result[]
 
   @@unique([year, name])
 }
@@ -220,8 +224,19 @@ model Battle {
   index   Int
   bracket Bracket @relation(fields: [year], references: [year], onDelete: Cascade)
   picks   Pick[]
+  result  Result?
 
   @@unique([year, round, index])
+}
+
+// The admin's record of who won a battle, always one of its sides
+model Result {
+  battleId String    @id
+  winnerId String
+  battle   Battle    @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  winner   Combatant @relation(fields: [winnerId], references: [id], onDelete: Cascade)
+
+  @@index([winnerId])
 }
 
 // A year's contests exist only while its bracket is published. Deleting the

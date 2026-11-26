@@ -38,6 +38,7 @@ const renderContest = async () => {
         HydrateFallback: () => null,
         Component: () => (
           <ContestDetails
+            isOpen
             contest={useLoaderData<Contest>()}
             players={PLAYERS}
             deletedCount={2}

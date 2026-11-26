@@ -75,6 +75,9 @@ export default [
     layout(`routes/admin.second-factor.tsx`, [
       index(`routes/admin._index.tsx`),
       route(`bracket`, `routes/admin.bracket.tsx`),
+      route(`results`, `routes/admin.results.tsx`),
+      route(`results/save`, `routes/admin.results.save.ts`),
+      route(`results/reopen`, `routes/admin.results.reopen.ts`),
       route(`bracket/delete`, `routes/admin.bracket.delete.ts`),
       route(`bracket/publication`, `routes/admin.bracket.publication.ts`),
       route(`bracket/rename`, `routes/admin.bracket.rename.ts`),
