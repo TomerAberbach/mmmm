@@ -151,4 +151,5 @@ test(`wrong current passwords use up an educator's password changes`, async () =
   }
 
   await expect(change()).rejects.toMatchObject({ statusCode: 429 })
-})
+  // Each attempt hashes a password, which is slow in CI
+}, 20_000)

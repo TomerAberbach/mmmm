@@ -1,21 +1,13 @@
-import { toBattleKey } from './bracket.ts'
-import type { BattleRef } from './bracket.ts'
+import { doesBattleExist, toBattleId, toBattleKey } from './bracket.ts'
 import { readBracketRows, readResultRows } from './brackets.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import { readArrangement } from './moves.ts'
-import { isContender } from './picks.ts'
 import { returnClearedSubmissions } from './player-picks.server.ts'
 import type { ResultRequest } from './result-request.ts'
-import {
-  clearResult,
-  isNameFree,
-  readMergeMembers,
-  recordMerge,
-  recordResult,
-} from './results.ts'
-import type { Results, ResultsChange } from './results.ts'
+import { applyResult, hasSameKeys } from './results.ts'
+import type { Results } from './results.ts'
 import { storeScores } from './scores.server.ts'
-import { toSeededBracket, withMerge } from './seeded-bracket.ts'
+import { toSeededBracket } from './seeded-bracket.ts'
 import type { SeededBracket, StoredMerge } from './seeded-bracket.ts'
 import { withCurrentYearAlone } from './years.server.ts'
 
@@ -34,21 +26,20 @@ export const saveResult = (
     if (current?.year !== year) {
       return { refusal: `NOT_CURRENT_YEAR` }
     }
-    const { bracket: stored, battleIdByKey } = await readBracketRows(year, tx)
-    if (readArrangement(stored) !== request.arrangement) {
+    const stored = await readBracketRows(year, tx)
+    if (
+      !doesBattleExist(battle) ||
+      readArrangement(stored) !== request.arrangement
+    ) {
       return { refusal: `STALE` }
     }
     const key = toBattleKey(battle)
     const results = await readResultRows(year, tx)
-    const battleId = battleIdByKey.get(key)
-    if (battleId === undefined) {
-      return { refusal: `STALE` }
-    }
     const present = results[key] ?? null
     if (present !== request.previousWinnerId) {
       return present === winnerId ? { saved: true } : { refusal: `STALE` }
     }
-    const applied = applyRequest(toSeededBracket(stored), results, request)
+    const applied = applyResult(toSeededBracket(stored), results, request)
     if (!applied) {
       return { refusal: `STALE` }
     }
@@ -58,7 +49,7 @@ export const saveResult = (
     ) {
       return { refusal: `STALE` }
     }
-    await replaceResults(tx, year, battleIdByKey, {
+    await replaceResults(tx, year, {
       bracket: applied.bracket,
       results: applied.change.results,
       ...(applied.merge && { merge: applied.merge }),
@@ -72,13 +63,6 @@ export const saveResult = (
     return { saved: true }
   })
 
-type AppliedRequest = {
-  /** With the merge the request records, if any */
-  bracket: SeededBracket
-  change: ResultsChange
-  merge?: StoredMerge
-}
-
 /**
  * Replaces the year's results, and stores the scores they make. A merge lasts
  * only while its result does
@@ -86,7 +70,6 @@ type AppliedRequest = {
 const replaceResults = async (
   tx: Prisma.TransactionClient,
   year: number,
-  battleIdByKey: ReadonlyMap<string, string>,
   {
     bracket,
     results,
@@ -119,75 +102,24 @@ const replaceResults = async (
   }
   await tx.result.createMany({
     data: Object.entries(results).map(([key, winnerId]) => ({
-      battleId: battleIdByKey.get(key)!,
+      battleId: toBattleId(year, key),
       winnerId,
     })),
   })
-  await storeScores(tx, year, bracket, battleIdByKey, results)
+  await storeScores(tx, year, bracket, results)
 }
-
-/**
- * Null for a winner who can't win the battle, a clear without a result, or a
- * merge the battle or its name doesn't allow
- */
-const applyRequest = (
-  bracket: SeededBracket,
-  results: Results,
-  { battle, winnerId, merge: requested }: ResultRequest,
-): AppliedRequest | null => {
-  if (winnerId === null) {
-    return results[toBattleKey(battle)] === undefined
-      ? null
-      : { bracket, change: clearResult(bracket, results, battle) }
-  }
-  if (requested !== null) {
-    const merge = buildMerge(bracket, results, battle, winnerId, requested)
-    if (!merge) {
-      return null
-    }
-    const merged = withMerge(bracket, merge)
-    return {
-      bracket: merged,
-      change: recordMerge(results, battle, winnerId),
-      merge,
-    }
-  }
-  return isContender(bracket, battle, winnerId, results)
-    ? { bracket, change: recordResult(bracket, results, battle, winnerId) }
-    : null
-}
-
-const buildMerge = (
-  bracket: SeededBracket,
-  results: Results,
-  battle: BattleRef,
-  id: string,
-  { name, memberIds: seenMemberIds }: NonNullable<ResultRequest[`merge`]>,
-): StoredMerge | null => {
-  const memberIds = readMergeMembers(bracket, results, battle)
-  return memberIds &&
-    hasSameKeys(memberIds, seenMemberIds) &&
-    !bracket.combatantById.has(id) &&
-    isNameFree(bracket, name)
-    ? { id, name, memberIds }
-    : null
-}
-
-export const hasSameKeys = (keys: string[], otherKeys: string[]): boolean =>
-  keys.length === otherKeys.length && keys.every(key => otherKeys.includes(key))
 
 /** Clears the results, by battle key, of the year's bracket, if any */
 export const clearResults = async (
   tx: Prisma.TransactionClient,
   year: number,
   bracket: SeededBracket,
-  battleIdByKey: ReadonlyMap<string, string>,
   keys: ReadonlySet<string>,
 ): Promise<void> => {
   const entries = Object.entries(await readResultRows(year, tx))
   const kept = entries.filter(([key]) => !keys.has(key))
   if (kept.length < entries.length) {
-    await replaceResults(tx, year, battleIdByKey, {
+    await replaceResults(tx, year, {
       bracket,
       results: Object.fromEntries(kept),
     })

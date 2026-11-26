@@ -1,15 +1,81 @@
 import { isSameName } from './bracket-input.ts'
 import { listBattles, toBattleKey } from './bracket.ts'
 import type { BattleRef, Winners } from './bracket.ts'
-import { keepReachablePicks, pickWinner } from './picks.ts'
-import { fillSides, listCombatants } from './seeded-bracket.ts'
-import type { SeededBracket } from './seeded-bracket.ts'
+import { isContender, keepReachablePicks, pickWinner } from './picks.ts'
+import { fillSides, listCombatants, withMerge } from './seeded-bracket.ts'
+import type { SeededBracket, StoredMerge } from './seeded-bracket.ts'
 
 /** Who won each battle with a result, keyed by `toBattleKey` */
 export type Results = Winners
 
 /** The results after a change, with the battles whose results it clears */
 export type ResultsChange = { results: Results; cleared: BattleRef[] }
+
+/** What an admin decides about one battle */
+export type ResultDecision = {
+  battle: BattleRef
+  /** Null clears the result */
+  winnerId: string | null
+  /** A merge to record, whose new ID is `winnerId` */
+  merge: { name: string; memberIds: string[] } | null
+}
+
+export type AppliedResult = {
+  /** With the merge the decision records, if any */
+  bracket: SeededBracket
+  change: ResultsChange
+  merge?: StoredMerge
+}
+
+/**
+ * Null for a winner who can't win the battle, a clear without a result, or a
+ * merge the battle, its members, or its name don't allow
+ */
+export const applyResult = (
+  bracket: SeededBracket,
+  results: Results,
+  { battle, winnerId, merge: decided }: ResultDecision,
+): AppliedResult | null => {
+  if (winnerId === null) {
+    return results[toBattleKey(battle)] === undefined
+      ? null
+      : { bracket, change: clearResult(bracket, results, battle) }
+  }
+  if (!decided) {
+    return isContender(bracket, battle, winnerId, results)
+      ? { bracket, change: recordResult(bracket, results, battle, winnerId) }
+      : null
+  }
+  const merge = { id: winnerId, ...decided }
+  return isMergeAllowed(bracket, results, battle, merge)
+    ? {
+        bracket: withMerge(bracket, merge),
+        change: recordMerge(results, battle, winnerId),
+        merge,
+      }
+    : null
+}
+
+const isMergeAllowed = (
+  bracket: SeededBracket,
+  results: Results,
+  battle: BattleRef,
+  { id, name, memberIds }: StoredMerge,
+): boolean => {
+  const members = readMergeMembers(bracket, results, battle)
+  return (
+    members !== null &&
+    hasSameKeys(members, memberIds) &&
+    !bracket.combatantById.has(id) &&
+    isNameFree(bracket, name)
+  )
+}
+
+export const hasSameKeys = (
+  keys: readonly string[],
+  otherKeys: readonly string[],
+): boolean =>
+  keys.length === otherKeys.length && keys.every(key => otherKeys.includes(key))
 
 /**
  * Records the combatant as the battle's winner, and as the winner of the

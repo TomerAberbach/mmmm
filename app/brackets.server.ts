@@ -14,6 +14,7 @@ import {
   DIVISION_POSITIONS,
   listBattles,
   mapDivisions,
+  toBattleId,
   toBattleKey,
 } from './bracket.ts'
 import type { BattleRef, DivisionPosition } from './bracket.ts'
@@ -131,7 +132,10 @@ const buildBracketRows = (year: number, input: BracketInput) => {
 
   const wildCardId = randomUUID()
   return {
-    battles: listBattles().map(battle => ({ id: randomUUID(), ...battle })),
+    battles: listBattles().map(battle => ({
+      id: toBattleId(year, toBattleKey(battle)),
+      ...battle,
+    })),
     divisions: DIVISION_POSITIONS.map(position => ({
       id: divisionIds[position],
       year,
@@ -165,7 +169,7 @@ export const readCurrentBracket = async (): Promise<{
     return (
       current && {
         year: current.year,
-        bracket: await readBracketInTransaction(tx, current.year),
+        bracket: await readBracketRows(current.year, tx),
         expectedLockDate: current.lockedAt ? null : current.expectedLockDate,
         results: await readResultRows(current.year, tx),
       }
@@ -183,7 +187,7 @@ export const readBracketAndResultRows = async (
   year: number,
   tx: Prisma.TransactionClient,
 ): Promise<{ bracket: StoredBracket; results: Results }> => ({
-  bracket: await readBracketInTransaction(tx, year),
+  bracket: await readBracketRows(year, tx),
   results: await readResultRows(year, tx),
 })
 
@@ -200,39 +204,12 @@ export const readSnapshot = <Read>(
   })
 
 /** The year's bracket, published or not, or null when it has none */
-export const readBracket = async (
-  year: number,
-): Promise<StoredBracket | null> => {
-  const bracket = await prisma.bracket.findUnique({
-    where: { year },
-    select: BRACKET_SELECT,
-  })
-  return bracket && readStoredBracket(bracket)
-}
-
-/**
- * The year's bracket with its battles' row IDs, keyed by `toBattleKey`. The
- * year must have a bracket
- */
-export const readBracketRows = async (
-  year: number,
-  db: Prisma.TransactionClient,
-): Promise<{
-  bracket: StoredBracket
-  battleIdByKey: ReadonlyMap<string, string>
-}> => {
-  const bracket = await readBracketInTransaction(db, year)
-  const battles = await db.battle.findMany({
-    where: { year },
-    select: { id: true, round: true, index: true },
-  })
-  return {
-    bracket,
-    battleIdByKey: new Map(
-      battles.map(battle => [toBattleKey(battle), battle.id]),
-    ),
-  }
-}
+export const readBracket = (year: number): Promise<StoredBracket | null> =>
+  readSnapshot(async tx =>
+    (await tx.bracket.findUnique({ where: { year }, select: { year: true } }))
+      ? readBracketRows(year, tx)
+      : null,
+  )
 
 /** The year's results, keyed by `toBattleKey` */
 export const readResultRows = async (
@@ -256,36 +233,77 @@ const toResults = (
   )
 
 /**
- * One relation a query, because Prisma loads sibling relations at once, and a
+ * Reads the year's bracket in a transaction. The year must have a bracket. One
+ * relation a query, because Prisma loads sibling relations at once, and a
  * transaction's connection runs one query at a time
  */
-const readBracketInTransaction = async (
-  db: Prisma.TransactionClient,
+export const readBracketRows = async (
   year: number,
+  tx: Prisma.TransactionClient,
 ): Promise<StoredBracket> => {
-  const where = { year }
-  const divisions = await db.division.findMany({
-    where,
-    select: BRACKET_SELECT.divisions.select,
+  const divisions = await tx.division.findMany({
+    where: { year },
+    select: {
+      position: true,
+      name: true,
+      seedSlots: {
+        orderBy: { seed: `asc` },
+        select: { combatant: { select: { id: true, name: true } } },
+      },
+    },
   })
-  const wildCard = await db.wildCard.findUnique({
-    where,
-    select: { seedSlot: BRACKET_SELECT.wildCard.select.seedSlot },
+  const wildCard = await tx.wildCard.findUnique({
+    where: { year },
+    select: {
+      seedSlot: {
+        select: { seed: true, division: { select: { position: true } } },
+      },
+    },
   })
-  const entrants = await db.wildCardEntrant.findMany({
-    where: { wildCard: where },
-    ...BRACKET_SELECT.wildCard.select.entrants,
+  const entrants = await tx.wildCardEntrant.findMany({
+    where: { wildCard: { year } },
+    orderBy: { index: `asc` },
+    select: { combatant: { select: { id: true, name: true } } },
   })
-  const combatants = await db.combatant.findMany({
-    ...BRACKET_SELECT.combatants,
-    where: { ...BRACKET_SELECT.combatants.where, year },
+  const merges = await tx.combatant.findMany({
+    where: { year, members: { some: {} } },
+    // A fixed order, since a rename would otherwise move its row
+    orderBy: { id: `asc` },
+    select: {
+      id: true,
+      name: true,
+      members: { orderBy: { id: `asc` }, select: { id: true } },
+    },
   })
-  return readStoredBracket({
-    divisions,
-    wildCard: wildCard && { ...wildCard, entrants },
-    combatants,
-  })
+  return {
+    // Parsing checks the stored rows form a whole bracket, and narrows seeds
+    ...storedBracketSchema.parse({
+      divisions: Object.fromEntries(
+        divisions.map(({ position, name, seedSlots }) => [
+          position,
+          {
+            name,
+            // The wild card's slot holds no combatant, as the bracket skips it
+            combatants: seedSlots.flatMap(({ combatant }) => combatant ?? []),
+          },
+        ]),
+      ),
+      wildCard: wildCard && {
+        position: wildCard.seedSlot.division.position,
+        seed: wildCard.seedSlot.seed,
+        entrants: entrants.map(({ combatant }) => combatant),
+      },
+    }),
+    merges: merges.map(({ members, ...merge }) => ({
+      ...merge,
+      memberIds: members.map(({ id }) => id),
+    })),
+  }
 }
+
+const storedBracketSchema = toBracketSchema(
+  z.object({ id: z.string(), name: z.string() }),
+)
 
 export type Phase = `SETUP` | `OPEN` | `IN_PROGRESS` | `COMPLETE` | `ARCHIVED`
 
@@ -546,73 +564,3 @@ const RESULTS = {
     result: { select: { winnerId: true } },
   },
 } satisfies Prisma.BattleFindManyArgs
-
-const BRACKET_SELECT = {
-  divisions: {
-    select: {
-      position: true,
-      name: true,
-      seedSlots: {
-        orderBy: { seed: `asc` },
-        select: { combatant: { select: { id: true, name: true } } },
-      },
-    },
-  },
-  wildCard: {
-    select: {
-      seedSlot: {
-        select: { seed: true, division: { select: { position: true } } },
-      },
-      entrants: {
-        orderBy: { index: `asc` },
-        select: { combatant: { select: { id: true, name: true } } },
-      },
-    },
-  },
-  combatants: {
-    where: { members: { some: {} } },
-    // A fixed order, since a rename would otherwise move its row
-    orderBy: { id: `asc` },
-    select: {
-      id: true,
-      name: true,
-      members: { orderBy: { id: `asc` }, select: { id: true } },
-    },
-  },
-} satisfies Prisma.BracketSelect
-
-const storedBracketSchema = toBracketSchema(
-  z.object({ id: z.string(), name: z.string() }),
-)
-
-/** Parsing checks the stored rows form a whole bracket, and narrows seeds */
-const readStoredBracket = ({
-  divisions,
-  wildCard,
-  combatants,
-}: Pick<
-  Prisma.BracketGetPayload<{ select: typeof BRACKET_SELECT }>,
-  `divisions` | `wildCard` | `combatants`
->): StoredBracket => ({
-  ...storedBracketSchema.parse({
-    divisions: Object.fromEntries(
-      divisions.map(({ position, name, seedSlots }) => [
-        position,
-        {
-          name,
-          // The wild card's slot holds no combatant, as the bracket skips it
-          combatants: seedSlots.flatMap(({ combatant }) => combatant ?? []),
-        },
-      ]),
-    ),
-    wildCard: wildCard && {
-      position: wildCard.seedSlot.division.position,
-      seed: wildCard.seedSlot.seed,
-      entrants: wildCard.entrants.map(({ combatant }) => combatant),
-    },
-  }),
-  merges: combatants.map(({ members, ...merge }) => ({
-    ...merge,
-    memberIds: members.map(({ id }) => id),
-  })),
-})

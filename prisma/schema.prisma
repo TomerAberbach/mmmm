@@ -244,6 +244,7 @@ enum Round {
 // `index` orders a round's battles top to bottom, left divisions first, as
 // `app/bracket.ts` lays them out
 model Battle {
+  // Made of the year, round, and index by `toBattleId`
   id      String  @id
   year    Int
   round   Round

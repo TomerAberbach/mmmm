@@ -1,4 +1,4 @@
-import { listBattles, toBattleKey } from './bracket.ts'
+import { listBattles, toBattleId, toBattleKey } from './bracket.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
 import { listRightWinners, ROUND_POINTS } from './scoring.ts'
@@ -13,12 +13,11 @@ export const storeScores = async (
   tx: Prisma.TransactionClient,
   year: number,
   bracket: SeededBracket,
-  battleIdByKey: ReadonlyMap<string, string>,
   results: Results,
 ): Promise<void> => {
   const rightPicks = listBattles().flatMap(battle =>
     listRightWinners(bracket, results, battle).map(winnerId => ({
-      battleId: battleIdByKey.get(toBattleKey(battle))!,
+      battleId: toBattleId(year, toBattleKey(battle)),
       winnerId,
       points: ROUND_POINTS[battle.round],
     })),

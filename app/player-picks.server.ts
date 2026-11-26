@@ -1,4 +1,4 @@
-import { toBattleKey } from './bracket.ts'
+import { toBattleId, toBattleKey } from './bracket.ts'
 import type { BattleRef } from './bracket.ts'
 import {
   readBracketAndResultRows,
@@ -114,17 +114,13 @@ export const savePlayerDraft = (
   picks: Picks,
   arrangement?: string,
 ): Promise<{ saved: true } | PicksRefusal> =>
-  withPlayerBracket(
-    playerId,
-    arrangement,
-    async (tx, bracket, battleIdByKey) => {
-      if (!arePicksConsistent(bracket, picks)) {
-        return { refusal: `INCONSISTENT` } as const
-      }
-      await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
-      return { saved: true } as const
-    },
-  )
+  withPlayerBracket(playerId, arrangement, async (tx, bracket, year) => {
+    if (!arePicksConsistent(bracket, picks)) {
+      return { refusal: `INCONSISTENT` } as const
+    }
+    await writePicks(tx, playerId, `DRAFT`, picks, year)
+    return { saved: true } as const
+  })
 
 /**
  * Saves the picks as the player's draft and submits them, unless they're
@@ -136,37 +132,33 @@ export const submitPlayerPicks = (
   picks: Picks,
   arrangement?: string,
 ): Promise<{ submission: Submission } | PicksRefusal> =>
-  withPlayerBracket(
-    playerId,
-    arrangement,
-    async (tx, bracket, battleIdByKey) => {
-      if (!arePicksComplete(bracket, picks)) {
-        return { refusal: `INCOMPLETE` } as const
-      }
-      const isChanged = !arePicksEqual(
-        await readSubmissionPicks(playerId, tx),
-        picks,
-      )
-      await writePicks(tx, playerId, `DRAFT`, picks, battleIdByKey)
-      if (isChanged) {
-        await writePicks(tx, playerId, `SUBMISSION`, picks, battleIdByKey)
-      }
-      // `create` runs only for a first submission, which always changes the
-      // submitted picks
-      const picksChangedAt = new Date()
-      const submission = await tx.submission.upsert({
-        where: { playerId },
-        create: { playerId, picksChangedAt },
-        update: isChanged ? { picksChangedAt } : {},
-        select: { status: true, picksChangedAt: true },
-      })
-      await tx.player.update({
-        where: { id: playerId },
-        data: { picksClearedAt: null },
-      })
-      return { submission: { ...submission, picks } }
-    },
-  )
+  withPlayerBracket(playerId, arrangement, async (tx, bracket, year) => {
+    if (!arePicksComplete(bracket, picks)) {
+      return { refusal: `INCOMPLETE` } as const
+    }
+    const isChanged = !arePicksEqual(
+      await readSubmissionPicks(playerId, tx),
+      picks,
+    )
+    await writePicks(tx, playerId, `DRAFT`, picks, year)
+    if (isChanged) {
+      await writePicks(tx, playerId, `SUBMISSION`, picks, year)
+    }
+    // `create` runs only for a first submission, which always changes the
+    // submitted picks
+    const picksChangedAt = new Date()
+    const submission = await tx.submission.upsert({
+      where: { playerId },
+      create: { playerId, picksChangedAt },
+      update: isChanged ? { picksChangedAt } : {},
+      select: { status: true, picksChangedAt: true },
+    })
+    await tx.player.update({
+      where: { id: playerId },
+      data: { picksClearedAt: null },
+    })
+    return { submission: { ...submission, picks } }
+  })
 
 /**
  * Replaces the player's draft with their submission's picks, unless the player
@@ -259,14 +251,14 @@ const writePicks = async (
   playerId: string,
   stage: PickStage,
   picks: Picks,
-  battleIdByKey: ReadonlyMap<string, string>,
+  year: number,
 ): Promise<void> => {
   await tx.pick.deleteMany({ where: { playerId, stage } })
   await tx.pick.createMany({
     data: Object.entries(picks).map(([key, combatantId]) => ({
       playerId,
       stage,
-      battleId: battleIdByKey.get(key)!,
+      battleId: toBattleId(year, key),
       combatantId,
     })),
   })
@@ -299,8 +291,8 @@ const withCurrentPlayer = <Result>(
   })
 
 /**
- * Runs `change` as `withCurrentPlayer` does, with the year's bracket and its
- * battles' row IDs, keyed by `toBattleKey`
+ * Runs `change` as `withCurrentPlayer` does, with the year's bracket and the
+ * year
  */
 const withPlayerBracket = <Result>(
   playerId: string,
@@ -308,12 +300,12 @@ const withPlayerBracket = <Result>(
   change: (
     tx: Prisma.TransactionClient,
     bracket: SeededBracket,
-    battleIdByKey: ReadonlyMap<string, string>,
+    year: number,
   ) => Promise<Result>,
 ): Promise<Result | PicksRefusal> =>
   withCurrentPlayer(playerId, async (tx, year) => {
-    const { bracket, battleIdByKey } = await readBracketRows(year, tx)
+    const bracket = await readBracketRows(year, tx)
     return arrangement !== undefined && arrangement !== readArrangement(bracket)
       ? ({ refusal: `MOVED` } as const)
-      : change(tx, toSeededBracket(bracket), battleIdByKey)
+      : change(tx, toSeededBracket(bracket), year)
   })

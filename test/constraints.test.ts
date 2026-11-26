@@ -54,6 +54,14 @@ test.each([
     },
   },
   {
+    scenario: `a battle whose ID isn't made of its place`,
+    write: ({ year }: TestBracket) =>
+      prisma.battle.updateMany({
+        where: { year, round: `CHAMPIONSHIP` },
+        data: { id: `battle` },
+      }),
+  },
+  {
     scenario: `a blank division name`,
     write: ({ divisions }: TestBracket) =>
       prisma.division.update({

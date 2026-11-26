@@ -21,19 +21,13 @@ import { readArrangement } from '~/moves.ts'
 import { listContenders, TOTAL_BATTLES } from '~/picks.ts'
 import type { ResultRequest } from '~/result-request.ts'
 import {
-  clearResult,
+  applyResult,
   listDecidableBattles,
   readMergeMembers,
-  recordMerge,
-  recordResult,
 } from '~/results.ts'
-import type { Results, ResultsChange } from '~/results.ts'
-import { toSeededBracket, withMerge } from '~/seeded-bracket.ts'
-import type {
-  SeededBracket,
-  StoredBracket,
-  StoredMerge,
-} from '~/seeded-bracket.ts'
+import type { AppliedResult, ResultDecision, Results } from '~/results.ts'
+import { toSeededBracket } from '~/seeded-bracket.ts'
+import type { SeededBracket, StoredBracket } from '~/seeded-bracket.ts'
 
 /**
  * The current year's bracket, each side a button that records its win. Each
@@ -98,15 +92,22 @@ export const ResultsEditor = ({
     },
     [sendRequest],
   )
-  const askOrSave = useCallback(
-    (pending: PendingChange): void => {
-      if (readQuestion(pending)) {
+  const decide = useCallback(
+    (decision: ResultDecision): void => {
+      const pending = readPendingChange(decision, {
+        year,
+        arrangement,
+        bracket,
+        results,
+        locks: !isLocked,
+      })
+      if (pending && readQuestion(pending)) {
         setAsking(pending)
-      } else {
+      } else if (pending) {
         save(pending)
       }
     },
-    [save],
+    [year, arrangement, bracket, results, isLocked, save],
   )
   const picking = useMemo(
     (): Picking => ({
@@ -115,31 +116,16 @@ export const ResultsEditor = ({
         if (isBlocked) {
           return
         }
-        const pending = readPendingChange({
-          year,
-          arrangement,
-          bracket,
-          results,
-          battle: { round, index },
-          winnerId,
-          isLocked,
-        })
-        askOrSave(pending)
+        const battle = { round, index }
+        // Pressing the recorded winner clears the result
+        const isClear = results[toBattleKey(battle)] === winnerId
+        decide({ battle, winnerId: isClear ? null : winnerId, merge: null })
       },
       listContenders: battle => listContenders(bracket, battle, results),
       isCleared: battle =>
         cleared.some(other => toBattleKey(other) === toBattleKey(battle)),
     }),
-    [
-      isBlocked,
-      year,
-      arrangement,
-      bracket,
-      results,
-      isLocked,
-      cleared,
-      askOrSave,
-    ],
+    [isBlocked, bracket, results, cleared, decide],
   )
   const decidable = listDecidableBattles(bracket, results)
   const [nextBattle] = decidable
@@ -173,17 +159,14 @@ export const ResultsEditor = ({
             mergeable={[firstMergeable, ...otherMergeable]}
             isPending={isSending}
             onMerge={(battle, name) =>
-              askOrSave(
-                readPendingMerge({
-                  year,
-                  arrangement,
-                  bracket,
-                  results,
-                  battle,
+              decide({
+                battle,
+                winnerId: crypto.randomUUID(),
+                merge: {
                   name,
-                  isLocked,
-                }),
-              )
+                  memberIds: readMergeMembers(bracket, results, battle)!,
+                },
+              })
             }
           />
         ) : null}
@@ -201,7 +184,7 @@ export const ResultsEditor = ({
       {asking ? (
         <QuestionDialog
           asking={asking}
-          bracket={asking.merge ? withMerge(bracket, asking.merge) : bracket}
+          bracket={asking.bracket}
           results={results}
           onConfirm={() => save(asking)}
           onClose={() => setAsking(null)}
@@ -211,89 +194,38 @@ export const ResultsEditor = ({
   )
 }
 
-type PendingChange = {
-  request: ResultRequest
-  change: ResultsChange
-  merge?: StoredMerge
-}
+type PendingChange = AppliedResult & { request: ResultRequest }
 
 /** What to confirm first: locking, changing a result, or clearing one */
 type Question = `lock` | `change` | `clear`
 
-/** Pressing the recorded winner clears the result */
-const readPendingChange = ({
-  year,
-  arrangement,
-  bracket,
-  results,
-  battle,
-  winnerId,
-  isLocked,
-}: {
-  year: number
-  arrangement: string
-  bracket: SeededBracket
-  results: Results
-  battle: BattleRef
-  winnerId: string
-  isLocked: boolean
-}): PendingChange => {
-  const previousWinnerId = results[toBattleKey(battle)] ?? null
-  const isClear = previousWinnerId === winnerId
-  const change = isClear
-    ? clearResult(bracket, results, battle)
-    : recordResult(bracket, results, battle, winnerId)
-  return {
-    change,
-    request: {
-      year,
-      arrangement,
-      battle,
-      winnerId: isClear ? null : winnerId,
-      merge: null,
-      previousWinnerId,
-      cleared: change.cleared.map(toBattleKey),
-      locks: !isLocked,
-    },
-  }
-}
-
-const readPendingMerge = ({
-  year,
-  arrangement,
-  bracket,
-  results,
-  battle,
-  name,
-  isLocked,
-}: {
-  year: number
-  arrangement: string
-  bracket: SeededBracket
-  results: Results
-  battle: BattleRef
-  name: string
-  isLocked: boolean
-}): PendingChange => {
-  const merge = {
-    id: crypto.randomUUID(),
-    name,
-    memberIds: readMergeMembers(bracket, results, battle)!,
-  }
-  return {
-    merge,
-    change: recordMerge(results, battle, merge.id),
-    request: {
-      year,
-      arrangement,
-      battle,
-      winnerId: merge.id,
-      merge: { name, memberIds: merge.memberIds },
-      previousWinnerId: null,
-      cleared: [],
-      locks: !isLocked,
-    },
-  }
+/** Null when the bracket no longer allows the decision */
+const readPendingChange = (
+  decision: ResultDecision,
+  {
+    bracket,
+    results,
+    ...seen
+  }: {
+    year: number
+    arrangement: string
+    bracket: SeededBracket
+    results: Results
+    locks: boolean
+  },
+): PendingChange | null => {
+  const applied = applyResult(bracket, results, decision)
+  return (
+    applied && {
+      ...applied,
+      request: {
+        ...seen,
+        ...decision,
+        previousWinnerId: results[toBattleKey(decision.battle)] ?? null,
+        cleared: applied.change.cleared.map(toBattleKey),
+      },
+    }
+  )
 }
 
 /** Null for a change to save without asking */
