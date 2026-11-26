@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   Body,
   Button,
@@ -11,8 +12,7 @@ import {
   Section,
   Tailwind,
   Text,
-} from '@react-email/components'
-import type { ReactNode } from 'react'
+} from 'react-email'
 import appCss from '../app.css?raw'
 import { LETTER_COLORS } from '../components/letter-colors.tsx'
 import { requireEnv } from '../env.server.ts'
@@ -89,9 +89,10 @@ export const EmailLayout = ({
                 </span>
               ))}
             </Text>
+            {/* `Hr` sets its own top border after a `border-*` color */}
             <Hr
               data-skip-in-text
-              className='mt-4 mb-6 border-0 border-t-2 border-solid border-ink'
+              className='mt-4 mb-6 border-0 border-t-2 border-solid border-t-ink'
             />
             <Heading
               as='h1'
@@ -100,7 +101,7 @@ export const EmailLayout = ({
               {heading}
             </Heading>
             {children}
-            <Hr className='mt-6 mb-4 border-0 border-t border-solid border-muted-light' />
+            <Hr className='mt-6 mb-4 border-0 border-t border-solid border-t-muted-light' />
             <Text className='m-0 text-xs leading-normal text-muted'>
               Sent by MMMM because this address was used at {host}. Questions?
               Email{` `}
