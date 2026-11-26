@@ -1,7 +1,7 @@
-import { render, toPlainText } from '@react-email/render'
 import type { FormatCallback } from 'html-to-text'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import type { ReactElement } from 'react'
+import { render, toPlainText } from 'react-email'
 import { z } from 'zod'
 import { readEmailTransport } from './email-settings.server.ts'
 import { requireEnv } from './env.server.ts'
