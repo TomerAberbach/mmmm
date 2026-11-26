@@ -255,6 +255,9 @@ const findDuplicateNames = <Place>(
 export const describeTakenName = (name: string): string =>
   `${name} is already a combatant. Give each combatant its own name`
 
+export const describeTakenDivisionName = (name: string): string =>
+  `${name} is already a division. Give each division its own name`
+
 /**
  * Names differing only in case, spacing, or the style of apostrophe count as
  * the same

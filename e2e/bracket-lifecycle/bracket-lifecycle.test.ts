@@ -34,13 +34,30 @@ test(`a tab left open can't replace a newer save`, async ({ page }) => {
   await other.getByRole(`button`, { name: `Save date` }).click()
   await expect(other.getByText(`Saved the expected lock date`)).toBeVisible()
 
+  await other.getByLabel(`Division name`).first().fill(`Mine`)
   await other.getByRole(`button`, { name: `Save changes` }).click()
 
   await expect(
     other.getByText(`so nothing was saved`, { exact: false }),
   ).toBeVisible()
-  await other.reload()
-  await expect(other.getByLabel(`Division name`).first()).toHaveValue(`Renamed`)
+  await expect(other.getByLabel(`Division name`).first()).toHaveValue(`Mine`)
+  await page.goto(`/admin/bracket`)
+  await expect(page.getByLabel(`Division name`).first()).toHaveValue(`Renamed`)
+  for (const action of [`Publish`, `Delete`]) {
+    await confirmDialog(other, `${action} ${YEAR} bracket`)
+    await expect(
+      other.getByText(`This bracket changed since the page loaded. Reload`, {
+        exact: false,
+      }),
+    ).toBeVisible()
+    await other.getByRole(`button`, { name: `Cancel` }).click()
+  }
+
+  await other.getByRole(`button`, { name: `Save these names anyway` }).click()
+
+  await expect(other).toHaveURL(`/admin`)
+  await other.goto(`/admin/bracket`)
+  await expect(other.getByLabel(`Division name`).first()).toHaveValue(`Mine`)
 })
 
 test(`a published bracket is on the home page, with each rename`, async ({

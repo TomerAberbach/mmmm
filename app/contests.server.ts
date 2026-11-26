@@ -10,7 +10,8 @@ import { withCurrentYear } from './years.server.ts'
 /** `link` is the contest link, which players open */
 export type ContestSummary = { id: string; name: string; link: string }
 
-export type Contest = ContestSummary & { year: number }
+/** `isHidden` when the organization and global leaderboards leave it out */
+export type Contest = ContestSummary & { year: number; isHidden: boolean }
 
 /**
  * Creates a contest in the current year, and returns its ID. Refuses before any
@@ -68,7 +69,13 @@ export const readEducatorContest = async (
 ): Promise<Contest | null> => {
   const contest = await prisma.contest.findFirst({
     where: { id: contestId, educatorId, ...CONTEST_OUTSIDE_TRASH },
-    select: { id: true, name: true, year: true, linkSecret: true },
+    select: {
+      id: true,
+      name: true,
+      year: true,
+      isHidden: true,
+      linkSecret: true,
+    },
   })
   return contest && withLink(contest)
 }

@@ -30,10 +30,13 @@ type ArchivedYear = { year: number; resultCount: number }
 export const PhaseSection = ({
   year,
   summary,
+  version = null,
   archivedYear = null,
 }: {
   year: number
   summary: BracketSummary
+  /** Of the bracket to publish, from `toBracketVersion` */
+  version?: string | null
   /** The year that publishing this one archives */
   archivedYear?: ArchivedYear | null
 }) => (
@@ -57,7 +60,12 @@ export const PhaseSection = ({
       />
     ) : null}
     <div className='flex flex-wrap items-center gap-x-6 gap-y-3'>
-      <PhaseAction year={year} summary={summary} archivedYear={archivedYear} />
+      <PhaseAction
+        year={year}
+        summary={summary}
+        version={version}
+        archivedYear={archivedYear}
+      />
     </div>
   </section>
 )
@@ -86,15 +94,23 @@ const describeResultCount = (count: number): string =>
 const PhaseAction = ({
   year,
   summary,
+  version,
   archivedYear,
 }: {
   year: number
   summary: BracketSummary
+  version: string | null
   archivedYear: ArchivedYear | null
 }) => {
   switch (summary.phase) {
     case `SETUP`:
-      return <PublishButton year={year} archivedYear={archivedYear} />
+      return (
+        <PublishButton
+          year={year}
+          version={version}
+          archivedYear={archivedYear}
+        />
+      )
     case `OPEN`:
       return <UnpublishControls year={year} hasContests={summary.hasContests} />
     case `IN_PROGRESS`:
@@ -107,9 +123,11 @@ const PhaseAction = ({
 
 const PublishButton = ({
   year,
+  version,
   archivedYear,
 }: {
   year: number
+  version: string | null
   archivedYear: ArchivedYear | null
 }) => (
   <ConfirmDialog
@@ -118,7 +136,11 @@ const PublishButton = ({
     confirmLabel={`Publish ${year} bracket`}
     confirmVariant='primary'
     action={href(`/admin/bracket/publication`)}
-    fields={{ year: String(year), published: `true` }}
+    fields={{
+      year: String(year),
+      published: `true`,
+      seenVersion: version ?? ``,
+    }}
   >
     <div className='flex flex-col gap-2'>
       <p>

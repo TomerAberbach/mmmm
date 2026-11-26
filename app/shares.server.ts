@@ -45,6 +45,7 @@ const findShared = async (
       id: true,
       name: true,
       year: true,
+      isHidden: true,
       educator: { select: { name: true } },
     },
   })

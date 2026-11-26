@@ -7,14 +7,20 @@ import {
   readEducatorId,
 } from '../test/contests.ts'
 import { createMember } from '../test/educators.ts'
+import { waitForBlockedQuery } from '../test/locks.ts'
+import { formPost } from '../test/sign-in.ts'
 import { addYear } from '../test/years.ts'
 import {
   readAdminContest,
   readAdminContests,
+  renameContestAsAdmin,
   setContestHidden,
 } from './admin-contests.server.ts'
 import type { AdminContest } from './admin-contests.server.ts'
+import { prisma } from './db.server.ts'
+import { action as renameAction } from './routes/admin.contests.$contestId.name.ts'
 import { deleteContest } from './trash.server.ts'
+import { withCurrentYearAlone } from './years.server.ts'
 
 test(`the admin's contests list hidden ones first`, async () => {
   const year = await addYear({ published: true })
@@ -97,4 +103,58 @@ test(`a deleted contest can't be hidden`, async () => {
   await deleteContest(educatorId, id)
 
   await expect(setContestHidden(id, true)).resolves.toBe(false)
+})
+
+test.each([
+  { scenario: `in a past year`, isOrphaned: false, isInTrash: false },
+  { scenario: `orphaned`, isOrphaned: true, isInTrash: false },
+  { scenario: `in the trash`, isOrphaned: false, isInTrash: true },
+])(`the admin renames a contest $scenario`, async state => {
+  const { contestId } = await createContestInNewYear()
+  await addYear({ published: true })
+  await prisma.contest.update({
+    where: { id: contestId },
+    data: {
+      ...(state.isOrphaned && { educatorId: null }),
+      ...(state.isInTrash && { deletedAt: new Date() }),
+    },
+  })
+
+  await expect(renameContestAsAdmin(contestId, `New name`)).resolves.toBe(true)
+
+  const read = await readAdminContest(contestId)
+  expect(read?.contest.name).toBe(`New name`)
+})
+
+test(`the admin's name for a contest skips the offensive word filter`, async () => {
+  const { contestId } = await createContestInNewYear()
+
+  await renameAction({
+    request: formPost({ name: `Shit` }),
+    params: { contestId },
+  } as never)
+
+  const read = await readAdminContest(contestId)
+  expect(read?.contest.name).toBe(`Shit`)
+})
+
+test(`renaming a contest waits for a change that takes the years alone`, async () => {
+  const { contestId } = await createContestInNewYear()
+  let renamed: Promise<boolean> | undefined
+
+  const nameMeanwhile = await withCurrentYearAlone(async tx => {
+    renamed = renameContestAsAdmin(contestId, `New name`)
+    await waitForBlockedQuery()
+    return tx.contest.findUnique({
+      where: { id: contestId },
+      select: { name: true },
+    })
+  })
+
+  expect(nameMeanwhile?.name).not.toBe(`New name`)
+  await expect(renamed).resolves.toBe(true)
+})
+
+test(`the admin can't rename a contest that's gone`, async () => {
+  await expect(renameContestAsAdmin(`gone`, `New name`)).resolves.toBe(false)
 })

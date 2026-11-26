@@ -9,6 +9,8 @@ export const loader = (): Response => redirect(href(`/admin/bracket`))
 const publicationSchema = z.object({
   /** The year on the page, which may no longer be the one the action changes */
   year: z.coerce.number<string>().int(),
+  /** Of the bracket on the page, which Publish must match */
+  seenVersion: z.string().default(``),
   published: z.enum([`true`, `false`]).transform(value => value === `true`),
 })
 
@@ -21,7 +23,7 @@ export const action = async ({
   if (!parsed.success) {
     return { error: `Choose whether to publish or unpublish the bracket` }
   }
-  const { published } = parsed.data
+  const { published, seenVersion } = parsed.data
   const { current, setupYear } = await readAdminYears()
   const year = published ? setupYear : (current?.year ?? null)
   if (year === null || year !== parsed.data.year) {
@@ -29,13 +31,17 @@ export const action = async ({
       error: `The ${parsed.data.year} bracket can’t be ${published ? `published` : `unpublished`} now. Reload the page`,
     }
   }
-  switch (await setBracketPublished(year, published)) {
+  switch (await setBracketPublished(year, published, seenVersion)) {
     // The bracket moves to the other page
     case `CHANGED`:
       return redirect(href(published ? `/admin/results` : `/admin/bracket`))
     case `UNCHANGED`:
       return {
         error: `The ${year} bracket is already ${published ? `published` : `unpublished`} or deleted`,
+      }
+    case `STALE`:
+      return {
+        error: `This bracket changed since the page loaded. Reload the page`,
       }
     case `PAST`:
       return { error: `The ${year} bracket is archived. Reload the page` }

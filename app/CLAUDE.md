@@ -161,10 +161,17 @@ app
 - Store or replace an unpublished bracket with `saveUnpublishedBracket` from
   `brackets.server.ts`, which writes every seed slot, battle, and the wild card
   in one transaction
+- Post the `toBracketVersion` of the bracket that the setup page opened with,
+  and pass it as `seenVersion` to a save, deletion, or publication of it, which
+  refuses another one. The page keeps the version while its fields do, even once
+  its data reloads
 - Read a year's phase with `readBracketSummary`, and the years the admin manages
   with `readAdminYears`, instead of checking `publishedAt`, `lockedAt`, or the
   date. The admin sets up the next year only once the current year has a
-  champion
+  champion. A newer unpublished bracket stays the one to set up even once the
+  calendar moves past its year, so copy says "the next bracket" instead of
+  adding 1 to the current year
+- Show an expected lock date through `hidePastDate`
 - Only an open year, current and not locked, takes new contests, players, and
   picks. Run a transaction that depends on it with `withCurrentYear` from
   `years.server.ts`, and check it with `isOpen`. Such writes share one lock,
@@ -202,6 +209,8 @@ app
   `listNameProblems` finds at the fields for their places, so add a bracket rule
   only to `bracket-input.ts`. Stored brackets skip the name rules, so a new one
   can't make a past year unreadable
+- Rename a published bracket's combatants and divisions with `renameCombatant`
+  and `renameDivision`, in the current year
 - Key winners and picks by combatant ID, and show names only for display, so a
   rename leaves saved picks as they were. A `BracketInput` and the setup form
   hold names, because combatants have no IDs until the bracket is saved
@@ -271,6 +280,11 @@ app
   from `editable-contests.server.ts`, unless it reads the trash, and recheck
   `deletedAt` inside a transaction that adds to them. Delete, restore, and erase
   only through `trash.server.ts`, or `archive.server.ts` when a year is archived
+- The admin renames any contest with `renameContestAsAdmin`, and erases any with
+  `eraseContest` from `trash.server.ts`, in any year, trash included. Handing
+  over an orphaned contest takes it out of the trash
+- Read `isHidden` only for the admin, the contest's educator, and the colleagues
+  it's shared with. `PlayContest` leaves it out
 - Change an educator's contests and their players inside `changeContests` from
   `editable-contests.server.ts`, which refuses a past year's. Only Stop sharing,
   a player's own delete, and restoring or erasing what they deleted also work in

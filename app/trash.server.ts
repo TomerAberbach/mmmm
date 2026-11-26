@@ -1,3 +1,4 @@
+import { isSameName } from './bracket-input.ts'
 import { prisma } from './db.server.ts'
 import { changeContests, editablePlayers } from './editable-contests.server.ts'
 import type { EditableContests } from './editable-contests.server.ts'
@@ -144,6 +145,31 @@ export const restoreOrphanedContest = async (
     data: { deletedAt: null },
   })
 }
+
+/**
+ * The admin deletes a contest for good, with its players and reports, in any
+ * year and even outside the trash. `OTHER_NAME` means `name` isn't the
+ * contest's, so the admin may have confirmed another
+ */
+export const eraseContest = (
+  contestId: string,
+  name: string,
+): Promise<`ERASED` | `GONE` | `OTHER_NAME`> =>
+  // Alone, since changes to the contest lock its players in another order
+  withCurrentYearAlone(async tx => {
+    const contest = await tx.contest.findUnique({
+      where: { id: contestId },
+      select: { name: true },
+    })
+    if (!contest) {
+      return `GONE`
+    }
+    if (!isSameName(contest.name, name)) {
+      return `OTHER_NAME`
+    }
+    await tx.contest.deleteMany({ where: { id: contestId } })
+    return `ERASED`
+  })
 
 /**
  * A player moves their own draft or submission to the trash. Returns whether it

@@ -7,7 +7,7 @@ import {
 } from '../test/contests.ts'
 import { createEducator } from '../test/educators.ts'
 import { saveDraft } from '../test/player-picks.ts'
-import { addYear } from '../test/years.ts'
+import { addYear, setLocked } from '../test/years.ts'
 import {
   readContestPlayers,
   renamePlayer,
@@ -20,10 +20,12 @@ import {
   readContestPlayer,
   readPersonalLink,
 } from './players.server.ts'
+import { saveReport } from './reports.server.ts'
 import {
   deleteContest,
   deleteOwnPlayer,
   deletePlayers,
+  eraseContest,
   eraseContests,
   eraseExpiredPlayers,
   erasePlayer,
@@ -324,4 +326,67 @@ test(`an admin erases no player through another contest`, async () => {
   const other = await createContestWithPlayer()
 
   await expect(erasePlayer(other.contestId, playerId)).resolves.toBe(false)
+})
+
+/** How `state` changes the contest before the admin erases it */
+const CONTEST_STATES = {
+  open: async () => {},
+  locked: (contest: { year: number }) => setLocked(contest.year),
+  past: async () => {
+    await addYear({ published: true })
+  },
+  'in the trash': async (contest: {
+    educatorId: string
+    contestId: string
+  }) => {
+    await deleteContest(contest.educatorId, contest.contestId)
+  },
+  orphaned: async (contest: { contestId: string }) => {
+    await prisma.contest.update({
+      where: { id: contest.contestId },
+      data: { educatorId: null },
+    })
+  },
+}
+
+test.each([`open`, `locked`, `past`, `in the trash`, `orphaned`] as const)(
+  `the admin erases a contest that's %s, with its players and reports`,
+  async state => {
+    const contest = await createContestWithPlayer()
+    const { contestId, playerId } = contest
+    await saveReport({ contestId, playerId, reason: `RUDE` })
+    await saveReport({ contestId, playerId: null, reason: `RUDE` })
+    await CONTEST_STATES[state](contest)
+    const { name } = await prisma.contest.findUniqueOrThrow({
+      where: { id: contestId },
+    })
+
+    const erased = await eraseContest(contestId, ` ${name.toUpperCase()}`)
+
+    expect(erased).toBe(`ERASED`)
+    await expect(
+      prisma.contest.count({ where: { id: contestId } }),
+    ).resolves.toBe(0)
+    await expect(prisma.player.count({ where: { contestId } })).resolves.toBe(0)
+    await expect(prisma.report.count({ where: { contestId } })).resolves.toBe(0)
+  },
+)
+
+test(`a contest isn't erased under another name`, async () => {
+  const { contestId } = await createContestWithPlayer()
+
+  await expect(eraseContest(contestId, `Another contest`)).resolves.toBe(
+    `OTHER_NAME`,
+  )
+
+  await expect(
+    prisma.contest.count({ where: { id: contestId } }),
+  ).resolves.toBe(1)
+})
+
+test(`erasing a contest that's gone says so`, async () => {
+  const { contestId } = await createContestWithPlayer()
+  await prisma.contest.delete({ where: { id: contestId } })
+
+  await expect(eraseContest(contestId, `Any`)).resolves.toBe(`GONE`)
 })

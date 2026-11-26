@@ -10,9 +10,21 @@ export const action = async ({
 }: Route.ActionArgs): Promise<Response | ConfirmResult> => {
   const { setupYear: year } = await readAdminYears()
   const formData = await request.formData()
-  return year !== null &&
+  const seenVersion = formData.get(`seenVersion`)
+  const deletion =
+    year !== null &&
     formData.get(`year`) === String(year) &&
-    (await deleteUnpublishedBracket(year))
-    ? redirect(href(`/admin`))
-    : { error: `This bracket is already published or deleted` }
+    typeof seenVersion === `string`
+      ? await deleteUnpublishedBracket(year, seenVersion)
+      : `GONE`
+  switch (deletion) {
+    case `DELETED`:
+      return redirect(href(`/admin`))
+    case `GONE`:
+      return { error: `This bracket is already published or deleted` }
+    case `STALE`:
+      return {
+        error: `This bracket changed since the page loaded. Reload the page`,
+      }
+  }
 }

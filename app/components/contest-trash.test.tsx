@@ -54,6 +54,7 @@ const renderTrash = async (
               id: `period-2`,
               name: `Period 2 Biology`,
               year: 2027,
+              isHidden: false,
               link: `https://mmmm.onl/play/secret`,
             }}
             isOpen={isOpen}

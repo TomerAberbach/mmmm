@@ -319,6 +319,7 @@ test(`contests shared with the educator open from the dashboard`, async () => {
           id: `period-1`,
           name: `Period 1 Chemistry`,
           year: 2027,
+          isHidden: false,
           educatorName: `Mr. Ruhle`,
         },
       ],
