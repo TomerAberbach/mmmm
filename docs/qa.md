@@ -1368,7 +1368,8 @@ P`/bracket`.
 - [ ] **9.27** Ada, Period 1 Chem's leaderboard. Open it. Expect: A podium of
       Pat and Sky, no table, and no **Report a name**. _CV5 DX3c_
 - [ ] **9.28** Ada, that page. Press a name. Expect: "’s bracket" with the name,
-      its rank, the scoreboard, and marks. _CV6_
+      its rank, the scoreboard, marks, and "Champion pick" above the champion.
+      _CV6_
 - [ ] **9.29** Ada, that address. Change the player's ID to Uma's, then to `x`.
       Expect: "Page not found" each time. _CV6_
 - [ ] **9.30** Cora, Period 2 Biology's leaderboard. Open it and send a report

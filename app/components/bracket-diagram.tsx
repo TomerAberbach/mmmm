@@ -490,7 +490,7 @@ const Center = ({ view }: { view: BracketView }) => {
       <div className='relative'>
         <div className='absolute bottom-full left-1/2 mb-10 flex -translate-x-1/2 flex-col items-center gap-2'>
           <p className='font-display text-xl whitespace-nowrap text-accent-strong uppercase'>
-            {view.year} champion
+            {championship.isPick ? `Champion pick` : `${view.year} champion`}
           </p>
           <p
             className={`min-w-48 border-4 border-ink px-3 py-2 text-center font-condensed text-lg font-extrabold uppercase ${championship.marking?.mark === `WRONG` ? `text-danger line-through decoration-2` : ``}`}
