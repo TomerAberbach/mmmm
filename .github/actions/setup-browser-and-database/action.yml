@@ -29,9 +29,13 @@ runs:
     # Headless runs launch only the headless shell. Playwright skips the
     # download when the cache restored it, and still installs the system
     # libraries
+    # The runner's Microsoft package source sometimes answers 403, which fails the
+    # install, and nothing here needs it
     - name: Install Chromium
       shell: bash
-      run: pnpm exec playwright install --with-deps --only-shell chromium
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/microsoft-prod.*
+        pnpm exec playwright install --with-deps --only-shell chromium
 
     - name: Wait for Postgres
       shell: bash
