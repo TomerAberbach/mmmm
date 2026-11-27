@@ -10,3 +10,14 @@ test(`a personal link that matches no player says it doesn't work`, async ({
     page.getByRole(`heading`, { name: `This link doesn’t work` }),
   ).toBeVisible()
 })
+
+test(`an address confirmation link that matches nothing answers not found`, async ({
+  page,
+}) => {
+  const response = await page.goto(`/confirm-address/missing`)
+
+  expect(response?.status()).toBe(404)
+  await expect(
+    page.getByRole(`heading`, { name: `This link doesn’t work` }),
+  ).toBeVisible()
+})

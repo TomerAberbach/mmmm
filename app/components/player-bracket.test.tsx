@@ -721,3 +721,72 @@ test.each([
     await expect.element(page.getByText(text)).toBeVisible()
   },
 )
+
+test(`a round tab reached by keyboard shows a focus ring`, async () => {
+  await renderBracket()
+  await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{ArrowRight}`)
+
+  const tab = document.activeElement!
+  expect(tab).toHaveRole(`tab`)
+  expect(getComputedStyle(tab).outlineStyle).toBe(`solid`)
+})
+
+test(`a pick reached by keyboard shows a focus ring`, async () => {
+  await renderBracket()
+  await page.getByRole(`tab`, { name: /^Round 1/u }).click()
+
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{Tab}`)
+
+  const pick = document.activeElement!
+  expect(pick).toHaveRole(`radio`)
+  expect(getComputedStyle(pick.closest(`label`)!).outlineStyle).toBe(`solid`)
+})
+
+test(`a refused discard brings back the changes the server keeps`, async () => {
+  answerRequests(new Response(null, { status: 409 }))
+  await renderBracket({
+    draft: COMPLETE_CHANGED_PICKS,
+    submission: SUBMISSION,
+  })
+  await page.getByRole(`button`, { name: `Discard changes` }).click()
+
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Discard changes` })
+    .click()
+
+  await expect.element(page.getByRole(`alert`)).toBeVisible()
+  await expect.element(page.getByText(`Changes not submitted`)).toBeVisible()
+})
+
+test(`a discard refused on a retry brings back the changes, which submit`, async () => {
+  const fetchSpy = answerRequests(Response.json({ ok: true }))
+  fetchSpy
+    .mockRejectedValueOnce(new TypeError(`Failed to fetch`))
+    .mockResolvedValueOnce(new Response(null, { status: 409 }))
+  await renderBracket({
+    draft: COMPLETE_CHANGED_PICKS,
+    submission: SUBMISSION,
+  })
+  await page.getByRole(`button`, { name: `Discard changes` }).click()
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Discard changes` })
+    .click()
+  await page.getByRole(`button`, { name: `Try again` }).click()
+
+  await page.getByRole(`button`, { name: `Submit changes` }).click()
+
+  await expect
+    .poll(() => readSentBodies(fetchSpy).at(-1))
+    .toStrictEqual({
+      intent: `submit`,
+      playerId: `maya`,
+      picks: COMPLETE_CHANGED_PICKS,
+    })
+  await expect.element(page.getByText(`Changes not submitted`)).toBeVisible()
+})

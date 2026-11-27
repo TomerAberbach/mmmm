@@ -57,7 +57,10 @@ test.each([
     laterYear: 2028,
     hint: `The 2027 tournament is over. To set up the 2028 bracket, delete this one below.`,
   },
-  { laterYear: null, hint: null },
+  {
+    laterYear: null,
+    hint: `Enter the combatants from ASU’s bracket. Only admins see it until you publish it.`,
+  },
 ])(
   `with $laterYear to set up later, the form's hint is $hint`,
   async ({ laterYear, hint }) => {
@@ -67,7 +70,7 @@ test.each([
       .element(page.getByRole(`button`, { name: `Save changes` }))
       .toBeVisible()
     expect(
-      page.getByText(`tournament is over`, { exact: false }).query()
+      page.getByText(/tournament is over|^Enter the combatants/u).query()
         ?.textContent ?? null,
     ).toBe(hint)
   },

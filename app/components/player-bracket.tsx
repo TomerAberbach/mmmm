@@ -89,6 +89,7 @@ export const PlayerBracket = ({
   // Counts the player's changes, so a submit that a later change overtakes
   // shows no panel
   const changeCount = useRef(0)
+  const beforeDiscard = useRef({ picks, cleared })
 
   const picking = useMemo(
     (): Picking => ({
@@ -143,10 +144,21 @@ export const PlayerBracket = ({
       return
     }
     changeCount.current += 1
+    beforeDiscard.current = { picks, cleared }
     setPicks(submission.picks)
     setCleared(new Set())
     setOutcome(null)
-    send({ intent: `discard`, playerId })
+    sendDiscard()
+  }
+  const sendDiscard = (): void => {
+    const changeCountAtDiscard = changeCount.current
+    send({ intent: `discard`, playerId }, undefined, () => {
+      // The server keeps the changes of a discard it refuses
+      if (changeCount.current === changeCountAtDiscard) {
+        setPicks(beforeDiscard.current.picks)
+        setCleared(beforeDiscard.current.cleared)
+      }
+    })
   }
 
   /** Sends what the player would send now, not the picks that failed */
@@ -160,7 +172,7 @@ export const PlayerBracket = ({
       }
       submit()
     },
-    discard,
+    discard: sendDiscard,
   }
 
   const comeBack = describeComeBack(submitted !== null, isOrphaned)
