@@ -15,11 +15,11 @@ export const RequestAlert = ({
 }) => (
   <span
     role='alert'
-    className='flex items-center gap-2 font-semibold text-danger'
+    className='flex flex-wrap items-center gap-x-6 gap-y-1 font-semibold text-danger'
   >
     {children}
     {action ? (
-      <Button variant='quiet' onPress={action.onPress}>
+      <Button variant='bar' onPress={action.onPress}>
         {action.label}
       </Button>
     ) : null}

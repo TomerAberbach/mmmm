@@ -51,7 +51,7 @@ export const MergeDialog = ({
   onMerge: (battle: BattleRef, name: string) => void
 }) => (
   <DialogTrigger>
-    <Button variant='quiet' isPending={isPending}>
+    <Button variant='bar' isPending={isPending}>
       Record a merge
     </Button>
     <ModalFrame title='Record a merge'>

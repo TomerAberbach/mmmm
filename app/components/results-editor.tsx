@@ -170,7 +170,7 @@ export const ResultsEditor = ({
           onRetry={request => sendRequest(request, results)}
         />
         {nextBattle ? (
-          <Button variant='quiet' onPress={() => showBattle(nextBattle)}>
+          <Button variant='bar' onPress={() => showBattle(nextBattle)}>
             Next battle to decide
           </Button>
         ) : null}
