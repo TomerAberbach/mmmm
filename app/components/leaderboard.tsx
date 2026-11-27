@@ -37,6 +37,11 @@ export const Leaderboard = ({
           toBracketPath={toBracketPath}
         />
       ) : null}
+      {hasBrokenTie(rows) ? (
+        <p className='text-muted'>
+          Ties go to whoever finished their picks first.
+        </p>
+      ) : null}
       {page ? <Pages {...page} /> : null}
       {reportPath === null || !firstTarget ? null : (
         <ReportDialog
@@ -49,6 +54,13 @@ export const Leaderboard = ({
     <p className='text-muted'>No approved brackets yet.</p>
   )
 }
+
+/** Whether rows with the same score have different ranks */
+const hasBrokenTie = (rows: LeaderboardRow[]): boolean =>
+  rows.some(({ score, rank }, index) => {
+    const above = rows[index - 1]
+    return above?.score === score && above.rank !== rank
+  })
 
 /**
  * The podium's steps, by rank. Margins set the heights, so a long label
