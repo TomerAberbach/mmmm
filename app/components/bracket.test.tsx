@@ -184,6 +184,15 @@ test.each(BRACKETS)(
   },
 )
 
+test.each([
+  { scenario: `results`, results: undefined, label: `2025 champion` },
+  { scenario: `picks`, results: {}, label: `Champion pick` },
+])(`a bracket of $scenario labels its champion`, async ({ results, label }) => {
+  await renderBracket(WIDE_SCREEN, { results })
+
+  await expect.element(page.getByText(label)).toBeVisible()
+})
+
 test(`a marked bracket starts on the earliest round left to decide`, async () => {
   await renderBracket(PHONE, {
     winners: pickEveryBattle(BRACKET),

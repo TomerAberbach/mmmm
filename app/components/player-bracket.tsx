@@ -21,7 +21,7 @@ import type { QueueRules, RequestState } from './request-queue.ts'
 import { RequestAlert, RequestNote } from './request-status.tsx'
 import { useShownRound } from './shown-round.ts'
 import { useSteadyDiagram } from './use-steady-diagram.ts'
-import { buildBracketView, readBattleName } from '~/bracket-view.ts'
+import { buildPicksView, readBattleName } from '~/bracket-view.ts'
 import { listBattles, toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
 import { formatTime } from '~/dates.ts'
@@ -76,7 +76,7 @@ export const PlayerBracket = ({
   // Every battle a change has cleared. One picked again shows as picked
   const [cleared, setCleared] = useState<ReadonlySet<string>>(() => new Set())
   const view = useMemo(
-    () => buildBracketView(year, bracket, picks),
+    () => buildPicksView(year, bracket, picks),
     [year, bracket, picks],
   )
   const { round, setRound, showBattle } = useShownRound(view)
