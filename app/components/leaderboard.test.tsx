@@ -110,6 +110,28 @@ test(`a player without points isn't on the podium`, async () => {
   await expect.element(podium()).not.toBeInTheDocument()
 })
 
+const TIE_NOTE = `Ties go to whoever finished their picks first.`
+
+test(`a leaderboard that ranks a tie by time says so`, async () => {
+  await renderLeaderboard([PRIYA, { ...HIDDEN, score: PRIYA.score }, JONAH])
+
+  await expect.element(page.getByText(TIE_NOTE)).toBeVisible()
+  await expectNoAxeViolations()
+})
+
+test.each([
+  { scenario: `without a tie`, rows: ROWS },
+  {
+    scenario: `whose tied players share a rank`,
+    rows: [PRIYA, { ...HIDDEN, score: PRIYA.score, rank: PRIYA.rank }, JONAH],
+  },
+])(`a leaderboard $scenario says nothing of ties`, async ({ rows }) => {
+  await renderLeaderboard(rows)
+
+  await expect.element(podium()).toBeVisible()
+  await expect.element(page.getByText(TIE_NOTE)).not.toBeInTheDocument()
+})
+
 test(`a podium without other rows has no table`, async () => {
   await renderLeaderboard([PRIYA])
 

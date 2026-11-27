@@ -1424,7 +1424,8 @@ P`/bracket`.
       steps, and both rows without points in the table. _CP7 CL1_
 - [ ] **9.52** Ada, that page. Run the "Earlier time" SQL after
       `qa_scores 70 70 60 50` and reload. Expect: Ben is rank 1 and Ava rank 2,
-      because Ben's picks changed first. _CL3_
+      because Ben's picks changed first, and "Ties go to whoever finished their
+      picks first." _CL3_
 - [ ] **9.53** Ada, Period 2. Reject Ben, Jonah, and Priya, and open the
       leaderboard. Expect: 1 step, and no table. _CP1_
 - [ ] **9.54** Ada, Period 2. Approve the 3 again. Expect: 4 rows. _P14_
