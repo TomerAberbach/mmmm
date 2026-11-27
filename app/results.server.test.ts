@@ -246,6 +246,23 @@ test(`a newer bracket is published only once the current year has a champion`, a
   expect([early, later]).toStrictEqual([`NO_CHAMPION`, `CHANGED`])
 })
 
+test.each([
+  { scenario: `before its tournament ends`, day: `03-31`, change: `CHANGED` },
+  { scenario: `once its tournament is over`, day: `04-02`, change: `OVER` },
+])(`publishing a bracket $scenario: $change`, async ({ day, change }) => {
+  await crownChampion(await addYear({ published: true }))
+  const newerYear = await addYear({ published: false })
+  vi.useFakeTimers({ toFake: [`Date`] })
+  vi.setSystemTime(new Date(`${newerYear}-${day}T12:00:00Z`))
+  onTestFinished(() => {
+    vi.useRealTimers()
+  })
+
+  const result = await setBracketPublished(newerYear, true)
+
+  expect(result).toBe(change)
+})
+
 test(`a merge advances under its combined name`, async () => {
   const year = await addYear({ published: true })
 

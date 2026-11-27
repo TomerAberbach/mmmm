@@ -21,7 +21,7 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { PhaseSection } from '~/components/phase-section.tsx'
 import { rejectForm } from '~/form-replies.server.ts'
 import { readLostSessionMessage } from '~/lost-session.ts'
-import { readUpcomingYear } from '~/year.ts'
+import { isTournamentOver, readUpcomingYear } from '~/year.ts'
 
 /** Only for a year to set up. The current year's bracket is with its results */
 export const loader = async () => {
@@ -29,7 +29,7 @@ export const loader = async () => {
   if (year === null) {
     return redirect(href(`/admin/results`))
   }
-  const upcomingYear = readUpcomingYear(new Date())
+  const today = new Date()
   const summary = await readBracketSummary(year)
   const bracket = summary && (await readBracket(year))
   const names = bracket && toNames(bracket)
@@ -40,7 +40,7 @@ export const loader = async () => {
         ? { year: current.year, resultCount: current.summary.resultCount }
         : null,
     summary,
-    laterYear: upcomingYear > year ? upcomingYear : null,
+    laterYear: isTournamentOver(year, today) ? readUpcomingYear(today) : null,
     version: toBracketVersion(names),
     defaultValue: names ? toBracketForm(names) : undefined,
   }
@@ -140,6 +140,7 @@ const AdminBracketPage = ({
           year={loaderData.year}
           archivedYear={loaderData.archivedYear}
           summary={loaderData.summary}
+          isOver={loaderData.laterYear !== null}
           version={version}
         />
       ) : null}

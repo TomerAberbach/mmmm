@@ -27,6 +27,36 @@ test(`a complete year says how many results are saved`, async () => {
   await expectNoAxeViolations()
 })
 
+test(`a bracket whose tournament is over can't be published`, async () => {
+  await renderRoutes([
+    {
+      path: `/`,
+      Component: () => (
+        <PhaseSection
+          year={2027}
+          summary={{ phase: `SETUP`, expectedLockDate: null }}
+          isOver
+        />
+      ),
+    },
+  ])
+
+  await expect
+    .element(
+      page.getByText(`Its tournament is over, so it can’t be published.`, {
+        exact: false,
+      }),
+    )
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`button`, { name: `Publish 2027 bracket` }))
+    .not.toBeInTheDocument()
+  await expect
+    .element(page.getByRole(`button`, { name: `Save date` }))
+    .not.toBeInTheDocument()
+  await expectNoAxeViolations()
+})
+
 test(`publishing says how many of the archived year's results are saved`, async () => {
   await renderRoutes([
     {

@@ -46,6 +46,10 @@ export const action = async ({
       )
     case `PAST`:
       return refuseStale(`The ${year} bracket is archived. Reload the page`)
+    case `OVER`:
+      return refuseStale(
+        `The ${year} tournament is over, so its bracket can’t be published. Reload the page`,
+      )
     case `HAS_CONTESTS`:
       return refuseStale(
         `Educators have created ${year} contests, so the bracket stays published. Reload the page`,

@@ -24,7 +24,7 @@ import { prisma } from './db.server.ts'
 import type { Prisma } from './generated/prisma/client.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
-import { isPastDate, readUpcomingYear } from './year.ts'
+import { isPastDate, isTournamentOver, readUpcomingYear } from './year.ts'
 import {
   CURRENT_BRACKET,
   LOCKED_YEARS_LIMITS,
@@ -470,15 +470,17 @@ export type PublicationChange =
   | `HAS_CONTESTS`
   | `LOCKED`
   | `NO_CHAMPION`
+  | `OVER`
 
 /**
  * Publishing moves the year from Setup to Open, and unpublishing moves it back
  * until the year has a contest or locks. Publishing a newer year erases the
  * current year's trash and unsubmitted drafts. A newer year waits for the current
  * year's champion, since publishing it archives the current year's results.
- * `PAST` means a newer year is current. `UNCHANGED` means the year has no
- * bracket, or its bracket is already in that state. `STALE` means the bracket to
- * publish isn't the one that `seenVersion`, from `toBracketVersion`, is of
+ * `OVER` means the calendar has moved past the year's tournament. `PAST` means a
+ * newer year is current. `UNCHANGED` means the year has no bracket, or its
+ * bracket is already in that state. `STALE` means the bracket to publish isn't
+ * the one that `seenVersion`, from `toBracketVersion`, is of
  */
 export const setBracketPublished = (
   year: number,
@@ -498,13 +500,16 @@ export const setBracketPublished = (
     if (!published && current?.year === year && current.isLocked) {
       return `LOCKED`
     }
-    if (
-      published &&
-      current &&
-      current.year !== year &&
-      (await readBracketSummary(current.year, tx))?.phase !== `COMPLETE`
-    ) {
-      return `NO_CHAMPION`
+    if (published && current?.year !== year) {
+      if (isTournamentOver(year, new Date())) {
+        return `OVER`
+      }
+      if (
+        current &&
+        (await readBracketSummary(current.year, tx))?.phase !== `COMPLETE`
+      ) {
+        return `NO_CHAMPION`
+      }
     }
     if (published && seenVersion !== undefined) {
       const version = await readUnpublishedVersion(tx, year)
