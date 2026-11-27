@@ -1720,8 +1720,10 @@ Otto Zoology's Olga at P`/bracket`, and Quinn's P`/bracket`.
       `/admin`. Expect: **Manage the 2027 bracket**, and no 2028 card. _DY8
       DM16_
 - [ ] **14.14** Grace, `/admin/bracket`. Open it. Expect: "The 2027 tournament
-      is over. To set up the 2028 bracket, delete this one below." The page
-      doesn't say "Enter the combatants". _DM16_
+      is over. To set up the 2028 bracket, delete this one below." Under
+      "Phase", "Its tournament is over, so it can’t be published." and no
+      **Publish 2027 bracket**. The page doesn't say "Enter the combatants".
+      _DM16_
 - [ ] **14.15** Nobody, `/`. Open it signed out on that server. Expect: "MMMM
       adds the 2028 bracket once ASU publishes it in late February." _DM16_
 - [ ] **14.16** Ada, terminal. Run "120 approved players" and open the global

@@ -9,6 +9,10 @@ export const readUpcomingYear = (today: Date): number => {
   return month >= APRIL ? year + 1 : year
 }
 
+/** Whether the year's tournament is over, so the calendar's upcoming one is later */
+export const isTournamentOver = (year: number, today: Date): boolean =>
+  year < readUpcomingYear(today)
+
 const APRIL = 4
 
 /** Whether the calendar date, at midnight UTC, is over in Arizona */

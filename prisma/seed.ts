@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { hashPassword } from 'better-auth/crypto'
-import {
-  readBracket,
-  saveUnpublishedBracket,
-  setBracketPublished,
-} from '../app/brackets.server.ts'
+import { readBracket, saveUnpublishedBracket } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import type {
   PlayerDeleter,
@@ -15,6 +11,7 @@ import { submitPlayerPicks } from '../app/player-picks.server.ts'
 import { toSeededBracket } from '../app/seeded-bracket.ts'
 import { deleteContest } from '../app/trash.server.ts'
 import { readUpcomingYear } from '../app/year.ts'
+import { readCurrentYear } from '../app/years.server.ts'
 import { BRACKET_2025, BRACKET_2026 } from './brackets.ts'
 import { addContest, addPlayer } from './fixtures.ts'
 import { requireDisposableDatabase } from './local-database.ts'
@@ -80,7 +77,13 @@ for (const educator of EDUCATORS) {
 if (!(await prisma.bracket.findUnique({ where: { year: 2025 } }))) {
   await saveUnpublishedBracket(2025, BRACKET_2025)
 }
-await setBracketPublished(2025, true)
+// `setBracketPublished` refuses a tournament that's over
+if ((await readCurrentYear()) === null) {
+  await prisma.bracket.update({
+    where: { year: 2025 },
+    data: { publishedAt: new Date() },
+  })
+}
 const upcomingYear = readUpcomingYear(new Date())
 if (!(await prisma.bracket.findUnique({ where: { year: upcomingYear } }))) {
   await saveUnpublishedBracket(upcomingYear, BRACKET_2026)

@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { toBattleId } from '../app/bracket.ts'
-import {
-  readBracket,
-  saveUnpublishedBracket,
-  setBracketPublished,
-} from '../app/brackets.server.ts'
+import { readBracket, saveUnpublishedBracket } from '../app/brackets.server.ts'
 import { prisma } from '../app/db.server.ts'
 import type { Picks } from '../app/picks.ts'
 import { hashSecret } from '../app/secrets.server.ts'
@@ -23,7 +19,11 @@ export const toPlayerSecret = (index: number): string => `load-player-${index}`
 /** 200 contests of 20 organizations, each with 100 approved submissions */
 export const fillDatabase = async (): Promise<void> => {
   await saveUnpublishedBracket(YEAR, BRACKET_2025)
-  await setBracketPublished(YEAR, true)
+  // `setBracketPublished` refuses a tournament that's over
+  await prisma.bracket.update({
+    where: { year: YEAR },
+    data: { publishedAt: new Date() },
+  })
   const bracket = toSeededBracket((await readBracket(YEAR))!)
   for (let index = 0; index < CONTEST_COUNT; index++) {
     const domain = `school-${index % 20}.edu`

@@ -32,6 +32,7 @@ export const PhaseSection = ({
   summary,
   version = null,
   archivedYear = null,
+  isOver = false,
 }: {
   year: number
   summary: BracketSummary
@@ -39,6 +40,8 @@ export const PhaseSection = ({
   version?: string | null
   /** The year that publishing this one archives */
   archivedYear?: ArchivedYear | null
+  /** Whether the calendar has moved past the year's tournament */
+  isOver?: boolean
 }) => (
   <section className='flex max-w-3xl flex-col gap-3 border-2 border-ink p-5'>
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
@@ -50,8 +53,8 @@ export const PhaseSection = ({
         </span>
       ) : null}
     </div>
-    <p className='max-w-prose'>{describePhase(summary)}</p>
-    {`expectedLockDate` in summary ? (
+    <p className='max-w-prose'>{describePhase(summary, isOver)}</p>
+    {`expectedLockDate` in summary && !isOver ? (
       <ExpectedLockDateForm
         year={year}
         expectedLockDate={
@@ -65,15 +68,18 @@ export const PhaseSection = ({
         summary={summary}
         version={version}
         archivedYear={archivedYear}
+        isOver={isOver}
       />
     </div>
   </section>
 )
 
-const describePhase = (summary: BracketSummary): string => {
+const describePhase = (summary: BracketSummary, isOver: boolean): string => {
   switch (summary.phase) {
     case `SETUP`:
-      return `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`
+      return isOver
+        ? `Only admins see this bracket. Its tournament is over, so it can’t be published.`
+        : `Only admins see this bracket. Publish it once it matches ASU’s, so educators can create contests.`
     case `OPEN`:
       return `Educators can create contests, and players can submit. The first result locks submissions.`
     case `IN_PROGRESS`:
@@ -96,15 +102,17 @@ const PhaseAction = ({
   summary,
   version,
   archivedYear,
+  isOver,
 }: {
   year: number
   summary: BracketSummary
   version: string | null
   archivedYear: ArchivedYear | null
+  isOver: boolean
 }) => {
   switch (summary.phase) {
     case `SETUP`:
-      return (
+      return isOver ? null : (
         <PublishButton
           year={year}
           version={version}
