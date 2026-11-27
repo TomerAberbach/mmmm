@@ -28,8 +28,8 @@ const KANGAROO = findCombatantId(BRACKET, `Eastern Grey Kangaroo`)
 const markFirstRound2Pick = (results: Results) =>
   markPick(BRACKET, results, ROUND_2_FIRST, PICKED)
 
-const scorePicks = (results: Results) =>
-  readScorecard(buildMarkedBracketView(2025, BRACKET, PICKS, results))
+const scorePicks = (results: Results, isPast = false) =>
+  readScorecard(buildMarkedBracketView(2025, BRACKET, PICKS, results), isPast)
 
 test(`a perfect bracket scores 138`, () => {
   expect(PERFECT_SCORE).toBe(138)
@@ -83,6 +83,7 @@ test(`a wrong pick loses its points and those of its later wins`, () => {
     round: `ROUND_1`,
     right: 0,
     decided: 1,
+    left: 31,
     earned: 0,
     possible: 31,
   })
@@ -94,9 +95,21 @@ test(`the champion earns every round on their way`, () => {
 
   expect(scorePicks(results)).toMatchObject({
     score: 1 + 2 + 3 + 5 + 8 + 13,
-    isFinal: true,
   })
 })
+
+test.each([
+  { scenario: `current`, isPast: false, possible: 106, isFinal: false },
+  { scenario: `past`, isPast: true, possible: 0, isFinal: true },
+])(
+  `a $scenario year's score with a champion and undecided battles: final $isFinal`,
+  ({ isPast, possible, isFinal }) => {
+    const champion = PICKS[`CHAMPIONSHIP:0`]!
+    const { results } = recordResult(BRACKET, {}, CHAMPIONSHIP, champion)
+
+    expect(scorePicks(results, isPast)).toMatchObject({ possible, isFinal })
+  },
+)
 
 test.each([
   [`right`, { 'ROUND_1:1': OPPONENT }, `right`],

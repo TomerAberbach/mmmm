@@ -31,6 +31,10 @@ export const isOpenYear = async (year: number): Promise<boolean> =>
 export const isOpen = (current: CurrentYear | null, year: number): boolean =>
   current?.year === year && !current.isLocked
 
+/** Whether a newer year is current, so the year's results are final */
+export const isPast = (current: CurrentYear | null, year: number): boolean =>
+  current !== null && year < current.year
+
 type CurrentYearChange<Result> = (
   tx: Prisma.TransactionClient,
   current: CurrentYear | null,

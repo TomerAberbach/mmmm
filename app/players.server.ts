@@ -6,7 +6,12 @@ import type { LimitRefusal } from './limits.server.ts'
 import { PLAYER_OUTSIDE_TRASH } from './outside-trash.server.ts'
 import { createSecret, hashSecret } from './secrets.server.ts'
 import { readEraseTime } from './trash.ts'
-import { isOpen, readCurrentYear, withCurrentYear } from './years.server.ts'
+import {
+  isOpen,
+  isPast,
+  readCurrentYear,
+  withCurrentYear,
+} from './years.server.ts'
 
 export type NewPlayer =
   | { secret: string }
@@ -149,7 +154,7 @@ export const readPersonalLink = async (
         ? contest.linkSecret
         : null,
     isOpen: takesPlayers,
-    isPast: current !== null && contest.year < current.year,
+    isPast: isPast(current, contest.year),
     isOrphaned,
   }
 }

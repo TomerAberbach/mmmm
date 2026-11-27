@@ -18,12 +18,15 @@ export const MarkedBracket = ({
   bracket,
   picks,
   results,
+  isPast,
   children,
 }: {
   year: number
   bracket: StoredBracket
   picks: Picks
   results: Results
+  /** Whether a newer bracket is published, so the results are final */
+  isPast: boolean
   children?: ReactNode
 }) => {
   const view = useMemo(
@@ -33,7 +36,7 @@ export const MarkedBracket = ({
   )
   return (
     <>
-      <Scoreboard scorecard={readScorecard(view)} />
+      <Scoreboard scorecard={readScorecard(view, isPast)} />
       {children}
       <div className='print:page-landscape'>
         <Bracket view={view} />

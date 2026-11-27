@@ -175,6 +175,24 @@ test(`a row opens its submission, hiding the name as the leaderboard does`, asyn
   })
 })
 
+test.each([
+  { scenario: `the current year's`, hasNewerYear: false },
+  { scenario: `a past year's`, hasNewerYear: true },
+])(`$scenario submission is past: $hasNewerYear`, async ({ hasNewerYear }) => {
+  const { contestId, year } = await createContestInNewYear()
+  const id = await addScored(contestId, `Maya R.`, 40)
+  await setLocked(year)
+  await addYear({ published: hasNewerYear })
+
+  const submission = await readLeaderboardSubmission(
+    toScope({ contestId, year }),
+    id,
+    await asEducator(contestId),
+  )
+
+  expect(submission?.isPast).toBe(hasNewerYear)
+})
+
 test(`a submission without a row doesn't open`, async () => {
   const { contestId, year } = await createContestInNewYear()
   const pendingId = await addScored(contestId, `Maya R.`, 40, {
