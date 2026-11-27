@@ -142,12 +142,12 @@ const SubmittedBracket = ({
       isPast={isPast}
     >
       <PicksChanged at={submission.picksChangedAt} isOrphaned={isOrphaned} />
-      <div className='flex flex-wrap gap-3 print:hidden'>
+      <div className='flex flex-wrap gap-x-6 gap-y-1 print:hidden'>
         <PersonalLinkButton personalLink={personalLink} isOpen={false} />
         <ForgetButton
           forgetPath={forgetPath}
           playerId={playerId}
-          variant='quiet'
+          variant='bar'
           isSending={false}
         />
       </div>

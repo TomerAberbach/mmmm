@@ -228,7 +228,7 @@ export const PlayerBracket = ({
               <ForgetButton
                 forgetPath={forgetPath}
                 playerId={playerId}
-                variant='quiet'
+                variant='bar'
                 isSending={isSending}
               />
             </BarActions>
@@ -300,7 +300,9 @@ type Outcome =
   | { kind: `submitted`; submitted: `bracket` | `changes` }
 
 const BarActions = ({ children }: { children: ReactNode }) => (
-  <span className='ms-auto flex flex-wrap items-center gap-3'>{children}</span>
+  <span className='ms-auto flex flex-wrap items-center gap-x-6 gap-y-1'>
+    {children}
+  </span>
 )
 
 const describeUnpicked = (
@@ -417,7 +419,7 @@ const DiscardButton = ({
 }) => (
   <ConfirmDialog
     trigger={
-      <Button variant='quiet' isDisabled={isSending}>
+      <Button variant='bar' isDisabled={isSending}>
         Discard changes
       </Button>
     }
@@ -444,7 +446,7 @@ const PickProgress = ({
     <>
       <BarLabel>{`${TOTAL_BATTLES - unpicked.length} of ${TOTAL_BATTLES} picked`}</BarLabel>
       {nextBattle ? (
-        <Button variant='quiet' onPress={() => onShowBattle(nextBattle)}>
+        <Button variant='bar' onPress={() => onShowBattle(nextBattle)}>
           Next battle to pick
         </Button>
       ) : null}

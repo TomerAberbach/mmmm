@@ -39,7 +39,7 @@ export const PersonalLinkButton = (
   props: Parameters<typeof PersonalLink>[0],
 ) => (
   <DialogTrigger>
-    <Button variant='quiet'>Show my personal link</Button>
+    <Button variant='bar'>Show my personal link</Button>
     <ModalFrame title='Your personal link'>
       <PersonalLink {...props} />
       <div className='mt-2 flex justify-end'>
@@ -59,7 +59,7 @@ export const ForgetButton = ({
 }: {
   forgetPath: string
   playerId: string
-  variant: `quiet` | `secondary`
+  variant: `bar` | `secondary`
   /** A response still in flight would make this device remember again */
   isSending: boolean
 }) => (
