@@ -15,7 +15,7 @@ import { readSubmissionPicks } from './player-picks.server.ts'
 import type { Results } from './results.ts'
 import type { StoredBracket } from './seeded-bracket.ts'
 import { readSharedContestIds } from './shares.server.ts'
-import { isOpen, isOpenYear, readCurrentYear } from './years.server.ts'
+import { isOpen, isOpenYear, isPast, readCurrentYear } from './years.server.ts'
 
 /** Whose approved submissions a leaderboard ranks, in one year */
 export type LeaderboardScope = { year: number } & (
@@ -91,6 +91,8 @@ export type LeaderboardSubmission = {
   bracket: StoredBracket
   results: Results
   picks: Picks
+  /** Whether a newer bracket is published, so the results are final */
+  isPast: boolean
 }
 
 /**
@@ -104,7 +106,8 @@ export const readLeaderboardSubmission = (
   viewer: LeaderboardViewer,
 ): Promise<LeaderboardSubmission | null> =>
   readSnapshot(async tx => {
-    if (isOpen(await readCurrentYear(tx), scope.year)) {
+    const current = await readCurrentYear(tx)
+    if (isOpen(current, scope.year)) {
       return null
     }
     const [row] = await tx.$queryRaw<RankedSubmission[]>(
@@ -117,6 +120,7 @@ export const readLeaderboardSubmission = (
       ? {
           row: (await labelRows(tx, scope, viewer))(row),
           picks: await readSubmissionPicks(playerId, tx),
+          isPast: isPast(current, scope.year),
           ...(await readBracketAndResultRows(scope.year, tx)),
         }
       : null

@@ -139,6 +139,7 @@ const SubmittedBracket = ({
       bracket={bracket}
       picks={submission.picks}
       results={results}
+      isPast={isPast}
     >
       <PicksChanged at={submission.picksChangedAt} isOrphaned={isOrphaned} />
       <div className='flex flex-wrap gap-3 print:hidden'>

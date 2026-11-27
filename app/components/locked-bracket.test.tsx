@@ -5,6 +5,7 @@ import { pickEveryBattle } from '../../prisma/pick-every-battle.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { ROUND_1_FIRST, storeTestBracket } from '../../test/picks.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
+import { toBattleKey } from '../bracket.ts'
 import type { SubmissionStatus } from '../generated/prisma/enums.ts'
 import type { Picks } from '../picks.ts'
 import { recordResult } from '../results.ts'
@@ -188,13 +189,30 @@ test(`a phone shows the points by round once pressed`, async () => {
   await expect.element(tile).toBeVisible()
 })
 
-test(`a bracket with a champion has a final score`, async () => {
+test(`a bracket with every battle decided has a final score`, async () => {
   await renderLocked(`APPROVED`, PICKS, PICKS)
 
   await expect
     .element(page.getByRole(`heading`, { name: `Final score` }))
     .toBeVisible()
   await expect.element(page.getByText(`138 earned · 0 missed`)).toBeVisible()
+})
+
+test(`a past bracket with undecided battles has a final score and nothing still possible`, async () => {
+  await renderLocked(
+    `APPROVED`,
+    PICKS,
+    { [toBattleKey(ROUND_1_FIRST)]: PICKS[toBattleKey(ROUND_1_FIRST)]! },
+    true,
+  )
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Final score` }))
+    .toBeVisible()
+  await expect.element(page.getByText(`1 earned · 137 missed`)).toBeVisible()
+  await expect
+    .element(page.getByText(`1 of 1 right`, { exact: true }))
+    .toBeInTheDocument()
 })
 
 test(`a wrong pick names an actual winner who isn't in its box`, async () => {

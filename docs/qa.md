@@ -1539,9 +1539,9 @@ P`/bracket`.
 - [ ] **11.3** Grace, `/admin`. Open it. Expect: The 2025 card: "Champion:" and
       **Correct 2025 results**, and the 2027 card with **Manage the 2027
       bracket** or **Set up the 2027 bracket**. _DV4 DT10_
-- [ ] **11.4** Pat, P`/bracket`. Reload. Expect: "Final score", since the
-      champion is saved, with "still possible" while battles are undecided.
-      _CV18.2_
+- [ ] **11.4** Pat, P`/bracket`. Reload. Expect: "Score so far" with "still
+      possible" while battles are undecided, and "Final score" without it once
+      every battle is. _CV18.2_
 - [ ] **11.5** Grace, `/admin/results`. Press the Championship's winner, then
       **Clear result**. Expect: "In progress", and `/admin` has no 2027 card.
       _DT11_

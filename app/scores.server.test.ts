@@ -47,7 +47,7 @@ test(`saving a result stores the score the marked bracket shows`, async () => {
     picks,
     await readResultRows(year),
   )
-  const { score } = readScorecard(view)
+  const { score } = readScorecard(view, false)
   expect(score).toBeGreaterThan(0)
   await expect(readScore(id)).resolves.toBe(score)
 })

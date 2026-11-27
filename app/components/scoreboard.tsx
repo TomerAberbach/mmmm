@@ -89,7 +89,7 @@ const RoundScores = ({ rounds }: { rounds: RoundScore[] }) => {
         className={`flex-col gap-0.5 border-ink bg-muted-light max-lg:border-t-2 lg:grid lg:grid-cols-7 print:grid print:grid-cols-7 ${isExpanded ? `flex` : `hidden`}`}
       >
         {rounds.map(roundScore => (
-          <RoundTile key={roundScore.round} {...roundScore} />
+          <RoundTile key={roundScore.round} roundScore={roundScore} />
         ))}
       </ul>
     </div>
@@ -107,8 +107,8 @@ const ROUND_CLASSES: Record<Round, string> = {
   CHAMPIONSHIP: `bg-ink`,
 }
 
-const RoundTile = ({ round, right, decided, earned }: RoundScore) => {
-  const left = BATTLE_COUNTS[round] - decided
+const RoundTile = ({ roundScore }: { roundScore: RoundScore }) => {
+  const { round, decided, earned } = roundScore
   return (
     <li className='flex bg-white lg:flex-col print:flex-col'>
       <span
@@ -133,12 +133,17 @@ const RoundTile = ({ round, right, decided, earned }: RoundScore) => {
             </span>
           )}
         </p>
-        <p className='text-sm text-muted'>
-          {decided > 0
-            ? `${right} of ${decided} right${left > 0 ? `, ${left} left` : ``}`
-            : `${ROUND_POINTS[round]} ${BATTLE_COUNTS[round] > 1 ? `each` : `to win`}`}
-        </p>
+        <p className='text-sm text-muted'>{describeRound(roundScore)}</p>
       </div>
     </li>
   )
+}
+
+const describeRound = ({ round, right, decided, left }: RoundScore): string => {
+  if (decided > 0) {
+    return `${right} of ${decided} right${left > 0 ? `, ${left} left` : ``}`
+  }
+  return left > 0
+    ? `${ROUND_POINTS[round]} ${BATTLE_COUNTS[round] > 1 ? `each` : `to win`}`
+    : `Not decided`
 }
