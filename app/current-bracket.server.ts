@@ -1,6 +1,6 @@
 import { buildBracketView } from './bracket-view.ts'
 import type { BracketView } from './bracket-view.ts'
-import { readCurrentBracket } from './brackets.server.ts'
+import { hidePastDate, readCurrentBracket } from './brackets.server.ts'
 import { formatDate } from './dates.ts'
 import { prisma } from './db.server.ts'
 import { toSeededBracket } from './seeded-bracket.ts'
@@ -28,7 +28,7 @@ export const readCurrentBracketView =
     )
   }
 
-/** Such as "March 19, 2027". Null once the year locks */
+/** Such as "March 19, 2027". Null once it passes or the year locks */
 export const readExpectedLockDate = async (
   year: number,
 ): Promise<string | null> => {
@@ -36,5 +36,6 @@ export const readExpectedLockDate = async (
     where: { year, lockedAt: null },
     select: { expectedLockDate: true },
   })
-  return bracket?.expectedLockDate ? formatDate(bracket.expectedLockDate) : null
+  const date = hidePastDate(bracket?.expectedLockDate ?? null)
+  return date && formatDate(date)
 }

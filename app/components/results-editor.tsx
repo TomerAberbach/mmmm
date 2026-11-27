@@ -2,9 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { href, useRevalidator } from 'react-router'
 import { Bracket } from './bracket.tsx'
 import { Button } from './button.tsx'
-import { ClearedNotice } from './cleared-notice.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { listMergeable, MergeDialog } from './merge-dialog.tsx'
+import { BarLabel, PickingBar } from './picking-bar.tsx'
 import { PickingContext } from './picking.ts'
 import type { Picking } from './picking.ts'
 import { useRequestQueue } from './request-queue.ts'
@@ -12,6 +12,7 @@ import type { RequestState } from './request-queue.ts'
 import { RequestAlert, RequestNote } from './request-status.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { useShownRound } from './shown-round.ts'
+import { useSteadyDiagram } from './use-steady-diagram.ts'
 import { buildBracketView, readBattleName } from '~/bracket-view.ts'
 import { toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
@@ -25,7 +26,7 @@ import {
   readMergeMembers,
 } from '~/results.ts'
 import type { AppliedResult, ResultDecision, Results } from '~/results.ts'
-import { toSeededBracket } from '~/seeded-bracket.ts'
+import { didAdvance, toSeededBracket } from '~/seeded-bracket.ts'
 import type { SeededBracket, StoredBracket } from '~/seeded-bracket.ts'
 import { listContenders, TOTAL_BATTLES } from '~/winners.ts'
 
@@ -44,7 +45,14 @@ export const ResultsEditor = ({
   initialResults: Results
   isLocked: boolean
 }) => {
-  const [results, setResults] = useState(initialResults)
+  const [enteredResults, setEnteredResults] = useState(initialResults)
+  const [savedResults, setSavedResults] = useState(initialResults)
+  const { state, isSending, send } = useRequestQueue<ResultRequest>(
+    href(`/admin/results/save`),
+  )
+  // A refused result was never saved, so it goes
+  const isRefused = state.kind === `refused` || state.kind === `locked`
+  const results = isRefused ? savedResults : enteredResults
   // A reload can drop a merge that these results still hold, such as after
   // another admin clears it
   const [knownMerges, setKnownMerges] = useState(stored.merges)
@@ -66,18 +74,19 @@ export const ResultsEditor = ({
     [year, bracket, results],
   )
   const { round, setRound, showBattle } = useShownRound(view)
+  const { barRef, diagramRef } = useSteadyDiagram()
   const revalidator = useRevalidator()
-  const { state, isSending, send } = useRequestQueue<ResultRequest>(
-    href(`/admin/results/save`),
-  )
   // A later change builds on the last one, so it waits until that one saves
   const isBlocked =
     isSending || (state.kind !== `idle` && state.kind !== `sent`)
 
   const sendRequest = useCallback(
-    (request: ResultRequest): void => {
-      // The page reloads the phase and the lock before the next change
-      send(request, () => revalidator.revalidate())
+    (request: ResultRequest, saved: Results): void => {
+      send(request, () => {
+        setSavedResults(saved)
+        // The page reloads the phase and the lock before the next change
+        return revalidator.revalidate()
+      })
     },
     [send, revalidator],
   )
@@ -86,9 +95,9 @@ export const ResultsEditor = ({
       if (merge) {
         setKnownMerges(current => [...current, merge])
       }
-      setResults(change.results)
+      setEnteredResults(change.results)
       setCleared(change.cleared)
-      sendRequest(request)
+      sendRequest(request, change.results)
     },
     [sendRequest],
   )
@@ -117,8 +126,12 @@ export const ResultsEditor = ({
           return
         }
         const battle = { round, index }
-        // Pressing the recorded winner clears the result
-        const isClear = results[toBattleKey(battle)] === winnerId
+        // Pressing the recorded winner, or a side that advanced in a merge,
+        // clears the result
+        const winner = bracket.combatantById.get(
+          results[toBattleKey(battle)] ?? ``,
+        )
+        const isClear = didAdvance(bracket.combatantById.get(winnerId)!, winner)
         decide({ battle, winnerId: isClear ? null : winnerId, merge: null })
       },
       listContenders: battle => listContenders(bracket, battle, results),
@@ -136,18 +149,26 @@ export const ResultsEditor = ({
   )
   return (
     <section className='flex flex-col gap-4'>
-      <div className='mx-auto flex w-full max-w-6xl flex-col gap-2'>
+      <div className='mx-auto flex w-full max-w-page flex-col gap-2'>
         <h2 className={SECTION_HEADING_CLASS_NAME}>Results</h2>
         <p className='max-w-prose text-muted'>
-          Press a battle’s winner to record its result. Press the same winner
-          again to clear the result.
+          Press a battle’s winner to record its result. Press the same winner,
+          or either side of a merge, again to clear the result.
         </p>
       </div>
-      <div className='sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-ink bg-white py-3 print:hidden'>
-        <span className='font-condensed text-xl font-bold uppercase'>
-          {`${Object.keys(results).length} of ${TOTAL_BATTLES} results`}
-        </span>
-        <SaveStatus state={state} onRetry={sendRequest} />
+      <PickingBar
+        ref={barRef}
+        cleared={
+          cleared.length > 0 && !isRefused
+            ? `Also cleared ${formatCount(cleared.length, `later result`)}: ${cleared.map(readBattleName).join(`; `)}`
+            : null
+        }
+      >
+        <BarLabel>{`${Object.keys(results).length} of ${TOTAL_BATTLES} results`}</BarLabel>
+        <SaveStatus
+          state={state}
+          onRetry={request => sendRequest(request, results)}
+        />
         {nextBattle ? (
           <Button variant='quiet' onPress={() => showBattle(nextBattle)}>
             Next battle to decide
@@ -170,16 +191,11 @@ export const ResultsEditor = ({
             }
           />
         ) : null}
-      </div>
-      <ClearedNotice
-        message={
-          cleared.length > 0
-            ? `Also cleared ${formatCount(cleared.length, `later result`)}: ${cleared.map(readBattleName).join(`; `)}`
-            : null
-        }
-      />
+      </PickingBar>
       <PickingContext value={picking}>
-        <Bracket view={view} selection={{ round, onSelect: setRound }} />
+        <div ref={diagramRef}>
+          <Bracket view={view} selection={{ round, onSelect: setRound }} />
+        </div>
       </PickingContext>
       {asking ? (
         <QuestionDialog
@@ -339,7 +355,11 @@ const SaveStatus = ({
     case `locked`:
     case `refused`:
       return (
-        <RequestAlert>Couldn’t save the result. Reload the page</RequestAlert>
+        <RequestAlert
+          action={{ label: `Reload`, onPress: () => location.reload() }}
+        >
+          Couldn’t save the result. Reload the page
+        </RequestAlert>
       )
   }
 }

@@ -1,5 +1,6 @@
 import { getFormProps } from '@conform-to/react'
 import type { SubmissionResult } from '@conform-to/react'
+import { useState } from 'react'
 import { Form, Outlet } from 'react-router'
 import { Button, ButtonLink } from './button.tsx'
 import { FormError } from './form-error.tsx'
@@ -41,20 +42,27 @@ export const PlayContestPage = ({
   view: PlayView
   reportPath: string
   lastResult?: SubmissionResult
-}) => (
-  <div className='flex flex-col gap-8'>
-    {view.state === `askName` ? (
-      <NameForm lastResult={lastResult} />
-    ) : view.state === `returning` ? (
-      <ReturningPlayer view={view} />
-    ) : view.state === `orphaned` ? (
-      <OrphanedContest />
-    ) : (
-      <ContestNotOpen />
-    )}
-    <ReportDialog action={reportPath} targets={[CONTEST_TARGET]} />
-  </div>
-)
+}) => {
+  const [firstState] = useState(view.state)
+  return (
+    <div className='flex flex-col gap-8'>
+      {view.state === `askName` ? (
+        <NameForm
+          lastResult={lastResult}
+          // The prompt it replaces took focus with it
+          hasReplaced={firstState !== view.state}
+        />
+      ) : view.state === `returning` ? (
+        <ReturningPlayer view={view} />
+      ) : view.state === `orphaned` ? (
+        <OrphanedContest />
+      ) : (
+        <ContestNotOpen />
+      )}
+      <ReportDialog action={reportPath} targets={[CONTEST_TARGET]} />
+    </div>
+  )
+}
 
 /**
  * Pages under a contest, which search engines skip, since their addresses open a
@@ -83,7 +91,13 @@ const NAME_QUESTION = `What’s your first name and last initial?`
 
 const DISPLAY_NAME_SCHEMA = displayNameSchema(freeTextSchema)
 
-const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
+const NameForm = ({
+  lastResult,
+  hasReplaced,
+}: {
+  lastResult?: SubmissionResult
+  hasReplaced: boolean
+}) => {
   const { form, fields, isSubmitting } = useValidatedForm(
     DISPLAY_NAME_SCHEMA,
     lastResult,
@@ -99,6 +113,8 @@ const NameForm = ({ lastResult }: { lastResult?: SubmissionResult }) => {
         // A shared device would suggest the last player's name
         autoComplete='off'
         spellCheck='false'
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus={hasReplaced}
       />
       <div>
         <Button type='submit' isPending={isSubmitting}>

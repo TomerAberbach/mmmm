@@ -1,5 +1,6 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible'
-import type { ConfirmResult } from './form-replies.server.ts'
+import type { ConfirmReply } from './form-replies.server.ts'
+import { refuseChange, refuseStale } from './form-replies.server.ts'
 import { readClientIp, toRefusal, tryConsume } from './limits.server.ts'
 import { CONTEST_TARGET, reportSchema } from './report-forms.ts'
 import { dismissReport, saveReport } from './reports.server.ts'
@@ -14,16 +15,16 @@ export const answerReport = async (
   findContestId: (
     playerId: string | null,
   ) => string | null | Promise<string | null>,
-): Promise<ConfirmResult> => {
+): Promise<ConfirmReply> => {
   const refusal = await limitReport(request)
   if (refusal !== undefined) {
-    return { error: refusal }
+    return refuseChange(refusal)
   }
   const { data } = reportSchema.safeParse(
     Object.fromEntries(await request.formData()),
   )
   if (!data) {
-    return { error: `Choose what’s wrong with it` }
+    return refuseChange(`Choose what’s wrong with it`)
   }
   const playerId = data.target === CONTEST_TARGET.id ? null : data.target
   const contestId = await findContestId(playerId)
@@ -32,7 +33,7 @@ export const answerReport = async (
     (await saveReport({ contestId, playerId, reason: data.reason }))
   return isSaved
     ? { ok: true }
-    : { error: `This name is gone. Reload the page` }
+    : refuseStale(`This name is gone. Reload the page`)
 }
 
 /** A whole school can share one IP address */
@@ -58,9 +59,9 @@ const limitReport = async (request: Request): Promise<string | undefined> => {
 export const answerDismissal = async (
   request: Request,
   reader: ReportReader,
-): Promise<ConfirmResult> => {
+): Promise<ConfirmReply> => {
   const id = (await request.formData()).get(`id`)
   return typeof id === `string` && (await dismissReport(reader, id))
     ? { ok: true }
-    : { error: `This report is gone. Reload the page` }
+    : refuseStale(`This report is gone. Reload the page`)
 }

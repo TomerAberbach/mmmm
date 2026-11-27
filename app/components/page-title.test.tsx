@@ -11,3 +11,27 @@ test(`the page title is the heading and the tab title`, async () => {
     .toBeVisible()
   expect(document.title).toBe(`Privacy policy`)
 })
+
+test(`a title's column is at least as wide as its longest word`, async () => {
+  await render(
+    <div style={{ width: `min-content` }}>
+      <PageTitle>Authenticator app</PageTitle>
+    </div>,
+  )
+
+  const heading = page.getByRole(`heading`).element()
+
+  expect(heading.getBoundingClientRect().width).toBeGreaterThan(200)
+})
+
+test(`a title splits a word that can't fit a line`, async () => {
+  await render(
+    <div style={{ width: 100 }}>
+      <PageTitle>Authenticator app</PageTitle>
+    </div>,
+  )
+
+  const heading = page.getByRole(`heading`).element()
+
+  expect(heading.scrollWidth).toBeLessThanOrEqual(100)
+})

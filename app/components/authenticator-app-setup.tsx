@@ -29,28 +29,30 @@ export const ConfirmPasswordStep = ({
     lastResult,
   )
   return (
-    <div className='flex max-w-md flex-col gap-6'>
+    <div className='flex flex-col gap-6'>
       <PageTitle>{TITLE}</PageTitle>
-      <p>Enter your password to start.</p>
-      <Form
-        method='post'
-        {...getFormProps(form)}
-        className='flex flex-col gap-5'
-      >
-        <input type='hidden' name='intent' value='start' />
-        <PasswordField
-          key={fields.password.key}
-          {...fieldProps(fields.password)}
-          label='Password'
-          autoComplete='current-password'
-        />
-        <div>
-          <Button type='submit' isPending={isSubmitting}>
-            Continue
-          </Button>
-        </div>
-        <FormError form={form} />
-      </Form>
+      <div className='flex max-w-md flex-col gap-6'>
+        <p>Enter your password to start.</p>
+        <Form
+          method='post'
+          {...getFormProps(form)}
+          className='flex flex-col gap-5'
+        >
+          <input type='hidden' name='intent' value='start' />
+          <PasswordField
+            key={fields.password.key}
+            {...fieldProps(fields.password)}
+            label='Password'
+            autoComplete='current-password'
+          />
+          <div>
+            <Button type='submit' isPending={isSubmitting}>
+              Continue
+            </Button>
+          </div>
+          <FormError form={form} />
+        </Form>
+      </div>
     </div>
   )
 }
@@ -67,44 +69,46 @@ export const ScanStep = ({
     lastResult,
   )
   return (
-    <div className='flex max-w-md flex-col gap-6'>
+    <div className='flex flex-col gap-6'>
       <PageTitle>{TITLE}</PageTitle>
-      <p>
-        Scan this QR code with your authenticator app, then enter the code it
-        shows.
-      </p>
-      <QrCode value={totpUri} label='QR code for your authenticator app' />
-      <Disclosure className='flex flex-col gap-2'>
-        <Heading>
-          <AriaButton
-            slot='trigger'
-            className='cursor-pointer font-semibold text-accent-strong underline underline-offset-2 outline-offset-2 data-focus-visible:outline-3 data-focus-visible:outline-accent-strong'
-          >
-            Can’t scan it?
-          </AriaButton>
-        </Heading>
-        <DisclosurePanel className='flex flex-col gap-1'>
-          <p>Enter this key in your app instead:</p>
-          <p className='font-mono tracking-wide break-all'>
-            {formatKey(readSecret(totpUri))}
-          </p>
-        </DisclosurePanel>
-      </Disclosure>
-      <Form
-        method='post'
-        {...getFormProps(form)}
-        className='flex flex-col gap-5'
-      >
-        <input type='hidden' name='intent' value='turn-on' />
-        <input type='hidden' name='totpUri' value={totpUri} />
-        <SecurityCodeField {...fieldProps(fields.code)} />
-        <div>
-          <Button type='submit' isPending={isSubmitting}>
-            Turn on
-          </Button>
-        </div>
-        <FormError form={form} />
-      </Form>
+      <div className='flex max-w-md flex-col gap-6'>
+        <p>
+          Scan this QR code with your authenticator app, then enter the code it
+          shows.
+        </p>
+        <QrCode value={totpUri} label='QR code for your authenticator app' />
+        <Disclosure className='flex flex-col gap-2'>
+          <Heading>
+            <AriaButton
+              slot='trigger'
+              className='cursor-pointer font-semibold text-accent-strong underline underline-offset-2 outline-offset-2 data-focus-visible:outline-3 data-focus-visible:outline-accent-strong'
+            >
+              Can’t scan it?
+            </AriaButton>
+          </Heading>
+          <DisclosurePanel className='flex flex-col gap-1'>
+            <p>Enter this key in your app instead:</p>
+            <p className='font-mono tracking-wide break-all'>
+              {formatKey(readSecret(totpUri))}
+            </p>
+          </DisclosurePanel>
+        </Disclosure>
+        <Form
+          method='post'
+          {...getFormProps(form)}
+          className='flex flex-col gap-5'
+        >
+          <input type='hidden' name='intent' value='turn-on' />
+          <input type='hidden' name='totpUri' value={totpUri} />
+          <SecurityCodeField {...fieldProps(fields.code)} />
+          <div>
+            <Button type='submit' isPending={isSubmitting}>
+              Turn on
+            </Button>
+          </div>
+          <FormError form={form} />
+        </Form>
+      </div>
     </div>
   )
 }

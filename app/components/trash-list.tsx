@@ -46,7 +46,9 @@ export const TrashList = ({
   const [leaving, setLeaving] = useState<Leaving>()
 
   const hasLeft =
-    leaving !== undefined && !items.some(({ id }) => leaving.ids.includes(id))
+    leaving !== undefined &&
+    Boolean(fetcher.data && `ok` in fetcher.data) &&
+    !items.some(({ id }) => leaving.ids.includes(id))
   /** Runs as React attaches the element that takes focus */
   const focusAfterLeaving =
     (id: string | null) => (element: HTMLElement | null) => {
@@ -54,10 +56,7 @@ export const TrashList = ({
         return
       }
       setLeaving(undefined)
-      // A refused item may leave too, when another request changed it first
-      if (fetcher.data && `ok` in fetcher.data) {
-        setAnnouncement(leaving.announcement)
-      }
+      setAnnouncement(leaving.announcement)
       ;(element.querySelector<HTMLElement>(`button`) ?? element).focus()
     }
   const submit = (

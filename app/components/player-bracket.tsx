@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { useRevalidator } from 'react-router'
 import { Bracket } from './bracket.tsx'
 import { Button } from './button.tsx'
-import { ClearedNotice } from './cleared-notice.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { Notice } from './notice.tsx'
+import { BarLabel, PickingBar } from './picking-bar.tsx'
 import { PickingContext } from './picking.ts'
 import type { Picking } from './picking.ts'
 import {
@@ -20,6 +20,7 @@ import { useRequestQueue } from './request-queue.ts'
 import type { QueueRules, RequestState } from './request-queue.ts'
 import { RequestAlert, RequestNote } from './request-status.tsx'
 import { useShownRound } from './shown-round.ts'
+import { useSteadyDiagram } from './use-steady-diagram.ts'
 import { buildBracketView, readBattleName } from '~/bracket-view.ts'
 import { listBattles, toBattleKey } from '~/bracket.ts'
 import type { BattleRef } from '~/bracket.ts'
@@ -83,6 +84,7 @@ export const PlayerBracket = ({
     picksPath,
     PICKS_QUEUE_RULES,
   )
+  const { barRef, diagramRef } = useSteadyDiagram()
   const revalidator = useRevalidator()
   // Counts the player's changes, so a submit that a later change overtakes
   // shows no panel
@@ -194,7 +196,12 @@ export const PlayerBracket = ({
       {submission ? (
         <PicksChanged at={submission.picksChangedAt} isOrphaned={isOrphaned} />
       ) : null}
-      <div className='sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-ink bg-white py-3 print:hidden'>
+      <PickingBar
+        ref={barRef}
+        cleared={describeCleared(
+          outcome?.kind === `cleared` ? outcome.battles : [],
+        )}
+      >
         {submitted && !hasChanges ? (
           <>
             <BarLabel>{`Submitted · ${describeStatus(submitted.submission.status, isOrphaned).label}`}</BarLabel>
@@ -234,25 +241,18 @@ export const PlayerBracket = ({
             </BarActions>
           </>
         )}
-      </div>
-      {hasChanges ? (
+        {outcome?.kind === `unpicked` && unpicked[0] ? (
+          <p role='alert' className='basis-full font-semibold text-danger'>
+            {describeUnpicked(unpicked.length, unpicked[0], submission)}
+          </p>
+        ) : null}
+      </PickingBar>
+      {submission && hasChanges ? (
         <p className='max-w-prose'>
-          Your submitted bracket still counts until you submit these changes.
+          {`Your submitted bracket ${describeKept(submission)} until you submit these changes.`}
         </p>
       ) : null}
-      {outcome?.kind === `unpicked` && unpicked[0] ? (
-        <div className='max-w-prose'>
-          <Notice kind='alert'>
-            {describeUnpicked(unpicked.length, unpicked[0], submission)}
-          </Notice>
-        </div>
-      ) : null}
-      <ClearedNotice
-        message={describeCleared(
-          outcome?.kind === `cleared` ? outcome.battles : [],
-        )}
-      />
-      <div className='print:page-landscape'>
+      <div ref={diagramRef} className='print:page-landscape'>
         <Bracket view={view} selection={{ round, onSelect: setRound }} />
       </div>
       <div className='print:hidden'>
@@ -287,10 +287,6 @@ type Outcome =
   | { kind: `unpicked` }
   | { kind: `submitted`; submitted: `bracket` | `changes` }
 
-const BarLabel = ({ children }: { children: string }) => (
-  <span className='font-condensed text-xl font-bold uppercase'>{children}</span>
-)
-
 const BarActions = ({ children }: { children: ReactNode }) => (
   <span className='ms-auto flex flex-wrap items-center gap-3'>{children}</span>
 )
@@ -303,9 +299,13 @@ const describeUnpicked = (
   const battles = formatCount(count, `more battle`)
   const next = `Next up: ${readBattleName(nextBattle)}`
   return submission
-    ? `Pick ${battles} to submit your changes. ${next}. Your submitted bracket still counts until then`
+    ? `Pick ${battles} to submit your changes. ${next}. Your submitted bracket ${describeKept(submission)} until then`
     : `Pick ${battles} to submit. ${next}`
 }
+
+/** What happens to a submission until its changes are submitted */
+const describeKept = ({ status }: Submission): string =>
+  status === `APPROVED` ? `still counts` : `stays as it was`
 
 /** Submitting changes keeps the submission's status */
 const STATUS_TEXT: Record<SubmissionStatus, { label: string; note: string }> = {
@@ -430,9 +430,7 @@ const PickProgress = ({
   const nextBattle = unpicked[0]
   return (
     <>
-      <span className='font-condensed text-xl font-bold uppercase'>
-        {`${TOTAL_BATTLES - unpicked.length} of ${TOTAL_BATTLES} picked`}
-      </span>
+      <BarLabel>{`${TOTAL_BATTLES - unpicked.length} of ${TOTAL_BATTLES} picked`}</BarLabel>
       {nextBattle ? (
         <Button variant='quiet' onPress={() => onShowBattle(nextBattle)}>
           Next battle to pick

@@ -2,7 +2,8 @@ import { href, redirect } from 'react-router'
 import { z } from 'zod'
 import type { Route } from './+types/admin.contests.hidden.ts'
 import { setContestHidden } from '~/admin-contests.server.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
+import { refuseStale } from '~/form-replies.server.ts'
 
 const HIDDEN_SCHEMA = z.object({
   contestId: z.string(),
@@ -13,11 +14,11 @@ export const loader = (): Response => redirect(href(`/admin/contests`))
 
 export const action = async ({
   request,
-}: Route.ActionArgs): Promise<ConfirmResult> => {
+}: Route.ActionArgs): Promise<ConfirmReply> => {
   const { data } = HIDDEN_SCHEMA.safeParse(
     Object.fromEntries(await request.formData()),
   )
   return data && (await setContestHidden(data.contestId, data.isHidden))
     ? { ok: true }
-    : { error: `This contest can’t be hidden or shown now. Reload the page` }
+    : refuseStale(`This contest can’t be hidden or shown now. Reload the page`)
 }

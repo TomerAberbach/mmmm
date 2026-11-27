@@ -44,7 +44,9 @@ test(`a failed confirmation link says to sign in for a new one`, async () => {
 
   await expect
     .element(page.getByRole(`alert`))
-    .toMatchTextContent(`Sign in to get a new one`)
+    .toMatchTextContent(
+      `Sign in to get a new one if your address isn’t confirmed yet`,
+    )
 })
 
 test(`a confirmed educator is told to sign in`, async () => {

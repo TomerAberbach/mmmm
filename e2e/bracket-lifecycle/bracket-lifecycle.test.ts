@@ -121,9 +121,15 @@ test(`the first result locks submissions until they reopen`, async ({
 
   await winner.click()
   await page.getByRole(`button`, { name: `Clear result` }).click()
+  const other = await page.context().newPage()
+  await other.goto(`/admin/results`)
   await confirmDialog(page, `Reopen submissions`)
 
   await expect(page.getByText(`Open`, { exact: true })).toBeVisible()
+  await confirmDialog(other, `Reopen submissions`)
+  await expect(other.getByRole(`alertdialog`).getByRole(`alert`)).toContainText(
+    `Submissions aren’t locked. Reload the page`,
+  )
   await educator.reload()
   await expect(
     educator.getByRole(`button`, { name: `Create contest` }),
@@ -135,6 +141,8 @@ test(`an unpublished bracket leaves the public pages, and can then be deleted`, 
 }) => {
   await signInAsAdmin(page, ADMINS.unpublish)
   await page.getByRole(`link`, { name: `Manage the ${YEAR} bracket` }).click()
+  const other = await page.context().newPage()
+  await other.goto(`/admin/results`)
   await confirmDialog(page, `Unpublish`, `Unpublish ${YEAR} bracket`)
   await expect(
     page.getByRole(`button`, { name: `Publish ${YEAR} bracket`, exact: true }),
@@ -142,8 +150,21 @@ test(`an unpublished bracket leaves the public pages, and can then be deleted`, 
   const response = await page.goto(`/bracket`)
   expect(response?.status()).toBe(404)
 
+  // A page left open keeps the dialog that says why
+  await confirmDialog(other, `Unpublish`, `Unpublish ${YEAR} bracket`)
+  await expect(other.getByRole(`alertdialog`).getByRole(`alert`)).toContainText(
+    `The ${YEAR} bracket can’t be unpublished now. Reload the page`,
+  )
+  await other.getByRole(`button`, { name: `Reload` }).click()
+  await expect(other).toHaveURL(`/admin`)
+  await other.goto(`/admin/bracket`)
+
   await page.goto(`/admin/bracket`)
   await confirmDialog(page, `Delete ${YEAR} bracket`)
 
   await expect(page.getByText(`Not set up yet`)).toBeVisible()
+  await confirmDialog(other, `Delete ${YEAR} bracket`)
+  await expect(other.getByRole(`alertdialog`).getByRole(`alert`)).toContainText(
+    `This bracket is already published or deleted. Reload the page`,
+  )
 })

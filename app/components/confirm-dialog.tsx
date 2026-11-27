@@ -3,9 +3,10 @@ import type { ReactElement, ReactNode } from 'react'
 import { DialogTrigger } from 'react-aria-components'
 import { useFetcher } from 'react-router'
 import { Button } from './button.tsx'
-import { FetcherError } from './fetcher-error.tsx'
+import { DialogError } from './fetcher-error.tsx'
 import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
 import { Notice } from './notice.tsx'
+import { useIsLatestAction } from './use-is-latest-action.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 
 type ConfirmDialogProps = {
@@ -21,7 +22,7 @@ type ConfirmDialogProps = {
   confirmVariant?: `danger` | `primary`
 } & (
   | {
-      /** The route action that makes the change. It returns a ConfirmResult */
+      /** The route action that makes the change. It returns a `ConfirmReply` */
       action: string
       fields?: Record<string, string>
     }
@@ -32,7 +33,10 @@ type ConfirmDialogProps = {
     | {
         /** The button that opens the dialog */
         trigger: ReactElement
-        /** Shown after the trigger once the route action makes the change */
+        /**
+         * Shown after the trigger once the route action makes the change, until
+         * a later action
+         */
         successNotice?: string
       }
     // Opens the dialog from elsewhere, such as a menu
@@ -61,6 +65,7 @@ export const ConfirmDialog = ({
       : [props.isOpen, props.onOpenChange]
   const fetcher = useFetcher<ConfirmResult>()
   const result = fetcher.state === `idle` ? fetcher.data : undefined
+  const isLatest = useIsLatestAction(fetcher)
   const descriptionId = useId()
 
   const [isConfirming, setIsConfirming] = useState(false)
@@ -115,7 +120,6 @@ export const ConfirmDialog = ({
       title={title}
     >
       <div id={descriptionId}>{children}</div>
-      <FetcherError fetcher={fetcher} />
       {`onConfirm` in props ? (
         <div className={BUTTONS_CLASS_NAME}>
           {buttons(
@@ -148,10 +152,11 @@ export const ConfirmDialog = ({
           )}
         </fetcher.Form>
       )}
+      <DialogError fetcher={fetcher} />
     </ModalFrame>
   )
   const notice =
-    isDone && `successNotice` in props && props.successNotice ? (
+    isDone && isLatest && `successNotice` in props && props.successNotice ? (
       <Notice kind='status'>{props.successNotice}</Notice>
     ) : null
   return `trigger` in props ? (

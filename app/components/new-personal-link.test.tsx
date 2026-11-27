@@ -23,6 +23,7 @@ const Page = () => {
       contestId='period-2'
       player={player}
       onClose={() => setPlayer(null)}
+      onDone={() => {}}
     />
   )
 }

@@ -77,7 +77,7 @@ export const ContestDetails = ({
 
 /** Rename opens the name's field below the heading until the save succeeds */
 const ContestName = ({ contest }: { contest: Contest }) => {
-  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit()
+  const { fetcher, isOpen, isSaved, buttonRef, open, close } = useInlineEdit()
 
   return (
     <div className='flex flex-col gap-3'>
@@ -86,7 +86,7 @@ const ContestName = ({ contest }: { contest: Contest }) => {
         title={contest.name}
         action={
           isOpen ? null : (
-            <Button variant='secondary' onPress={open}>
+            <Button ref={buttonRef} variant='secondary' onPress={open}>
               Rename
             </Button>
           )

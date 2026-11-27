@@ -1,3 +1,4 @@
+import { data, useLoaderData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -73,7 +74,7 @@ test(`confirming submits the fields to the action and closes`, async () => {
   expect(submittedContestIds).toStrictEqual([`5`])
 })
 
-test(`an error from the action keeps the dialog open and shows it`, async () => {
+test(`an error from the action keeps the dialog open without a reload`, async () => {
   await renderDialog({ error: `Contests with submissions can’t be deleted` })
 
   await page
@@ -84,4 +85,60 @@ test(`an error from the action keeps the dialog open and shows it`, async () => 
   await expect
     .element(page.getByRole(`alertdialog`).getByRole(`alert`))
     .toHaveTextContent(`Contests with submissions can’t be deleted`)
+  await expect
+    .element(page.getByRole(`button`, { name: `Reload` }))
+    .not.toBeInTheDocument()
+})
+
+test(`a refusal over old data keeps the dialog and offers a reload`, async () => {
+  // A rerun of the loader would remove the dialog
+  let bracketCount = 1
+  await renderRoutes([
+    {
+      path: `/`,
+      loader: () => bracketCount--,
+      HydrateFallback: () => null,
+      Component: () =>
+        useLoaderData<number>() > 0 ? (
+          <ConfirmDialog
+            trigger={<Button>Delete bracket</Button>}
+            title='Delete the bracket?'
+            confirmLabel='Delete'
+            action='/delete'
+          >
+            It goes.
+          </ConfirmDialog>
+        ) : null,
+    },
+    {
+      path: `/delete`,
+      action: () =>
+        data<ConfirmResult>(
+          { error: `It’s already deleted`, isStale: true },
+          { status: 409 },
+        ),
+    },
+  ])
+  await page.getByRole(`button`, { name: `Delete bracket` }).click()
+
+  await page.getByRole(`button`, { name: `Delete`, exact: true }).click()
+
+  const dialog = page.getByRole(`alertdialog`)
+  await expect
+    .element(dialog.getByRole(`alert`))
+    .toHaveTextContent(`It’s already deletedReload`)
+  await expectNoAxeViolations()
+})
+
+test(`a confirmed change returns focus to the dialog's button`, async () => {
+  await renderDialog()
+
+  await page
+    .getByRole(`alertdialog`)
+    .getByRole(`button`, { name: `Delete contest` })
+    .click()
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Delete contest` }))
+    .toHaveFocus()
 })

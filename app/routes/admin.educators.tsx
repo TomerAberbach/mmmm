@@ -10,6 +10,7 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { fieldProps, TextField } from '~/components/text-field.tsx'
 import { useValidatedForm } from '~/components/use-validated-form.ts'
 import { rejectForm } from '~/form-replies.server.ts'
+import { hasShares } from '~/shares.server.ts'
 import { addressSchema } from '~/support-forms.ts'
 import { findEducator } from '~/support.server.ts'
 
@@ -28,7 +29,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
   const educator = await findEducator(submission.value.email)
   return educator
-    ? { educator, result: submission.reply() }
+    ? {
+        educator: { ...educator, hasShares: await hasShares(educator.id) },
+        result: submission.reply(),
+      }
     : rejectForm(submission, {
         fieldErrors: { email: [`No educator has this email address`] },
       })

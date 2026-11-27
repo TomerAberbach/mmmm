@@ -18,7 +18,7 @@ export const SignedOutHome = ({
   <div className='flex flex-col gap-10'>
     {/* The page is full width for the diagram, so the rest keeps the usual
         width */}
-    <div className='mx-auto w-full max-w-6xl'>
+    <div className='mx-auto w-full max-w-page'>
       <Intro
         upcomingYear={upcomingYear}
         isUpcomingCurrent={current?.view.year === upcomingYear}
@@ -26,7 +26,7 @@ export const SignedOutHome = ({
     </div>
     {current ? (
       <section className='flex flex-col gap-4'>
-        <div className='mx-auto flex w-full max-w-6xl flex-col gap-4'>
+        <div className='mx-auto flex w-full max-w-page flex-col gap-4'>
           <h2 className={SECTION_HEADING_CLASS_NAME}>
             {current.view.year} bracket
           </h2>

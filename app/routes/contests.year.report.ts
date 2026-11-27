@@ -1,6 +1,6 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.year.report.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
 import {
   findReportableContestId,
   readEducatorScopes,
@@ -17,7 +17,7 @@ export const action = ({
   request,
   context,
   params,
-}: Route.ActionArgs): Promise<ConfirmResult> =>
+}: Route.ActionArgs): Promise<ConfirmReply> =>
   answerReport(request, async playerId => {
     const { id: educatorId } = readRequiredEducator(context)
     return findReportableContestId(

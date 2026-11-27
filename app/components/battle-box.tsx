@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { ReactNode } from 'react'
 import {
   Button,
@@ -30,6 +31,8 @@ const SIZE_CLASSES = {
     // An ancestor sets `--name-width` to `readNameWidth`'s width
     name: `w-(--name-width) shrink-0`,
     mark: `w-8 shrink-0`,
+    // Takes no room, so every box in the diagram is as wide
+    arrow: `absolute right-2`,
   },
   regular: {
     box: ``,
@@ -37,6 +40,7 @@ const SIZE_CLASSES = {
     height: `h-10`,
     name: ``,
     mark: `shrink-0`,
+    arrow: `ms-auto`,
   },
 }
 
@@ -318,11 +322,12 @@ const readPickableBoxProps = ({
   'aria-label': readBattleName(battle),
   dir: `ltr`,
   'data-battle': toBattleKey(battle),
-  className: `${readBoxClasses(classes)} ${picking.isCleared(battle) ? `outline-4 outline-offset-2 outline-sweet-16` : ``}`,
+  className: `${readBoxClasses(classes)} data-shown:outline-4 data-shown:outline-offset-2 data-shown:outline-accent-strong ${picking.isCleared(battle) ? `outline-4 outline-offset-2 outline-sweet-16` : ``}`,
 })
 
 const PickBox = (props: PickableBoxProps) => {
   const { battle, classes, wildCardLine, picking } = props
+  const { withMenuFocus, focusChosen } = useMenuFocus(picking)
   return (
     <RadioGroup
       {...readPickableBoxProps(props)}
@@ -334,6 +339,7 @@ const PickBox = (props: PickableBoxProps) => {
           <RadioField
             // Sides never reorder
             key={index}
+            ref={focusChosen(index)}
             value={side.combatant.id}
             className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
           >
@@ -346,7 +352,13 @@ const PickBox = (props: PickableBoxProps) => {
             </RadioButton>
           </RadioField>
         ) : (
-          <UndecidedSide key={index} {...props} side={side} index={index} />
+          <UndecidedSide
+            key={index}
+            {...props}
+            side={side}
+            index={index}
+            picking={withMenuFocus(index)}
+          />
         ),
       )}
     </RadioGroup>
@@ -356,6 +368,7 @@ const PickBox = (props: PickableBoxProps) => {
 /** Each side is a toggle button, since pressing a recorded winner clears it */
 const ResultBox = (props: PickableBoxProps) => {
   const { battle, classes, wildCardLine, picking } = props
+  const { withMenuFocus, focusChosen } = useMenuFocus(picking)
   const boxProps = readPickableBoxProps(props)
   return (
     // A fieldset grows to fit its longest name unless its minimum width is zero
@@ -365,6 +378,7 @@ const ResultBox = (props: PickableBoxProps) => {
           <div
             // Sides never reorder
             key={index}
+            ref={focusChosen(index)}
             className={`${readRowClasses(classes)} hover:bg-ink/5 ${readResultClasses(side, battle.winner)}`}
           >
             <WildCardLineBar wildCardLine={wildCardLine} side={index} />
@@ -379,17 +393,62 @@ const ResultBox = (props: PickableBoxProps) => {
                 <span className='sr-only'>
                   {side.combatant.id === battle.winner?.id
                     ? `, won. Press to clear`
-                    : `, advanced in a merge. Press to record only this win`}
+                    : `, advanced in a merge. Press to clear`}
                 </span>
               ) : null}
             </ToggleButton>
           </div>
         ) : (
-          <UndecidedSide key={index} {...props} side={side} index={index} />
+          <UndecidedSide
+            key={index}
+            {...props}
+            side={side}
+            index={index}
+            picking={withMenuFocus(index)}
+          />
         ),
       )}
     </fieldset>
   )
+}
+
+/**
+ * Choosing from a side's menu fills the side, so its button goes and takes focus
+ * with it. Focus moves to the control that replaces it
+ */
+const useMenuFocus = (picking: Picking) => {
+  const chosenSide = useRef<number>(undefined)
+  return {
+    /** For the side's menu */
+    withMenuFocus: (side: number): Picking => ({
+      ...picking,
+      pick: (battle, winnerId) => {
+        chosenSide.current = side
+        picking.pick(battle, winnerId)
+      },
+    }),
+    /** A ref for the side's row once it's filled */
+    focusChosen: (side: number) => (row: HTMLElement | null) => {
+      if (row && chosenSide.current === side) {
+        chosenSide.current = undefined
+        focusOnceDropped(row.querySelector(`input, button`))
+      }
+    },
+  }
+}
+
+/**
+ * Focuses the control once the menu, or the dialog it led to, closes and drops
+ * focus. Stops if neither does soon, so it never takes focus from elsewhere
+ */
+const focusOnceDropped = (control: HTMLElement | null, framesLeft = 30) => {
+  if (document.activeElement === document.body) {
+    control?.focus()
+  }
+  // Outside an open menu or dialog, a control can't take focus
+  if (document.activeElement !== control && framesLeft > 0) {
+    requestAnimationFrame(() => focusOnceDropped(control, framesLeft - 1))
+  }
 }
 
 const UndecidedSide = ({
@@ -404,7 +463,12 @@ const UndecidedSide = ({
 }) => (
   <div className={readRowClasses(classes)}>
     <WildCardLineBar wildCardLine={wildCardLine} side={index} />
-    <ContenderMenu side={side} className={classes.name} picking={picking} />
+    <ContenderMenu
+      side={side}
+      className={classes.name}
+      arrowClassName={classes.arrow}
+      picking={picking}
+    />
   </div>
 )
 
@@ -415,10 +479,12 @@ const UndecidedSide = ({
 const ContenderMenu = ({
   side,
   className,
+  arrowClassName,
   picking,
 }: {
   side: Extract<Side, { kind: `undecided` }>
   className: string
+  arrowClassName: string
   picking: Picking
 }) => (
   <MenuTrigger>
@@ -434,7 +500,7 @@ const ContenderMenu = ({
     >
       <SeedNumber side={side} />
       <SideName side={side} className={className} />
-      <span aria-hidden className='ms-auto text-muted'>
+      <span aria-hidden className={`text-muted ${arrowClassName}`}>
         ▾
       </span>
     </Button>

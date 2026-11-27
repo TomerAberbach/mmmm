@@ -17,26 +17,35 @@ export const NewPersonalLink = ({
   contestId,
   player,
   onClose,
+  onDone,
 }: {
   contestId: string
   /** The player to confirm for, or null */
   player: ContestPlayer | null
   onClose: () => void
+  /** Called once the dialog that shows the outcome closes, so focus can return */
+  onDone: (playerId: string) => void
 }) => {
   const [outcome, setOutcome] = useState<Outcome>()
-  const replace = async ({ id, displayName }: ContestPlayer) => {
+  const replace = async ({ id: playerId, displayName }: ContestPlayer) => {
     const link = await requestNewLink(
       href(`/contests/:contestId/players/:playerId/personal-link`, {
         contestId,
-        playerId: id,
+        playerId,
       }),
     )
     if (link === null) {
-      setOutcome({ kind: `failed`, displayName })
+      setOutcome({ kind: `failed`, playerId, displayName })
       return
     }
     // Copying may wait on a permission prompt, so the link shows first
-    setOutcome({ kind: `replaced`, displayName, link, isCopied: false })
+    setOutcome({
+      kind: `replaced`,
+      playerId,
+      displayName,
+      link,
+      isCopied: false,
+    })
     void copyText(link).then(isCopied => {
       if (isCopied) {
         setOutcome(shown =>
@@ -46,6 +55,11 @@ export const NewPersonalLink = ({
         )
       }
     })
+  }
+  const close = ({ playerId }: Outcome) => {
+    // Focus can't leave the dialog until it unmounts
+    setOutcome(undefined)
+    requestAnimationFrame(() => onDone(playerId))
   }
   return (
     <>
@@ -63,18 +77,18 @@ export const NewPersonalLink = ({
         </ConfirmDialog>
       ) : null}
       {outcome?.kind === `replaced` ? (
-        <NewLinkDialog {...outcome} onClose={() => setOutcome(undefined)} />
+        <NewLinkDialog {...outcome} onClose={() => close(outcome)} />
       ) : null}
       {outcome?.kind === `failed` ? (
-        <FailedDialog {...outcome} onClose={() => setOutcome(undefined)} />
+        <FailedDialog {...outcome} onClose={() => close(outcome)} />
       ) : null}
     </>
   )
 }
 
-type Outcome =
-  | { kind: `replaced`; displayName: string; link: string; isCopied: boolean }
-  | { kind: `failed`; displayName: string }
+type Outcome = { playerId: string; displayName: string } & (
+  { kind: `replaced`; link: string; isCopied: boolean } | { kind: `failed` }
+)
 
 const NewLinkDialog = ({
   displayName,

@@ -7,8 +7,27 @@ import { idsSchema } from './id-list.ts'
 /** What an action answers once it saves a form submitted through a fetcher */
 export type SavedResult = { result: SubmissionResult; saved?: true }
 
-/** What an action answers a change that a page confirms */
-export type ConfirmResult = { ok: true } | { error: string }
+/**
+ * What an action answers a change that a page confirms. `isStale` offers a
+ * reload beside the error
+ */
+export type ConfirmResult = { ok: true } | { error: string; isStale?: true }
+
+/** What an action returns for a `ConfirmResult`. Errors need `refuseChange` */
+export type ConfirmReply = { ok: true } | ReturnType<typeof refuseChange>
+
+/**
+ * Answers a change the action refuses. The status keeps the page's loaders from
+ * running again, since new data could remove the dialog that shows the error
+ */
+export const refuseChange = (
+  error: string,
+): ReturnType<typeof data<ConfirmResult>> =>
+  data<ConfirmResult>({ error }, { status: 409 })
+
+/** Answers a change refused because the page shows old data */
+export const refuseStale = (error: string): ReturnType<typeof refuseChange> =>
+  data<ConfirmResult>({ error, isStale: true }, { status: 409 })
 
 type FormErrors = {
   formErrors?: string[]
@@ -74,12 +93,12 @@ export const changeListed = async (
   request: Request,
   change: (ids: string[]) => Promise<number>,
   done: string,
-): Promise<ConfirmResult> => {
+): Promise<ConfirmReply> => {
   const parsed = idsSchema.safeParse(
     Object.fromEntries(await request.formData()),
   )
   const count = parsed.success ? await change(parsed.data.ids) : 0
   return count > 0
     ? { ok: true }
-    : { error: `Nothing was ${done}. Reload the page and try again` }
+    : refuseStale(`Nothing was ${done}. Reload the page and try again`)
 }

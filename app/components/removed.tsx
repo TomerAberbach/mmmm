@@ -42,7 +42,7 @@ export const RemovedContest = ({
 
 export const BrokenLink = () => (
   <Removed title='This link doesn’t work'>
-    Ask your educator for a new one.
+    Ask your educator for a new one, unless it’s from a past year.
   </Removed>
 )
 
@@ -68,7 +68,7 @@ export const DeletedBracket = ({
 }) =>
   restoreBy ? (
     <Removed title='This bracket was deleted' contestPath={contestPath}>
-      It was deleted from its personal link.{` `}
+      It was deleted on a device that had it open.{` `}
       {isOrphaned ? (
         CANNOT_RESTORE
       ) : (

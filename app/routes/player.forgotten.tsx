@@ -1,8 +1,10 @@
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/player.forgotten.ts'
 import { PageTitle } from '~/components/page-title.tsx'
+import { refuseStale } from '~/form-replies.server.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { OTHER_PLAYER_STATUS } from '~/other-player.ts'
+import { readPastYear } from '~/past-years.server.ts'
 import {
   canAskForPersonalLink,
   readPlayContest,
@@ -20,11 +22,12 @@ export const loader = async ({
   if (await readRememberedPlayer(request, contest.id)) {
     throw redirect(href(`/player/:contestId/bracket`, params))
   }
-  const [canAsk, isOpen] = await Promise.all([
+  const [canAsk, isOpen, pastYear] = await Promise.all([
     canAskForPersonalLink(contest),
     isOpenYear(contest.year),
+    readPastYear(contest.year),
   ])
-  return { canAsk, canStart: canAsk && isOpen }
+  return { canAsk, canStart: canAsk && isOpen, isPast: pastYear !== null }
 }
 
 /**
@@ -41,7 +44,7 @@ export const action = async ({
   const playerId = (await request.formData()).get(`playerId`)
   const player = await readRememberedPlayer(request, contest.id)
   if (player && playerId === null) {
-    return refuse(
+    return refuseStale(
       `Your bracket wasn’t forgotten. Reload the page and try again`,
     )
   }
@@ -60,7 +63,7 @@ const refuse = (error: string) =>
   data<ConfirmResult>({ error }, { status: OTHER_PLAYER_STATUS })
 
 const ForgottenPage = ({
-  loaderData: { canAsk, canStart },
+  loaderData: { canAsk, canStart, isPast },
 }: Route.ComponentProps) => (
   <div className='flex max-w-xl flex-col gap-3'>
     <PageTitle>This device forgot your bracket</PageTitle>
@@ -68,6 +71,9 @@ const ForgottenPage = ({
       Open your personal link to come back to your bracket.
       {canAsk
         ? ` If you don’t have one, ask your educator for a personal link to the bracket you started${canStart ? `, or open the contest link they shared to start a new bracket` : ``}.`
+        : null}
+      {isPast
+        ? ` A bracket you never submitted was deleted once the next year’s bracket was published.`
         : null}
     </p>
   </div>

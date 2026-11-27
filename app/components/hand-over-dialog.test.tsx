@@ -6,7 +6,8 @@ import { renderRoutes } from '../../test/render-routes.tsx'
 import { handOverSchema } from '../support-forms.ts'
 import { HandOverDialog } from './hand-over-dialog.tsx'
 
-test(`the new educator is named before the contest is theirs`, async () => {
+/** Finds Grace Hopper, then hands the contest over to her */
+const renderHandOver = async (hasOrganization = true) => {
   const received: unknown[] = []
   await renderRoutes([
     {
@@ -34,7 +35,7 @@ test(`the new educator is named before the contest is theirs`, async () => {
           ? { result: submission.reply(), saved: true }
           : {
               result: submission.reply(),
-              educator: { id: `grace`, name: `Grace Hopper` },
+              educator: { id: `grace`, name: `Grace Hopper`, hasOrganization },
             }
       },
     },
@@ -43,8 +44,15 @@ test(`the new educator is named before the contest is theirs`, async () => {
   await page
     .getByLabelText(`New educator’s email address`)
     .fill(`grace@example.com`)
+  return { received }
+}
+
+const find = () => page.getByRole(`button`, { name: `Find educator` }).click()
+
+test(`the new educator is named before the contest is theirs`, async () => {
+  const { received } = await renderHandOver()
   await expectNoAxeViolations()
-  await page.getByRole(`button`, { name: `Find educator` }).click()
+  await find()
 
   await page.getByRole(`button`, { name: `Hand over to Grace Hopper` }).click()
 
@@ -79,5 +87,25 @@ test.each([
       page.getByText(`Handing it over restores it`, { exact: false }).elements()
         .length > 0,
     ).toBe(isNoteShown)
+  },
+)
+
+test.each([
+  {
+    hasOrganization: true,
+    text: /It then counts toward their organization\.$/u,
+  },
+  {
+    hasOrganization: false,
+    text: /They have no organization, so it counts toward none\.$/u,
+  },
+])(
+  `the dialog says whether the contest counts toward an organization ($hasOrganization)`,
+  async ({ hasOrganization, text }) => {
+    await renderHandOver(hasOrganization)
+
+    await find()
+
+    await expect.element(page.getByText(text)).toBeVisible()
   },
 )

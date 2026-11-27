@@ -14,6 +14,8 @@ import { formatCount } from '~/format-count.ts'
 export type DeletableEducator = {
   email: string
   contestCount: number
+  /** Whether a contest is shared by or with them */
+  hasShares: boolean
   isConfirmed: boolean
 }
 
@@ -41,7 +43,7 @@ export const DeleteAccountDialog = ({
 
 /** Mounts with each opening, so the form starts empty */
 const DeleteAccountForm = ({
-  account: { email, contestCount, isConfirmed },
+  account: { email, contestCount, hasShares, isConfirmed },
   action,
 }: {
   account: DeletableEducator
@@ -62,24 +64,28 @@ const DeleteAccountForm = ({
       <p>
         This can’t be undone, though backups keep the data for up to 30 days.
       </p>
-      <ul className='flex list-disc flex-col gap-1 ps-5'>
-        {contestCount > 0 ? (
-          <>
+      {contestCount > 0 || hasShares ? (
+        <ul className='flex list-disc flex-col gap-1 ps-5'>
+          {contestCount > 0 ? (
+            <>
+              <li>
+                {`${formatCount(contestCount, `contest`)} ${contestCount === 1 ? `stays` : `stay`} without an educator, so no one can start a bracket from a contest link, and pending brackets stay pending.`}
+              </li>
+              <li>
+                {isConfirmed
+                  ? `Players keep their personal links, and approved brackets stay on leaderboards.`
+                  : `Players keep their personal links. Approved brackets stay on their contest’s leaderboard, and off the organization and global ones.`}
+              </li>
+            </>
+          ) : null}
+          {hasShares ? (
             <li>
-              {`${formatCount(contestCount, `contest`)} ${contestCount === 1 ? `stays` : `stay`} without an educator, so no one can start a bracket from a contest link, and pending brackets stay pending.`}
+              The contests this account shares stop being shared, and it loses
+              those shared with it.
             </li>
-            <li>
-              {isConfirmed
-                ? `Players keep their personal links, and approved brackets stay on leaderboards.`
-                : `Players keep their personal links. Approved brackets stay on their contest’s leaderboard, and off the organization and global ones.`}
-            </li>
-          </>
-        ) : null}
-        <li>
-          The contests this account shares stop being shared, and it loses those
-          shared with it.
-        </li>
-      </ul>
+          ) : null}
+        </ul>
+      ) : null}
       <TextField
         {...fieldProps(fields.email)}
         type='email'

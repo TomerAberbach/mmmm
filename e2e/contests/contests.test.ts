@@ -427,8 +427,16 @@ test(`a deleted contest turns off its links until it's restored`, async ({
   browser,
 }) => {
   const { educator, link } = await createContestAsEducator(browser)
+  const other = await browser.newPage({
+    storageState: await educator.context().storageState(),
+  })
+  await other.goto(educator.url())
   await confirmDialog(educator, `Delete contest`)
   await educator.getByRole(`link`, { name: `Deleted contests (1)` }).click()
+  await confirmDialog(other, `Delete contest`)
+  await expect(other.getByRole(`alertdialog`).getByRole(`alert`)).toContainText(
+    `This contest wasn’t deleted. Reload the page`,
+  )
 
   await page.goto(link)
   await expect(

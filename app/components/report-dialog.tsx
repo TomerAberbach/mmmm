@@ -10,7 +10,7 @@ import {
 import { useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
-import { FetcherError } from './fetcher-error.tsx'
+import { DialogError } from './fetcher-error.tsx'
 import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
 import { Notice } from './notice.tsx'
 import { SelectField } from './select-field.tsx'
@@ -114,7 +114,6 @@ const ReportForm = ({
         It goes to the contest’s educator and to MMMM. They aren’t told who sent
         it.
       </p>
-      <FetcherError fetcher={fetcher} />
       <div className={BUTTONS_CLASS_NAME}>
         <Button slot='close' variant='secondary'>
           Cancel
@@ -123,6 +122,7 @@ const ReportForm = ({
           Send report
         </Button>
       </div>
+      <DialogError fetcher={fetcher} />
     </fetcher.Form>
   )
 }

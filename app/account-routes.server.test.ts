@@ -544,8 +544,9 @@ test(`removing a passkey that another tab removed says to reload`, async () => {
     formPost({ id: randomUUID() }),
   )
 
-  expect(reply).toStrictEqual({
-    error: `This passkey is gone. Reload the page`,
+  expect(reply).toMatchObject({
+    data: { error: `This passkey is gone. Reload the page` },
+    init: { status: 409 },
   })
 })
 

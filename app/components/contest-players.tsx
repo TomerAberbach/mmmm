@@ -1,13 +1,19 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
-import type { KeyboardEvent, MouseEvent, ReactElement } from 'react'
+import type { KeyboardEvent, MouseEvent, ReactElement, Ref } from 'react'
 import { Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components'
-import { href, useFetcher, useFetchers, useSubmit } from 'react-router'
+import {
+  href,
+  useFetcher,
+  useFetchers,
+  useRevalidator,
+  useSubmit,
+} from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { Checkbox } from './checkbox.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { FetcherError } from './fetcher-error.tsx'
-import { InlineEditForm } from './inline-edit-form.tsx'
+import { InlineEditForm, InlineSaved } from './inline-edit-form.tsx'
 import { LocalTime } from './local-time.tsx'
 import { NewPersonalLink } from './new-personal-link.tsx'
 import { ScoreCell } from './score-cell.tsx'
@@ -117,6 +123,14 @@ export const ContestPlayers = ({
     })
   }
 
+  const revalidator = useRevalidator()
+  // A refusal stops the reload that an earlier move still waits for
+  const refreshEarlierMoves = () => {
+    if (moves.length > 1) {
+      void revalidator.revalidate()
+    }
+  }
+
   const duplicates = findPossibleDuplicates(players)
   const finish = (move: Move) => {
     remove(move)
@@ -197,6 +211,7 @@ export const ContestPlayers = ({
         contestId={contestId}
         player={newLinkPlayer}
         onClose={() => setNewLinkPlayer(null)}
+        onDone={focusMenu}
       />
       <div className='sticky bottom-0 print:hidden'>
         <div className='border-2 border-ink bg-white px-4 py-3 empty:hidden'>
@@ -205,6 +220,7 @@ export const ContestPlayers = ({
               key={move.key}
               move={move}
               onDone={() => finish(move)}
+              onRefused={refreshEarlierMoves}
             />
           ))}
         </div>
@@ -341,15 +357,17 @@ const focusTarget = (list: HTMLElement, targetId: string) => {
 }
 
 /**
- * Shows a refused move's error, and calls `onDone` once a move succeeds. React
- * Router drops a move's result once no component reads it, so keep this mounted
+ * Shows a refused move's error and calls `onRefused`, or calls `onDone` once the
+ * move succeeds. React Router drops a move's result once no component reads it, so keep this mounted
  */
 const MoveResult = ({
   move: { key, subject },
   onDone,
+  onRefused,
 }: {
   move: Move
   onDone: () => void
+  onRefused: () => void
 }) => {
   const fetcher = useFetcher<ConfirmResult>({ key })
   const isDone =
@@ -362,6 +380,17 @@ const MoveResult = ({
       onDone()
     }
   }, [isDone, onDone])
+  const refusal =
+    fetcher.state === `idle` && fetcher.data && `error` in fetcher.data
+      ? fetcher.data
+      : null
+  const handledRefusal = useRef<object>(null)
+  useLayoutEffect(() => {
+    if (refusal && handledRefusal.current !== refusal) {
+      handledRefusal.current = refusal
+      onRefused()
+    }
+  }, [refusal, onRefused])
   return <FetcherError fetcher={fetcher} subject={subject} />
 }
 
@@ -617,11 +646,7 @@ const PlayerRow = ({
         ) : (
           <>
             {player.displayName}
-            {rename.isSaved ? (
-              <output className='ms-2 font-normal text-accent-strong'>
-                Saved
-              </output>
-            ) : null}
+            <InlineSaved isSaved={rename.isSaved} />
           </>
         )}
         <DuplicatesNote duplicates={duplicates} />
@@ -648,6 +673,7 @@ const PlayerRow = ({
             ))}
             <PlayerMenu
               player={player}
+              buttonRef={rename.buttonRef}
               isPending={isPending}
               onRename={rename.open}
               onNewLink={onNewLink}
@@ -699,22 +725,34 @@ const DuplicatesNote = ({ duplicates }: { duplicates: ContestPlayer[] }) =>
     </p>
   ) : null
 
+const focusMenu = (playerId: string) =>
+  document
+    .querySelector<HTMLElement>(`#${playerRowId(playerId)} [data-player-menu]`)
+    ?.focus()
+
 /** The row's less frequent actions */
 const PlayerMenu = ({
   player,
+  buttonRef,
   isPending,
   onRename,
   onNewLink,
   onDelete,
 }: {
   player: ContestPlayer
+  buttonRef: Ref<HTMLButtonElement>
   isPending: boolean
   onRename: () => void
   onNewLink: () => void
   onDelete: () => void
 }) => (
   <MenuTrigger>
-    <Button variant='secondary' aria-label={`More for ${player.displayName}`}>
+    <Button
+      ref={buttonRef}
+      data-player-menu
+      variant='secondary'
+      aria-label={`More for ${player.displayName}`}
+    >
       <span aria-hidden>•••</span>
     </Button>
     <Popover

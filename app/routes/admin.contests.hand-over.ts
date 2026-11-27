@@ -4,6 +4,7 @@ import type { Route } from './+types/admin.contests.hand-over.ts'
 import type { HandOverReply } from '~/components/hand-over-dialog.tsx'
 import { acceptForm, rejectForm } from '~/form-replies.server.ts'
 import type { FormRejection } from '~/form-replies.server.ts'
+import { readEmailDomain } from '~/organizations.server.ts'
 import { handOverSchema } from '~/support-forms.ts'
 import { findEducator, handOverContest } from '~/support.server.ts'
 
@@ -29,7 +30,11 @@ export const action = async ({
   if (educatorId !== educator.id) {
     return {
       result: submission.reply(),
-      educator: { id: educator.id, name: educator.name },
+      educator: {
+        id: educator.id,
+        name: educator.name,
+        hasOrganization: readEmailDomain(educator.email) !== null,
+      },
     }
   }
   return (await handOverContest(contestId, educatorId))

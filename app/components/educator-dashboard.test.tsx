@@ -1,4 +1,4 @@
-import { redirect, useParams } from 'react-router'
+import { redirect, useLoaderData, useParams } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -333,4 +333,47 @@ test(`contests shared with the educator open from the dashboard`, async () => {
   await page.getByRole(`link`, { name: `Period 1 Chemistry` }).click()
 
   await expect.element(page.getByText(`Opened period-1`)).toBeVisible()
+})
+
+test(`naming the organization says it saved and keeps focus on the page`, async () => {
+  let name: string | null = null
+  await renderRoutes(
+    [
+      {
+        path: `/contests`,
+        loader: () => name,
+        HydrateFallback: () => null,
+        Component: () => (
+          <EducatorDashboard
+            view={{
+              organization: {
+                domain: `walkerville.edu`,
+                name: useLoaderData<string | null>(),
+              },
+              current: null,
+              upcomingYear: 2027,
+            }}
+          />
+        ),
+      },
+      {
+        path: `/contests/organization`,
+        action: () => {
+          name = `Walkerville Elementary`
+          return { result: {}, saved: true }
+        },
+      },
+    ],
+    `/contests`,
+  )
+  await page.getByLabelText(`Organization name`).fill(`Walkerville Elementary`)
+
+  await page.getByRole(`button`, { name: `Save name` }).click()
+
+  await expect
+    .element(page.getByText(`Saved your organization’s name`))
+    .toBeVisible()
+  expect(document.activeElement).toHaveTextContent(
+    `Saved your organization’s name`,
+  )
 })

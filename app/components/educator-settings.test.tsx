@@ -19,11 +19,15 @@ const renderSettings = async ({
   await renderRoutes([
     {
       path: `/`,
+      // A save reloads the page's data
+      loader: () => ({}),
+      HydrateFallback: () => null,
       Component: () => (
         <EducatorSettings
           account={{
             email: `ada@example.com`,
             contestCount: 1,
+            hasShares: false,
             isConfirmed: true,
           }}
           canDelete={canDelete}
@@ -147,4 +151,19 @@ test(`a session that can't delete the account learns how before any dialog`, asy
     .element(page.getByRole(`button`, { name: `Delete account` }))
     .not.toBeInTheDocument()
   await expectNoAxeViolations()
+})
+
+test(`a saved name's notice goes once another action is made`, async () => {
+  await renderSettings()
+  await page.getByRole(`button`, { name: `Save name` }).click()
+  await expect.element(page.getByText(`Saved your name`)).toBeVisible()
+
+  await fillPasswords()
+
+  await expect
+    .element(page.getByText(/^Your password is changed/u))
+    .toBeVisible()
+  await expect
+    .element(page.getByText(`Saved your name`))
+    .not.toBeInTheDocument()
 })

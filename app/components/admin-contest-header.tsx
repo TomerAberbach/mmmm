@@ -12,7 +12,7 @@ import type { AdminContest } from '~/admin-contests.server.ts'
 
 /** A contest's name, which Rename edits, its details, and the admin's actions */
 export const AdminContestHeader = ({ contest }: { contest: AdminContest }) => {
-  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit()
+  const { fetcher, isOpen, isSaved, buttonRef, open, close } = useInlineEdit()
   return (
     <div className='flex flex-col gap-3'>
       <PageHeader
@@ -20,7 +20,7 @@ export const AdminContestHeader = ({ contest }: { contest: AdminContest }) => {
         action={
           <div className='flex flex-wrap gap-2'>
             {isOpen ? null : (
-              <Button variant='quiet' onPress={open}>
+              <Button ref={buttonRef} variant='quiet' onPress={open}>
                 Rename
               </Button>
             )}
