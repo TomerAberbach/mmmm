@@ -13,9 +13,11 @@ import type { AdminContest } from '~/admin-contests.server.ts'
 import type { SavedResult } from '~/form-replies.server.ts'
 import { handOverSchema } from '~/support-forms.ts'
 
+type NewEducator = { id: string; name: string; hasOrganization: boolean }
+
 /** `educator` names who would run the contest, before they do */
 export type HandOverReply = SavedResult & {
-  educator?: { id: string; name: string }
+  educator?: NewEducator
 }
 
 type HandOverContest = Pick<
@@ -46,6 +48,15 @@ export const HandOverDialog = ({ contest }: { contest: HandOverContest }) => {
       </ModalFrame>
     </DialogTrigger>
   )
+}
+
+const describeOrganization = (educator: NewEducator | null): string => {
+  if (!educator) {
+    return `It then counts toward their organization, if they have one.`
+  }
+  return educator.hasOrganization
+    ? `It then counts toward their organization.`
+    : `They have no organization, so it counts toward none.`
 }
 
 const HandOverForm = ({
@@ -80,7 +91,7 @@ const HandOverForm = ({
         {educator
           ? `${educator.name} becomes the educator of ${name}, with all its brackets.`
           : `The new educator gets it with all its brackets.`}
-        {` It then counts toward their organization.`}
+        {` ${describeOrganization(educator)}`}
       </p>
       {isInTrash ? (
         <p>It’s in the trash. Handing it over restores it.</p>
@@ -91,6 +102,9 @@ const HandOverForm = ({
         type='email'
         label='New educator’s email address'
         autoComplete='off'
+        // The dialog opens for typing
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus
         isReadOnly={educator !== null}
       />
       <div className={BUTTONS_CLASS_NAME}>

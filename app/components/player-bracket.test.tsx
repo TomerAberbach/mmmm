@@ -1,6 +1,6 @@
 import { redirect, useLoaderData } from 'react-router'
 import { expect, test, vi } from 'vitest'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { BRACKET_2025 } from '../../prisma/brackets.ts'
 import { pickEveryBattle } from '../../prisma/pick-every-battle.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
@@ -637,3 +637,87 @@ test(`picks that a move cleared are said to need finishing`, async () => {
       `The bracket changed, so some of your picks were cleared. Finish your bracket, then submit it`,
     )
 })
+
+test(`submitting with battles left shows why wherever the page scrolled`, async () => {
+  await renderBracket()
+  await page.viewport(1600, 800)
+
+  await page.getByRole(`button`, { name: `Submit bracket` }).click()
+
+  await expect.element(page.getByRole(`alert`)).toBeInViewport({ ratio: 1 })
+  expect(window.scrollY).toBeGreaterThan(0)
+})
+
+test(`saying which picks a change cleared keeps the diagram in place`, async () => {
+  answerRequests(Response.json({ ok: true }))
+  await renderBracket({ draft: COMPLETE_PICKS })
+  await page.viewport(1600, 800)
+  const box = firstBattle().element()
+  const { top } = box.getBoundingClientRect()
+
+  await firstBattle().getByText(SEED_16.name).click()
+
+  await expect
+    .element(page.getByText(`Your change cleared`, { exact: false }))
+    .toBeInViewport({ ratio: 1 })
+  expect(box.getBoundingClientRect().top).toBeCloseTo(top, 0)
+})
+
+test(`picking from a side's menu by keyboard focuses the pick`, async () => {
+  answerRequests(Response.json({ ok: true }))
+  await renderBracket()
+  await page.getByRole(`tab`, { name: /^Sweet 16/u }).click()
+  page
+    .getByRole(`button`, { name: `Pick who wins Round 2, battle 1` })
+    .element()
+    .focus()
+
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{Enter}{Enter}`)
+
+  await expect
+    .element(
+      page
+        .getByRole(`radiogroup`, { name: `Sweet 16, battle 1` })
+        .getByRole(`radio`, { name: SEED_1.name, exact: false }),
+    )
+    .toHaveFocus()
+})
+
+test(`every box of the diagram is as wide, whether or not its sides are filled`, async () => {
+  await renderBracket()
+  await page.viewport(1600, 800)
+
+  const widths = page
+    .getByRole(`radiogroup`)
+    .elements()
+    .map(element => element.getBoundingClientRect().width)
+
+  expect(new Set(widths).size).toBe(1)
+})
+
+test.each([
+  [
+    `APPROVED`,
+    `Your submitted bracket still counts until you submit these changes.`,
+  ],
+  [
+    `PENDING`,
+    `Your submitted bracket stays as it was until you submit these changes.`,
+  ],
+  [
+    `REJECTED`,
+    `Your submitted bracket stays as it was until you submit these changes.`,
+  ],
+] as const)(
+  `changes to a submission that's %s say what becomes of it`,
+  async (status, text) => {
+    answerRequests(Response.json({ ok: true }))
+    await renderBracket({
+      draft: COMPLETE_CHANGED_PICKS,
+      submission: { ...SUBMISSION, status },
+    })
+
+    await expect.element(page.getByText(text)).toBeVisible()
+  },
+)

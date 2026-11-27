@@ -27,6 +27,7 @@ const CreateContestForm = () => {
       fetcher={useFetcher<{ result: SubmissionResult }>()}
       action={href(`/contests/new`)}
       submitLabel='Create contest'
+      isInDialog
       onCancel={() => dialog?.close()}
     />
   )

@@ -32,7 +32,7 @@ const SecondFactorLayout = () =>
   ) : (
     <div className='flex flex-col gap-6'>
       {/* Lines up with the page's title, even on a full-width page */}
-      <div className='mx-auto w-full max-w-6xl print:hidden'>
+      <div className='mx-auto w-full max-w-page print:hidden'>
         <Link to={href(`/admin`)}>Admin</Link>
       </div>
       <Outlet />

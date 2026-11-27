@@ -6,6 +6,7 @@ import { FetcherError } from './fetcher-error.tsx'
 import { Notice } from './notice.tsx'
 import { SelectField } from './select-field.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
+import { useIsLatestAction } from './use-is-latest-action.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { formatCount } from '~/format-count.ts'
 import type { MoveImpact, MoveReply } from '~/moves.server.ts'
@@ -31,12 +32,13 @@ export const CombatantMoves = ({
   const [pending, setPending] = useState({ arrangement, swaps: NO_SWAPS })
   const preview = useFetcher<MoveReply>()
   const save = useFetcher<ConfirmResult>()
-  const [submitted, setSubmitted] = useState(NO_SWAPS)
+  const [submitted, setSubmitted] = useState<Submitted>(NOTHING_SUBMITTED)
+  const isLatest = useIsLatestAction(save)
   const isSaved = Boolean(save.data && `ok` in save.data)
   // Saved swaps that cancel out leave the arrangement as it was
   const swaps =
     pending.arrangement === arrangement &&
-    !(isSaved && pending.swaps === submitted)
+    !(isSaved && pending.swaps === submitted.swaps)
       ? pending.swaps
       : NO_SWAPS
   const clearSaved = () => {
@@ -97,7 +99,13 @@ export const CombatantMoves = ({
       ) : null}
       <FetcherError fetcher={preview} />
       <FetcherError fetcher={save} />
-      {isSaved ? <Notice kind='status'>Moved the combatants</Notice> : null}
+      {isSaved && isLatest ? (
+        <Notice kind='status'>
+          {submitted.isMove
+            ? `Moved the combatants`
+            : `The swaps canceled out, so no combatant moved`}
+        </Notice>
+      ) : null}
       {impact ? (
         <ConfirmDialog
           isOpen
@@ -105,7 +113,10 @@ export const CombatantMoves = ({
           title='Move combatants?'
           confirmLabel='Move combatants'
           onConfirm={() => {
-            setSubmitted(swaps)
+            setSubmitted({
+              swaps,
+              isMove: listMoves(bracket, swaps).length > 0,
+            })
             return save.submit(
               { ...move, intent: `save`, results: impact.results },
               target,
@@ -124,6 +135,11 @@ export const CombatantMoves = ({
 }
 
 const NO_SWAPS: Swap[] = []
+
+/** `isMove` is false for swaps that cancel out */
+type Submitted = { swaps: Swap[]; isMove: boolean }
+
+const NOTHING_SUBMITTED: Submitted = { swaps: NO_SWAPS, isMove: false }
 
 const SwapForm = ({
   places,

@@ -1,6 +1,6 @@
 import { useLoaderData } from 'react-router'
 import { expect, test, vi } from 'vitest'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { BRACKET_2026 } from '../../prisma/brackets.ts'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { storeTestBracket } from '../../test/picks.ts'
@@ -155,7 +155,7 @@ test(`a failed save offers to try again and holds other results`, async () => {
   expect(retried).toStrictEqual(failed)
 })
 
-test(`a refused save asks for a reload`, async () => {
+test(`a refused save asks for a reload and leaves the result out`, async () => {
   await renderEditor({ 'ROUND_1:1': `id-Mouse` }, () =>
     Promise.resolve(new Response(null, { status: 409 })),
   )
@@ -164,7 +164,8 @@ test(`a refused save asks for a reload`, async () => {
 
   await expect
     .element(page.getByRole(`alert`))
-    .toHaveTextContent(`Couldn’t save the result. Reload the page`)
+    .toHaveTextContent(`Couldn’t save the result. Reload the pageReload`)
+  await expect.element(page.getByText(`1 of 64 results`)).toBeVisible()
 })
 
 test(`the results editor passes accessibility checks`, async () => {
@@ -241,9 +242,8 @@ test(`a cleared merge's name is free again`, async () => {
   }
   await mergeFirst()
   await press(/Papyrus/u)
-  await confirm(`Change result`)
-  await press(/Papyrus/u)
   await confirm(`Clear result`)
+  await expect.element(page.getByText(`1 of 64 results`)).toBeVisible()
 
   await mergeFirst()
 
@@ -251,4 +251,28 @@ test(`a cleared merge's name is free again`, async () => {
   await expect
     .element(page.getByRole(`button`, { name: /Nile Crocodile & Papyrus/u }))
     .toBeVisible()
+})
+
+test(`recording who fills a side by keyboard focuses them once confirmed`, async () => {
+  await renderEditor()
+  await page.getByRole(`tab`, { name: /^Round 2/u }).click()
+  page
+    .getByRole(`button`, { name: `Pick who wins Round 1, battle 1` })
+    .element()
+    .focus()
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{Enter}{Enter}`)
+  await expect
+    .element(page.getByRole(`heading`, { name: `Lock submissions?` }))
+    .toBeVisible()
+
+  await confirm(`Save result and lock`)
+
+  await expect
+    .element(
+      page
+        .getByRole(`group`, { name: `Round 2, battle 1`, exact: true })
+        .getByRole(`button`, { name: /Nile Crocodile/u }),
+    )
+    .toHaveFocus()
 })

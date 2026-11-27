@@ -24,8 +24,11 @@ app
 - Build interactive controls on React Aria Components, as in
   `components/button.tsx`. Style a link as a button with `ButtonLink`
 - Confirm destructive or hard-to-undo actions with `ConfirmDialog`. Its route
-  action returns a `ConfirmResult`, and the dialog shows any `error`. Pass
-  `onConfirm` instead for a change the page makes itself, and `isOpen` and
+  action returns a `ConfirmReply`, and the dialog shows any error. Refuse with
+  `refuseStale` from `form-replies.server.ts` when the page shows old data,
+  which offers a reload, or with `refuseChange`. Their status keeps the loaders
+  from running again, since new data could remove the dialog with its error.
+  Pass `onConfirm` instead for a change the page makes itself, and `isOpen` and
   `onOpenChange` instead of `trigger` to open it from a menu. Build any other
   modal dialog on `ModalFrame` from `components/modal-frame.tsx`
 - Show an instant in the reader's time zone with `LocalTime` from
@@ -33,6 +36,7 @@ app
   server's time zone and fails hydration
 - Mark controls and page chrome `print:hidden`, so data pages print cleanly
 - Pages are `max-w-6xl` unless the route exports `handle = { fullWidth: true }`.
+  Give the rest of a full-width page `max-w-page`, the same width less padding.
   Print a wide page with `page-landscape` and scale it with `print:zoom` from
   `app.css`, which reads the element's `--zoom`
 - Give each page a `PageTitle`, which sets both its heading and its tab title,
@@ -76,7 +80,11 @@ app
   component passes `freeTextSchema`. Admins' fields skip the filter, which flags
   some real combatants' names
 - Open an editor in place, such as a rename, with `useInlineEdit` from
-  `components/use-inline-edit.ts`, which closes it once the save succeeds
+  `components/use-inline-edit.ts`, which closes it once the save succeeds. Pass
+  its `buttonRef` to the button that opens the editor, so focus returns there
+- Show a notice that a change was made only while `useIsLatestAction` from
+  `components/use-is-latest-action.ts` holds. `SavedNotice` and `ConfirmDialog`
+  check it
 
 ## Auth
 

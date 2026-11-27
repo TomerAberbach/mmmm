@@ -151,7 +151,16 @@ export const endShares = async (
   educatorId: string,
   tx: Prisma.TransactionClient,
 ): Promise<void> => {
-  await tx.share.deleteMany({
-    where: { OR: [{ educatorId }, { contest: { educatorId } }] },
-  })
+  await tx.share.deleteMany({ where: toOrFrom(educatorId) })
 }
+
+/** Whether a contest is shared by or with the educator */
+export const hasShares = async (educatorId: string): Promise<boolean> =>
+  (await prisma.share.count({
+    where: { ...toOrFrom(educatorId), contest: CONTEST_OUTSIDE_TRASH },
+  })) > 0
+
+const toOrFrom = (educatorId: string) =>
+  ({
+    OR: [{ educatorId }, { contest: { educatorId } }],
+  }) satisfies Prisma.ShareWhereInput

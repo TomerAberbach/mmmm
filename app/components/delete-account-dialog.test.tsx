@@ -9,7 +9,10 @@ import { Button } from './button.tsx'
 import { DeleteAccountDialog } from './delete-account-dialog.tsx'
 
 /** The action deletes the account only with its address */
-const openDialog = async (contestCount: number) => {
+const openDialog = async ({
+  contestCount = 0,
+  hasShares = false,
+}: { contestCount?: number; hasShares?: boolean } = {}) => {
   await renderRoutes([
     {
       path: `/`,
@@ -20,6 +23,7 @@ const openDialog = async (contestCount: number) => {
           account={{
             email: `ada@example.com`,
             contestCount,
+            hasShares,
             isConfirmed: true,
           }}
           action='/delete'
@@ -52,7 +56,7 @@ const confirm = async (email: string) => {
 }
 
 test(`an account is deleted once its address is typed`, async () => {
-  await openDialog(3)
+  await openDialog({ contestCount: 3 })
   await expect
     .element(page.getByText(/3 contests stay without an educator/u))
     .toBeVisible()
@@ -64,7 +68,7 @@ test(`an account is deleted once its address is typed`, async () => {
 })
 
 test(`another address deletes nothing and says so`, async () => {
-  await openDialog(0)
+  await openDialog()
 
   await confirm(`grace@example.com`)
 
@@ -72,10 +76,25 @@ test(`another address deletes nothing and says so`, async () => {
 })
 
 test(`an account without contests mentions none`, async () => {
-  await openDialog(0)
+  await openDialog()
 
   await expect.element(page.getByRole(`alertdialog`)).toBeVisible()
   await expect
     .element(page.getByText(/without an educator/u))
     .not.toBeInTheDocument()
 })
+
+test.each([
+  { hasShares: true, isShown: true },
+  { hasShares: false, isShown: false },
+])(
+  `the dialog mentions shared contests only when there are some ($hasShares)`,
+  async ({ hasShares, isShown }) => {
+    await openDialog({ hasShares })
+
+    await expect.element(page.getByRole(`alertdialog`)).toBeVisible()
+    expect(page.getByText(/stop being shared/u).elements().length > 0).toBe(
+      isShown,
+    )
+  },
+)

@@ -1,6 +1,7 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.contests.$contestId.erase.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
+import { refuseStale } from '~/form-replies.server.ts'
 import { erasePlayer } from '~/trash.server.ts'
 
 export const loader = ({ params }: Route.LoaderArgs): Response =>
@@ -9,10 +10,10 @@ export const loader = ({ params }: Route.LoaderArgs): Response =>
 export const action = async ({
   request,
   params,
-}: Route.ActionArgs): Promise<ConfirmResult> => {
+}: Route.ActionArgs): Promise<ConfirmReply> => {
   const playerId = (await request.formData()).get(`playerId`)
   return typeof playerId === `string` &&
     (await erasePlayer(params.contestId, playerId))
     ? { ok: true }
-    : { error: `This bracket is gone. Reload the page` }
+    : refuseStale(`This bracket is gone. Reload the page`)
 }

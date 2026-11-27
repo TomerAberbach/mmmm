@@ -4,20 +4,22 @@ import { page } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import { addressSchema } from '../support-forms.ts'
+import type { DeletableEducator } from './delete-account-dialog.tsx'
 import { EducatorSupport } from './educator-support.tsx'
 import type { FoundEducator } from '~/support.server.ts'
 
-const ADA: FoundEducator = {
+const ADA: FoundEducator & DeletableEducator = {
   id: `ada`,
   name: `Ada Lovelace`,
   email: `ada@example.com`,
   isConfirmed: true,
   organizationName: null,
   contestCount: 2,
+  hasShares: false,
   createdAt: new Date(`2027-03-02T16:00:00Z`),
 }
 
-const renderSupport = (educator: FoundEducator) =>
+const renderSupport = (educator: typeof ADA) =>
   renderRoutes([
     { path: `/`, Component: () => <EducatorSupport educator={educator} /> },
     {
@@ -52,6 +54,14 @@ test(`changing an address says what it does, then that the link was sent`, async
     .element(page.getByText(/We emailed the new address/u))
     .toBeVisible()
   await expect.element(page.getByRole(`dialog`)).not.toBeInTheDocument()
+})
+
+test(`changing an address starts in its field`, async () => {
+  await renderSupport(ADA)
+
+  await page.getByRole(`button`, { name: `Change address` }).click()
+
+  await expect.element(page.getByLabelText(`New email address`)).toHaveFocus()
 })
 
 test(`a refused address shows why`, async () => {

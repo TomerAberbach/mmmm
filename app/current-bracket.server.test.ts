@@ -25,3 +25,12 @@ test(`a locked year has no expected lock date`, async () => {
 
   expect(date).toBeNull()
 })
+
+test(`a past expected lock date is left out`, async () => {
+  const year = await addYear({ published: true })
+  await setExpectedLockDate(year, new Date(`2020-03-19T00:00:00Z`))
+
+  const date = await readExpectedLockDate(year)
+
+  expect(date).toBeNull()
+})

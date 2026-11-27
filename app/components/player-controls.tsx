@@ -2,7 +2,7 @@ import { DialogTrigger } from 'react-aria-components'
 import { Button } from './button.tsx'
 import { ConfirmDialog } from './confirm-dialog.tsx'
 import { CopyButton } from './copy-button.tsx'
-import { LocalTime } from './local-time.tsx'
+import { LocalTime, useIsHydrated } from './local-time.tsx'
 import { ModalFrame } from './modal-frame.tsx'
 import { formatDateTime } from '~/dates.ts'
 import type { Submission } from '~/player-picks.server.ts'
@@ -132,7 +132,8 @@ export const PicksChanged = ({
   /** Whether the contest has no educator to tell */
   isOrphaned: boolean
 }) => (
-  <p className='text-muted'>
+  // Holds its place until the page hydrates, which fills in the time
+  <p className={`text-muted ${useIsHydrated() ? `` : `invisible`}`}>
     Submitted picks last changed <LocalTime date={at} format={formatDateTime} />
     .{isOrphaned ? null : ` If you didn’t make a change, tell your educator.`}
   </p>

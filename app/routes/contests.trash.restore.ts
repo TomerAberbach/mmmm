@@ -1,6 +1,6 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.trash.restore.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
 import { changeListed } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 import { restoreContests } from '~/trash.server.ts'
@@ -10,7 +10,7 @@ export const loader = (): Response => redirect(href(`/contests/trash`))
 export const action = ({
   request,
   context,
-}: Route.ActionArgs): Promise<ConfirmResult> => {
+}: Route.ActionArgs): Promise<ConfirmReply> => {
   const { id } = readRequiredEducator(context)
   return changeListed(request, ids => restoreContests(id, ids), `restored`)
 }

@@ -1,5 +1,6 @@
 import { data, href, redirect } from 'react-router'
 import type { Route } from './+types/player.delete.ts'
+import { refuseStale } from '~/form-replies.server.ts'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 import { OTHER_PLAYER_STATUS } from '~/other-player.ts'
 import { readPastYear } from '~/past-years.server.ts'
@@ -27,9 +28,8 @@ export const action = async ({
   const contest = readPlayContest(context)
   const formData = await request.formData()
   if (!formData.has(`playerId`)) {
-    return data<ConfirmResult>(
-      { error: `Your bracket wasn’t deleted. Reload the page and try again` },
-      { status: 400 },
+    return refuseStale(
+      `Your bracket wasn’t deleted. Reload the page and try again`,
     )
   }
   const player = await readRememberedPlayer(request, contest.id)

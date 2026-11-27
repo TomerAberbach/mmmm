@@ -131,3 +131,16 @@ test(`stopping a past contest's last share keeps focus in the section`, async ()
     .toBeVisible()
   await expectFocusOnSection()
 })
+
+test(`Shared the contest goes once sharing stops`, async () => {
+  await renderShares()
+  await share(`ruhle@example.com`)
+  await expect.element(page.getByText(`Shared the contest`)).toBeVisible()
+
+  await stopSharing()
+
+  await expect.element(page.getByText(`Mr. Ruhle`)).not.toBeInTheDocument()
+  await expect
+    .element(page.getByText(`Shared the contest`))
+    .not.toBeInTheDocument()
+})

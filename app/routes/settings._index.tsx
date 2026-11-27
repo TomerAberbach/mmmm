@@ -5,14 +5,16 @@ import { readOrganization } from '~/organizations.server.ts'
 import { readSecondFactorSettings } from '~/second-factor-settings.server.ts'
 import { mayDeleteAccount, readSecondFactors } from '~/second-factor.server.ts'
 import { readRequiredEducator, readRequiredSession } from '~/session.server.ts'
+import { hasShares } from '~/shares.server.ts'
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
   const educator = readRequiredEducator(context)
   const session = readRequiredSession(context)
-  const [organization, contestCount, secondFactors, canDelete] =
+  const [organization, contestCount, isSharing, secondFactors, canDelete] =
     await Promise.all([
       readOrganization(educator.id),
       countContests(educator.id),
+      hasShares(educator.id),
       readSecondFactorSettings(educator, session, request.headers),
       readSecondFactors(educator.id).then(current =>
         mayDeleteAccount(session.assurance, current),
@@ -23,6 +25,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     account: {
       email: educator.email,
       contestCount,
+      hasShares: isSharing,
       isConfirmed: educator.emailVerified,
     },
     canDelete,

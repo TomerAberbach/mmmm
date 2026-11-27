@@ -3,6 +3,7 @@ import type { SubmissionResult } from '@conform-to/react'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
+import { BUTTONS_CLASS_NAME } from './modal-frame.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
 import { contestNameSchema } from '~/contest-forms.ts'
@@ -16,18 +17,26 @@ export const ContestNameForm = ({
   action,
   submitLabel,
   defaultName,
+  isInDialog = false,
   onCancel,
 }: {
   fetcher: FetcherWithComponents<{ result?: SubmissionResult }>
   action: string
   submitLabel: string
   defaultName?: string
+  /** Orders the buttons as dialogs do */
+  isInDialog?: boolean
   onCancel: () => void
 }) => {
   const { form, fields } = useValidatedForm(
     CONTEST_NAME_SCHEMA,
     fetcher.data?.result,
     { name: defaultName },
+  )
+  const cancelButton = (
+    <Button variant='secondary' onPress={onCancel}>
+      Cancel
+    </Button>
   )
   return (
     <fetcher.Form
@@ -49,13 +58,12 @@ export const ContestNameForm = ({
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
       />
-      <div className='flex flex-wrap gap-3'>
+      <div className={isInDialog ? BUTTONS_CLASS_NAME : `flex flex-wrap gap-3`}>
+        {isInDialog ? cancelButton : null}
         <Button type='submit' isPending={fetcher.state !== `idle`}>
           {submitLabel}
         </Button>
-        <Button variant='secondary' onPress={onCancel}>
-          Cancel
-        </Button>
+        {isInDialog ? null : cancelButton}
       </div>
       <FormError form={form} />
     </fetcher.Form>

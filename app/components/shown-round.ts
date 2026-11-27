@@ -43,4 +43,11 @@ const focusBattle = (battle: BattleRef): void => {
   const box = [...boxes].find(element => element.checkVisibility())
   box?.scrollIntoView({ block: `center`, inline: `center` })
   box?.querySelector<HTMLElement>(`input, button`)?.focus()
+  if (box) {
+    // Marks the box after a mouse press too, which shows no focus outline
+    box.dataset.shown = ``
+    box.addEventListener(`focusout`, () => delete box.dataset.shown, {
+      once: true,
+    })
+  }
 }

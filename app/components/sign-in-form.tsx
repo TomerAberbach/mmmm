@@ -36,7 +36,7 @@ const NOTICES = {
   },
   'link-invalid': {
     kind: `alert`,
-    text: `That confirmation link has expired or doesn’t work. Sign in to get a new one`,
+    text: `That confirmation link has expired or doesn’t work. Sign in to get a new one if your address isn’t confirmed yet`,
   },
 } as const
 

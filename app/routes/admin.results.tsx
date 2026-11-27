@@ -25,7 +25,7 @@ const AdminResults = ({
   loaderData: { year, summary, bracket, results },
 }: Route.ComponentProps) => (
   <div className='flex flex-col gap-8'>
-    <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
+    <div className='mx-auto flex w-full max-w-page flex-col gap-8'>
       <PageTitle>{`${year} bracket`}</PageTitle>
       <PhaseSection year={year} summary={summary} />
     </div>
@@ -37,7 +37,7 @@ const AdminResults = ({
       initialResults={results}
       isLocked={summary.phase !== `OPEN`}
     />
-    <div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
+    <div className='mx-auto flex w-full max-w-page flex-col gap-8'>
       <CombatantRenames year={year} bracket={bracket} />
       <CombatantMoves
         key={year}

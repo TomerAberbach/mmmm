@@ -24,7 +24,7 @@ export const LeaderboardBracket = ({
     <Link to={leaderboardPath} className='self-start print:hidden'>
       Leaderboard
     </Link>
-    <PageTitle>{`${label}’s bracket`}</PageTitle>
+    <PageTitle>{toTitle(label)}</PageTitle>
     <p className='text-lg'>
       <strong>{formatRank(rank)}</strong>
       {` · ${scopeName}`}
@@ -32,3 +32,9 @@ export const LeaderboardBracket = ({
     <MarkedBracket year={year} {...marked} />
   </div>
 )
+
+/** A label such as "Player from Period 2 (Ms. Frizzle)" takes no possessive */
+const toTitle = (label: string): string =>
+  label.startsWith(`Player from `)
+    ? `Bracket of a p${label.slice(1)}`
+    : `${label}’s bracket`

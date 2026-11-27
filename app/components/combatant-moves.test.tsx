@@ -207,7 +207,9 @@ test(`swaps that cancel out leave the list once saved`, async () => {
 
   await dialog.getByRole(`button`, { name: `Move combatants` }).click()
 
-  await expect.element(page.getByText(`Moved the combatants`)).toBeVisible()
+  await expect
+    .element(page.getByText(`The swaps canceled out, so no combatant moved`))
+    .toBeVisible()
   await expect
     .element(page.getByRole(`button`, { name: /^Review/u }))
     .not.toBeInTheDocument()
@@ -224,7 +226,9 @@ test(`a swap added before the page reloads stays once swaps that cancel out are 
     .getByRole(`alertdialog`)
     .getByRole(`button`, { name: `Move combatants` })
     .click()
-  await expect.element(page.getByText(`Moved the combatants`)).toBeVisible()
+  await expect
+    .element(page.getByText(`The swaps canceled out, so no combatant moved`))
+    .toBeVisible()
 
   await addSwap(SEED_1!.name, SEED_3!.name)
   finishReload(undefined)

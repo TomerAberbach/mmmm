@@ -50,8 +50,8 @@ export const EducatorDashboard = ({
           hasContests && !current?.isLocked ? <CreateContestDialog /> : null
         }
       />
-      {organization?.name === null ? (
-        <OrganizationNameCard domain={organization.domain} />
+      {organization ? (
+        <OrganizationNameCard organization={organization} />
       ) : null}
       {current?.expectedLockDate ? (
         <LockHeadsUp expectedLockDate={current.expectedLockDate} />

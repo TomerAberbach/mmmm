@@ -83,3 +83,14 @@ test(`a refused report says why`, async () => {
     .element(page.getByRole(`alert`))
     .toHaveTextContent(`Too many reports right now`)
 })
+
+test(`a sent report returns focus to its button`, async () => {
+  await renderDialog([{ id: `contest`, label: `The contest’s name` }])
+  await page.getByText(`Something else`).click()
+
+  await page.getByRole(`button`, { name: `Send report` }).click()
+
+  await expect
+    .element(page.getByRole(`button`, { name: `Report a name` }))
+    .toHaveFocus()
+})

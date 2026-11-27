@@ -6,6 +6,12 @@ import { Button } from './button.tsx'
 import { FormError } from './form-error.tsx'
 import type { SavedResult } from '~/form-replies.server.ts'
 
+/** Beside the name that an editor saved */
+export const InlineSaved = ({ isSaved }: { isSaved: boolean }) =>
+  isSaved ? (
+    <output className='ms-2 font-normal text-accent-strong'>Saved</output>
+  ) : null
+
 /** A form that `useInlineEdit` opens in a row. Escape cancels */
 export const InlineEditForm = <Fields extends Record<string, unknown>>({
   form,

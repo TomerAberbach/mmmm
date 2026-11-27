@@ -239,24 +239,21 @@ const ExpectedLockDateForm = ({
       className='flex flex-col gap-2'
     >
       <input type='hidden' name={fields.year.name} value={year} />
-      <div className='flex flex-wrap items-start gap-x-3 gap-y-2'>
-        <div className='w-72'>
-          <TextField
-            {...fieldProps(fields.expectedLockDate)}
-            type='date'
-            label='Expected lock date'
-            description='Optional. Educators and players see it as a heads-up'
-          />
-        </div>
-        <div className='sm:mt-14'>
+      <div className='max-w-md'>
+        <TextField
+          {...fieldProps(fields.expectedLockDate)}
+          type='date'
+          label='Expected lock date'
+          description='Optional. Educators and players see it as a heads-up'
+        >
           <Button
             type='submit'
             variant='secondary'
             isPending={fetcher.state !== `idle`}
           >
-            Save date
+            <span className='whitespace-nowrap'>Save date</span>
           </Button>
-        </div>
+        </TextField>
       </div>
       <SavedNotice fetcher={fetcher} isFormValid={form.valid}>
         Saved the expected lock date

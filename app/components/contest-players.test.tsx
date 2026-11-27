@@ -1,6 +1,6 @@
 import { parseWithZod } from '@conform-to/zod/v4'
-import { useLoaderData } from 'react-router'
-import { expect, test } from 'vitest'
+import { data, useLoaderData } from 'react-router'
+import { expect, test, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
@@ -34,16 +34,23 @@ const renderPlayers = async (
     refuseStatus = false,
     refuseDelete = false,
     removeOnRefusal = false,
+    refusedId,
+    reloadGate = Promise.resolve(null),
     statusGate = Promise.resolve(null),
   }: {
     refuseStatus?: boolean
     refuseDelete?: boolean
     removeOnRefusal?: boolean
+    /** The player whose status changes are refused as stale */
+    refusedId?: string
+    /** Holds the next reload of the players until it resolves */
+    reloadGate?: Promise<null>
     /** Holds status changes until it resolves */
     statusGate?: Promise<null>
   } = {},
 ) => {
   let players = initialPlayers
+  let isReload = false
   const update = (id: string, change: Partial<ContestPlayer>) => {
     players = players.map(entry =>
       entry.id === id ? { ...entry, ...change } : entry,
@@ -53,7 +60,12 @@ const renderPlayers = async (
     [
       {
         path: `/contests/period-2`,
-        loader: () => players,
+        loader: async () => {
+          const gate = isReload ? reloadGate : null
+          isReload = true
+          await gate
+          return players
+        },
         HydrateFallback: () => null,
         Component: () => (
           <ContestPlayers
@@ -74,6 +86,9 @@ const renderPlayers = async (
           const { ids, status } = submissionStatusSchema.parse(
             Object.fromEntries(await request.formData()),
           )
+          if (ids.includes(refusedId ?? ``)) {
+            return data({ error: `Gone` }, { status: 409 })
+          }
           for (const id of ids) {
             update(id, { status })
           }
@@ -722,4 +737,92 @@ test(`each score shows once the year isn't open`, async () => {
     .element(rows.filter({ hasText: `Leo M.` }).getByText(`None`))
     .toBeVisible()
   await expectNoAxeViolations()
+})
+
+test(`closing a player's rename returns focus to their menu`, async () => {
+  await renderPlayers([MAYA, AVA])
+  const menu = page.getByRole(`button`, { name: `More for Ava L.` })
+  await menu.click()
+  await page.getByRole(`menuitem`, { name: `Rename` }).click()
+
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{Escape}`)
+
+  await expect.element(menu).toHaveFocus()
+})
+
+test(`closing a player's new personal link returns focus to their menu`, async () => {
+  vi.spyOn(globalThis, `fetch`).mockResolvedValue(
+    new Response(null, { status: 404 }),
+  )
+  await renderPlayers([MAYA, AVA])
+  const menu = page.getByRole(`button`, { name: `More for Ava L.` })
+  await menu.click()
+  await page.getByRole(`menuitem`, { name: `Replace personal link` }).click()
+  await page.getByRole(`button`, { name: `Replace personal link` }).click()
+
+  await page.getByRole(`button`, { name: `Close` }).click()
+
+  await expect.element(menu).toHaveFocus()
+})
+
+/** A list longer than the window, with the bar open */
+const renderLongSelection = async (): Promise<void> => {
+  await page.viewport(1200, 600)
+  await renderPlayers(
+    Array.from({ length: 30 }, (_, index) =>
+      player(`player-${index}`, `Player ${index}`, `PENDING`),
+    ),
+  )
+  await selectPlayer(`Player 0`)
+  await expect.element(selectionBar).toBeVisible()
+}
+
+test(`clicking a checkbox just above the bar doesn't scroll`, async () => {
+  await renderLongSelection()
+  const checkbox = page
+    .getByRole(`checkbox`, { name: `Select Player 12` })
+    .element()
+    .closest(`label`)!
+  window.scrollBy(
+    0,
+    checkbox.getBoundingClientRect().bottom -
+      selectionBar.element().getBoundingClientRect().top +
+      10,
+  )
+  const { scrollY } = globalThis
+
+  await userEvent.click(checkbox)
+
+  await expect.element(selectionBar.getByText(`2 selected`)).toBeVisible()
+  expect(scrollY).toBeGreaterThan(0)
+  expect(window.scrollY).toBe(scrollY)
+})
+
+test(`a control reached by keyboard stays out from under the bar`, async () => {
+  await renderLongSelection()
+
+  // Past the first rows, whose checkbox and menu each take a press
+  await userEvent.keyboard(`{Tab>25/}`)
+
+  const focused = document.activeElement!.getBoundingClientRect()
+  expect(window.scrollY).toBeGreaterThan(0)
+  expect(focused.bottom).toBeLessThanOrEqual(
+    selectionBar.element().getBoundingClientRect().top,
+  )
+})
+
+test(`a refusal leaves an earlier change's reload to finish`, async () => {
+  const { promise: reloadGate, resolve: finishReload } =
+    Promise.withResolvers<null>()
+  await renderPlayers([MAYA, JONAH], { refusedId: `jonah`, reloadGate })
+  await page.getByRole(`button`, { name: `Approve Maya R.` }).click()
+
+  await page.getByRole(`button`, { name: `Approve Jonah K.` }).click()
+  await expect.element(page.getByText(`Jonah K.: Gone`)).toBeVisible()
+  finishReload(null)
+
+  await expect
+    .element(page.getByRole(`heading`, { name: `Approved (1)` }))
+    .toBeVisible()
 })

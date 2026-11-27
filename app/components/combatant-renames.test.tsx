@@ -19,6 +19,9 @@ const renderRenames = async (error?: string) => {
     [
       {
         path: `/admin/bracket`,
+        // A save reloads the page's data
+        loader: () => ({}),
+        HydrateFallback: () => null,
         Component: () => <CombatantRenames year={2026} bracket={BRACKET} />,
       },
       {
@@ -117,4 +120,33 @@ test(`a division's rename sends its position`, async () => {
   await expect
     .poll(() => received)
     .toStrictEqual([{ year: `2026`, position: `TOP_LEFT`, name: `New Name` }])
+})
+
+test.each([
+  [`canceling`, `Cancel`, false],
+  [`saving`, `Save`, true],
+])(`%s a rename returns focus to its button`, async (_, label, isSaved) => {
+  await renderRenames()
+  const rename = page.getByRole(`button`, { name: `Rename Sun Bear` })
+  await rename.click()
+
+  await page.getByRole(`button`, { name: label, exact: true }).click()
+
+  await expect.element(rename).toHaveFocus()
+  expect(page.getByText(`Saved`).elements().length > 0).toBe(isSaved)
+})
+
+test(`a rename's Saved goes once another saves`, async () => {
+  await renderRenames()
+  await page.getByRole(`button`, { name: `Rename Sun Bear` }).click()
+  await page.getByRole(`button`, { name: `Save` }).click()
+  await expect.element(page.getByText(`Saved`)).toBeVisible()
+  await page.getByRole(`button`, { name: `Rename Gelada` }).click()
+
+  await page.getByRole(`button`, { name: `Save` }).click()
+
+  await expect
+    .element(page.getByRole(`listitem`).filter({ hasText: `Gelada` }))
+    .toHaveTextContent(`8GeladaSavedRename`)
+  await expect.poll(() => page.getByText(`Saved`).elements()).toHaveLength(1)
 })

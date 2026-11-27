@@ -55,7 +55,7 @@ test(`a bracket its player deleted says when it can be restored by`, async () =>
   await expect
     .element(
       page.getByText(
-        `It was deleted from its personal link. If that wasn’t you, ask your educator to restore it by ${formatLocalDate(restoreBy)}, or before next year’s bracket is published, if that’s sooner.`,
+        `It was deleted on a device that had it open. If that wasn’t you, ask your educator to restore it by ${formatLocalDate(restoreBy)}, or before next year’s bracket is published, if that’s sooner.`,
       ),
     )
     .toBeVisible()

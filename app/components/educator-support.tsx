@@ -5,10 +5,11 @@ import { href, useFetcher } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { DeleteAccountDialog } from './delete-account-dialog.tsx'
+import type { DeletableEducator } from './delete-account-dialog.tsx'
 import { FormError } from './form-error.tsx'
 import { BUTTONS_CLASS_NAME, ModalFrame } from './modal-frame.tsx'
 import { Notice } from './notice.tsx'
-import { isSaved } from './saved-notice.tsx'
+import { isSaved, useIsJustSaved } from './saved-notice.tsx'
 import { SettingsSection } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useValidatedForm } from './use-validated-form.ts'
@@ -18,7 +19,11 @@ import { addressSchema } from '~/support-forms.ts'
 import type { FoundEducator } from '~/support.server.ts'
 
 /** What the admin sees of an educator and can do for them */
-export const EducatorSupport = ({ educator }: { educator: FoundEducator }) => (
+export const EducatorSupport = ({
+  educator,
+}: {
+  educator: FoundEducator & DeletableEducator
+}) => (
   <div className='flex flex-col divide-y-2 divide-ink border-t-2 border-ink pt-8'>
     <SettingsSection title={educator.name}>
       <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1'>
@@ -63,6 +68,7 @@ const ChangeAddress = ({ educator }: { educator: FoundEducator }) => {
   const fetcher = useFetcher<SavedResult>()
   const [isOpen, setIsOpen] = useState(false)
   const isSent = isSaved(fetcher)
+  const isJustSent = useIsJustSaved(fetcher)
   return (
     <SettingsSection title='Change address'>
       <p className='text-muted'>
@@ -85,7 +91,7 @@ const ChangeAddress = ({ educator }: { educator: FoundEducator }) => {
           </ModalFrame>
         </DialogTrigger>
       </div>
-      {isSent ? (
+      {isJustSent ? (
         <Notice kind='status'>
           We emailed the new address. The educator’s address changes once they
           confirm it
@@ -120,6 +126,9 @@ const ChangeAddressForm = ({
         type='email'
         label='New email address'
         autoComplete='off'
+        // The dialog opens for typing
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus
       />
       <div className={BUTTONS_CLASS_NAME}>
         <Button slot='close' variant='secondary'>

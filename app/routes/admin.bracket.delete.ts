@@ -1,13 +1,14 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/admin.bracket.delete.ts'
 import { deleteUnpublishedBracket, readAdminYears } from '~/brackets.server.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
+import { refuseStale } from '~/form-replies.server.ts'
 
 export const loader = (): Response => redirect(href(`/admin/bracket`))
 
 export const action = async ({
   request,
-}: Route.ActionArgs): Promise<Response | ConfirmResult> => {
+}: Route.ActionArgs): Promise<Response | ConfirmReply> => {
   const { setupYear: year } = await readAdminYears()
   const formData = await request.formData()
   const seenVersion = formData.get(`seenVersion`)
@@ -21,12 +22,12 @@ export const action = async ({
     case `DELETED`:
       return redirect(href(`/admin`))
     case `GONE`:
-      return {
-        error: `This bracket is already published or deleted. Reload the page`,
-      }
+      return refuseStale(
+        `This bracket is already published or deleted. Reload the page`,
+      )
     case `STALE`:
-      return {
-        error: `This bracket changed since the page loaded. Reload the page`,
-      }
+      return refuseStale(
+        `This bracket changed since the page loaded. Reload the page`,
+      )
   }
 }

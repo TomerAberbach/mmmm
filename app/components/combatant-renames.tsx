@@ -1,7 +1,7 @@
 import { href } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
-import { InlineEditForm } from './inline-edit-form.tsx'
+import { InlineEditForm, InlineSaved } from './inline-edit-form.tsx'
 import { SECTION_HEADING_CLASS_NAME } from './settings-section.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
@@ -113,7 +113,7 @@ const DivisionName = ({
   year: number
   division: Division
 }) => {
-  const { fetcher, isOpen, open, close } = useInlineEdit()
+  const { fetcher, isOpen, isSaved, buttonRef, open, close } = useInlineEdit()
   return (
     <div className='border-b-2 border-ink py-2'>
       {isOpen ? (
@@ -124,13 +124,17 @@ const DivisionName = ({
           onCancel={close}
         />
       ) : (
-        <Button
-          variant='quiet'
-          onPress={open}
-          aria-label={`Rename division ${division.name}`}
-        >
-          Rename division
-        </Button>
+        <>
+          <Button
+            ref={buttonRef}
+            variant='quiet'
+            onPress={open}
+            aria-label={`Rename division ${division.name}`}
+          >
+            Rename division
+          </Button>
+          <InlineSaved isSaved={isSaved} />
+        </>
       )}
     </div>
   )
@@ -182,7 +186,7 @@ const RenameRow = ({
   year: number
   combatant: CombatantRow
 }) => {
-  const { fetcher, isOpen, open, close } = useInlineEdit()
+  const { fetcher, isOpen, isSaved, buttonRef, open, close } = useInlineEdit()
 
   const seedCell = (
     <span className='text-end font-condensed text-lg font-bold text-muted tabular-nums'>
@@ -200,8 +204,10 @@ const RenameRow = ({
               {ROUND_NAMES.WILD_CARD}
             </span>
           ) : null}
+          <InlineSaved isSaved={isSaved} />
         </span>
         <Button
+          ref={buttonRef}
           variant='quiet'
           onPress={open}
           aria-label={`Rename ${combatant.name}`}

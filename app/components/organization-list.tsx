@@ -2,7 +2,7 @@ import { href } from 'react-router'
 import type { FetcherWithComponents } from 'react-router'
 import { Button } from './button.tsx'
 import { DeleteOrganizationDialog } from './delete-organization-dialog.tsx'
-import { InlineEditForm } from './inline-edit-form.tsx'
+import { InlineEditForm, InlineSaved } from './inline-edit-form.tsx'
 import { fieldProps, TextField } from './text-field.tsx'
 import { useInlineEdit } from './use-inline-edit.ts'
 import { useValidatedForm } from './use-validated-form.ts'
@@ -36,7 +36,7 @@ const OrganizationItem = ({
 }: {
   organization: OrganizationRow
 }) => {
-  const { fetcher, isOpen, isSaved, open, close } = useInlineEdit()
+  const { fetcher, isOpen, isSaved, buttonRef, open, close } = useInlineEdit()
   const { domain, name, educatorCount } = organization
   return (
     <li className='flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-muted-light py-2'>
@@ -45,11 +45,7 @@ const OrganizationItem = ({
           className={`wrap-anywhere ${name === null ? `text-muted` : `font-semibold`}`}
         >
           {name ?? `Not named yet`}
-          {isSaved ? (
-            <output className='ms-2 font-normal text-accent-strong'>
-              Saved
-            </output>
-          ) : null}
+          <InlineSaved isSaved={isSaved} />
         </p>
         <p className='text-muted'>
           {`${domain} · ${formatCount(educatorCount, `educator`)}`}
@@ -64,6 +60,7 @@ const OrganizationItem = ({
       ) : (
         <div className='flex flex-wrap gap-2'>
           <Button
+            ref={buttonRef}
             variant='quiet'
             onPress={open}
             aria-label={`Rename ${name ?? domain}`}

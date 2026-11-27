@@ -169,8 +169,11 @@ test(`hiding a contest in the trash says it can't be`, async () => {
     request: formPost({ contestId, isHidden: `true` }),
   } as never)
 
-  expect(reply).toStrictEqual({
-    error: `This contest can’t be hidden or shown now. Reload the page`,
+  expect(reply).toMatchObject({
+    data: {
+      error: `This contest can’t be hidden or shown now. Reload the page`,
+    },
+    init: { status: 409 },
   })
 })
 

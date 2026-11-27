@@ -1,6 +1,6 @@
 import { href, redirect } from 'react-router'
 import type { Route } from './+types/contests.$contestId.players.delete.ts'
-import type { ConfirmResult } from '~/form-replies.server.ts'
+import type { ConfirmReply } from '~/form-replies.server.ts'
 import { changeListed } from '~/form-replies.server.ts'
 import { readRequiredEducator } from '~/session.server.ts'
 import { deletePlayers } from '~/trash.server.ts'
@@ -12,7 +12,7 @@ export const action = ({
   request,
   context,
   params,
-}: Route.ActionArgs): Promise<ConfirmResult> => {
+}: Route.ActionArgs): Promise<ConfirmReply> => {
   const { id } = readRequiredEducator(context)
   return changeListed(
     request,
