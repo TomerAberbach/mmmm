@@ -1,4 +1,5 @@
 import { getFormProps } from '@conform-to/react'
+import { useEffect, useRef, useState } from 'react'
 import { href, Link, useFetcher } from 'react-router'
 import {
   changePasswordSchema,
@@ -45,7 +46,7 @@ export const EducatorSettings = ({
       <OrganizationSettings organization={organization} />
       <PasswordSettings />
       <SessionSettings />
-      {secondFactors ? <SecondFactorSettings {...secondFactors} /> : null}
+      <SecondFactorSection secondFactors={secondFactors} />
       <DeleteAccount
         account={account}
         canDelete={canDelete}
@@ -54,6 +55,40 @@ export const EducatorSettings = ({
     </div>
   </div>
 )
+
+const SecondFactorSection = ({
+  secondFactors,
+}: {
+  secondFactors: SecondFactorSettingsData | undefined
+}) => {
+  const [hadSecondFactor] = useState(
+    secondFactors !== undefined &&
+      (secondFactors.passkeys.length > 0 ||
+        secondFactors.recoveryCodesLeft !== undefined),
+  )
+  if (secondFactors) {
+    return <SecondFactorSettings {...secondFactors} />
+  }
+  // A former admin's section goes with their last second factor
+  return hadSecondFactor ? <RemovedSecondFactor /> : null
+}
+
+const RemovedSecondFactor = () => {
+  const section = useRef<HTMLElement>(null)
+  // The control that removed it took focus with it
+  useEffect(() => {
+    if (document.activeElement === document.body) {
+      section.current?.focus()
+    }
+  }, [])
+  return (
+    <SettingsSection title='Second factor' ref={section}>
+      <Notice kind='status'>
+        You have no second factor now. You sign in with only your password
+      </Notice>
+    </SettingsSection>
+  )
+}
 
 const NAME_SCHEMA = nameSchema(freeTextSchema)
 

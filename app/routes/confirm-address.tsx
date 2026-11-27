@@ -1,4 +1,4 @@
-import { Form, href, redirect } from 'react-router'
+import { data, Form, href, redirect } from 'react-router'
 import type { Route } from './+types/confirm-address.ts'
 import {
   confirmAddressChange,
@@ -11,19 +11,21 @@ import { PageTitle } from '~/components/page-title.tsx'
 import { SupportLink } from '~/components/support-link.tsx'
 import { useIsSubmitting } from '~/components/use-validated-form.ts'
 
-export const loader = ({ params }: Route.LoaderArgs) =>
-  readAddressChange(params.secret)
+export const loader = async ({ params }: Route.LoaderArgs) => {
+  const email = await readAddressChange(params.secret)
+  return data(email, { status: email === null ? 404 : 200 })
+}
 
 /** A press changes the address, since mail scanners open links */
 export const action = async ({
   params,
 }: Route.ActionArgs): Promise<
-  Response | Exclude<AddressConfirmation, `CHANGED`>
+  Response | ReturnType<typeof data<Exclude<AddressConfirmation, `CHANGED`>>>
 > => {
   const confirmation = await confirmAddressChange(params.secret)
   return confirmation === `CHANGED`
     ? redirect(`${href(`/sign-in`)}?address-changed`)
-    : confirmation
+    : data(confirmation, { status: confirmation === `TAKEN` ? 409 : 200 })
 }
 
 const ConfirmButton = () => (

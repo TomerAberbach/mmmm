@@ -15,6 +15,8 @@ type Queued<Sent> = {
   request: Sent
   /** The request stays in flight until a returned promise settles */
   onSent: () => void | Promise<void>
+  /** Called once the server refuses the request for good */
+  onRefused: () => void
 }
 
 /** How a queue's requests affect each other. Define it outside the component */
@@ -36,7 +38,11 @@ export const useRequestQueue = <Sent>(
   state: RequestState<Sent>
   /** Whether any request is in flight, which a failed state doesn't show */
   isSending: boolean
-  send: (request: Sent, onSent?: () => void | Promise<void>) => void
+  send: (
+    request: Sent,
+    onSent?: () => void | Promise<void>,
+    onRefused?: () => void,
+  ) => void
 } => {
   const [state, setState] = useState<RequestState<Sent>>({ kind: `idle` })
   const [isSending, setIsSending] = useState(false)
@@ -44,7 +50,11 @@ export const useRequestQueue = <Sent>(
   const waiting = useRef<Queued<Sent>[]>([])
 
   const send = useCallback(
-    (request: Sent, onSent: () => void | Promise<void> = ignore): void => {
+    (
+      request: Sent,
+      onSent: () => void | Promise<void> = ignore,
+      onRefused: () => void = ignore,
+    ): void => {
       const sendNow = (queued: Queued<Sent>): void => {
         const { request: sent } = queued
         const setStateUnlessKept = (next: RequestState<Sent>): void =>
@@ -61,6 +71,7 @@ export const useRequestQueue = <Sent>(
           .then(async outcome => {
             if (typeof outcome === `object`) {
               setState({ ...outcome, request: sent })
+              queued.onRefused()
             } else if (outcome === `sent`) {
               // The request reached the server even when what follows fails
               await Promise.resolve(queued.onSent()).catch(ignore)
@@ -69,6 +80,7 @@ export const useRequestQueue = <Sent>(
               setStateUnlessKept({ kind: `failed`, request: sent })
             } else {
               setState({ kind: outcome, request: sent })
+              queued.onRefused()
             }
           })
           .finally(() => {
@@ -81,7 +93,7 @@ export const useRequestQueue = <Sent>(
             }
           })
       }
-      const queued = { request, onSent }
+      const queued = { request, onSent, onRefused }
       if (isInFlight.current) {
         waiting.current = [
           ...waiting.current.filter(

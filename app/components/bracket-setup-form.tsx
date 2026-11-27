@@ -104,14 +104,10 @@ export const BracketSetupForm = ({
       <div className='flex flex-col gap-8'>
         <FormErrorSummary />
         <p className='max-w-prose'>
-          Enter the combatants from ASU’s bracket. Only admins see it until you
-          publish it.
+          {isEdit && laterYear !== null
+            ? `The ${year} tournament is over. To set up the ${laterYear} bracket, delete this one below.`
+            : `Enter the combatants from ASU’s bracket. Only admins see it until you publish it.`}
         </p>
-        {isEdit && laterYear !== null ? (
-          <p className='max-w-prose'>
-            {`The ${year} tournament is over. To set up the ${laterYear} bracket, delete this one below.`}
-          </p>
-        ) : null}
         <Form
           method='post'
           {...getFormProps(form)}

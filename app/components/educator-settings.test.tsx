@@ -1,10 +1,12 @@
 import { parseWithZod } from '@conform-to/zod/v4'
+import { useLoaderData } from 'react-router'
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { expectNoAxeViolations } from '../../test/axe.ts'
 import { renderRoutes } from '../../test/render-routes.tsx'
 import { changePasswordSchema, nameSchema } from '../auth-forms.ts'
 import { freeTextSchema } from '../free-text.ts'
+import type { SecondFactorSettingsData } from '../second-factor-settings.server.ts'
 import { EducatorSettings } from './educator-settings.tsx'
 import type { ConfirmResult } from '~/form-replies.server.ts'
 
@@ -12,18 +14,24 @@ import type { ConfirmResult } from '~/form-replies.server.ts'
 const renderSettings = async ({
   passwordErrors = {},
   canDelete = true,
+  secondFactors,
 }: {
   passwordErrors?: Record<string, string[]>
   canDelete?: boolean
+  secondFactors?: SecondFactorSettingsData
 } = {}) => {
   await renderRoutes([
     {
       path: `/`,
       // A save reloads the page's data
-      loader: () => ({}),
+      loader: () => ({ secondFactors }),
       HydrateFallback: () => null,
       Component: () => (
         <EducatorSettings
+          secondFactors={
+            useLoaderData<{ secondFactors?: SecondFactorSettingsData }>()
+              .secondFactors
+          }
           account={{
             email: `ada@example.com`,
             contestCount: 1,
@@ -54,6 +62,13 @@ const renderSettings = async ({
         return Object.keys(passwordErrors).length > 0
           ? { result: submission.reply({ fieldErrors: passwordErrors }) }
           : { result: submission.reply({ resetForm: true }), saved: true }
+      },
+    },
+    {
+      path: `/settings/remove-passkey`,
+      action: (): ConfirmResult => {
+        secondFactors = undefined
+        return { ok: true }
       },
     },
     {
@@ -166,4 +181,28 @@ test(`a saved name's notice goes once another action is made`, async () => {
   await expect
     .element(page.getByText(`Saved your name`))
     .not.toBeInTheDocument()
+})
+
+test(`a former admin who removes their last second factor is told, with focus`, async () => {
+  await renderSettings({
+    secondFactors: {
+      isAdmin: false,
+      canChange: true,
+      passkeys: [{ id: `a`, label: `iCloud Keychain`, added: `May 1, 2027` }],
+    },
+  })
+  await page.getByRole(`button`, { name: `Remove` }).click()
+
+  await page.getByRole(`button`, { name: `Remove passkey` }).click()
+
+  await expect
+    .element(
+      page.getByText(
+        `You have no second factor now. You sign in with only your password`,
+      ),
+    )
+    .toBeVisible()
+  await expect
+    .element(page.getByRole(`region`, { name: `Second factor` }))
+    .toHaveFocus()
 })

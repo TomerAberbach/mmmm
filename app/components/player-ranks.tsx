@@ -23,7 +23,7 @@ export const PlayerRanks = ({
               contestId,
               kind,
             })}
-            className='flex h-full flex-col justify-between gap-1 px-4 py-3 text-ink no-underline hover:underline aria-[current=page]:bg-accent-strong aria-[current=page]:text-white max-sm:flex-row max-sm:items-center max-sm:gap-4 print:text-black!'
+            className='flex h-full flex-col justify-between gap-1 px-4 py-3 text-ink no-underline hover:underline aria-[current=page]:bg-accent-strong aria-[current=page]:text-white max-sm:flex-row max-sm:items-center max-sm:gap-4 print:bg-transparent! print:text-black!'
           >
             <span className='min-w-0 font-condensed font-bold tracking-wider wrap-anywhere uppercase'>
               {name}

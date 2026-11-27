@@ -253,6 +253,17 @@ test(`a cleared merge's name is free again`, async () => {
     .toBeVisible()
 })
 
+test(`a result reached by keyboard shows a focus ring`, async () => {
+  await renderEditor()
+
+  // eslint-disable-next-line unicorn/no-incorrect-template-string-interpolation -- userEvent's key syntax
+  await userEvent.keyboard(`{Tab}{Tab}`)
+
+  const button = document.activeElement!
+  expect(button).toHaveAttribute(`aria-pressed`)
+  expect(getComputedStyle(button).outlineStyle).toBe(`solid`)
+})
+
 test(`recording who fills a side by keyboard focuses them once confirmed`, async () => {
   await renderEditor()
   await page.getByRole(`tab`, { name: /^Round 2/u }).click()

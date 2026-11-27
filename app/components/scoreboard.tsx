@@ -20,7 +20,7 @@ export const Scoreboard = ({
       className='me-2 max-w-5xl border-4 border-ink bg-white shadow-offset print:me-0 print:shadow-none'
     >
       <div className='flex flex-col sm:flex-row'>
-        <div className='flex flex-col items-center gap-1 bg-accent-strong px-7 py-4 text-center text-white print:text-black'>
+        <div className='flex flex-col items-center gap-1 bg-accent-strong px-7 py-4 text-center text-white print:bg-transparent print:text-black'>
           <h2 id={headingId} className={LABEL_CLASS_NAME}>
             {isFinal ? `Final score` : `Score so far`}
           </h2>
