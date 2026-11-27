@@ -38,7 +38,7 @@ pnpm exec prisma generate
 pnpm db:seed
 ```
 
-Start the server. Variables that are set win over `.env`. `BETTER_AUTH_URL` must
+Start the server. Variables that are set override `.env`. `BETTER_AUTH_URL` must
 have the same port as `PORT`, because emailed links and passkeys use it.
 
 ```sh
@@ -48,16 +48,16 @@ until curl -sf localhost:3055/healthz; do sleep 1; done
 
 The app is at `http://localhost:3055`, and its email is at
 `http://localhost:3055/dev/mailbox`. Email and rate limits are in memory, so a
-restart empties both. Restart whenever a step answers "Too many attempts" and it
-isn't the step that tests it.
+restart empties both. Restart whenever the app answers "Too many attempts" in a
+step that doesn't expect it.
 
 ```sh
 lsof -ti tcp:3055 -sTCP:LISTEN | xargs kill
 (pnpm dev > "${TMPDIR:-/tmp}/mmmm-qa.log" 2>&1 &)
 ```
 
-Tear everything down at the end. It stops only the server on this port and drops
-only this database.
+Tear everything down at the end. These commands stop only the server on this
+port and drop only this database.
 
 ```sh
 lsof -ti tcp:3055 -sTCP:LISTEN | xargs kill
@@ -157,7 +157,7 @@ qa_clock() {
 | Olga, Omar, Bo, Xan, Gil, Ava                       | none                      | none                                                                | Players in Otto's, Gia's, and Ada's contests                                                          |
 | Nobody                                              | none                      | none                                                                | A signed-out visitor                                                                                  |
 
-Nothing is ever sent, so the addresses need no inbox.
+Nothing is sent, so the addresses need no inbox.
 
 **Several at once.** Use one Chrome profile for each educator (Ada, Grace, Cora,
 and one shared by Otto and Gia), one for players, and a Guest window for Nobody.
@@ -173,7 +173,7 @@ each personal link in a note.
 
 **Passkeys** need a device, or Chrome DevTools, More tools, WebAuthn, "Enable
 virtual authenticator environment" with resident keys and user verification on.
-Steps that need one say "Manual". Automation skips them and uses the
+Steps that need one contain "Manual". Automation skips them and uses the
 authenticator app: press **Can’t scan it?**, copy the key, and run `qa_code`
 with it.
 
@@ -858,7 +858,7 @@ Use Ada's `Period 1 Chem` contest link, shown as L. A player's pages are at
       wins fill in too", and the count goes up. _P9_
 - [ ] **6.9** Pat, P`/bracket`. Pick the other side of that combatant's Round 1
       battle. Expect: "Your change cleared", a count such as "3 later picks that
-      depended on it", and the battles, inside the bar, and the diagram stays in
+      depended on it", and the battles, inside the bar. The diagram stays in
       place in the window. _P9 RG5_
 - [ ] **6.10** Pat, P`/bracket`. Turn Chrome offline and pick. Expect: "Couldn’t
       save. Your picks are still here" and **Try again**. _RP1_
@@ -1095,7 +1095,7 @@ Use Ada's `Period 1 Chem` contest link, shown as L. A player's pages are at
       changes once they confirm it". _AT13 DE1 AE8_
 - [ ] **7.45** Grace, that page. Send a link to `otto@moved.example` again.
       Expect: "We emailed the new address. The educator’s address changes once
-      they confirm it", and the first link is dead. _AT13_
+      they confirm it", and the first link no longer works. _AT13_
 - [ ] **7.46** Nobody, mailbox. Open the first link to otto@moved.example.
       Expect: "This link doesn’t work", "It expired, was already used, or was
       replaced by a newer link. Check your email for a newer one, or email" with
@@ -1152,9 +1152,9 @@ Use Ada's `Period 1 Chem` contest link, shown as L. A player's pages are at
       address". _DE3_
 - [ ] **7.65** Grace, that dialog. Type Una's address and press **Delete
       account**. Expect: "The account is deleted". _AT12 DE3 AE10 AK12_
-- [ ] **7.66** Grace, `/admin/contests`. Open it. Expect: Una's class is first:
-      "Hidden · 2025 · No educator", with **Hand over** and **Show**. _DK2 DK3
-      C12 CS3 CS5_
+- [ ] **7.66** Grace, `/admin/contests`. Open it. Expect: Una's contest is
+      first: "Hidden · 2025 · No educator", with **Hand over** and **Show**.
+      _DK2 DK3 C12 CS3 CS5_
 - [ ] **7.67** Otto, `/settings`. Press **Delete account**, type a wrong
       address. Expect: "This isn’t the account’s email address". _AV36_
 - [ ] **7.68** Otto, that dialog. Read it. Expect: "2 contests stay without an
@@ -1848,9 +1848,9 @@ Otto Zoology's Olga at P`/bracket`, and Quinn's P`/bracket`.
 
 ## 15. Stale tabs
 
-Each row opens the page in 2 tabs, changes something in the first, then acts in
-the second. Use 2027 while it's open, with a contest that has 3 submissions from
-`qa_fill`.
+In each step, open the page in 2 tabs, change something in the first, then act
+in the second. Use 2027 while it's open, with a contest that has 3 submissions
+from `qa_fill`.
 
 - [ ] **15.1** Ada, contest, 2 tabs. Delete the contest in the first. In the
       second, **Rename** and **Save**. Expect: "This contest’s name wasn’t
@@ -2075,7 +2075,8 @@ Set DevTools' device toolbar to 390 by 844 for the first step.
 
 ## Forcing states
 
-The steps name these commands. Run them in the terminal of [Setup](#setup).
+The steps refer to these commands by name. Run them in the terminal of
+[Setup](#setup).
 
 ### Submissions for the results sections
 
@@ -2174,8 +2175,8 @@ qa_sql "UPDATE \"Contest\" SET year = 2027 WHERE name = 'Period 1 Next'"
 "Stranded bracket" makes 2025 current and complete, with an unpublished 2027, on
 April 2, 2027. It needs 2025's champion. Start it in place of the server, sign
 in again, then bring 2027 back. Sign in with a recovery code, because a security
-code would need the same clock. Starting a server ahead of time runs its daily
-job, which deletes real sessions and links.
+code would need the same clock. Starting a server with a later clock runs its
+daily job, which deletes real sessions and links.
 
 ```sh
 lsof -ti tcp:3055 -sTCP:LISTEN | xargs kill
@@ -2214,7 +2215,7 @@ lsof -ti tcp:3056 -sTCP:LISTEN | xargs kill
 
 ### Scale
 
-Each of these adds rows that the last block removes.
+Each of these adds rows that the commands under "Remove them" delete.
 
 ```sh
 # 120 approved players
@@ -2302,10 +2303,10 @@ is the admin area. A step lists the codes it covers.
 
 Also left to automated tests: two requests at the same instant, real email
 delivery, Fly.io, backups, devices’ own passkey screens, and screen readers’
-announcements beyond focus. Two refusals to publish need two requests at the
-same instant: "The 2027 bracket is already published or deleted" and "The 2027
-bracket is archived. Reload the page". So does "Record the current year’s
-champion before publishing the 2027 bracket".
+announcements beyond focus. These refusals to publish need two requests at the
+same instant: "The 2027 bracket is already published or deleted", "The 2027
+bracket is archived. Reload the page", and "Record the current year’s champion
+before publishing the 2027 bracket".
 
 ### Covered
 
